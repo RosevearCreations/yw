@@ -142,3 +142,12 @@
           <p>Invoice readiness means the work order is ready to enter the existing Finance review/candidate workflow. Build 324 does not directly create a posted A/R invoice, post a journal, collect a payment or enable payment-provider mutation. Those Finance controls remain deliberately separate.</p>
         </section>
 
+        <section class="help-section" id="landscape-production-tracking">
+          <h2>Landscape Production Tracking</h2>
+          <p>Build 325 captures actual field execution against the canonical work order and field-session authorities. Record session start/finish, crew labour, measurable quantities, disposal, delays, weather/workability context, unfinished work, return-visit requirements, customer/site issues and production notes without creating a second job or timekeeping system.</p>
+          <p>Crew hours remain in <code>job_session_crew_hours</code>. Material use remains in <code>material_issues</code>. Equipment custody remains in <code>equipment_signouts</code>. Build 325 links those records to a production session instead of copying or replacing them.</p>
+          <p>Before/during/after photos and completion evidence continue through Service Execution Proof. Arrival proof is treated as before evidence, progress/material/equipment/note proof as during evidence, and completion/quality proof as after evidence. Live customer/staff updates keep their existing visibility and approval boundaries.</p>
+          <p>Production quantities can be recorded by property zone for mowing, edging, trimming, beds, hedge/shrub work, tree/brush work, cleanup, aeration, fertilizing, seeding, sod, planting, mulch, soil, gravel/stone, disposal, snow/ice and other field work. Planned quantity may be carried as reference; actual, waste and disposal quantities remain field evidence.</p>
+          <p>Weather and workability values are operational evidence, not automatic safety authorization. A return visit requires a reason, and unfinished/site issue notes remain visible to staff for follow-up. Supervisor closeout remains the completion/Finance handoff authority; Build 325 does not auto-post invoices, journals, payments or provider mutations.</p>
+        </section>
+

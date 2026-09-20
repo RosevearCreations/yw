@@ -1368,6 +1368,14 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     safeSelect(supabase.from('change_orders').select('id,change_order_number,status,work_order_id,estimate_id,job_id,scope_summary,reason,estimated_cost_delta,estimated_charge_delta,customer_approval_reference,customer_approved_at,customer_approved_by_name,requested_at,approved_at,updated_at').order('requested_at',{ascending:false}).limit(500))
   ]) : [[],[],[],[],[],[],[]];
 
+  const [productionSessions,productionQuantities,productionWorkOrders,productionMaterialIssues,productionEquipmentSignouts] = jobsAttentionAllowed ? await Promise.all([
+    safeSelect(supabase.from('v_landscape_production_session_directory').select('*').order('session_date',{ascending:false}).order('started_at',{ascending:false}).limit(500)),
+    safeSelect(supabase.from('v_landscape_production_quantity_directory').select('*').eq('is_active',true).order('session_date',{ascending:false}).order('sort_order',{ascending:true}).limit(1000)),
+    safeSelect(supabase.from('work_orders').select('id,work_order_number,legacy_job_id,client_id,client_site_id,status,scheduled_start,scheduled_end,supervisor_profile_id,crew_notes').order('created_at',{ascending:false}).limit(500)),
+    safeSelect(supabase.from('material_issues').select('id,issue_number,work_order_id,job_session_id,issue_status,issue_date,line_count,quantity_total,issue_total,notes').order('issue_date',{ascending:false}).limit(500)),
+    safeSelect(supabase.from('equipment_signouts').select('id,equipment_item_id,job_id,work_order_id,job_session_id,checked_out_at,returned_at,verification_status,signout_notes').order('checked_out_at',{ascending:false}).limit(500))
+  ]) : [[],[],[],[],[]];
+
   return {
     operations_attention: operationsAttention.active,
     operations_attention_resolved: operationsAttention.resolved,
@@ -1396,6 +1404,12 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     estimate_workflow_sites: estimateSites,
     estimate_change_orders: estimateChangeOrders,
     estimate_invoice_meta: { build:324, schema:213, permission_filtered:true, estimate_authority:'estimates', work_order_authority:'work_orders', customer_acceptance_authority:'ywi_rpc_accept_quote_package', invoice_authority:'job_invoice_candidates', finance_posting_enabled:false },
+    landscape_production_sessions: productionSessions,
+    landscape_production_quantities: productionQuantities,
+    landscape_production_work_orders: productionWorkOrders,
+    landscape_production_material_issues: productionMaterialIssues,
+    landscape_production_equipment_signouts: productionEquipmentSignouts,
+    landscape_production_meta: { build:325, schema:214, permission_filtered:true, session_authority:'job_sessions', labour_authority:'job_session_crew_hours', material_authority:'material_issues', equipment_authority:'equipment_signouts', photo_authority:'work_order_execution_proofs', closeout_authority:'work_order_closeout_packages' },
     ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, reconciliation_exceptions: reconciliationExceptions, profiles, banks, rails, ar_invoices: arInvoices, ar_payments: arPayments, customer_deposits: customerDeposits, ar_applications: arApplications,
     capabilities: capabilitySnapshot,
     stripe_health: {
@@ -2120,6 +2134,99 @@ serve(async (req) => {
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
     }
 
+    if (action === 'landscape_production_session_save') {
+      requireRank(profile,20,action);
+      const id=isUuid(body.id)?clean(body.id,80):null;
+      const workOrderId=isUuid(body.work_order_id)?clean(body.work_order_id,80):null;
+      if(!id && !workOrderId) throw new HttpError(400,'Choose a work order before creating a production session.');
+      const crewHour=objectValue(body.crew_hour);
+      const payload:any={
+        id,work_order_id:workOrderId,
+        dispatch_schedule_item_id:isUuid(body.dispatch_schedule_item_id)?clean(body.dispatch_schedule_item_id,80):null,
+        session_date:clean(body.session_date,30)||null,
+        session_kind:clean(body.session_kind || 'field_service',60),
+        session_status:clean(body.session_status || 'planned',40).toLowerCase(),
+        service_frequency_label:clean(body.service_frequency_label,160)||null,
+        scheduled_start_at:clean(body.scheduled_start_at,80)||null,
+        started_at:clean(body.started_at,80)||null,
+        ended_at:clean(body.ended_at,80)||null,
+        delay_minutes:Math.max(0,int(body.delay_minutes,0)),
+        notes:clean(body.notes,3000)||null,
+        site_supervisor_profile_id:isUuid(body.site_supervisor_profile_id)?clean(body.site_supervisor_profile_id,80):null,
+        workability_status:clean(body.workability_status || 'not_recorded',40).toLowerCase(),
+        weather_summary:clean(body.weather_summary,1200)||null,
+        delay_reason:clean(body.delay_reason,1200)||null,
+        completion_state:clean(body.completion_state || 'open',40).toLowerCase(),
+        unfinished_work_notes:clean(body.unfinished_work_notes,2500)||null,
+        return_visit_required:body.return_visit_required===true || String(body.return_visit_required).toLowerCase()==='true',
+        return_visit_reason:clean(body.return_visit_reason,2000)||null,
+        customer_site_issue_notes:clean(body.customer_site_issue_notes,2500)||null,
+        production_notes:clean(body.production_notes,3000)||null,
+        material_issue_id:isUuid(body.material_issue_id)?clean(body.material_issue_id,80):null,
+        equipment_signout_id:body.equipment_signout_id===''||body.equipment_signout_id==null?null:String(body.equipment_signout_id),
+        execution_proof_id:isUuid(body.execution_proof_id)?clean(body.execution_proof_id,80):null,
+        live_update_id:isUuid(body.live_update_id)?clean(body.live_update_id,80):null,
+        crew_hour:Object.keys(crewHour).length ? {
+          id:isUuid(crewHour.id)?clean(crewHour.id,80):null,
+          crew_id:isUuid(crewHour.crew_id)?clean(crewHour.crew_id,80):null,
+          profile_id:isUuid(crewHour.profile_id)?clean(crewHour.profile_id,80):null,
+          worker_name:clean(crewHour.worker_name,220)||null,
+          started_at:clean(crewHour.started_at,80)||null,
+          ended_at:clean(crewHour.ended_at,80)||null,
+          hours_worked:crewHour.hours_worked===''||crewHour.hours_worked==null?null:Number(crewHour.hours_worked),
+          regular_hours:crewHour.regular_hours===''||crewHour.regular_hours==null?null:Number(crewHour.regular_hours),
+          overtime_hours:crewHour.overtime_hours===''||crewHour.overtime_hours==null?null:Number(crewHour.overtime_hours),
+          break_minutes:Math.max(0,int(crewHour.break_minutes,0)),
+          pay_code:clean(crewHour.pay_code || 'regular',30).toLowerCase(),
+          notes:clean(crewHour.notes,1200)||null
+        } : {}
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_landscape_production_session_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const sessionId=clean((data as any)?.session?.job_session_id || id,80);
+      await audit(supabase,{
+        operation_action:action,operation_status:id?'updated':'saved',entity_type:'job_session',entity_id:sessionId,actor_profile_id:profile.id,
+        request_payload:{work_order_id:workOrderId,session_status:payload.session_status,workability_status:payload.workability_status,completion_state:payload.completion_state,has_crew_hour:Object.keys(crewHour).length>0},
+        response_payload:{job_session_id:sessionId,production_state:(data as any)?.session?.production_state || null}
+      });
+      return Response.json({ok:true,build:325,schema:214,...(data as any)},{headers:corsHeaders});
+    }
+
+    if (action === 'landscape_production_quantity_save') {
+      requireRank(profile,20,action);
+      const id=isUuid(body.id)?clean(body.id,80):null;
+      const sessionId=isUuid(body.job_session_id)?clean(body.job_session_id,80):null;
+      if(!id && !sessionId) throw new HttpError(400,'Choose a production session before saving a quantity.');
+      if(!id && !clean(body.metric_label,240)) throw new HttpError(400,'Metric label is required.');
+      const payload:any={
+        id,job_session_id:sessionId,
+        client_site_zone_id:isUuid(body.client_site_zone_id)?clean(body.client_site_zone_id,80):null,
+        source_work_order_line_id:isUuid(body.source_work_order_line_id)?clean(body.source_work_order_line_id,80):null,
+        source_estimate_assumption_id:isUuid(body.source_estimate_assumption_id)?clean(body.source_estimate_assumption_id,80):null,
+        record_type:clean(body.record_type || 'production',30).toLowerCase(),
+        activity_type:clean(body.activity_type || 'other',40).toLowerCase(),
+        metric_label:clean(body.metric_label,240)||null,
+        planned_quantity:body.planned_quantity===''||body.planned_quantity==null?null:Number(body.planned_quantity),
+        actual_quantity:body.actual_quantity===''||body.actual_quantity==null?0:Number(body.actual_quantity),
+        waste_quantity:body.waste_quantity===''||body.waste_quantity==null?0:Number(body.waste_quantity),
+        disposal_quantity:body.disposal_quantity===''||body.disposal_quantity==null?0:Number(body.disposal_quantity),
+        unit_label:clean(body.unit_label,80)||null,
+        completion_percent:body.completion_percent===''||body.completion_percent==null?null:Number(body.completion_percent),
+        disposal_destination:clean(body.disposal_destination,400)||null,
+        notes:clean(body.notes,1800)||null,
+        sort_order:Math.max(0,Math.min(10000,int(body.sort_order,100))),
+        is_active:body.is_active!==false && String(body.is_active).toLowerCase()!=='false'
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_landscape_production_quantity_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:id?'updated':'saved',entity_type:'job_session_production_quantity',entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{job_session_id:sessionId,record_type:payload.record_type,activity_type:payload.activity_type,actual_quantity:payload.actual_quantity},
+        response_payload:{production_quantity_id:(data as any)?.id || null,work_order_id:(data as any)?.work_order_id || null}
+      });
+      return Response.json({ok:true,build:325,schema:214,record:data},{headers:corsHeaders});
+    }
+
     if (action === 'estimate_workflow_save') {
       requireRank(profile,45,action);
       const id=isUuid(body.id) ? clean(body.id,80) : null;
@@ -2589,6 +2696,13 @@ serve(async (req) => {
           client_request_id: clean(body.idempotency_key, 160) || null
         }
       });
+      if (isUuid(body.job_session_id) && result?.live_update_id) {
+        const linked = await callRpc(supabase,'ywi_rpc_landscape_production_session_save',{
+          p_payload:{id:clean(body.job_session_id,80),work_order_id:workOrderId,live_update_id:result.live_update_id},
+          p_actor_profile_id:profile.id
+        });
+        result.production_session = linked?.session || null;
+      }
       let notification: any = null;
       if (result?.visibility === 'customer' && body.customer_notification_requested === true && result?.live_update_id) {
         notification = await callRpc(supabase, 'ywi_rpc_enqueue_customer_live_update_notification', {
@@ -2632,6 +2746,13 @@ serve(async (req) => {
         p_other_cost_total: money(body.other_cost_total),
         p_metadata: { build: BUILD, schema: SCHEMA, idempotency_key: idempotencyKey(req, body, 'execution-proof') }
       });
+      if (isUuid(body.job_session_id) && result?.execution_proof_id) {
+        const linked = await callRpc(supabase,'ywi_rpc_landscape_production_session_save',{
+          p_payload:{id:clean(body.job_session_id,80),work_order_id:workOrderId,execution_proof_id:result.execution_proof_id},
+          p_actor_profile_id:profile.id
+        });
+        result.production_session = linked?.session || null;
+      }
       await audit(supabase, { operation_action: action, operation_status: 'submitted', entity_type: 'work_order_execution_proof', entity_id: result.execution_proof_id, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: result });
       return Response.json({ ok: true, proof: result }, { headers: corsHeaders });
     }
