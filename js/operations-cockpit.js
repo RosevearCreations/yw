@@ -455,6 +455,7 @@
     const profileOptions=`<option value="">Use crew/default assignment</option>${profiles.map((row)=>`<option value="${esc(row.id)}">${esc(row.full_name || row.email || row.id)} · ${esc(row.role || '')}</option>`).join('')}`;
     apply('[data-oc-dispatch-lead]',profileOptions);
     apply('[data-oc-dispatch-supervisor]',profileOptions);
+    apply('#oc_dispatch_crew_members',profiles.map((row)=>`<option value="${esc(row.id)}">${esc(row.full_name || row.email || row.id)} · ${esc(row.role || '')}</option>`).join(''));
     apply('[data-oc-dispatch-route]',`<option value="">Use work-order/default route</option>${routes.map((row)=>`<option value="${esc(row.id)}">${esc(row.name)}${row.route_code?` · ${esc(row.route_code)}`:''}</option>`).join('')}`);
     const equipOptions=`<option value="">None</option>${equipment.map((row)=>`<option value="${esc(row.id)}">${esc(row.equipment_name)}${row.category?` · ${esc(row.category)}`:''}</option>`).join('')}`;
     const truckChoices=equipment.filter((row)=>/truck|vehicle|fleet|pickup|van/i.test(String(row.category||row.equipment_name||'')));
