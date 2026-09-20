@@ -5,7 +5,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '321-crew-scheduling-dispatch';
+  const BUILD = '322-recurring-lawn-yard-maintenance';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -33,7 +33,9 @@
     'signal-review':'content_signal_decision', 'signal-actioned':'content_signal_decision',
     'release-readiness-capture':'release_readiness_snapshot',
     'attention-defer':'operations_attention_defer', 'attention-resolve':'operations_attention_resolve',
-    'dispatch-load':'dispatch_schedule', 'dispatch-cancel':'dispatch_schedule', 'dispatch-now':'dispatch_schedule'
+    'dispatch-load':'dispatch_schedule', 'dispatch-cancel':'dispatch_schedule', 'dispatch-now':'dispatch_schedule',
+    'recurring-program-edit':'recurring_service_program_save',
+    'recurring-visit-skip':'recurring_service_visit_event', 'recurring-visit-weather':'recurring_service_visit_event', 'recurring-visit-makeup':'recurring_service_visit_event', 'recurring-visit-hold':'recurring_service_visit_event', 'recurring-visit-resume':'recurring_service_visit_event', 'recurring-visit-cancel':'recurring_service_visit_event'
   };
 
 
@@ -370,6 +372,151 @@
     wrap.innerHTML = `<div class="oc-notification-delivery-status"><span class="${statusClass(deliveryBadge)}">${esc(delivery.enabled ? 'delivery state' : 'delivery off')}</span><p>${esc(deliveryState)} Email addresses, portal tokens, staff notes, and private media are never shown in this queue.</p></div>${cards.length ? cards.join('') : emptyQueue('No customer e-mails awaiting review', 'Customer-visible updates require an explicit portal opt-in before delivery is queued.')}`;
   }
 
+  function recurringDateLabel(value) {
+    if(!value) return 'Not set';
+    const d=new Date(`${value}T12:00:00`);
+    return Number.isNaN(d.valueOf()) ? String(value) : d.toLocaleDateString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+  }
+  function recurringSeasonLabel(row) {
+    if(!row?.season_start_month || !row?.season_start_day || !row?.season_end_month || !row?.season_end_day) return 'No annual season gate';
+    return `${Number(row.season_start_month)}/${Number(row.season_start_day)} → ${Number(row.season_end_month)}/${Number(row.season_end_day)}`;
+  }
+  function recurringProgramLabel(row) {
+    const frequency=String(row?.recurrence_frequency || '').replaceAll('_',' ');
+    if(row?.recurrence_frequency==='custom_days') return `Every ${Number(row.custom_interval_days || row.recurrence_interval || 1)} day(s)`;
+    return frequency ? frequency.replace(/\b\w/g,(m)=>m.toUpperCase()) : (row?.recurrence_label || 'Not set');
+  }
+  function renderRecurringService() {
+    const programsWrap=byId('oc_recurring_programs');
+    const visitsWrap=byId('oc_recurring_visits');
+    if(!programsWrap || !visitsWrap) return;
+    const programs=queues.recurring_service_programs || [];
+    const visits=(queues.recurring_service_visits || []).filter((row)=>row.service_date >= new Date().toISOString().slice(0,10));
+    const active=programs.filter((row)=>row.agreement_status==='active').length;
+    const held=visits.filter((row)=>row.visit_status==='held').length;
+    const delayed=visits.filter((row)=>row.visit_status==='weather_delayed' || row.visit_status==='makeup').length;
+    const summary=byId('oc_recurring_summary');
+    if(summary) summary.textContent=`${programs.length} program(s) · ${active} active · ${visits.length} upcoming visit(s) · ${held} held · ${delayed} delayed/make-up`;
+
+    programsWrap.innerHTML=programs.length ? programs.map((row)=>{
+      const location=[row.site_name,row.service_address,row.site_city].filter(Boolean).join(' · ') || row.client_name || 'Property not linked';
+      const timing=[recurringProgramLabel(row),recurringSeasonLabel(row)].join(' · ');
+      return `<article class="oc-queue-card oc-recurring-program-card">
+        <header><div><strong>${esc(row.service_name || row.agreement_code)}</strong><small>${esc(row.agreement_code || '')} · ${esc(String(row.service_program_type || 'other').replaceAll('_',' '))}</small></div><span class="${statusClass(row.agreement_status)}">${esc(row.agreement_status || 'draft')}</span></header>
+        <dl>
+          <div><dt>Customer / property</dt><dd>${esc(location)}</dd></div>
+          <div><dt>Recurrence</dt><dd>${esc(timing)}</dd></div>
+          <div><dt>Window</dt><dd>${esc([row.service_window_start,row.service_window_end].filter(Boolean).join('–') || 'No preferred clock window')}</dd></div>
+          <div><dt>Crew / route</dt><dd>${esc([row.crew_name,row.route_name].filter(Boolean).join(' · ') || 'Unassigned')}</dd></div>
+          <div><dt>Next visit</dt><dd>${esc(row.next_service_date ? recurringDateLabel(row.next_service_date) : 'No generated visit')}${row.next_visit_status ? ` · ${esc(String(row.next_visit_status).replaceAll('_',' '))}` : ''}</dd></div>
+          <div><dt>Scheduler</dt><dd>${row.auto_create_session_candidates ? 'Planned session candidates on' : 'Manual only'}</dd></div>
+        </dl>
+        ${row.pause_reason ? `<p class="muted">Hold/pause: ${esc(short(row.pause_reason,180))}</p>` : ''}
+        ${row.cancellation_reason ? `<p class="muted">Cancellation: ${esc(short(row.cancellation_reason,180))}</p>` : ''}
+        ${buttons([button('Edit program','recurring-program-edit',row.id,'',true,'recurring_service_program_save')])}
+      </article>`;
+    }).join('') : emptyQueue('No recurring lawn/yard programs','Create the first weekly, biweekly, custom or seasonal program with the form above.');
+
+    visitsWrap.innerHTML=visits.length ? visits.slice(0,120).map((row)=>{
+      const program=programs.find((item)=>String(item.id)===String(row.agreement_id)) || {};
+      const moved=row.service_date && row.original_service_date && row.service_date!==row.original_service_date;
+      const heldVisit=row.visit_status==='held';
+      const finalVisit=['skipped','cancelled'].includes(row.visit_status);
+      return `<article class="oc-queue-card oc-recurring-visit-card" data-status="${esc(row.visit_status || 'scheduled')}">
+        <header><div><strong>${esc(row.service_name || row.agreement_code)}</strong><small>${esc(recurringDateLabel(row.service_date))}${moved ? ` · originally ${esc(recurringDateLabel(row.original_service_date))}` : ''}</small></div><span class="${statusClass(row.visit_status)}">${esc(String(row.visit_status || 'scheduled').replaceAll('_',' '))}</span></header>
+        <dl>
+          <div><dt>Recurrence</dt><dd>${esc(row.recurrence_label || recurringProgramLabel(program))}</dd></div>
+          <div><dt>Service window</dt><dd>${esc([row.service_window_start,row.service_window_end].filter(Boolean).join('–') || 'Not set')}</dd></div>
+          <div><dt>Duration / travel</dt><dd>${Number(row.visit_estimated_minutes || 0)} min · ${Number(row.default_travel_allowance_minutes || 0)} min travel</dd></div>
+          <div><dt>Weather policy</dt><dd>${esc(String(row.weather_delay_policy || 'manual').replaceAll('_',' '))}</dd></div>
+        </dl>
+        ${row.latest_event_reason ? `<p class="muted">Latest event: ${esc(short(row.latest_event_reason,220))}</p>` : ''}
+        ${buttons([
+          !finalVisit && !heldVisit ? button('Skip','recurring-visit-skip',row.occurrence_key,'',true,'recurring_service_visit_event') : '',
+          !finalVisit && !heldVisit ? button('Weather delay','recurring-visit-weather',row.occurrence_key,'',true,'recurring_service_visit_event') : '',
+          !finalVisit && !heldVisit ? button('Make-up date','recurring-visit-makeup',row.occurrence_key,'',true,'recurring_service_visit_event') : '',
+          !finalVisit && !heldVisit ? button('Customer hold','recurring-visit-hold',row.occurrence_key,'',true,'recurring_service_visit_event') : '',
+          heldVisit ? button('Resume','recurring-visit-resume',row.occurrence_key,'',true,'recurring_service_visit_event') : '',
+          !finalVisit ? button('Cancel visit','recurring-visit-cancel',row.occurrence_key,'',true,'recurring_service_visit_event') : ''
+        ])}
+      </article>`;
+    }).join('') : emptyQueue('No upcoming recurring visits','Active programs generate visits from their recurrence and seasonal windows.');
+  }
+  function hydrateRecurringSelectors() {
+    const programs=queues.recurring_service_programs || [];
+    const clients=queues.recurring_service_clients || [];
+    const sites=queues.recurring_service_sites || [];
+    const crews=queues.crew_dispatch_crews || [];
+    const routes=queues.crew_dispatch_routes || [];
+    const apply=(selector,html)=>document.querySelectorAll(selector).forEach((select)=>{ const current=select.value; select.innerHTML=html; if(current) select.value=current; });
+    apply('[data-oc-recurring-client]',`<option value="">No customer selected</option>${clients.map((row)=>`<option value="${esc(row.id)}">${esc(row.display_name || row.legal_name || row.id)}</option>`).join('')}`);
+    apply('[data-oc-recurring-site]',`<option value="">No property selected</option>${sites.map((row)=>`<option value="${esc(row.id)}" data-client-id="${esc(row.client_id || '')}">${esc(row.site_name || row.service_address || row.id)}${row.city ? ` · ${esc(row.city)}` : ''}</option>`).join('')}`);
+    apply('[data-oc-recurring-crew]',`<option value="">No default crew</option>${crews.filter((row)=>!['inactive','archived'].includes(String(row.crew_status||'').toLowerCase())).map((row)=>`<option value="${esc(row.id)}">${esc(row.crew_name)}</option>`).join('')}`);
+    apply('[data-oc-recurring-route]',`<option value="">No default route</option>${routes.map((row)=>`<option value="${esc(row.id)}">${esc(row.name || row.route_code || row.id)}</option>`).join('')}`);
+  }
+  function resetRecurringProgramForm() {
+    const form=byId('oc_recurring_program_form'); if(!form) return;
+    form.reset();
+    form.elements.id.value='';
+    form.elements.agreement_status.value='draft';
+    form.elements.service_program_type.value='mowing';
+    form.elements.recurrence_frequency.value='weekly';
+    form.elements.recurrence_interval.value='1';
+    form.elements.weather_delay_policy.value='manual';
+    form.elements.weather_makeup_days.value='1';
+    form.elements.default_travel_allowance_minutes.value='0';
+    form.elements.auto_create_session_candidates.checked=true;
+  }
+  function loadRecurringProgram(row) {
+    const form=byId('oc_recurring_program_form'); if(!form || !row) return;
+    const keys=['id','agreement_code','service_name','agreement_status','service_program_type','billing_method','client_id','client_site_id','crew_id','route_id','recurrence_frequency','recurrence_interval','custom_interval_days','preferred_weekday','recurrence_anchor_date','start_date','end_date','service_window_start','service_window_end','season_start_month','season_start_day','season_end_month','season_end_day','visit_estimated_minutes','default_travel_allowance_minutes','weather_delay_policy','weather_makeup_days','customer_hold_until','customer_hold_reason','pause_reason','cancellation_reason','service_notes'];
+    keys.forEach((key)=>{ if(form.elements[key]) form.elements[key].value=row[key] ?? ''; });
+    form.elements.open_end_date.checked=row.open_end_date===true;
+    form.elements.auto_create_session_candidates.checked=row.auto_create_session_candidates!==false;
+    form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  async function handleRecurringProgram(event) {
+    event.preventDefault();
+    const form=event.currentTarget;
+    const data=formData(form);
+    await send({
+      action:'recurring_service_program_save',
+      ...data,
+      open_end_date:form.elements.open_end_date.checked,
+      auto_create_session_candidates:form.elements.auto_create_session_candidates.checked
+    },'Recurring lawn/yard program save');
+    resetRecurringProgramForm();
+  }
+  async function recurringVisitEvent(row,eventType) {
+    if(!row) return;
+    let reason='';
+    let effectiveDate=null;
+    let workability=null;
+    if(eventType==='resume') {
+      reason='Customer/program hold resumed';
+    } else {
+      reason=(prompt(eventType==='customer_hold' ? 'Customer hold reason:' : `${String(eventType).replaceAll('_',' ')} reason:`) || '').trim();
+      if(!reason) return;
+    }
+    if(eventType==='weather_delay' || eventType==='makeup' || eventType==='customer_hold') {
+      const label=eventType==='customer_hold' ? 'Hold-until date (blank = indefinite hold, YYYY-MM-DD):' : 'New service date (YYYY-MM-DD):';
+      const entered=(prompt(label,eventType==='customer_hold' ? '' : row.service_date || row.original_service_date || '') || '').trim();
+      if(eventType!=='customer_hold' && !/^\d{4}-\d{2}-\d{2}$/.test(entered)) return;
+      effectiveDate=entered || null;
+    }
+    if(eventType==='weather_delay') workability='delayed';
+    if(eventType==='makeup') workability='caution';
+    await send({
+      action:'recurring_service_visit_event',
+      agreement_id:row.agreement_id,
+      original_service_date:row.original_service_date,
+      event_type:eventType,
+      effective_service_date:effectiveDate,
+      reason,
+      workability_state:workability
+    },`Recurring visit ${String(eventType).replaceAll('_',' ')}`);
+  }
+
   function dispatchLocalValue(value) {
     if (!value) return '';
     const d=new Date(value); if(Number.isNaN(d.valueOf())) return '';
@@ -591,7 +738,7 @@
   }
 
   function renderQueues() {
-    renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
+    renderRecurringService(); renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydrateRecurringSelectors(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
   }
   function hydrateBankSelects() {
     const options = `<option value="">Choose bank account</option>${(queues.banks || []).map((bank) => `<option value="${esc(bank.id)}">${esc(bank.account_name)}${bank.is_default ? ' (default)' : ''}</option>`).join('')}`;
@@ -981,6 +1128,26 @@
       await send({ action:'quote_owner_assign', request_id:id, assigned_to_profile_id:owner, followup_due_at:due ? new Date(due).toISOString() : null, event_note:'Owner/follow-up updated from Operations Cockpit.' }, 'Quote owner assignment'); return;
     }
     if (action === 'quote-contact') { const note = prompt('Contact or follow-up note:'); if (!note) return; await send({ action:'quote_followup_event', request_id:id, event_type:'contacted', request_status:'contacted', response_status:'responded', event_note:note }, 'Quote contact history'); return; }
+    if (action === 'recurring-program-edit') {
+      const row=(queues.recurring_service_programs || []).find((item)=>String(item.id)===String(id));
+      if(row) loadRecurringProgram(row);
+      return;
+    }
+    if (action.startsWith('recurring-visit-')) {
+      const row=(queues.recurring_service_visits || []).find((item)=>String(item.occurrence_key)===String(id));
+      if(!row) return;
+      const map={
+        'recurring-visit-skip':'skip',
+        'recurring-visit-weather':'weather_delay',
+        'recurring-visit-makeup':'makeup',
+        'recurring-visit-hold':'customer_hold',
+        'recurring-visit-resume':'resume',
+        'recurring-visit-cancel':'cancel_visit'
+      };
+      const eventType=map[action];
+      if(eventType) await recurringVisitEvent(row,eventType);
+      return;
+    }
     if (action === 'dispatch-load' || action === 'dispatch-now' || action === 'dispatch-cancel') {
       const row=(queues.crew_dispatch_schedule || []).find((item)=>String(item.id)===String(id));
       if(!row) return;
@@ -1046,6 +1213,50 @@
       <div class="operations-toolbar"><button id="oc_refresh" type="button">Refresh all live queues</button><span>Build ${BUILD}</span></div>
       <div id="oc_scorecards" class="operations-scorecards" aria-label="Implementation progress"></div><section id="oc_role_permissions" class="oc-permission-strip" aria-label="Role capability checklist"></section><section class="oc-health-grid" aria-label="Payment and release health"><div id="oc_stripe_health" class="oc-health-list"></div><div id="oc_export_readiness" class="oc-export-readiness"></div></section><section id="oc_release_dashboard" class="oc-release-dashboard" aria-label="Release readiness dashboard"></section>
       <div class="operations-grid">
+        <details open class="operations-recurring-panel"><summary>Recurring Lawn &amp; Yard Maintenance</summary>
+          <p class="muted">Build 322 extends the canonical recurring-service agreement and existing service-execution scheduler. Weekly, biweekly, custom-day and seasonal programs generate auditable visit dates; skips, weather delays, make-up visits, customer holds/resumes and single-visit cancellations are recorded as private Jobs evidence rather than overwriting history.</p>
+          <div class="finance-module-note"><strong id="oc_recurring_summary">Loading recurring programs…</strong> · Finance posting and payment-provider mutation remain off.</div>
+          <form id="oc_recurring_program_form" class="operations-form">
+            <input type="hidden" name="id" />
+            <label>Agreement code<input name="agreement_code" maxlength="80" placeholder="Auto-generated if blank" /></label>
+            <label>Program status<select name="agreement_status"><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused / customer hold</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+            <label>Service name<input name="service_name" maxlength="180" required placeholder="Example: Weekly mowing" /></label>
+            <label>Program type<select name="service_program_type"><option value="mowing">Mowing</option><option value="garden_bed_maintenance">Garden / bed maintenance</option><option value="hedge_shrub_trimming">Hedge / shrub trimming</option><option value="spring_cleanup">Spring cleanup</option><option value="fall_cleanup">Fall cleanup</option><option value="aeration">Aeration</option><option value="fertilizing">Fertilizing</option><option value="seasonal_program">Other seasonal program</option><option value="other">Other</option></select></label>
+            <label>Customer<select name="client_id" data-oc-recurring-client><option value="">Loading customers…</option></select></label>
+            <label>Property<select name="client_site_id" data-oc-recurring-site><option value="">Loading properties…</option></select></label>
+            <label>Default crew<select name="crew_id" data-oc-recurring-crew><option value="">Loading crews…</option></select></label>
+            <label>Default route<select name="route_id" data-oc-recurring-route><option value="">Loading routes…</option></select></label>
+            <label>Billing method<select name="billing_method"><option value="per_visit">Per visit</option><option value="flat_period">Flat period</option><option value="seasonal">Seasonal</option><option value="time_and_material">Time &amp; material</option></select></label>
+            <label>Recurrence<select name="recurrence_frequency"><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="custom_days">Custom days</option><option value="seasonal_once">Seasonal once</option><option value="manual">Manual</option></select></label>
+            <label>Interval multiplier<input name="recurrence_interval" type="number" min="1" max="52" value="1" /></label>
+            <label>Custom interval days<input name="custom_interval_days" type="number" min="1" max="366" placeholder="Required for Custom days" /></label>
+            <label>Preferred weekday<select name="preferred_weekday"><option value="">Use anchor date</option><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></label>
+            <label>Recurrence anchor<input name="recurrence_anchor_date" type="date" /></label>
+            <label>Agreement start<input name="start_date" type="date" /></label>
+            <label>Agreement end<input name="end_date" type="date" /></label>
+            <label class="operations-inline-check"><input name="open_end_date" type="checkbox" /> Open-ended agreement</label>
+            <label>Service window start<input name="service_window_start" type="time" /></label>
+            <label>Service window end<input name="service_window_end" type="time" /></label>
+            <label>Season start month<input name="season_start_month" type="number" min="1" max="12" /></label>
+            <label>Season start day<input name="season_start_day" type="number" min="1" max="31" /></label>
+            <label>Season end month<input name="season_end_month" type="number" min="1" max="12" /></label>
+            <label>Season end day<input name="season_end_day" type="number" min="1" max="31" /></label>
+            <label>Estimated visit minutes<input name="visit_estimated_minutes" type="number" min="1" max="1440" /></label>
+            <label>Travel allowance minutes<input name="default_travel_allowance_minutes" type="number" min="0" max="720" value="0" /></label>
+            <label>Weather delay policy<select name="weather_delay_policy"><option value="manual">Manual decision</option><option value="next_available">Next available</option><option value="fixed_days">Fixed-day make-up</option></select></label>
+            <label>Default weather make-up days<input name="weather_makeup_days" type="number" min="0" max="30" value="1" /></label>
+            <label class="operations-inline-check"><input name="auto_create_session_candidates" type="checkbox" checked /> Feed generated visits to existing service scheduler</label>
+            <label>Customer hold until<input name="customer_hold_until" type="date" /></label>
+            <label class="operations-span">Customer hold reason<textarea name="customer_hold_reason" maxlength="1000"></textarea></label>
+            <label class="operations-span">Pause / hold reason<textarea name="pause_reason" maxlength="1000" placeholder="Required when status is Paused"></textarea></label>
+            <label class="operations-span">Cancellation reason<textarea name="cancellation_reason" maxlength="1000" placeholder="Required when status is Cancelled"></textarea></label>
+            <label class="operations-span">Service notes<textarea name="service_notes" maxlength="2000"></textarea></label>
+            <button type="submit" data-oc-permission="recurring_service_program_save">Save recurring program</button>
+            <button id="oc_recurring_reset" type="button" class="secondary">Clear form</button>
+          </form>
+          <h4>Programs</h4><div id="oc_recurring_programs" class="oc-live-queue"></div>
+          <h4>Upcoming generated visits</h4><div id="oc_recurring_visits" class="oc-live-queue"></div>
+        </details>
         <details open class="operations-dispatch-panel"><summary>Crew Scheduling &amp; Dispatch</summary>
           <p class="muted">Build 321 extends the canonical Jobs dispatch record with crew composition, lead/supervisor, employee, truck/trailer/equipment, property, recurring-visit, duration/travel, route-order and workability evidence. Conflicting resource assignments require an explicit management override note; blocked workability can never be dispatched.</p>
           <div class="operations-toolbar"><label>Board start<input id="oc_dispatch_board_date" type="date" value="${todayValue}" /></label><label>View<select id="oc_dispatch_board_mode"><option value="week">7-day</option><option value="day">Daily</option></select></label><strong id="oc_dispatch_board_summary">Loading scheduler…</strong></div>
@@ -1126,6 +1337,8 @@
   }
 
   function bind() {
+    byId('oc_recurring_program_form')?.addEventListener('submit',(e)=>handleRecurringProgram(e).catch((err)=>status(err?.message || 'Recurring program save failed.',true)));
+    byId('oc_recurring_reset')?.addEventListener('click',resetRecurringProgramForm);
     byId('oc_crew_dispatch_form')?.addEventListener('submit',(e)=>handleCrewDispatch(e).catch((err)=>status(err?.message || 'Crew dispatch failed.',true)));
     byId('oc_crew_dispatch_form')?.elements?.crew_id?.addEventListener('change',populateCrewFromSelection);
     byId('oc_dispatch_board_date')?.addEventListener('change',renderCrewDispatch);
