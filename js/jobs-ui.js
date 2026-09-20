@@ -1692,6 +1692,7 @@
       const reqs = state.requirements.filter((row) => Number(row.job_id) === Number(jobRow.id));
       (reqs.length ? reqs : [{ needed_qty: 1, reserved_qty: 0 }]).forEach(addEquipmentRequirementRow);
       renderJobActivity();
+      renderAccountingDepthTables(Number(jobRow.id || 0));
       renderCommercialWorkflow();
       setNotice(e.jobSummary, `Loaded job ${jobRow.job_code} into the form for editing.`);
       window.YWIRouter?.showSection?.('jobs', { skipFocus: true });
@@ -2786,7 +2787,8 @@
         renderRequirementReviewPanel();
         renderJobActivity();
         renderJobTracking();
-      renderCommercialWorkflow();
+        renderAccountingDepthTables();
+        renderCommercialWorkflow();
         setNotice(e.jobSummary, `Loaded ${state.jobs.length} jobs and ${state.requirements.length} requirements.`);
         setNotice(e.eqSummary, `Loaded ${state.equipment.length} equipment items across ${state.pools.length} pools. ${state.returnExceptions.length} transfer/return exception(s) need review.`);
       } catch (err) {
