@@ -86,6 +86,7 @@
       returnExceptions: [],
       operationalDepthGates: [],
       jobCostDepth: [],
+      jobProfitabilityCloseout: [],
       paymentApplicationWorkbench: [],
       bankReconciliationReview: [],
       remittanceFilingReview: [],
@@ -633,6 +634,19 @@
         </div>
         <div class="section-heading" style="margin-top:18px;">
           <div>
+            <h3 style="margin:0;">Landscaping Job Cost & Profitability Closeout</h3>
+            <p class="section-subtitle">Build 318 joins quote/actual revenue, invoiced and collected evidence, crew labour, materials, equipment, fuel, travel, subcontractors, disposal, rework, margin, variance and execution-proof provenance. Internal Finance data only.</p>
+          </div>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_profitability_closeout_table">
+            <thead><tr><th>Job</th><th>Closeout</th><th>Revenue</th><th>Labour</th><th>Materials</th><th>Equipment / Fuel</th><th>Travel / Disposal</th><th>Subcontract / Rework</th><th>Cost / Profit</th><th>Variance / Evidence</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="section-heading" style="margin-top:18px;">
+          <div>
             <h3 style="margin:0;">Accounting Depth Workbench</h3>
             <p class="section-subtitle">Review cost buckets, payment applications, reconciliation, remittance/filing signoff, and month-end lock/package status.</p>
           </div>
@@ -916,6 +930,7 @@
         jobCompletionReviewBody: $('#job_completion_review_table tbody'),
         jobCompletionReadinessBody: $('#job_completion_readiness_table tbody'),
         jobAccountingQueueBody: $('#job_accounting_queue_table tbody'),
+        jobProfitabilityCloseoutBody: $('#job_profitability_closeout_table tbody'),
         jobCostDepthBody: $('#job_cost_depth_table tbody'),
         jobPaymentApplicationBody: $('#job_payment_application_table tbody'),
         jobBankReconciliationBody: $('#job_bank_reconciliation_table tbody'),
@@ -1608,6 +1623,7 @@
       if (!jobRow) return;
       state.editingJobId = jobRow.id;
       state.selectedJobId = jobRow.id;
+      renderAccountingDepthTables(Number(jobRow.id || 0));
       e.jobCode.value = jobRow.job_code || '';
       e.jobName.value = jobRow.job_name || '';
       e.jobSiteName.value = jobRow.site_code || jobRow.site_name || '';
@@ -1677,6 +1693,8 @@
       const reqs = state.requirements.filter((row) => Number(row.job_id) === Number(jobRow.id));
       (reqs.length ? reqs : [{ needed_qty: 1, reserved_qty: 0 }]).forEach(addEquipmentRequirementRow);
       renderJobActivity();
+      renderAccountingDepthTables(Number(jobRow.id || 0));
+      renderCommercialWorkflow();
       setNotice(e.jobSummary, `Loaded job ${jobRow.job_code} into the form for editing.`);
       window.YWIRouter?.showSection?.('jobs', { skipFocus: true });
     }
@@ -1799,11 +1817,37 @@
 
     function renderAccountingDepthTables(activeJobId = Number(state.selectedJobId || state.editingJobId || 0)) {
       const e = els();
+      const profitabilityRows = (state.jobProfitabilityCloseout || []).filter((row) => !activeJobId || Number(row.job_id || 0) === Number(activeJobId)).slice(0, 80);
       const jobCostRows = (state.jobCostDepth || []).filter((row) => !activeJobId || Number(row.job_id || 0) === Number(activeJobId)).slice(0, 80);
       const paymentRows = (state.paymentApplicationWorkbench || []).slice(0, 80);
       const reconciliationRows = (state.bankReconciliationReview || []).slice(0, 80);
       const remittanceRows = (state.remittanceFilingReview || []).slice(0, 80);
       const closeRows = (state.monthEndCloseWorkbench || []).slice(0, 80);
+      if (e.jobProfitabilityCloseoutBody) {
+        e.jobProfitabilityCloseoutBody.innerHTML = profitabilityRows.length ? profitabilityRows.map((row) => {
+          const p = row.source_provenance || {};
+          const evidence = [
+            `${Number(p.labour_entry_count || 0)} labour`,
+            `${Number(p.financial_event_count || 0)} cost events`,
+            `${Number(p.approved_execution_proof_count || 0)} approved proof`,
+            `${Number(p.posted_invoice_count || 0)} invoice`,
+            `${Number(p.payment_application_count || 0)} payment app`
+          ].join(' • ');
+          return `
+          <tr data-build318-job="${escHtml(row.job_id || '')}">
+            <td>${escHtml(row.job_code || row.job_name || row.job_id || '')}<br><span class="muted">${escHtml(row.service_pattern || row.client_name || '')}</span></td>
+            <td><strong>${escHtml(row.closeout_status || 'review_required')}</strong><br><span class="muted">Internal only</span></td>
+            <td>Quote &#36;${Number(row.estimated_revenue_total || 0).toFixed(2)}<br>Actual &#36;${Number(row.actual_revenue_total || 0).toFixed(2)}<br>Invoiced &#36;${Number(row.invoiced_total || 0).toFixed(2)}<br>Collected &#36;${Number(row.collected_total || 0).toFixed(2)}</td>
+            <td>&#36;${Number(row.labour_cost_total || 0).toFixed(2)}</td>
+            <td>&#36;${Number(row.material_cost_total || 0).toFixed(2)}</td>
+            <td>Equipment &#36;${Number(row.equipment_cost_total || 0).toFixed(2)}<br>Fuel &#36;${Number(row.fuel_cost_total || 0).toFixed(2)}</td>
+            <td>Travel &#36;${Number(row.travel_cost_total || 0).toFixed(2)}<br>Disposal &#36;${Number(row.disposal_cost_total || 0).toFixed(2)}</td>
+            <td>Subcontract &#36;${Number(row.subcontract_cost_total || 0).toFixed(2)}<br>Rework &#36;${Number(row.rework_cost_total || 0).toFixed(2)}<br>Other &#36;${Number(row.other_cost_total || 0).toFixed(2)}</td>
+            <td>Cost &#36;${Number(row.actual_cost_total || 0).toFixed(2)}<br><strong>Profit &#36;${Number(row.actual_profit_total || 0).toFixed(2)}</strong><br>Margin ${Number(row.actual_margin_percent || 0).toFixed(2)}%</td>
+            <td>Revenue Δ &#36;${Number(row.revenue_variance_total || 0).toFixed(2)}<br>Cost Δ &#36;${Number(row.cost_variance_total || 0).toFixed(2)}<br>Profit Δ &#36;${Number(row.profit_variance_total || 0).toFixed(2)}<br><span class="muted">${escHtml(evidence)}</span></td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="10" class="muted">No Finance-authorized Build 318 profitability closeout rows are loaded for this job.</td></tr>';
+      }
       if (e.jobCostDepthBody) {
         e.jobCostDepthBody.innerHTML = jobCostRows.length ? jobCostRows.map((row) => `
           <tr>
@@ -2724,12 +2768,14 @@
         state.returnExceptions = Array.isArray(resp?.equipment_return_exceptions) ? resp.equipment_return_exceptions : [];
         state.operationalDepthGates = Array.isArray(resp?.operational_depth_gates) ? resp.operational_depth_gates : [];
         state.jobCostDepth = Array.isArray(resp?.job_cost_depth) ? resp.job_cost_depth : [];
+        state.jobProfitabilityCloseout = Array.isArray(resp?.job_profitability_closeout) ? resp.job_profitability_closeout : [];
         state.paymentApplicationWorkbench = Array.isArray(resp?.payment_application_workbench) ? resp.payment_application_workbench : [];
         state.bankReconciliationReview = Array.isArray(resp?.bank_reconciliation_review_workbench) ? resp.bank_reconciliation_review_workbench : [];
         state.remittanceFilingReview = Array.isArray(resp?.remittance_filing_review_workbench) ? resp.remittance_filing_review_workbench : [];
         state.monthEndCloseWorkbench = Array.isArray(resp?.month_end_close_workbench) ? resp.month_end_close_workbench : [];
         state.equipmentAccountability = Array.isArray(resp?.equipment_accountability) ? resp.equipment_accountability : [];
         state.equipmentServiceTasks = Array.isArray(resp?.equipment_service_tasks) ? resp.equipment_service_tasks : [];
+        renderAccountingDepthTables();
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
         fillSiteSelect(e.eqCurrentSite);
@@ -2743,7 +2789,8 @@
         renderRequirementReviewPanel();
         renderJobActivity();
         renderJobTracking();
-      renderCommercialWorkflow();
+        renderAccountingDepthTables();
+        renderCommercialWorkflow();
         setNotice(e.jobSummary, `Loaded ${state.jobs.length} jobs and ${state.requirements.length} requirements.`);
         setNotice(e.eqSummary, `Loaded ${state.equipment.length} equipment items across ${state.pools.length} pools. ${state.returnExceptions.length} transfer/return exception(s) need review.`);
       } catch (err) {

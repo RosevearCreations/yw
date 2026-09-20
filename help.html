@@ -91,5 +91,10 @@
           <p>The manifest records the period, generation time, source/query row counts, per-file source and filter, row-limit/truncation warnings, included artifacts, package hash, and fail-closed execution controls. The ZIP is stored only in the private accountant-exports bucket and is downloaded through a short-lived signed URL.</p>
           <p>A/R and A/P aging is current balance/aging at generation for documents dated on or before the close period end; YW does not present it as reconstructed historical aging. The package is management/accountant-review evidence, not a filed return or accountant-reviewed financial statement. Generating or downloading it does not authorize Finance posting, provider/payment mutation, or Jobs writeback.</p>
         </section>
-
+        <section class="help-section" id="job-cost-profitability-closeout">
+          <h2>Job Cost &amp; Profitability Closeout</h2>
+          <p>Build 318 turns existing Jobs and Finance evidence into a landscaping-specific profitability closeout. It compares quoted and actual revenue, invoiced and collected evidence, estimated and actual cost, crew labour, materials, equipment, fuel, travel, subcontractors, disposal, rework/other cost, gross profit, margin, and estimate-to-actual variance.</p>
+          <p>The closeout retains provenance counts for labour entries, financial events, approved execution proof, posted invoices, and payment applications so supervisors and Finance can see whether a number is supported by actual operating evidence. Statuses such as needs completion review, ready to invoice, collection open, cost variance review, and profitability closed are decision-support states rather than automatic accounting actions.</p>
+          <p>Profitability is internal Finance information. Customer-facing surfaces continue to exclude labour cost, materials cost, equipment cost, margin, profit, staff notes, and other private costing. Build 318 remains schema-neutral at Schema 208 and does not authorize posting execution, provider/payment mutation, or customer billing by itself.</p>
+        </section>
 
