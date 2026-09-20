@@ -257,7 +257,7 @@ left join lateral (
   where rr.client_site_id=cs.id
 ) r on true
 left join lateral (
-  select count(*) filter(where ww.work_order_status not in ('completed','cancelled','closed'))::int as open_work_order_count
+  select count(*) filter(where ww.status not in ('completed','cancelled','closed'))::int as open_work_order_count
   from public.work_orders ww
   where ww.client_site_id=cs.id
 ) w on true;
