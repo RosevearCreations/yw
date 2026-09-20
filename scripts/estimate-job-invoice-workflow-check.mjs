@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 
 const read=(p)=>fs.readFileSync(p,'utf8');
 const migration=read('sql/213_estimate_job_invoice_workflow.sql');
+const hygiene=read('sql/213b_estimate_job_invoice_advisor_hygiene.sql');
 const operations=read('supabase/functions/operations-manage/index.ts');
 const ui=read('js/operations-cockpit.js');
 const boundaries=read('supabase/functions/_shared/module-write-boundaries.ts');
@@ -47,6 +48,8 @@ assert.ok(/alter table public\.work_order_assumption_baselines enable row level 
 assert.ok(/revoke all on table public\.work_order_assumption_baselines from public,anon,authenticated;/i.test(migration));
 assert.ok(!/insert\s+into\s+public\.(?:ar_invoices|ar_invoice_lines|gl_journal_batches|gl_journal_entries|ar_payments|payments)\b/i.test(migration),'Build 324 migration must not post invoices, journals or payments.');
 assert.ok(!/update\s+public\.finance_job_completion_posting_execution_controls[\s\S]{0,1200}\b(?:execution_enabled|provider_mutation_enabled)\s*=\s*true/i.test(migration),'Build 324 must not enable Finance/provider execution.');
+assert.ok(hygiene.includes('work_order_assumption_baselines_source_assumption_idx') && hygiene.includes('on public.work_order_assumption_baselines(source_assumption_id)') && hygiene.includes('where source_assumption_id is not null'),'Schema 213b must cover the Build 324 source_assumption_id foreign key.');
+assert.ok(!/insert\s+into\s+public\.|update\s+public\.|delete\s+from\s+public\./i.test(hygiene),'Schema 213b must remain index-only advisor hygiene with no business-data mutation.');
 
 must(operations,[
   "if (action === 'estimate_workflow_save')",
