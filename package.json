@@ -141,7 +141,9 @@
     "test:training-certification-matrix": "node scripts/training-certification-matrix-check.mjs",
     "test:browser:training-certification-matrix": "playwright test --config=playwright.config.mjs tests/browser/training-certification-matrix.spec.mjs",
     "test:equipment-registry-qr-v2": "node scripts/equipment-registry-qr-v2-check.mjs",
-    "test:browser:equipment-registry-qr-v2": "playwright test --config=playwright.config.mjs tests/browser/equipment-registry-qr-v2.spec.mjs"
+    "test:browser:equipment-registry-qr-v2": "playwright test --config=playwright.config.mjs tests/browser/equipment-registry-qr-v2.spec.mjs",
+    "test:daily-equipment-inspection-lockout": "node scripts/daily-equipment-inspection-lockout-check.mjs",
+    "test:browser:daily-equipment-inspection-lockout": "playwright test --config=playwright.config.mjs tests/browser/daily-equipment-inspection-lockout.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

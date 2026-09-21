@@ -1142,6 +1142,147 @@ serve(async (req) => {
       return Response.json({ ok:true, record:data, signout_id: signout.id }, { headers:corsHeaders });
     }
 
+    if (body.entity === 'equipment' && body.action === 'daily_inspection_submit') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const stage = String(body.inspection_stage || 'pre_use');
+      if (!['pre_use','post_use'].includes(stage)) return Response.json({ ok:false, error:'Inspection stage must be pre_use or post_use.' }, { status:400, headers:corsHeaders });
+      const itemRows = Array.isArray(body.checklist_items) ? body.checklist_items : [];
+      if (!itemRows.length) return Response.json({ ok:false, error:'At least one checklist item is required.' }, { status:400, headers:corsHeaders });
+      const failed = itemRows.filter((row:any)=>String(row.result_status || 'pass') === 'fail');
+      const criticalFailed = failed.filter((row:any)=>!!row.is_safety_critical);
+      const overallStatus = criticalFailed.length ? 'fail' : (failed.length ? 'needs_review' : 'pass');
+      const defectSummary = String(body.defect_summary || failed.map((row:any)=>row.note || row.item_label || row.item_key).filter(Boolean).join('; ') || '').trim() || null;
+      const now = new Date().toISOString();
+      const { data: inspection, error: inspectionError } = await supabase.from('equipment_daily_inspections').insert({
+        equipment_item_id:equipmentId,
+        template_id:body.template_id || null,
+        job_id:body.job_id || null,
+        inspection_stage:stage,
+        inspection_date:body.inspection_date || now.slice(0,10),
+        inspected_at:body.inspected_at || now,
+        inspector_profile_id:actorProfile.id,
+        meter_value:body.meter_value ?? null,
+        meter_unit:body.meter_unit || null,
+        overall_status:overallStatus,
+        safety_critical_failure:criticalFailed.length > 0,
+        defect_summary:defectSummary,
+        supervisor_review_status:'pending',
+        return_to_service_status:criticalFailed.length ? 'blocked' : 'not_required'
+      }).select('*').single();
+      if (inspectionError) throw inspectionError;
+      const rows = itemRows.map((row:any)=>({
+        inspection_id:inspection.id,
+        template_item_id:row.template_item_id || null,
+        item_key:String(row.item_key || '').trim(),
+        inspection_area:String(row.inspection_area || 'general').trim(),
+        item_label:String(row.item_label || row.item_key || 'Inspection item').trim(),
+        result_status:['pass','fail','na'].includes(String(row.result_status)) ? String(row.result_status) : 'pass',
+        is_safety_critical:!!row.is_safety_critical,
+        note:row.note || null
+      })).filter((row:any)=>row.item_key);
+      if (rows.length) {
+        const { error:itemError } = await supabase.from('equipment_daily_inspection_items').insert(rows);
+        if (itemError) throw itemError;
+      }
+      let serviceTaskId = null;
+      if (criticalFailed.length) {
+        const { data:task, error:taskError } = await supabase.from('equipment_service_tasks').insert({
+          equipment_item_id:equipmentId,
+          job_id:body.job_id || null,
+          task_type:'inspection',
+          task_status:'open',
+          priority:'high',
+          failure_reason:defectSummary || 'Safety-critical daily equipment inspection failure',
+          estimated_cost:Number(body.estimated_service_cost || 0),
+          notes:body.notes || defectSummary,
+          created_by_profile_id:actorProfile.id
+        }).select('*').single();
+        if (taskError) throw taskError;
+        serviceTaskId = task?.id || null;
+        await supabase.from('equipment_daily_inspections').update({ lockout_created:true, service_task_id:serviceTaskId, updated_at:now }).eq('id',inspection.id);
+        await supabase.from('equipment_items').update({
+          status:'maintenance', defect_status:'open', defect_notes:defectSummary,
+          is_locked_out:true, locked_out_at:now, locked_out_by_profile_id:actorProfile.id,
+          lockout_reason:'Safety-critical daily equipment inspection failure', updated_at:now
+        }).eq('id',equipmentId);
+      }
+      if (body.meter_value != null) {
+        await supabase.from('equipment_items').update({ current_meter_value:Number(body.meter_value), current_meter_at:body.inspected_at || now, updated_at:now }).eq('id',equipmentId);
+      }
+      await insertNotification(supabase, {
+        notification_type:criticalFailed.length ? 'equipment_daily_inspection_lockout' : 'equipment_daily_inspection',
+        target_table:'equipment_daily_inspections', target_id:inspection.id, recipient_role:'admin',
+        title:`Daily equipment inspection ${criticalFailed.length ? 'LOCKOUT' : overallStatus}: ${body.equipment_code}`,
+        body:JSON.stringify({ equipment_code:body.equipment_code, inspection_stage:stage, overall_status:overallStatus, critical_failure_count:criticalFailed.length, defect_summary:defectSummary, service_task_id:serviceTaskId }),
+        created_by_profile_id:actorProfile.id,
+        email_subject:`YWI equipment daily inspection: ${body.equipment_code}`,
+        payload:{ equipment_code:body.equipment_code, inspection_id:inspection.id, inspection_stage:stage, overall_status:overallStatus, critical_failure_count:criticalFailed.length, service_task_id:serviceTaskId }
+      });
+      return Response.json({ ok:true, build:332, schema:220, record:{...inspection,lockout_created:criticalFailed.length>0,service_task_id:serviceTaskId}, locked_out:criticalFailed.length>0 }, { headers:corsHeaders });
+    }
+
+    if (body.entity === 'equipment' && body.action === 'daily_inspection_review') {
+      const inspectionId = String(body.inspection_id || '');
+      const reviewStatus = String(body.review_status || 'approved');
+      if (!inspectionId || !['approved','rejected'].includes(reviewStatus)) return Response.json({ ok:false, error:'Inspection and approved/rejected review status are required.' }, { status:400, headers:corsHeaders });
+      const { data:inspection } = await supabase.from('equipment_daily_inspections').select('*').eq('id',inspectionId).maybeSingle();
+      if (!inspection) return Response.json({ ok:false, error:'Daily inspection not found.' }, { status:404, headers:corsHeaders });
+      let returnStatus = inspection.return_to_service_status || 'not_required';
+      if (inspection.safety_critical_failure && reviewStatus === 'approved') {
+        let taskResolved = false;
+        if (inspection.service_task_id) {
+          const { data:task } = await supabase.from('equipment_service_tasks').select('task_status').eq('id',inspection.service_task_id).maybeSingle();
+          taskResolved = ['resolved','cancelled'].includes(String(task?.task_status || ''));
+        }
+        returnStatus = taskResolved ? 'ready_for_verification' : 'blocked';
+      }
+      const now = new Date().toISOString();
+      const { data,error } = await supabase.from('equipment_daily_inspections').update({
+        supervisor_review_status:reviewStatus,
+        supervisor_review_notes:body.review_notes || null,
+        supervisor_reviewed_by_profile_id:actorProfile.id,
+        supervisor_reviewed_at:now,
+        return_to_service_status:returnStatus,
+        updated_at:now
+      }).eq('id',inspectionId).select('*').single();
+      if (error) throw error;
+      return Response.json({ ok:true, build:332, record:data }, { headers:corsHeaders });
+    }
+
+    if (body.entity === 'equipment' && body.action === 'daily_inspection_return_to_service') {
+      const inspectionId = String(body.inspection_id || '');
+      if (!inspectionId || String(body.verification_status || '') !== 'verified') return Response.json({ ok:false, error:'Explicit verified return-to-service confirmation is required.' }, { status:400, headers:corsHeaders });
+      const { data:inspection } = await supabase.from('equipment_daily_inspections').select('*').eq('id',inspectionId).maybeSingle();
+      if (!inspection) return Response.json({ ok:false, error:'Daily inspection not found.' }, { status:404, headers:corsHeaders });
+      if (inspection.supervisor_review_status !== 'approved') return Response.json({ ok:false, error:'Supervisor approval is required before return to service.' }, { status:409, headers:corsHeaders });
+      if (inspection.safety_critical_failure && inspection.service_task_id) {
+        const { data:task } = await supabase.from('equipment_service_tasks').select('task_status').eq('id',inspection.service_task_id).maybeSingle();
+        if (!['resolved','cancelled'].includes(String(task?.task_status || ''))) return Response.json({ ok:false, error:'Repair/service task must be resolved before return to service.' }, { status:409, headers:corsHeaders });
+      }
+      const now = new Date().toISOString();
+      const { data,error } = await supabase.from('equipment_daily_inspections').update({
+        return_to_service_status:'verified',
+        return_to_service_notes:body.return_to_service_notes || null,
+        returned_to_service_by_profile_id:actorProfile.id,
+        returned_to_service_at:now,
+        updated_at:now
+      }).eq('id',inspectionId).select('*').single();
+      if (error) throw error;
+      await supabase.from('equipment_items').update({
+        status:'available', defect_status:'clear', defect_notes:null,
+        is_locked_out:false, locked_out_at:null, locked_out_by_profile_id:null, lockout_reason:null,
+        updated_at:now
+      }).eq('id',inspection.equipment_item_id);
+      await insertNotification(supabase, {
+        notification_type:'equipment_return_to_service_verified', target_table:'equipment_daily_inspections', target_id:inspectionId, recipient_role:'admin',
+        title:'Equipment return to service verified', body:JSON.stringify({ inspection_id:inspectionId, equipment_item_id:inspection.equipment_item_id }),
+        created_by_profile_id:actorProfile.id, email_subject:'YWI equipment return to service verified',
+        payload:{ inspection_id:inspectionId, equipment_item_id:inspection.equipment_item_id }
+      });
+      return Response.json({ ok:true, build:332, record:data }, { headers:corsHeaders });
+    }
+
     if (body.entity === 'equipment' && body.action === 'inspect') {
       const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
       if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });

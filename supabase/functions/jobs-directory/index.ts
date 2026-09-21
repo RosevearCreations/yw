@@ -297,6 +297,9 @@ serve(async (req) => {
   const equipmentTransferVerifications = await safeSelect(supabase, 'v_equipment_transfer_verification_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(1000));
   const equipmentReturnExceptions = await safeSelect(supabase, 'v_equipment_return_exception_directory', '*', (query) => query.order('checked_out_at', { ascending:false }).limit(500));
   const operationalDepthGates = await safeSelect(supabase, 'v_app_operational_depth_gates', '*', (query) => query.order('sort_order', { ascending:true }).limit(200));
+  const dailyInspectionTemplates = await safeSelect(supabase, 'v_equipment_daily_inspection_templates', '*', (query) => query.order('template_code', { ascending:true }).limit(500));
+  const dailyInspectionWorkbench = await safeSelect(supabase, 'v_equipment_daily_inspection_workbench', '*', (query) => query.order('inspected_at', { ascending:false }).limit(1000));
+  const dailyInspectionSummary = await safeSelect(supabase, 'v_equipment_daily_inspection_summary', '*', (query) => query.limit(1));
   const { data: inspections } = await supabase.from('v_equipment_inspection_history').select('*').order('inspected_at', { ascending:false }).limit(200);
   const { data: maintenance } = await supabase.from('v_equipment_maintenance_history').select('*').order('performed_at', { ascending:false }).limit(200);
   const { data: evidenceAssetsRaw } = await supabase.from('equipment_evidence_assets').select('*').order('created_at', { ascending:false }).limit(1000);
@@ -415,6 +418,9 @@ serve(async (req) => {
     equipment: equipmentRows,
     equipment_registry_v2: equipmentRegistryV2 || [],
     equipment_registry_v2_summary: equipmentRegistryV2Summary || [],
+    equipment_daily_inspection_templates: dailyInspectionTemplates || [],
+    equipment_daily_inspection_workbench: dailyInspectionWorkbench || [],
+    equipment_daily_inspection_summary: dailyInspectionSummary || [],
     requirements: requirements || [],
     signouts: signoutRows,
     equipment_transfer_verifications: equipmentTransferVerifications || [],
