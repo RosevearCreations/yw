@@ -779,12 +779,22 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
   }
 
   async function fetchMobileCrewContext(payload = {}) {
-    return jsonFetch('mobile-crew-context', {
-      method: 'POST',
-      body: payload,
-      requireAuth: true,
-      timeoutMs: 20000
-    });
+    try {
+      return await jsonFetch('mobile-crew-context', {
+        method: 'POST',
+        body: payload,
+        requireAuth: true,
+        timeoutMs: 20000
+      });
+    } catch (error) {
+      const sb = window.YWI_SB || window._sb;
+      if (!sb?.rpc) throw error;
+      const daysRaw = Number(payload?.days ?? 7);
+      const days = Number.isFinite(daysRaw) ? Math.max(1, Math.min(14, Math.trunc(daysRaw))) : 7;
+      const { data, error: rpcError } = await sb.rpc('ywi_rpc_mobile_crew_context', { p_days: days });
+      if (rpcError) throw error?.status ? error : rpcError;
+      return data;
+    }
   }
 
   async function loadAdminDirectory(payload = {}) {
