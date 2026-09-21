@@ -94,7 +94,10 @@
       equipmentAccountability: [],
       equipmentServiceTasks: [],
       equipmentRegistryV2: [],
-      equipmentRegistryV2Summary: []
+      equipmentRegistryV2Summary: [],
+      dailyInspectionTemplates: [],
+      dailyInspectionWorkbench: [],
+      dailyInspectionSummary: []
     };
 
     function ensureLayout() {
@@ -273,6 +276,38 @@
               </label>
             </div>
             <p class="section-subtitle" style="margin-top:10px;">Recorded lifecycle cost is acquisition cost plus recorded service-history cost. Open service estimates are shown separately and are not treated as actual cost.</p>
+          </div>
+          <div id="equipment_daily_inspection_v1" class="admin-panel-block" data-build="332" style="margin-top:16px;">
+            <div class="section-heading">
+              <div>
+                <span class="module-kicker">Build 332 · pre-use / post-use safety evidence</span>
+                <h3 style="margin:4px 0 0;">Daily Equipment Inspection &amp; Lockout</h3>
+                <p class="section-subtitle">Machine/category checklist evidence reuses the existing asset, lockout and service-task authorities. Safety-critical failures lock the asset out and require supervisor review plus verified return to service.</p>
+              </div>
+            </div>
+            <div id="eq_daily_inspection_summary" class="notice">Load an asset to record a daily inspection.</div>
+            <div class="grid" style="margin-top:12px;">
+              <label>Inspection Stage<select id="eq_daily_inspection_stage"><option value="pre_use">Pre-use</option><option value="post_use">Post-use</option></select></label>
+              <label>Checklist Template<select id="eq_daily_inspection_template"><option value="">Select template</option></select></label>
+              <label>Meter Reading<input id="eq_daily_inspection_meter" type="number" min="0" step="0.01" /></label>
+              <label>Meter Unit<input id="eq_daily_inspection_meter_unit" type="text" placeholder="hours, km, cycles" /></label>
+            </div>
+            <label style="display:block;margin-top:10px;">Checklist Results
+              <textarea id="eq_daily_inspection_items" rows="8" placeholder="guards | pass | critical | note&#10;fluids | pass | critical | note&#10;accessories | pass | normal | note"></textarea>
+            </label>
+            <label style="display:block;margin-top:10px;">Defect / Inspection Summary
+              <textarea id="eq_daily_inspection_defect_summary" rows="2" placeholder="Describe defects, damage, failed checks or follow-up needed."></textarea>
+            </label>
+            <div class="hseops-inline-actions" style="margin-top:10px;">
+              <button id="eq_daily_inspection_submit" class="primary" type="button">Submit Daily Inspection</button>
+              <span class="muted">Failing a safety-critical item automatically creates lockout and a high-priority inspection service task.</span>
+            </div>
+            <div class="table-scroll" style="margin-top:12px;">
+              <table id="eq_daily_inspection_table">
+                <thead><tr><th>Asset</th><th>Stage</th><th>Status</th><th>Critical</th><th>Supervisor</th><th>Return to Service</th><th>Service Task</th><th>Action</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
           <label style="display:block;margin-top:12px;">Comments
             <textarea id="eq_comments" rows="2" placeholder="Damage notes, maintenance notes, rental comments"></textarea>
@@ -1055,6 +1090,15 @@
         eqRegistryPhotos: $('#eq_registry_photos'),
         eqRegistryAccessories: $('#eq_registry_accessories'),
         eqRegistrySummary: $('#eq_registry_summary'),
+        eqDailyInspectionSummary: $('#eq_daily_inspection_summary'),
+        eqDailyInspectionStage: $('#eq_daily_inspection_stage'),
+        eqDailyInspectionTemplate: $('#eq_daily_inspection_template'),
+        eqDailyInspectionMeter: $('#eq_daily_inspection_meter'),
+        eqDailyInspectionMeterUnit: $('#eq_daily_inspection_meter_unit'),
+        eqDailyInspectionItems: $('#eq_daily_inspection_items'),
+        eqDailyInspectionDefectSummary: $('#eq_daily_inspection_defect_summary'),
+        eqDailyInspectionSubmit: $('#eq_daily_inspection_submit'),
+        eqDailyInspectionBody: $('#eq_daily_inspection_table tbody'),
         eqAccessNotice: $('#equipment_access_notice'),
         eqWorkerSignature: $('#eq_worker_signature'),
         eqSupervisorSignature: $('#eq_supervisor_signature'),
@@ -1293,7 +1337,7 @@
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
-      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','job_create_estimate','job_add_estimate_line','job_render_quote_package','job_print_quote_package','job_send_quote_package','job_mark_quote_viewed','job_mark_quote_accepted','job_mark_quote_declined','job_convert_to_package','job_release_review','job_evaluate_thresholds','job_completion_review','job_add_closeout_item','job_add_closeout_evidence','job_queue_accounting','job_create_invoice_candidate','job_create_journal_candidate','job_queue_arap_review','job_export_closeout_summary','job_export_accountant_handoff','job_generate_accountant_package_v2','eq_save','eq_checkout','eq_verify_arrival','eq_return','eq_verify_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
+      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','job_create_estimate','job_add_estimate_line','job_render_quote_package','job_print_quote_package','job_send_quote_package','job_mark_quote_viewed','job_mark_quote_accepted','job_mark_quote_declined','job_convert_to_package','job_release_review','job_evaluate_thresholds','job_completion_review','job_add_closeout_item','job_add_closeout_evidence','job_queue_accounting','job_create_invoice_candidate','job_create_journal_candidate','job_queue_arap_review','job_export_closeout_summary','job_export_accountant_handoff','job_generate_accountant_package_v2','eq_save','eq_checkout','eq_verify_arrival','eq_return','eq_verify_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear','eq_daily_inspection_submit'].forEach((id)=>{
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
@@ -1444,6 +1488,128 @@
       setNotice(e.eqRegistrySummary,
         `${row.equipment_code || 'Asset'} · QR ${row.qr_identity_status || 'unknown'} · Registry ${row.registry_readiness_status || 'unknown'} · Crew ${row.assigned_crew_name || 'unassigned'} · Meter ${row.current_meter_value ?? '—'} ${row.meter_unit || ''} · Docs ${Number(row.document_count || 0)} · Photos ${Number(row.registry_photo_count || 0)} · Accessories ${Number(row.expected_accessory_quantity || 0)} (${Number(row.accessory_attention_count || 0)} attention) · Recorded lifecycle ${Number(row.recorded_lifecycle_cost_total || 0).toFixed(2)} · Open service estimate ${Number(row.open_service_estimated_cost || 0).toFixed(2)} · Replacement ${row.replacement_state || 'retain'}.`
       );
+    }
+
+    function getActiveEquipmentRow() {
+      return (state.equipment || []).find((row) => String(row.equipment_code || '') === String(state.editingEquipmentCode || '')) || null;
+    }
+
+    function getDailyInspectionTemplate() {
+      const e=els();
+      return (state.dailyInspectionTemplates || []).find((row)=>String(row.id || '') === String(e.eqDailyInspectionTemplate?.value || '')) || null;
+    }
+
+    function fillDailyInspectionTemplateSelect() {
+      const e=els();
+      if(!e.eqDailyInspectionTemplate) return;
+      const active=getActiveEquipmentRow();
+      const stage=e.eqDailyInspectionStage?.value || 'pre_use';
+      const category=String(active?.category || '').toLowerCase();
+      const rows=(state.dailyInspectionTemplates || []).filter((row)=>{
+        if(String(row.inspection_stage || '') !== stage) return false;
+        if(row.equipment_item_id && Number(row.equipment_item_id) === Number(active?.id || 0)) return true;
+        const templateCategory=String(row.equipment_category || '').toLowerCase();
+        return templateCategory === category || templateCategory === 'general';
+      });
+      const current=e.eqDailyInspectionTemplate.value;
+      e.eqDailyInspectionTemplate.innerHTML='<option value="">Select template</option>'+rows.map((row)=>`<option value="${escHtml(row.id)}">${escHtml(row.template_name || row.template_code || row.id)}</option>`).join('');
+      const specific=rows.find((row)=>row.equipment_item_id && Number(row.equipment_item_id)===Number(active?.id || 0))
+        || rows.find((row)=>String(row.equipment_category || '').toLowerCase()===category)
+        || rows[0];
+      e.eqDailyInspectionTemplate.value = rows.some((row)=>String(row.id)===String(current)) ? current : (specific?.id || '');
+      const chosen=getDailyInspectionTemplate();
+      if(e.eqDailyInspectionItems && chosen) {
+        e.eqDailyInspectionItems.value=(chosen.checklist_items || []).map((item)=>[
+          item.item_key || '',
+          'pass',
+          item.is_safety_critical ? 'critical' : 'normal',
+          ''
+        ].join(' | ')).join('\n');
+      }
+    }
+
+    function parseDailyInspectionItems() {
+      const e=els();
+      const template=getDailyInspectionTemplate();
+      const byKey=new Map((template?.checklist_items || []).map((item)=>[String(item.item_key || ''),item]));
+      return String(e.eqDailyInspectionItems?.value || '').split(/\r?\n/).map((line)=>line.trim()).filter(Boolean).map((line)=>{
+        const parts=line.split('|').map((part)=>part.trim());
+        const source=byKey.get(parts[0]) || {};
+        const result=['pass','fail','na'].includes((parts[1] || '').toLowerCase()) ? parts[1].toLowerCase() : 'pass';
+        return {
+          template_item_id:source.id || null,
+          item_key:parts[0] || source.item_key || '',
+          inspection_area:source.inspection_area || parts[0] || 'general',
+          item_label:source.item_label || parts[0] || 'Inspection item',
+          result_status:result,
+          is_safety_critical:source.is_safety_critical === true || (parts[2] || '').toLowerCase()==='critical',
+          note:parts.slice(3).join(' | ') || null
+        };
+      }).filter((row)=>row.item_key);
+    }
+
+    function renderDailyInspectionWorkbench() {
+      const e=els();
+      const summary=state.dailyInspectionSummary?.[0] || {};
+      if(e.eqDailyInspectionSummary) setNotice(e.eqDailyInspectionSummary,
+        `Today ${Number(summary.today_count || 0)} inspection(s): ${Number(summary.today_pre_use_count || 0)} pre-use, ${Number(summary.today_post_use_count || 0)} post-use. ${Number(summary.critical_failure_count || 0)} critical failure record(s), ${Number(summary.supervisor_review_pending_count || 0)} supervisor review(s) pending, ${Number(summary.return_to_service_pending_count || 0)} return-to-service verification(s) pending.`
+      );
+      if(!e.eqDailyInspectionBody) return;
+      const rows=(state.dailyInspectionWorkbench || []).slice(0,80);
+      e.eqDailyInspectionBody.innerHTML=rows.length ? rows.map((row)=>`<tr>
+        <td>${escHtml(row.equipment_code || row.equipment_name || '')}</td>
+        <td>${escHtml(row.inspection_stage || '')}</td>
+        <td>${escHtml(row.overall_status || '')}</td>
+        <td>${row.safety_critical_failure ? 'YES — LOCKOUT' : 'No'}</td>
+        <td>${escHtml(row.supervisor_review_status || '')}</td>
+        <td>${escHtml(row.return_to_service_status || '')}</td>
+        <td>${escHtml(row.service_task_status || (row.service_task_id ? 'open' : '—'))}</td>
+        <td><div class="table-actions">
+          <button type="button" class="secondary" data-daily-inspection-review="${escHtml(row.id)}">Review</button>
+          ${row.safety_critical_failure ? `<button type="button" class="secondary" data-daily-inspection-return="${escHtml(row.id)}">Verify Return</button>` : ''}
+        </div></td>
+      </tr>`).join('') : '<tr><td colspan="8" class="muted">No daily inspections recorded yet.</td></tr>';
+    }
+
+    async function submitDailyInspection() {
+      const e=els();
+      const active=getActiveEquipmentRow();
+      if(!active?.equipment_code) return setNotice(e.eqDailyInspectionSummary,'Load an equipment item before recording a daily inspection.',true);
+      const template=getDailyInspectionTemplate();
+      const checklist=parseDailyInspectionItems();
+      if(!checklist.length) return setNotice(e.eqDailyInspectionSummary,'Add at least one checklist result.',true);
+      const resp=await api.manageJobsEntity({
+        entity:'equipment', action:'daily_inspection_submit',
+        equipment_code:active.equipment_code,
+        inspection_stage:e.eqDailyInspectionStage?.value || 'pre_use',
+        template_id:template?.id || null,
+        checklist_items:checklist,
+        meter_value:e.eqDailyInspectionMeter?.value ? Number(e.eqDailyInspectionMeter.value) : null,
+        meter_unit:e.eqDailyInspectionMeterUnit?.value || active.meter_unit || null,
+        defect_summary:e.eqDailyInspectionDefectSummary?.value?.trim?.() || null
+      });
+      if(!resp?.ok) return setNotice(e.eqDailyInspectionSummary,resp?.error || 'Daily inspection failed.',true);
+      setNotice(e.eqDailyInspectionSummary,resp.locked_out ? 'Daily inspection saved. Safety-critical failure created an equipment lockout and service task.' : 'Daily inspection saved.');
+      await loadData();
+    }
+
+    async function reviewDailyInspection(id) {
+      if(!id) return;
+      const status=(window.prompt('Supervisor review (approved or rejected):','approved') || '').trim().toLowerCase();
+      if(!['approved','rejected'].includes(status)) return;
+      const review_notes=window.prompt('Supervisor review notes:','') || '';
+      const resp=await api.manageJobsEntity({entity:'equipment',action:'daily_inspection_review',inspection_id:id,review_status:status,review_notes});
+      if(!resp?.ok) return setNotice(els().eqDailyInspectionSummary,resp?.error || 'Supervisor review failed.',true);
+      await loadData();
+    }
+
+    async function verifyDailyInspectionReturn(id) {
+      if(!id) return;
+      const notes=window.prompt('Verified return-to-service notes (repair/service evidence):','') || '';
+      if(!window.confirm('Verify this equipment is safe and ready to return to service?')) return;
+      const resp=await api.manageJobsEntity({entity:'equipment',action:'daily_inspection_return_to_service',inspection_id:id,verification_status:'verified',return_to_service_notes:notes});
+      if(!resp?.ok) return setNotice(els().eqDailyInspectionSummary,resp?.error || 'Return-to-service verification is blocked.',true);
+      await loadData();
     }
 
     function fillEmployeeDataList() {
@@ -1973,6 +2139,9 @@
       if (e.eqRegistryAccessories) e.eqRegistryAccessories.value = formatRegistryAccessories(row.registry_accessories);
       syncEquipmentQrPreview();
       renderEquipmentRegistrySummary(row);
+      if (e.eqDailyInspectionMeter) e.eqDailyInspectionMeter.value = row.current_meter_value ?? '';
+      if (e.eqDailyInspectionMeterUnit) e.eqDailyInspectionMeterUnit.value = row.meter_unit || '';
+      fillDailyInspectionTemplateSelect();
       e.eqComments.value = row.comments || '';
       e.eqNotes.value = row.notes || '';
       if (e.eqArrivalTestStatus) e.eqArrivalTestStatus.value = row.last_arrival_test_status || 'not_recorded';
@@ -2863,6 +3032,7 @@
         });
       }
       renderEquipmentAccountabilityDepth();
+      renderDailyInspectionWorkbench();
     }
 
 
@@ -3022,6 +3192,9 @@
         state.equipmentServiceTasks = Array.isArray(resp?.equipment_service_tasks) ? resp.equipment_service_tasks : [];
         state.equipmentRegistryV2 = Array.isArray(resp?.equipment_registry_v2) ? resp.equipment_registry_v2 : [];
         state.equipmentRegistryV2Summary = Array.isArray(resp?.equipment_registry_v2_summary) ? resp.equipment_registry_v2_summary : [];
+        state.dailyInspectionTemplates = Array.isArray(resp?.equipment_daily_inspection_templates) ? resp.equipment_daily_inspection_templates : [];
+        state.dailyInspectionWorkbench = Array.isArray(resp?.equipment_daily_inspection_workbench) ? resp.equipment_daily_inspection_workbench : [];
+        state.dailyInspectionSummary = Array.isArray(resp?.equipment_daily_inspection_summary) ? resp.equipment_daily_inspection_summary : [];
         renderAccountingDepthTables();
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
@@ -3798,6 +3971,27 @@
       if (e.jobClear && e.jobClear.dataset.bound !== '1') {
         e.jobClear.dataset.bound = '1';
         e.jobClear.addEventListener('click', clearJobForm);
+      }
+      if (e.eqDailyInspectionStage && e.eqDailyInspectionStage.dataset.bound !== '1') {
+        e.eqDailyInspectionStage.dataset.bound='1';
+        e.eqDailyInspectionStage.addEventListener('change',fillDailyInspectionTemplateSelect);
+      }
+      if (e.eqDailyInspectionTemplate && e.eqDailyInspectionTemplate.dataset.bound !== '1') {
+        e.eqDailyInspectionTemplate.dataset.bound='1';
+        e.eqDailyInspectionTemplate.addEventListener('change',fillDailyInspectionTemplateSelect);
+      }
+      if (e.eqDailyInspectionSubmit && e.eqDailyInspectionSubmit.dataset.bound !== '1') {
+        e.eqDailyInspectionSubmit.dataset.bound='1';
+        e.eqDailyInspectionSubmit.addEventListener('click',submitDailyInspection);
+      }
+      if (e.eqDailyInspectionBody && e.eqDailyInspectionBody.dataset.bound !== '1') {
+        e.eqDailyInspectionBody.dataset.bound='1';
+        e.eqDailyInspectionBody.addEventListener('click',(event)=>{
+          const review=event.target.closest('[data-daily-inspection-review]');
+          const rtn=event.target.closest('[data-daily-inspection-return]');
+          if(review) reviewDailyInspection(review.getAttribute('data-daily-inspection-review'));
+          if(rtn) verifyDailyInspectionReturn(rtn.getAttribute('data-daily-inspection-return'));
+        });
       }
       if (e.eqScanCode && e.eqScanCode.dataset.bound !== '1') {
         e.eqScanCode.dataset.bound = '1';
