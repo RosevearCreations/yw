@@ -195,4 +195,11 @@
           <p>The existing camera/manual scanner, custody/signout, transfer verification, service tasks, lockout and inspection records remain authoritative. Build 331 does not create a second scanner, asset table, inspection engine or maintenance engine.</p>
           <p><strong>QR boundary:</strong> a physical QR or barcode label must encode the exact stored token. The browser capture is not trusted until the server resolves that exact value through the private identifier registry. Build 332 remains responsible for the next daily inspection/lockout expansion.</p>
         </section>
+        <section class="help-section" id="daily-equipment-inspection-lockout">
+          <h2>Build 332 — Daily Equipment Inspection &amp; Lockout</h2>
+          <p>Build 332 adds machine/category-specific pre-use and post-use inspection checklists while keeping <code>equipment_items</code> as the asset authority and <code>equipment_service_tasks</code> as the repair/service authority. Checklist areas cover guards and safety systems, fluids/leaks, blades or cutting components, tires/wheels, fuel/battery, accessories, damage and defects.</p>
+          <p>A safety-critical failure is fail-closed: the inspection record is saved, the equipment is locked out, defect evidence is written to the existing asset, and a high-priority inspection service task is created. A non-critical failed item is kept as needs-review evidence rather than silently clearing the asset.</p>
+          <p>Supervisor review is a separate explicit action. For a safety-critical failure, approval alone does not return the equipment to service. The linked repair/service task must first be resolved or cancelled with appropriate evidence, after which an authorized operator must explicitly verify return to service.</p>
+          <p><strong>Safety boundary:</strong> a passed checklist, supervisor approval or verified return to service is operational evidence, not a legal-compliance certificate. Operators must still follow manufacturer instructions, training/authorization requirements and applicable workplace-safety law.</p>
+        </section>
 
