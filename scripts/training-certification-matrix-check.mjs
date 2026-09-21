@@ -114,7 +114,7 @@ must(help,[
   'keeps <code>training_courses</code> and <code>training_records</code> as the existing completion/certificate authority',
   'does not itself prove a statutory qualification'
 ],'Build 330 Help');
-must(roadmap,['**330 — Training & Certification Matrix** are implemented','331 — Equipment Registry & QR System v2'],'Build 330 roadmap');
+must(roadmap,['330 — Training & Certification Matrix','331 — Equipment Registry & QR System v2'],'Build 330 roadmap history');
 must(pkg,['test:training-certification-matrix','test:browser:training-certification-matrix'],'Build 330 package scripts');
 must(workflow,['npm run test:training-certification-matrix','npm run test:browser:training-certification-matrix'],'Build 330 CI wiring');
 

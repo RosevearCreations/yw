@@ -864,15 +864,58 @@ serve(async (req) => {
     }
 
     if (body.entity === 'equipment' && body.action === 'upsert') {
+      const equipmentCode=String(body.equipment_code || '').trim();
+      const equipmentName=String(body.equipment_name || '').trim();
+      if(!equipmentCode || !equipmentName) return Response.json({ok:false,error:'Equipment code and name are required.'},{status:400,headers:corsHeaders});
+
       const homeSiteId = await resolveSiteIdByCodeOrName(supabase, body.home_site);
       const currentSiteId = await resolveSiteIdByCodeOrName(supabase, body.current_site || body.current_site_name || body.home_site);
       const targetSiteId = await resolveSiteIdByCodeOrName(supabase, body.target_site || body.destination_site || body.destination_site_name);
       const currentJobId = await resolveJobIdByCode(supabase, body.current_job_code);
+      const assignedCrewInput=String(body.assigned_crew_id || body.assigned_crew || body.assigned_crew_code || body.assigned_crew_name || '').trim();
+      let assignedCrewId=null;
+      if(assignedCrewInput){
+        if(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(assignedCrewInput)){
+          const {data:crew}=await supabase.from('crews').select('id').eq('id',assignedCrewInput).maybeSingle();
+          if(!crew?.id) return Response.json({ok:false,error:'Assigned crew was not found.'},{status:400,headers:corsHeaders});
+          assignedCrewId=crew.id;
+        } else {
+          assignedCrewId=await resolveCrewIdByNameOrCode(supabase,assignedCrewInput);
+          if(!assignedCrewId) return Response.json({ok:false,error:'Assigned crew was not found.'},{status:400,headers:corsHeaders});
+        }
+      }
       const poolKey = normalizePoolKey(body.equipment_pool_key || body.category || body.equipment_name || body.equipment_code);
       const transferStatus = body.is_locked_out ? 'locked_out' : (targetSiteId ? 'reserved' : (body.last_transfer_status || 'ready'));
+      const { data: existingEquipment } = await supabase.from('equipment_items')
+        .select('id,current_meter_value,current_meter_at,qr_code_value')
+        .eq('equipment_code', equipmentCode)
+        .maybeSingle();
+
+      const meterRaw = body.current_meter_value;
+      const meterNumber = meterRaw === '' || meterRaw == null ? null : Number(meterRaw);
+      if(meterNumber !== null && (!Number.isFinite(meterNumber) || meterNumber < 0)) {
+        return Response.json({ok:false,error:'Equipment meter value must be a nonnegative number.'},{status:400,headers:corsHeaders});
+      }
+      const meterType=String(body.meter_type || (meterNumber !== null ? 'hours' : 'none')).trim().toLowerCase();
+      if(!['none','hours','odometer','cycles','other'].includes(meterType)) {
+        return Response.json({ok:false,error:'Unsupported equipment meter type.'},{status:400,headers:corsHeaders});
+      }
+      const replacementState=String(body.replacement_state || 'retain').trim().toLowerCase();
+      if(!['retain','monitor','plan_replacement','replace','retired'].includes(replacementState)) {
+        return Response.json({ok:false,error:'Unsupported equipment replacement state.'},{status:400,headers:corsHeaders});
+      }
+      const replacementCostRaw=body.replacement_estimated_cost;
+      const replacementCost=replacementCostRaw === '' || replacementCostRaw == null ? null : Number(replacementCostRaw);
+      if(replacementCost !== null && (!Number.isFinite(replacementCost) || replacementCost < 0)) {
+        return Response.json({ok:false,error:'Replacement estimate must be nonnegative.'},{status:400,headers:corsHeaders});
+      }
+      const qrInput=String(body.qr_code_value ?? body.qr_code ?? existingEquipment?.qr_code_value ?? '').trim();
+      const qrCodeValue=qrInput || `YWI-EQ-${crypto.randomUUID().replaceAll('-','')}`;
+      const registryNow=new Date().toISOString();
+
       const { data, error } = await supabase.from('equipment_items').upsert({
-        equipment_code: body.equipment_code,
-        equipment_name: body.equipment_name,
+        equipment_code: equipmentCode,
+        equipment_name: equipmentName,
         category: body.category ?? null,
         home_site_id: homeSiteId,
         current_site_id: currentSiteId,
@@ -880,6 +923,7 @@ serve(async (req) => {
         status: body.status ?? 'available',
         current_job_id: currentJobId,
         assigned_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.assigned_supervisor_name),
+        assigned_crew_id: assignedCrewId,
         equipment_pool_key: poolKey || null,
         serial_number: body.serial_number ?? null,
         asset_tag: body.asset_tag ?? null,
@@ -888,8 +932,13 @@ serve(async (req) => {
         purchase_year: body.purchase_year ?? null,
         purchase_date: body.purchase_date ?? null,
         purchase_price: body.purchase_price ?? null,
+        purchase_vendor: body.purchase_vendor ?? null,
+        purchase_cost: body.purchase_cost ?? body.purchase_price ?? null,
+        warranty_expiry_date: body.warranty_expiry_date ?? null,
+        year_of_manufacture: body.year_of_manufacture ?? body.purchase_year ?? null,
         condition_status: body.condition_status ?? null,
         image_url: body.image_url ?? null,
+        photo_url: body.photo_url ?? body.image_url ?? null,
         service_interval_days: body.service_interval_days ?? null,
         last_service_date: body.last_service_date ?? null,
         next_service_due_date: body.next_service_due_date ?? null,
@@ -898,20 +947,105 @@ serve(async (req) => {
         defect_status: body.defect_status ?? 'clear',
         defect_notes: body.defect_notes ?? null,
         is_locked_out: body.is_locked_out ?? false,
-        qr_code_value: body.qr_code_value ?? body.qr_code ?? null,
+        qr_code_value: qrCodeValue,
         barcode_value: body.barcode_value ?? body.barcode ?? null,
         verifier_role_required: body.verifier_role_required ?? 'supervisor',
         accessory_checklist_required: body.accessory_checklist_required === true,
-        locked_out_at: body.is_locked_out ? new Date().toISOString() : null,
+        locked_out_at: body.is_locked_out ? (body.locked_out_at || new Date().toISOString()) : null,
         locked_out_by_profile_id: body.is_locked_out ? actorProfile.id : null,
+        lockout_reason: body.is_locked_out ? (body.lockout_reason || body.defect_notes || null) : null,
         last_transfer_status: transferStatus,
         last_transfer_notes: body.last_transfer_notes || body.transfer_notes || null,
+        meter_type: meterType,
+        meter_unit: String(body.meter_unit || '').trim() || null,
+        current_meter_value: meterNumber,
+        current_meter_at: meterNumber === null ? null : (body.current_meter_at || registryNow),
+        replacement_state: replacementState,
+        replacement_target_date: body.replacement_target_date || null,
+        replacement_reason: body.replacement_reason || null,
+        replacement_estimated_cost: replacementCost,
+        registry_v2_updated_at: registryNow,
         comments: body.comments ?? null,
         notes: body.notes ?? null,
-        updated_at: new Date().toISOString(),
+        updated_at: registryNow,
       }, { onConflict: 'equipment_code' }).select('*').single();
       if (error) throw error;
-      return Response.json({ ok:true, record: data }, { headers:corsHeaders });
+
+      if (Array.isArray(body.registry_documents)) {
+        const docs = body.registry_documents.slice(0,40).map((row:any)=>({
+          equipment_item_id:data.id,
+          document_type:['manual','warranty','parts','service','registration','insurance','other'].includes(String(row?.document_type || '').toLowerCase()) ? String(row.document_type).toLowerCase() : 'manual',
+          title:String(row?.title || row?.document_url || 'Equipment document').trim().slice(0,240),
+          document_url:String(row?.document_url || '').trim().slice(0,2000),
+          version_label:String(row?.version_label || '').trim().slice(0,120) || null,
+          notes:String(row?.notes || '').trim().slice(0,1200) || null,
+          is_active:row?.is_active !== false,
+          created_by_profile_id:actorProfile.id,
+          updated_at:registryNow
+        })).filter((row:any)=>row.document_url);
+        await supabase.from('equipment_registry_documents').delete().eq('equipment_item_id',data.id);
+        if(docs.length){
+          const inserted=await supabase.from('equipment_registry_documents').insert(docs);
+          if(inserted.error) throw inserted.error;
+        }
+      }
+
+      if (Array.isArray(body.registry_photos)) {
+        const photos = body.registry_photos.slice(0,40).map((row:any,index:number)=>({
+          equipment_item_id:data.id,
+          photo_kind:['profile','serial','condition','accessory','label','other'].includes(String(row?.photo_kind || '').toLowerCase()) ? String(row.photo_kind).toLowerCase() : 'profile',
+          photo_url:String(row?.photo_url || '').trim().slice(0,2000),
+          caption:String(row?.caption || '').trim().slice(0,500) || null,
+          is_primary:row?.is_primary === true || index === 0,
+          taken_at:row?.taken_at || null,
+          created_by_profile_id:actorProfile.id,
+          updated_at:registryNow
+        })).filter((row:any)=>row.photo_url);
+        await supabase.from('equipment_registry_photos').delete().eq('equipment_item_id',data.id);
+        if(photos.length){
+          const inserted=await supabase.from('equipment_registry_photos').insert(photos);
+          if(inserted.error) throw inserted.error;
+        }
+      }
+
+      if (Array.isArray(body.registry_accessories)) {
+        const accessories = body.registry_accessories.slice(0,80).map((row:any)=>({
+          equipment_item_id:data.id,
+          accessory_name:String(row?.accessory_name || row?.name || '').trim().slice(0,240),
+          expected_quantity:Math.max(0,Math.min(1000,Number(row?.expected_quantity ?? row?.quantity ?? 1) || 0)),
+          serial_number:String(row?.serial_number || '').trim().slice(0,240) || null,
+          accessory_status:['active','missing','damaged','retired'].includes(String(row?.accessory_status || '').toLowerCase()) ? String(row.accessory_status).toLowerCase() : 'active',
+          replacement_cost:row?.replacement_cost === '' || row?.replacement_cost == null ? null : Math.max(0,Number(row.replacement_cost) || 0),
+          notes:String(row?.notes || '').trim().slice(0,1200) || null,
+          updated_by_profile_id:actorProfile.id,
+          updated_at:registryNow
+        })).filter((row:any)=>row.accessory_name);
+        await supabase.from('equipment_accessory_registry').delete().eq('equipment_item_id',data.id);
+        if(accessories.length){
+          const inserted=await supabase.from('equipment_accessory_registry').insert(accessories);
+          if(inserted.error) throw inserted.error;
+        }
+      }
+
+      if (meterNumber !== null && (
+        existingEquipment?.current_meter_value == null
+        || Number(existingEquipment.current_meter_value) !== meterNumber
+        || String(existingEquipment.current_meter_at || '') !== String(body.current_meter_at || existingEquipment?.current_meter_at || '')
+      )) {
+        const meterInsert=await supabase.from('equipment_meter_readings').insert({
+          equipment_item_id:data.id,
+          meter_value:meterNumber,
+          meter_unit:String(body.meter_unit || '').trim() || (meterType === 'hours' ? 'hours' : meterType === 'odometer' ? 'km' : meterType),
+          reading_source:'manual',
+          recorded_at:body.current_meter_at || registryNow,
+          recorded_by_profile_id:actorProfile.id,
+          notes:String(body.meter_notes || '').trim().slice(0,1200) || null
+        });
+        if(meterInsert.error) throw meterInsert.error;
+      }
+
+      const { data: registryRow } = await supabase.from('v_equipment_registry_v2').select('*').eq('id',data.id).maybeSingle();
+      return Response.json({ ok:true, build:331, schema:219, record: registryRow || data }, { headers:corsHeaders });
     }
 
     if (body.entity === 'equipment' && body.action === 'checkout') {

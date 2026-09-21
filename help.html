@@ -188,4 +188,11 @@
           <p>The matrix distinguishes missing, scheduled, in-progress, expired, expiring, supervisor-verification pending, external-credential-evidence missing and internal-authorization pending states. Training completion never auto-authorizes equipment/task use where a requirement calls for separate internal authorization.</p>
           <p><strong>Legal boundary:</strong> a current course record, certificate number, licence reference or internal-company authorization is readiness evidence only. It does not itself prove a statutory qualification, driver privilege, pesticide/applicator authority, regulatory certification or other external legal authorization. Applicable external requirements must be independently verified.</p>
         </section>
+        <section class="help-section" id="equipment-registry-qr-v2">
+          <h2>Build 331 — Equipment Registry &amp; QR System v2</h2>
+          <p>Build 331 keeps <code>equipment_items</code> as the physical-asset authority and reuses the existing exact identifier registry for equipment code, asset tag, serial, QR and barcode resolution. Existing assets without a dedicated QR token receive an opaque unique QR value; identifier collisions remain fail-closed rather than becoming ambiguous scans.</p>
+          <p>The registry adds assigned crew, purchase/vendor/warranty depth, meter type/value/history, manuals and document links, multiple registry photos, expected accessories, replacement planning and a consolidated readiness view. Recorded lifecycle cost means acquisition cost plus recorded service-history cost; open service-task estimates stay visible separately and are not counted as actual cost.</p>
+          <p>The existing camera/manual scanner, custody/signout, transfer verification, service tasks, lockout and inspection records remain authoritative. Build 331 does not create a second scanner, asset table, inspection engine or maintenance engine.</p>
+          <p><strong>QR boundary:</strong> a physical QR or barcode label must encode the exact stored token. The browser capture is not trusted until the server resolves that exact value through the private identifier registry. Build 332 remains responsible for the next daily inspection/lockout expansion.</p>
+        </section>
 

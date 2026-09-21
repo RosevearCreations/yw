@@ -230,6 +230,8 @@ serve(async (req) => {
   const { data: jobComments } = await supabase.from('v_job_comment_activity').select('*').order('created_at', { ascending:false }).limit(1000);
   const { data: jobCommentAttachmentsRaw } = await supabase.from('job_comment_attachments').select('*').order('created_at', { ascending:false }).limit(2000);
   const { data: equipment } = await supabase.from('v_equipment_directory').select('*').order('equipment_code');
+  const equipmentRegistryV2 = await safeSelect(supabase, 'v_equipment_registry_v2', '*', (query) => query.order('equipment_code', { ascending:true }).limit(1500));
+  const equipmentRegistryV2Summary = await safeSelect(supabase, 'v_equipment_registry_v2_summary');
   const { data: requirements } = await supabase.from('job_equipment_requirements').select('*').order('job_id');
   const { data: signouts } = await supabase.from('equipment_signouts').select('*, equipment_items(equipment_code,equipment_name), jobs(job_code,job_name)').order('checked_out_at', { ascending:false });
   const { data: pools } = await supabase.from('v_equipment_pool_availability').select('*').order('equipment_pool_key');
@@ -317,6 +319,16 @@ serve(async (req) => {
     return { ...row, preview_url, public_url: preview_url || row.preview_url || null };
   }));
 
+  const registryV2ById = new Map<number, any>();
+  for (const row of equipmentRegistryV2 || []) {
+    const id=Number(row?.id || 0);
+    if(id) registryV2ById.set(id,row);
+  }
+  const equipmentRows=(equipment || []).map((row:any)=>({
+    ...row,
+    ...(registryV2ById.get(Number(row?.id || 0)) || {})
+  }));
+
   const evidenceBySignout = new Map<number, any[]>();
   for (const row of evidenceAssets) {
     const key = Number(row.signout_id || 0);
@@ -400,7 +412,9 @@ serve(async (req) => {
     job_reassignments: jobReassignments || [],
     job_financial_events: jobFinancialEvents || [],
     job_financial_rollups: jobFinancialRollups || [],
-    equipment: equipment || [],
+    equipment: equipmentRows,
+    equipment_registry_v2: equipmentRegistryV2 || [],
+    equipment_registry_v2_summary: equipmentRegistryV2Summary || [],
     requirements: requirements || [],
     signouts: signoutRows,
     equipment_transfer_verifications: equipmentTransferVerifications || [],
