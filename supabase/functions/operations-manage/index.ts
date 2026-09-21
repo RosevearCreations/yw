@@ -2536,6 +2536,124 @@ serve(async (req) => {
       return Response.json({ok:true,build:329,schema:217,record:data},{headers:corsHeaders});
     }
 
+    if (action === 'training_requirement_save') {
+      requireRank(profile,30,action);
+      const list=(value:any,limit=24,max=120)=>Array.isArray(value) ? value.slice(0,limit).map((item:any)=>clean(item,max).toLowerCase()).filter(Boolean) : [];
+      const courseId=clean(body.course_id,80);
+      if(!isUuid(courseId)) throw new HttpError(400,'Valid training course is required.');
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,
+        requirement_code:clean(body.requirement_code,80).toUpperCase().replace(/[^A-Z0-9_]+/g,'_'),
+        requirement_name:clean(body.requirement_name,180),
+        course_id:courseId,
+        requirement_mode:clean(body.requirement_mode || 'explicit',40).toLowerCase(),
+        target_roles:list(body.target_roles),
+        target_position_terms:list(body.target_position_terms),
+        equipment_categories:list(body.equipment_categories),
+        equipment_context_required:body.equipment_context_required===true,
+        internal_authorization_required:body.internal_authorization_required===true,
+        external_credential_expected:body.external_credential_expected===true,
+        refresher_months_override:body.refresher_months_override===''||body.refresher_months_override==null?null:Math.max(1,Math.min(120,int(body.refresher_months_override,0))),
+        reminder_days_before_override:body.reminder_days_before_override===''||body.reminder_days_before_override==null?null:Math.max(0,Math.min(365,int(body.reminder_days_before_override,30))),
+        applicability_note:clean(body.applicability_note,2400)||null,
+        legal_boundary_note:clean(body.legal_boundary_note,2400)||null,
+        is_active:body.is_active!==false
+      };
+      if(!payload.requirement_code || !payload.requirement_name) throw new HttpError(400,'Requirement code and name are required.');
+      const {data,error}=await supabase.rpc('ywi_rpc_training_requirement_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:'saved',entity_type:'training_requirement_rule',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{requirement_code:payload.requirement_code,requirement_mode:payload.requirement_mode,internal_authorization_required:payload.internal_authorization_required,external_credential_expected:payload.external_credential_expected},
+        response_payload:{requirement_code:(data as any)?.requirement_code || null}
+      });
+      return Response.json({ok:true,build:330,schema:218,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'training_assignment_save') {
+      requireRank(profile,30,action);
+      const profileId=clean(body.profile_id,80);
+      const requirementId=clean(body.requirement_id,80);
+      const equipmentItemId=body.equipment_item_id===''||body.equipment_item_id==null?null:int(body.equipment_item_id,0);
+      if(!isUuid(profileId) || !isUuid(requirementId)) throw new HttpError(400,'Valid worker and training requirement are required.');
+      if(equipmentItemId!==null && equipmentItemId<=0) throw new HttpError(400,'Equipment item must be valid when supplied.');
+      const payload:any={
+        profile_id:profileId,requirement_id:requirementId,
+        equipment_category:clean(body.equipment_category,120).toLowerCase()||null,
+        equipment_item_id:equipmentItemId,
+        assignment_status:clean(body.assignment_status || 'required',30).toLowerCase(),
+        due_date:clean(body.due_date,20)||null,
+        assignment_note:clean(body.assignment_note,2400)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_training_assignment_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:payload.assignment_status,entity_type:'training_requirement_assignment',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{profile_id:profileId,requirement_id:requirementId,equipment_category:payload.equipment_category,equipment_item_id:equipmentItemId},
+        response_payload:{assignment_status:(data as any)?.assignment_status || null}
+      });
+      return Response.json({ok:true,build:330,schema:218,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'training_record_save') {
+      requireRank(profile,30,action);
+      const profileId=clean(body.profile_id,80);
+      const courseId=clean(body.course_id,80);
+      if(!isUuid(profileId) || !isUuid(courseId)) throw new HttpError(400,'Valid worker and training course are required.');
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,
+        profile_id:profileId,course_id:courseId,
+        completion_status:clean(body.completion_status || 'completed',30).toLowerCase(),
+        completed_at:clean(body.completed_at,20)||null,
+        expires_at:clean(body.expires_at,20)||null,
+        trainer_name:clean(body.trainer_name,240)||null,
+        provider_name:clean(body.provider_name,240)||null,
+        certificate_number:clean(body.certificate_number,240)||null,
+        license_number:clean(body.license_number,240)||null,
+        notes:clean(body.notes,2600)||null,
+        supervisor_verified:body.supervisor_verified===true
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_training_record_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:payload.completion_status,entity_type:'training_record',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{profile_id:profileId,course_id:courseId,has_certificate:Boolean(payload.certificate_number),has_license:Boolean(payload.license_number),supervisor_verified:payload.supervisor_verified},
+        response_payload:{completion_status:(data as any)?.completion_status || null,expires_at:(data as any)?.expires_at || null}
+      });
+      return Response.json({ok:true,build:330,schema:218,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'training_internal_authorization_decision') {
+      requireRank(profile,30,action);
+      const profileId=clean(body.profile_id,80);
+      const requirementId=clean(body.requirement_id,80);
+      const equipmentItemId=body.equipment_item_id===''||body.equipment_item_id==null?null:int(body.equipment_item_id,0);
+      const statusValue=clean(body.authorization_status || 'pending',30).toLowerCase();
+      if(!isUuid(profileId) || !isUuid(requirementId)) throw new HttpError(400,'Valid worker and training requirement are required.');
+      if(!['pending','authorized','suspended','revoked'].includes(statusValue)) throw new HttpError(400,'Unsupported internal authorization decision.');
+      const payload:any={
+        profile_id:profileId,requirement_id:requirementId,
+        equipment_category:clean(body.equipment_category,120).toLowerCase()||null,
+        equipment_item_id:equipmentItemId,
+        authorization_status:statusValue,
+        evidence_reference:clean(body.evidence_reference,1200)||null,
+        decision_note:clean(body.decision_note,2400)||null,
+        expires_at:clean(body.expires_at,20)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_training_internal_authorization_decision',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:statusValue,entity_type:'training_internal_authorization',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{profile_id:profileId,requirement_id:requirementId,equipment_category:payload.equipment_category,equipment_item_id:equipmentItemId,authorization_scope:'internal_company_only'},
+        response_payload:{authorization_status:(data as any)?.authorization_status || null,authorization_scope:(data as any)?.authorization_scope || 'internal_company_only'}
+      });
+      return Response.json({ok:true,build:330,schema:218,record:data},{headers:corsHeaders});
+    }
+
     if (action === 'property_site_save') {
       requireRank(profile,45,action);
       const id=isUuid(body.id) ? clean(body.id,80) : null;
