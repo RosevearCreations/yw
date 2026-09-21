@@ -34,9 +34,9 @@ const handledActions = [...new Set([...operations.matchAll(/action\s*===\s*['"](
 const helperActions = [...new Set([...helper.matchAll(/^\s{2}([a-z0-9_]+):\s*contract\('([^']+)'/gmi)].map((m) => m[2]))].sort();
 const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}\n${hazardPlanMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
 
-add('schema164-exact-handler-count', handledActions.length === 48, `Handled operations actions: ${handledActions.length}.`);
-add('schema164-helper-plus325-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
-add('schema164-plus209-plus211-plus212-plus213-plus214-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
+add('schema216-exact-handler-count', handledActions.length === 51, `Handled operations actions: ${handledActions.length}.`);
+add('schema216-helper-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
+add('schema216-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
 
 add('schema164-no-permissive-module-fallback', !operations.includes('moduleRequirementForAction') && !operations.includes("return { moduleKey:'admin', minimum:'manage' };"), 'Legacy unknown-action -> Admin/manage fallback is removed.');
 add('schema164-boundary-resolved-before-authorization', operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') > -1 && operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') < operations.indexOf('hasModuleAccess(supabase, profile, boundary.ownerModule, boundary.minimum)'), 'Action contract resolves before permission evaluation.');
