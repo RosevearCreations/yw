@@ -1317,6 +1317,111 @@
       if (current) selectEl.value = current;
     }
 
+    function toLocalDateTimeInput(value) {
+      const clean=String(value || '').trim();
+      if(!clean) return '';
+      const date=new Date(clean);
+      if(Number.isNaN(date.getTime())) return clean.slice(0,16);
+      const local=new Date(date.getTime()-date.getTimezoneOffset()*60000);
+      return local.toISOString().slice(0,16);
+    }
+
+    function splitRegistryLines(value) {
+      return String(value || '').split(/\r?\n/).map((line)=>line.trim()).filter(Boolean);
+    }
+
+    function parseRegistryDocuments(value) {
+      return splitRegistryLines(value).slice(0,40).map((line)=>{
+        const parts=line.split('|').map((part)=>part.trim());
+        if(parts.length===1) return {document_type:'manual',title:'Equipment document',document_url:parts[0]};
+        return {
+          document_type:(parts[0] || 'manual').toLowerCase(),
+          title:parts[1] || 'Equipment document',
+          document_url:parts[2] || '',
+          version_label:parts[3] || '',
+          notes:parts.slice(4).join(' | ')
+        };
+      }).filter((row)=>row.document_url);
+    }
+
+    function parseRegistryPhotos(value) {
+      return splitRegistryLines(value).slice(0,40).map((line,index)=>{
+        const parts=line.split('|').map((part)=>part.trim());
+        if(parts.length===1) return {photo_kind:'profile',photo_url:parts[0],caption:'',is_primary:index===0};
+        return {photo_kind:(parts[0] || 'profile').toLowerCase(),photo_url:parts[1] || '',caption:parts.slice(2).join(' | '),is_primary:index===0};
+      }).filter((row)=>row.photo_url);
+    }
+
+    function parseRegistryAccessories(value) {
+      return splitRegistryLines(value).slice(0,80).map((line)=>{
+        const parts=line.split('|').map((part)=>part.trim());
+        return {
+          accessory_name:parts[0] || '',
+          expected_quantity:Math.max(0,Number(parts[1] || 1) || 0),
+          accessory_status:(parts[2] || 'active').toLowerCase(),
+          serial_number:parts[3] || '',
+          replacement_cost:parts[4] === '' || parts[4] == null ? null : Math.max(0,Number(parts[4]) || 0),
+          notes:parts.slice(5).join(' | ')
+        };
+      }).filter((row)=>row.accessory_name);
+    }
+
+    function formatRegistryDocuments(rows) {
+      return (Array.isArray(rows) ? rows : []).map((row)=>[
+        row.document_type || 'manual',row.title || 'Equipment document',row.document_url || '',
+        row.version_label || '',row.notes || ''
+      ].join(' | ')).join('\n');
+    }
+
+    function formatRegistryPhotos(rows) {
+      return (Array.isArray(rows) ? rows : []).map((row)=>[
+        row.photo_kind || 'profile',row.photo_url || '',row.caption || ''
+      ].join(' | ')).join('\n');
+    }
+
+    function formatRegistryAccessories(rows) {
+      return (Array.isArray(rows) ? rows : []).map((row)=>[
+        row.accessory_name || '',row.expected_quantity ?? 1,row.accessory_status || 'active',
+        row.serial_number || '',row.replacement_cost ?? '',row.notes || ''
+      ].join(' | ')).join('\n');
+    }
+
+    function syncEquipmentQrPreview() {
+      const e=els();
+      if(e.eqQrLabelPreview) e.eqQrLabelPreview.value=e.eqQrCodeValue?.value?.trim?.() || '';
+    }
+
+    async function copyEquipmentQrToken() {
+      const e=els();
+      const token=e.eqQrCodeValue?.value?.trim?.() || '';
+      if(!token){
+        setNotice(e.eqRegistrySummary,'Save the asset first to assign its dedicated QR token.',true);
+        return;
+      }
+      try {
+        if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(token);
+        else window.prompt('Copy QR label value:',token);
+        setNotice(e.eqRegistrySummary,`QR label value copied: ${token}. Physical QR/barcode labels must encode this exact value.`);
+      } catch {
+        window.prompt('Copy QR label value:',token);
+      }
+    }
+
+    function renderEquipmentRegistrySummary(row=null) {
+      const e=els();
+      if(!e.eqRegistrySummary) return;
+      if(!row){
+        const summary=state.equipmentRegistryV2Summary?.[0] || {};
+        setNotice(e.eqRegistrySummary,
+          `Registry: ${Number(summary.asset_count || state.equipment.length || 0)} asset(s), ${Number(summary.qr_ready_count || 0)} QR-ready, ${Number(summary.locked_out_count || 0)} locked out, ${Number(summary.open_service_asset_count || 0)} with open service tasks, ${Number(summary.replacement_attention_count || 0)} replacement attention. Recorded lifecycle cost ${Number(summary.recorded_lifecycle_cost_total || 0).toFixed(2)}; open service estimate ${Number(summary.open_service_estimated_cost || 0).toFixed(2)}.`
+        );
+        return;
+      }
+      setNotice(e.eqRegistrySummary,
+        `${row.equipment_code || 'Asset'} · QR ${row.qr_identity_status || 'unknown'} · Registry ${row.registry_readiness_status || 'unknown'} · Crew ${row.assigned_crew_name || 'unassigned'} · Meter ${row.current_meter_value ?? '—'} ${row.meter_unit || ''} · Docs ${Number(row.document_count || 0)} · Photos ${Number(row.registry_photo_count || 0)} · Accessories ${Number(row.expected_accessory_quantity || 0)} (${Number(row.accessory_attention_count || 0)} attention) · Recorded lifecycle ${Number(row.recorded_lifecycle_cost_total || 0).toFixed(2)} · Open service estimate ${Number(row.open_service_estimated_cost || 0).toFixed(2)} · Replacement ${row.replacement_state || 'retain'}.`
+      );
+    }
+
     function fillEmployeeDataList() {
       const dataList = document.getElementById('employee-options');
       if (!dataList) return;
@@ -1654,9 +1759,13 @@
     function clearEquipmentForm() {
       const e = els();
       state.editingEquipmentCode = '';
-      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentSite, e.eqTargetSite, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial, e.eqPoolKey, e.eqAssetTag, e.eqQrCodeValue, e.eqBarcodeValue, e.eqVerifierRoleRequired, e.eqManufacturer, e.eqModel, e.eqYear, e.eqPurchaseDate, e.eqPurchasePrice, e.eqCondition, e.eqImageUrl, e.eqComments, e.eqWorkerSignature, e.eqSupervisorSignature, e.eqAdminSignature, e.eqCheckoutCondition, e.eqCheckoutTestStatus, e.eqCheckoutTestNotes, e.eqAccessoryChecklist, e.eqAccessoryMissingNotes, e.eqEstimatedServiceCost, e.eqReturnCondition, e.eqReturnTestStatus, e.eqReturnTestNotes, e.eqArrivalCondition, e.eqArrivalTestStatus, e.eqArrivalNotes, e.eqDamageNotes].forEach((el) => { if (el) el.value = ''; });
+      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentSite, e.eqTargetSite, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqAssignedCrew, e.eqSerial, e.eqPoolKey, e.eqAssetTag, e.eqQrCodeValue, e.eqBarcodeValue, e.eqVerifierRoleRequired, e.eqManufacturer, e.eqModel, e.eqYear, e.eqPurchaseDate, e.eqPurchasePrice, e.eqPurchaseVendor, e.eqPurchaseCost, e.eqWarrantyExpiry, e.eqManufactureYear, e.eqCondition, e.eqImageUrl, e.eqComments, e.eqWorkerSignature, e.eqSupervisorSignature, e.eqAdminSignature, e.eqCheckoutCondition, e.eqCheckoutTestStatus, e.eqCheckoutTestNotes, e.eqAccessoryChecklist, e.eqAccessoryMissingNotes, e.eqEstimatedServiceCost, e.eqReturnCondition, e.eqReturnTestStatus, e.eqReturnTestNotes, e.eqArrivalCondition, e.eqArrivalTestStatus, e.eqArrivalNotes, e.eqDamageNotes, e.eqMeterUnit, e.eqMeterValue, e.eqMeterAt, e.eqReplacementTargetDate, e.eqReplacementEstimatedCost, e.eqReplacementReason, e.eqQrLabelPreview, e.eqRegistryDocuments, e.eqRegistryPhotos, e.eqRegistryAccessories].forEach((el) => { if (el) el.value = ''; });
       if (e.eqStatus) e.eqStatus.value = 'available';
       if (e.eqCondition) e.eqCondition.value = 'ready';
+      if (e.eqAssignedCrew) e.eqAssignedCrew.value = '';
+      if (e.eqMeterType) e.eqMeterType.value = 'none';
+      if (e.eqReplacementState) e.eqReplacementState.value = 'retain';
+      renderEquipmentRegistrySummary(null);
       if (e.eqHomeSite) e.eqHomeSite.value = '';
       if (e.eqCurrentSite) e.eqCurrentSite.value = '';
       if (e.eqTargetSite) e.eqTargetSite.value = '';
@@ -1775,11 +1884,12 @@
       e.eqStatus.value = row.status || 'available';
       e.eqCurrentJobCode.value = row.current_job_code || '';
       e.eqAssignedSupervisor.value = row.assigned_supervisor_name || '';
+      if (e.eqAssignedCrew) e.eqAssignedCrew.value = row.assigned_crew_id || '';
       e.eqSerial.value = row.serial_number || '';
       e.eqPoolKey.value = row.equipment_pool_key || '';
       e.eqAssetTag.value = row.asset_tag || '';
-      if (e.eqQrCodeValue) e.eqQrCodeValue.value = row.qr_code_value || row.asset_tag || '';
-      if (e.eqBarcodeValue) e.eqBarcodeValue.value = row.barcode_value || row.serial_number || '';
+      if (e.eqQrCodeValue) e.eqQrCodeValue.value = row.qr_code_value || '';
+      if (e.eqBarcodeValue) e.eqBarcodeValue.value = row.barcode_value || '';
       if (e.eqVerifierRoleRequired) e.eqVerifierRoleRequired.value = row.verifier_role_required || '';
       if (e.eqAccessoryChecklistRequired) e.eqAccessoryChecklistRequired.checked = !!row.accessory_checklist_required;
       e.eqManufacturer.value = row.manufacturer || '';
@@ -1787,8 +1897,25 @@
       e.eqYear.value = row.purchase_year || '';
       e.eqPurchaseDate.value = row.purchase_date || '';
       e.eqPurchasePrice.value = row.purchase_price ?? '';
+      if (e.eqPurchaseVendor) e.eqPurchaseVendor.value = row.purchase_vendor || '';
+      if (e.eqPurchaseCost) e.eqPurchaseCost.value = row.purchase_cost ?? row.acquisition_cost ?? row.purchase_price ?? '';
+      if (e.eqWarrantyExpiry) e.eqWarrantyExpiry.value = row.warranty_expiry_date || '';
+      if (e.eqManufactureYear) e.eqManufactureYear.value = row.year_of_manufacture || row.purchase_year || '';
       e.eqCondition.value = row.condition_status || 'ready';
       e.eqImageUrl.value = row.image_url || '';
+      if (e.eqMeterType) e.eqMeterType.value = row.meter_type || 'none';
+      if (e.eqMeterUnit) e.eqMeterUnit.value = row.meter_unit || row.latest_meter_reading_unit || '';
+      if (e.eqMeterValue) e.eqMeterValue.value = row.current_meter_value ?? row.latest_meter_reading_value ?? '';
+      if (e.eqMeterAt) e.eqMeterAt.value = toLocalDateTimeInput(row.current_meter_at || row.latest_meter_reading_at || '');
+      if (e.eqReplacementState) e.eqReplacementState.value = row.replacement_state || 'retain';
+      if (e.eqReplacementTargetDate) e.eqReplacementTargetDate.value = row.replacement_target_date || '';
+      if (e.eqReplacementEstimatedCost) e.eqReplacementEstimatedCost.value = row.replacement_estimated_cost ?? '';
+      if (e.eqReplacementReason) e.eqReplacementReason.value = row.replacement_reason || '';
+      if (e.eqRegistryDocuments) e.eqRegistryDocuments.value = formatRegistryDocuments(row.registry_documents);
+      if (e.eqRegistryPhotos) e.eqRegistryPhotos.value = formatRegistryPhotos(row.registry_photos);
+      if (e.eqRegistryAccessories) e.eqRegistryAccessories.value = formatRegistryAccessories(row.registry_accessories);
+      syncEquipmentQrPreview();
+      renderEquipmentRegistrySummary(row);
       e.eqComments.value = row.comments || '';
       e.eqNotes.value = row.notes || '';
       if (e.eqArrivalTestStatus) e.eqArrivalTestStatus.value = row.last_arrival_test_status || 'not_recorded';
