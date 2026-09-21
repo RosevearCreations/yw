@@ -154,6 +154,12 @@ serve(async (req) => {
     const correctiveActionTasks = await safeList(supabase, 'v_corrective_action_task_directory', 'id,source_submission_id,task_scope,task_title,task_description,priority,status,assigned_to_name,owner_name,due_date,completed_at,site_label,job_code,work_order_number,route_code,is_overdue,days_overdue,updated_at', 'updated_at', 250, false);
     const trainingRecords = await safeList(supabase, 'v_training_record_directory', 'id,profile_id,profile_name,profile_role,course_code,course_name,category,completion_status,completed_at,expires_at,is_expired,expires_within_30_days,days_until_expiry,updated_at', 'updated_at', 250, false);
     const trainingExpirySummary = await safeList(supabase, 'v_training_expiry_summary');
+    const trainingCourses = await safeList(supabase, 'v_training_course_directory', 'id,course_code,course_name,category,validity_months,reminder_days_before,requires_sds_acknowledgement,self_service_enabled,require_supervisor_verification,is_active,notes,updated_at', 'course_name', 250, true);
+    const trainingRequirements = await safeList(supabase, 'v_training_requirement_directory', '*', 'requirement_name', 250, true);
+    const trainingMatrix = await safeList(supabase, 'v_training_certification_matrix', 'profile_id,profile_name,employee_number,profile_role,current_position,requirement_id,requirement_code,requirement_name,requirement_mode,course_id,course_code,course_name,course_category,applicability_source,equipment_category,equipment_item_id,equipment_code,equipment_name,equipment_item_category,assignment_due_date,internal_authorization_required,external_credential_expected,equipment_context_required,applicability_note,legal_boundary_note,legal_authorization_inferred,training_record_id,completion_status,completed_at,expires_at,trainer_name,provider_name,certificate_number,license_number,acknowledgement_method,self_attested,verified_at,effective_refresher_months,effective_reminder_days_before,internal_authorization_id,internal_authorization_status,authorization_scope,internal_authorization_evidence_reference,internal_authorization_note,internal_authorized_at,internal_authorization_expires_at,readiness_status,days_until_training_expiry,updated_at', 'profile_name', 500, true);
+    const trainingMatrixSummary = await safeList(supabase, 'v_training_certification_matrix_summary');
+    const trainingPeople = await safeList(supabase, 'profiles', 'id,full_name,email,employee_number,role,current_position,is_active', 'full_name', 250, true);
+    const trainingEquipment = await safeList(supabase, 'equipment_items', 'id,equipment_code,equipment_name,category,status,is_locked_out,updated_at', 'equipment_code', 250, true);
     const supervisorSafetyQueue = await safeList(supabase, 'v_supervisor_safety_queue', '*', 'sort_at', 250, false);
     const siteSafetyScorecards = await safeList(supabase, 'v_site_safety_scorecards', '*', 'last_submission_date', 250, false);
     const equipmentJsaHazards = await safeList(supabase, 'v_equipment_jsa_hazard_link_directory', 'id,source_submission_id,linked_hse_packet_id,equipment_code,job_code,work_order_number,route_code,hazard_title,hazard_summary,jsa_required,status,review_due_date,completed_at,notes,is_overdue,linked_packet_number,updated_at', 'updated_at', 250, false);
@@ -188,6 +194,12 @@ serve(async (req) => {
       corrective_action_tasks: correctiveActionTasks,
       training_records: trainingRecords,
       training_expiry_summary: trainingExpirySummary,
+      training_courses: trainingCourses,
+      training_requirements: trainingRequirements,
+      training_matrix: trainingMatrix,
+      training_matrix_summary: trainingMatrixSummary,
+      training_people: trainingPeople,
+      training_equipment: trainingEquipment,
       supervisor_safety_queue: supervisorSafetyQueue,
       site_safety_scorecards: siteSafetyScorecards,
       equipment_jsa_hazards: equipmentJsaHazards,
