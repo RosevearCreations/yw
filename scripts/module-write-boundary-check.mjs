@@ -18,6 +18,7 @@ const recurringMigrationPath = 'sql/211_recurring_lawn_yard_maintenance.sql';
 const propertyMigrationPath = 'sql/212_property_site_intelligence.sql';
 const commercialMigrationPath = 'sql/213_estimate_job_invoice_workflow.sql';
 const productionMigrationPath = 'sql/214_landscape_production_tracking.sql';
+const hazardPlanMigrationPath = 'sql/216_job_hazard_site_safety_plans.sql';
 const operations = read(operationsPath);
 const helper = read(helperPath);
 const migration = read(migrationPath);
@@ -26,11 +27,12 @@ const recurringMigration = read(recurringMigrationPath);
 const propertyMigration = read(propertyMigrationPath);
 const commercialMigration = read(commercialMigrationPath);
 const productionMigration = read(productionMigrationPath);
+const hazardPlanMigration = read(hazardPlanMigrationPath);
 const coreData = read('supabase/functions/core-data-read/index.ts');
 
 const handledActions = [...new Set([...operations.matchAll(/action\s*===\s*['"]([^'"]+)['"]/g)].map((m) => m[1]))].sort();
 const helperActions = [...new Set([...helper.matchAll(/^\s{2}([a-z0-9_]+):\s*contract\('([^']+)'/gmi)].map((m) => m[2]))].sort();
-const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
+const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}\n${hazardPlanMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
 
 add('schema164-exact-handler-count', handledActions.length === 48, `Handled operations actions: ${handledActions.length}.`);
 add('schema164-helper-plus325-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
@@ -56,6 +58,7 @@ add('build322-recurring-actions-explicit', helper.includes("recurring_service_pr
 add('build323-property-actions-explicit', helper.includes("property_site_save: contract('property_site_save', 'jobs', 'approve', 'write'") && helper.includes("property_zone_save: contract('property_zone_save', 'jobs', 'approve', 'write'") && helper.includes("property_photo_register: contract('property_photo_register', 'jobs', 'approve', 'write'") && propertyMigration.includes("('property_site_save','jobs','approve','write'") && propertyMigration.includes("('property_zone_save','jobs','approve','write'") && propertyMigration.includes("('property_photo_register','jobs','approve','write'"), 'Build 323 property, zone and photo-reference writes are explicit Jobs-approve contracts.');
 add('build324-commercial-actions-explicit', helper.includes("estimate_workflow_save: contract('estimate_workflow_save', 'jobs', 'approve', 'write'") && helper.includes("estimate_approval_decision: contract('estimate_approval_decision', 'jobs', 'approve', 'write'") && helper.includes("estimate_convert_work_order: contract('estimate_convert_work_order', 'jobs', 'approve', 'write'") && helper.includes("change_order_save: contract('change_order_save', 'jobs', 'approve', 'write'") && commercialMigration.includes("('estimate_workflow_save','jobs','approve','write'") && commercialMigration.includes("('estimate_approval_decision','jobs','approve','write'") && commercialMigration.includes("('estimate_convert_work_order','jobs','approve','write'") && commercialMigration.includes("('change_order_save','jobs','approve','write'"), 'Build 324 estimate, approval, conversion and change-order writes are explicit Jobs-approve contracts.');
 add('build325-production-actions-explicit', helper.includes("landscape_production_session_save: contract('landscape_production_session_save', 'jobs', 'create', 'write'") && helper.includes("landscape_production_quantity_save: contract('landscape_production_quantity_save', 'jobs', 'create', 'write'") && productionMigration.includes("('landscape_production_session_save','jobs','create','write'") && productionMigration.includes("('landscape_production_quantity_save','jobs','create','write'"), 'Build 325 production-session and production-quantity writes are explicit Jobs-create contracts.');
+add('build328-safety-plan-actions-explicit', helper.includes("job_hazard_template_save: contract('job_hazard_template_save', 'safety', 'approve', 'write'") && helper.includes("job_hazard_plan_save: contract('job_hazard_plan_save', 'safety', 'create', 'write'") && helper.includes("job_hazard_plan_review: contract('job_hazard_plan_review', 'safety', 'approve', 'write'") && hazardPlanMigration.includes("('job_hazard_template_save','safety','approve','write'") && hazardPlanMigration.includes("('job_hazard_plan_save','safety','create','write'") && hazardPlanMigration.includes("('job_hazard_plan_review','safety','approve','write'"), 'Build 328 template, field-plan and supervisor-review writes are explicit Safety contracts.');
 
 add('schema164-private-contract-registry', migration.includes('alter table public.app_module_write_contracts enable row level security;') && migration.includes('revoke all on table public.app_module_write_contracts from public, anon, authenticated;') && migration.includes('grant select on table public.app_module_write_contracts to service_role;'), 'Write-contract registry is a private service-role control plane.');
 add('schema164-db-security-assertions', migration.includes('ywi_module_write_boundary_security_assertions') && migration.includes("'operations_action_contract_count'") && migration.includes("'manual_deposit_mutation_disabled'") && migration.includes("'boundary_control_plane_private'"), 'Database assertions verify contract count, disabled payment mutation, and private control plane.');
