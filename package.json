@@ -131,7 +131,9 @@
     "test:landscape-production-tracking": "node scripts/landscape-production-tracking-check.mjs",
     "test:browser:landscape-production-tracking": "playwright test --config=playwright.config.mjs tests/browser/landscape-production-tracking.spec.mjs",
     "test:mobile-crew-app-v2": "node scripts/mobile-crew-app-v2-check.mjs",
-    "test:browser:mobile-crew-app-v2": "playwright test --config=playwright.config.mjs tests/browser/mobile-crew-app-v2.spec.mjs"
+    "test:browser:mobile-crew-app-v2": "playwright test --config=playwright.config.mjs tests/browser/mobile-crew-app-v2.spec.mjs",
+    "test:safety-compliance-command-centre": "node scripts/safety-compliance-command-centre-check.mjs",
+    "test:browser:safety-compliance-command-centre": "playwright test --config=playwright.config.mjs tests/browser/safety-compliance-command-centre.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

@@ -57,6 +57,7 @@ must(mobile,[
 ],'mobile crew UI');
 must(jobs,['Mobile Crew App v2 is available from Today','full Jobs directory remains Supervisor+'],'Jobs privilege boundary');
 must(help,['Mobile Crew App v2','assignment-filtered','customer signoff'],'Build 326 help');
-must(roadmap,['326 — Mobile Crew App v2','Items **318','**326 — Mobile Crew App v2** are implemented','next planned autonomous item is **327 — Safety & Compliance Command Centre**'],'roadmap closure');
+must(roadmap,['326 — Mobile Crew App v2','Items **318','**326 — Mobile Crew App v2**'],'roadmap closure');
+assert.match(roadmap,/Items \*\*318[\s\S]*\*\*326 — Mobile Crew App v2\*\*[\s\S]*are implemented by the current release\./,'Build 326 must remain in the implemented autonomous release set.');
 
 console.log('Build 326 Mobile Crew App v2 source gate GREEN');

@@ -150,6 +150,16 @@ serve(async (req) => {
     const monitorReviewSummary = await safeList(supabase, 'v_monitor_review_summary', '*', 'sort_order', 50, true);
     const operationsDashboardSummary = await safeList(supabase, 'v_operations_dashboard_summary');
     const siteActivitySummary = await safeList(supabase, 'v_site_activity_summary');
+    const incidentNearMissHistory = await safeList(supabase, 'v_incident_near_miss_history', 'submission_id,submission_date,status,site_label,job_code,work_order_number,route_code,equipment_code,incident_kind,severity,medical_treatment_required,lost_time,property_damage,vehicle_involved,event_summary,corrective_action_required,corrective_action_owner,corrective_action_status,corrective_action_due_date,review_count,last_review_action,last_reviewed_at,created_at,updated_at', 'updated_at', 120, false);
+    const correctiveActionTasks = await safeList(supabase, 'v_corrective_action_task_directory', 'id,source_submission_id,task_scope,task_title,task_description,priority,status,assigned_to_name,owner_name,due_date,completed_at,site_label,job_code,work_order_number,route_code,is_overdue,days_overdue,updated_at', 'updated_at', 250, false);
+    const trainingRecords = await safeList(supabase, 'v_training_record_directory', 'id,profile_id,profile_name,profile_role,course_code,course_name,category,completion_status,completed_at,expires_at,is_expired,expires_within_30_days,days_until_expiry,updated_at', 'updated_at', 250, false);
+    const trainingExpirySummary = await safeList(supabase, 'v_training_expiry_summary');
+    const supervisorSafetyQueue = await safeList(supabase, 'v_supervisor_safety_queue', '*', 'sort_at', 250, false);
+    const siteSafetyScorecards = await safeList(supabase, 'v_site_safety_scorecards', '*', 'last_submission_date', 250, false);
+    const equipmentJsaHazards = await safeList(supabase, 'v_equipment_jsa_hazard_link_directory', 'id,source_submission_id,linked_hse_packet_id,equipment_code,job_code,work_order_number,route_code,hazard_title,hazard_summary,jsa_required,status,review_due_date,completed_at,notes,is_overdue,linked_packet_number,updated_at', 'updated_at', 250, false);
+    const equipmentLockouts = await safeList(supabase, 'equipment_items', 'id,equipment_code,equipment_name,category,status,defect_status,is_locked_out,locked_out_at,lockout_reason,current_job_id,assigned_supervisor_profile_id,updated_at', 'updated_at', 250, false);
+    const safetySubmissions = await safeList(supabase, 'submissions', 'id,site,site_id,form_type,date,status,reviewed_at,signed_off_at,requires_admin_review,supervisor_profile_id,created_at,updated_at', 'created_at', 250, false);
+    const clientSiteHazards = await safeList(supabase, 'client_sites', 'id,site_code,site_name,service_address,city,hazard_notes,slope_notes,drainage_wet_area_notes,utility_locate_notes,tree_brush_notes,is_active,property_reviewed_at,updated_at', 'site_name', 250, true);
     return Response.json({
       ok: true,
       linked_hse_packets: mergeRowsById(linkedHsePackets, hseProgress),
@@ -163,7 +173,17 @@ serve(async (req) => {
       hse_link_context_summary: hseLinkContextSummary,
       monitor_review_summary: monitorReviewSummary,
       operations_dashboard_summary: operationsDashboardSummary,
-      site_activity_summary: siteActivitySummary
+      site_activity_summary: siteActivitySummary,
+      incident_near_miss_history: incidentNearMissHistory,
+      corrective_action_tasks: correctiveActionTasks,
+      training_records: trainingRecords,
+      training_expiry_summary: trainingExpirySummary,
+      supervisor_safety_queue: supervisorSafetyQueue,
+      site_safety_scorecards: siteSafetyScorecards,
+      equipment_jsa_hazards: equipmentJsaHazards,
+      equipment_lockouts: equipmentLockouts,
+      safety_submissions: safetySubmissions,
+      client_site_hazards: clientSiteHazards
     }, { headers: corsHeaders });
   }
 
