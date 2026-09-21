@@ -151,3 +151,12 @@
           <p>Weather and workability values are operational evidence, not automatic safety authorization. A return visit requires a reason, and unfinished/site issue notes remain visible to staff for follow-up. Supervisor closeout remains the completion/Finance handoff authority; Build 325 does not auto-post invoices, journals, payments or provider mutations.</p>
         </section>
 
+        <section class="help-section" id="mobile-crew-app-v2">
+          <h2>Mobile Crew App v2</h2>
+          <p>Build 326 adds an assignment-filtered phone workspace to Today for 390px and 430px field screens. My Route sorts our assigned dispatch stops by scheduled time and route order; My Jobs shows the same authorized work without exposing the Supervisor+ full Jobs directory.</p>
+          <p>Property access, gates, parking/trailer limits, pets, recurring instructions, hazards and site notes come from the canonical <code>client_sites</code> property profile. The crew endpoint returns only work assigned to the signed-in profile directly or through its crew membership, and it deliberately excludes Finance totals and pricing.</p>
+          <p>Clock / Break continues through My Profile. Safety / Inspection continues through the existing Safety forms and their offline draft/outbox support. Equipment Scan continues through the existing equipment scanner. Site leaders with Jobs-create authority can start/finish a production session, record a production quantity, create a staff live update, capture execution proof, and flag deficiency/rework through the existing protected operations contracts. Supervisor+ users can submit closeout requests.</p>
+          <p>Material use remains in <code>material_issues</code>, equipment custody remains in <code>equipment_signouts</code>, production stays in <code>job_sessions</code> / <code>job_session_production_quantities</code>, photos/evidence remain in Service Execution Proof and live updates, and closeout remains in <code>work_order_closeout_packages</code>. Build 326 displays those authorities rather than creating parallel records.</p>
+          <p>Customer signoff is shown as closeout status where appropriate; staff do not impersonate the customer. Customer approval/signoff continues through the existing customer portal authority. When offline, server writes are disabled and the screen can show only the last assignment snapshot from the current signed-in browser session; supported Safety forms keep their own local draft/outbox behavior and pending/conflict state stays visible.</p>
+        </section>
+
