@@ -7,7 +7,7 @@
 'use strict';
 
 (function () {
-  const BUILD = 329;
+  const BUILD = 330;
   const SAFETY_COMMAND_CENTRE_BUILD = 327;
   const SECTION_ID = 'hseops';
   const ADMIN_CACHE_KEY = 'ywi_admin_directory_cache_v1';
@@ -84,6 +84,7 @@
         changes: summary?.incidentInvestigations?.changesRequired?.length || 0,
         blocked: summary?.incidentInvestigations?.closureBlocked?.length || 0
       },
+      trainingMatrix: summary?.trainingMatrix?.counts || {},
       acctOpen: acct.open_sync_exception_count || 0
     });
   }
@@ -469,8 +470,178 @@
       commandCentre: deriveSafetyCommandCentre(payload),
       hazardPlanning: deriveJobHazardPlanning(payload),
       incidentInvestigations: deriveIncidentInvestigations(payload),
+      trainingMatrix: deriveTrainingMatrix(payload),
       savedAt: new Date().toISOString()
     };
+  }
+
+  function deriveTrainingMatrix(payload = {}) {
+    const matrix = rows(payload, 'training_matrix');
+    const requirements = rows(payload, 'training_requirements');
+    const courses = rows(payload, 'training_courses');
+    const people = rows(payload, 'training_people').filter((row) => row?.is_active !== false);
+    const equipment = rows(payload, 'training_equipment');
+    const summary = rows(payload, 'training_matrix_summary')[0] || {};
+    const byStatus = (status) => matrix.filter((row) => String(row?.readiness_status || '').toLowerCase() === status);
+    const attention = matrix.filter((row) => !['current','waived'].includes(String(row?.readiness_status || '').toLowerCase()));
+    const counts = {
+      total:Number(summary?.requirement_row_count ?? matrix.length),
+      current:Number(summary?.current_count ?? byStatus('current').length),
+      missing:Number(summary?.missing_count ?? byStatus('missing').length),
+      scheduled:Number(summary?.scheduled_count ?? byStatus('scheduled').length),
+      inProgress:Number(summary?.in_progress_count ?? byStatus('in_progress').length),
+      expired:Number(summary?.expired_count ?? byStatus('expired').length),
+      expiring:Number(summary?.expiring_count ?? byStatus('expiring').length),
+      verificationPending:Number(summary?.verification_pending_count ?? byStatus('verification_pending').length),
+      externalEvidenceMissing:Number(summary?.external_credential_evidence_missing_count ?? byStatus('external_credential_evidence_missing').length),
+      internalAuthorizationPending:Number(summary?.internal_authorization_pending_count ?? byStatus('internal_authorization_pending').length),
+      attention:Number(summary?.attention_count ?? attention.length)
+    };
+    return { matrix, requirements, courses, people, equipment, attention, counts };
+  }
+
+  function trainingReadinessLabel(value) {
+    return {
+      current:'Current',
+      missing:'Missing',
+      scheduled:'Scheduled',
+      in_progress:'In progress',
+      expired:'Expired',
+      expiring:'Expiring',
+      verification_pending:'Supervisor verification pending',
+      external_credential_evidence_missing:'External credential evidence missing',
+      internal_authorization_pending:'Internal authorization pending',
+      waived:'Waived'
+    }[String(value || '').toLowerCase()] || String(value || 'Unknown');
+  }
+
+  function trainingMatrixMarkup(summary, role) {
+    const tm = summary?.trainingMatrix || { matrix:[], requirements:[], courses:[], people:[], equipment:[], attention:[], counts:{} };
+    const canApprove = window.YWISecurity?.hasMinRole?.(role, 'supervisor');
+    const personOptions = tm.people.map((row)=>'<option value="' + escHtml(row.id || '') + '">' + escHtml([row.full_name || row.email || 'Worker',row.employee_number || '',row.current_position || row.role || ''].filter(Boolean).join(' · ')) + '</option>').join('');
+    const requirementOptions = tm.requirements.map((row)=>'<option value="' + escHtml(row.id || '') + '">' + escHtml((row.requirement_name || row.requirement_code || 'Requirement') + ' · ' + (row.course_name || '')) + '</option>').join('');
+    const authorizationRequirementOptions = tm.requirements.filter((row)=>!!row.internal_authorization_required).map((row)=>'<option value="' + escHtml(row.id || '') + '">' + escHtml((row.requirement_name || row.requirement_code || 'Requirement') + ' · internal company authorization') + '</option>').join('');
+    const courseOptions = tm.courses.map((row)=>'<option value="' + escHtml(row.id || '') + '">' + escHtml((row.course_name || row.course_code || 'Course') + (row.validity_months ? ' · ' + row.validity_months + ' mo' : '')) + '</option>').join('');
+    const equipmentOptions = tm.equipment.map((row)=>'<option value="' + escHtml(row.id || '') + '">' + escHtml([row.equipment_code || '',row.equipment_name || 'Equipment',row.category || '',row.is_locked_out ? 'LOCKED OUT' : ''].filter(Boolean).join(' · ')) + '</option>').join('');
+    const rowsHtml = [...tm.matrix].sort((a,b)=>{
+      const rank={expired:0,missing:1,external_credential_evidence_missing:2,verification_pending:3,internal_authorization_pending:4,expiring:5,in_progress:6,scheduled:7,current:8,waived:9};
+      const d=(rank[String(a?.readiness_status||'')]??99)-(rank[String(b?.readiness_status||'')]??99);
+      return d || String(a?.profile_name || '').localeCompare(String(b?.profile_name || ''));
+    }).slice(0,30).map((row)=>{
+      const context=[row.equipment_code || row.equipment_category || '',row.current_position || row.profile_role || ''].filter(Boolean).join(' · ');
+      const evidence=[
+        row.completed_at ? 'Completed ' + row.completed_at : '',
+        row.expires_at ? 'Expires ' + row.expires_at : '',
+        row.verified_at ? 'Verified ' + row.verified_at : '',
+        row.certificate_number ? 'Certificate on file' : '',
+        row.license_number ? 'Licence/credential reference on file' : '',
+        row.internal_authorization_required ? 'Internal auth: ' + (row.internal_authorization_status || 'pending') : ''
+      ].filter(Boolean).join(' • ');
+      return '<article class="hseops-card" data-training-matrix-row="' + escHtml(row.profile_id || '') + '|' + escHtml(row.requirement_id || '') + '">'
+        + '<button type="button" class="hseops-card-link" data-training-load-profile="' + escHtml(row.profile_id || '') + '" data-training-load-requirement="' + escHtml(row.requirement_id || '') + '" data-training-load-course="' + escHtml(row.course_id || '') + '" data-training-load-equipment="' + escHtml(row.equipment_item_id || '') + '" data-training-load-category="' + escHtml(row.equipment_category || '') + '">'
+        + '<strong>' + escHtml(row.profile_name || 'Worker') + ' · ' + escHtml(row.requirement_name || row.course_name || 'Training requirement') + '</strong>'
+        + '<span>' + escHtml(trainingReadinessLabel(row.readiness_status)) + (context ? ' · ' + escHtml(context) : '') + '</span>'
+        + '<small>' + escHtml(evidence || 'No current training evidence recorded.') + '</small>'
+        + '<em>Load into workbench</em></button></article>';
+    }).join('');
+
+    const requirementCards = tm.requirements.map((row)=>{
+      const flags=[
+        row.requirement_mode || '',
+        row.internal_authorization_required ? 'internal authorization' : '',
+        row.external_credential_expected ? 'external credential evidence' : '',
+        row.equipment_context_required ? 'equipment context' : ''
+      ].filter(Boolean).join(' • ');
+      return '<article class="hseops-card"><strong>' + escHtml(row.requirement_name || row.requirement_code || 'Requirement') + '</strong><span>' + escHtml(row.course_name || '') + '</span><small>' + escHtml(flags) + '</small><em>' + escHtml(row.applicability_note || '') + '</em></article>';
+    }).join('');
+
+    return '<section id="trainingCertificationMatrix" class="admin-panel-block" data-build="330" style="margin-top:16px;">'
+      + '<div class="section-heading"><div><span class="module-kicker">Build 330 · workforce readiness</span><h3 style="margin:4px 0 0;">Training &amp; Certification Matrix</h3><p class="section-subtitle">Role/equipment requirements, existing training-record evidence, refreshers/expiry and separate internal-company authorization review.</p></div></div>'
+      + '<div class="notice" style="margin-bottom:14px;"><strong>Internal readiness is not legal authorization.</strong> A current training record, certificate number, licence reference, or internal authorization decision does not by itself establish a statutory qualification, regulatory credential, driver privilege, pesticide/applicator authority, or other external legal authorization. Verify applicable external requirements independently.</div>'
+      + '<div class="admin-backbone-summary">'
+      + '<div class="admin-backbone-card"><span>Requirement rows</span><strong>' + escHtml(tm.counts.total || 0) + '</strong><small>Automatic role/position plus explicit worker/equipment assignments.</small></div>'
+      + '<div class="admin-backbone-card"><span>Current</span><strong>' + escHtml(tm.counts.current || 0) + '</strong><small>Training/readiness evidence currently satisfied.</small></div>'
+      + '<div class="admin-backbone-card"><span>Needs attention</span><strong>' + escHtml(tm.counts.attention || 0) + '</strong><small>Anything not current/waived.</small></div>'
+      + '<div class="admin-backbone-card"><span>Missing / expired</span><strong>' + escHtml((tm.counts.missing || 0)+(tm.counts.expired || 0)) + '</strong><small>No completed record or expired evidence.</small></div>'
+      + '<div class="admin-backbone-card"><span>Verification / external evidence</span><strong>' + escHtml((tm.counts.verificationPending || 0)+(tm.counts.externalEvidenceMissing || 0)) + '</strong><small>Supervisor verification or credential reference still missing.</small></div>'
+      + '<div class="admin-backbone-card"><span>Internal authorization pending</span><strong>' + escHtml(tm.counts.internalAuthorizationPending || 0) + '</strong><small>Training alone does not auto-authorize equipment/task use.</small></div>'
+      + '</div>'
+      + (canApprove ? '<details class="admin-panel-block" open style="margin-top:14px;"><summary><strong>Training matrix workbench</strong></summary>'
+        + '<div class="section-heading" style="margin-top:12px;"><div><h4 style="margin:0;">1. Assign requirement</h4><p class="section-subtitle">Use explicit assignments for conditional/equipment requirements. Automatic role/position requirements appear without an assignment row.</p></div></div>'
+        + '<div class="hseops-grid"><label>Worker<select id="tm_assign_profile"><option value="">Choose worker</option>' + personOptions + '</select></label><label>Requirement<select id="tm_assign_requirement"><option value="">Choose requirement</option>' + requirementOptions + '</select></label><label>Equipment item (optional)<select id="tm_assign_equipment"><option value="">No specific item</option>' + equipmentOptions + '</select></label><label>Equipment category (optional)<input id="tm_assign_category" type="text" placeholder="mower, trailer, chainsaw…"></label><label>Status<select id="tm_assign_status"><option value="required">Required</option><option value="deferred">Deferred</option><option value="not_required">Not required</option></select></label><label>Due date<input id="tm_assign_due" type="date"></label></div>'
+        + '<label style="display:block;margin-top:10px;">Assignment note<textarea id="tm_assign_note" rows="2"></textarea></label><div class="hseops-inline-actions" style="margin-top:10px;"><button type="button" data-training-assignment-save="1">Save requirement assignment</button></div>'
+        + '<div class="section-heading" style="margin-top:16px;"><div><h4 style="margin:0;">2. Record training / certificate evidence</h4><p class="section-subtitle">Writes to the existing training-record authority. External credential identifiers are evidence references, not legal validation.</p></div></div>'
+        + '<div class="hseops-grid"><label>Worker<select id="tm_record_profile"><option value="">Choose worker</option>' + personOptions + '</select></label><label>Course<select id="tm_record_course"><option value="">Choose course</option>' + courseOptions + '</select></label><label>Status<select id="tm_record_status"><option value="completed">Completed</option><option value="scheduled">Scheduled</option><option value="in_progress">In progress</option><option value="expired">Expired</option><option value="waived">Waived</option></select></label><label>Completed<input id="tm_record_completed" type="date"></label><label>Expires<input id="tm_record_expires" type="date"></label><label><input id="tm_record_verified" type="checkbox"> Supervisor verified</label></div>'
+        + '<div class="hseops-grid" style="margin-top:10px;"><label>Trainer<input id="tm_record_trainer" type="text"></label><label>Provider<input id="tm_record_provider" type="text"></label><label>Certificate number / reference<input id="tm_record_certificate" type="text"></label><label>Licence / credential reference<input id="tm_record_license" type="text"></label></div><label style="display:block;margin-top:10px;">Training notes<textarea id="tm_record_notes" rows="2"></textarea></label><div class="hseops-inline-actions" style="margin-top:10px;"><button type="button" data-training-record-save="1">Save training evidence</button></div>'
+        + '<div class="section-heading" style="margin-top:16px;"><div><h4 style="margin:0;">3. Internal-company authorization decision</h4><p class="section-subtitle">Only for requirements configured to need internal authorization. Authorization is blocked unless supporting training is current/verified; external/legal authority remains separate.</p></div></div>'
+        + '<div class="hseops-grid"><label>Worker<select id="tm_auth_profile"><option value="">Choose worker</option>' + personOptions + '</select></label><label>Requirement<select id="tm_auth_requirement"><option value="">Choose internal-authorization requirement</option>' + authorizationRequirementOptions + '</select></label><label>Equipment item (optional)<select id="tm_auth_equipment"><option value="">No specific item</option>' + equipmentOptions + '</select></label><label>Equipment category<input id="tm_auth_category" type="text"></label><label>Decision<select id="tm_auth_status"><option value="pending">Pending</option><option value="authorized">Authorized — internal company only</option><option value="suspended">Suspended</option><option value="revoked">Revoked</option></select></label><label>Internal expiry<input id="tm_auth_expires" type="date"></label></div>'
+        + '<label style="display:block;margin-top:10px;">Evidence reference<input id="tm_auth_evidence" type="text" placeholder="training record, supervisor practical check, external credential reference…"></label><label style="display:block;margin-top:10px;">Decision note<textarea id="tm_auth_note" rows="2"></textarea></label><div class="hseops-inline-actions" style="margin-top:10px;"><button type="button" data-training-authorization-save="1">Save internal authorization decision</button></div>'
+        + '<div id="tm_message" class="notice" aria-live="polite" style="margin-top:10px;">Use the matrix rows below to load worker/requirement context into this workbench.</div></details>' : '')
+      + '<div class="section-heading" style="margin-top:16px;"><div><h4 style="margin:0;">Readiness matrix</h4><p class="section-subtitle">Attention-first view across orientation, WHMIS where applicable, first aid/CPR where required, equipment authorization, chainsaw/brush, mower/tractor, pesticide/application credentials where required, trailer/towing, supervisor training and company SOP refreshers.</p></div></div>'
+      + (rowsHtml ? '<div class="hseops-grid hseops-grid--compact">' + rowsHtml + '</div>' : '<div class="notice">No active matrix rows are loaded yet.</div>')
+      + '<details class="admin-panel-block" style="margin-top:14px;"><summary><strong>Requirement library</strong></summary><div class="hseops-grid hseops-grid--compact" style="margin-top:12px;">' + (requirementCards || '<div class="notice">No requirements loaded.</div>') + '</div></details>'
+      + '</section>';
+  }
+
+  function loadTrainingMatrixContext(section, button) {
+    if(!section || !button) return;
+    const profile=button.getAttribute('data-training-load-profile') || '';
+    const requirement=button.getAttribute('data-training-load-requirement') || '';
+    const course=button.getAttribute('data-training-load-course') || '';
+    const equipment=button.getAttribute('data-training-load-equipment') || '';
+    const category=button.getAttribute('data-training-load-category') || '';
+    const set=(id,value)=>{const el=section.querySelector(id);if(el) el.value=value || '';};
+    set('#tm_assign_profile',profile);set('#tm_record_profile',profile);set('#tm_auth_profile',profile);
+    set('#tm_assign_requirement',requirement);set('#tm_auth_requirement',requirement);set('#tm_record_course',course);
+    set('#tm_assign_equipment',equipment);set('#tm_auth_equipment',equipment);
+    set('#tm_assign_category',category);set('#tm_auth_category',category);
+    const msg=section.querySelector('#tm_message');
+    if(msg) msg.textContent='Worker/requirement context loaded. Review the current matrix evidence before recording a change.';
+  }
+
+  async function saveTrainingAssignment(section) {
+    const get=(id)=>section.querySelector(id)?.value || '';
+    const profileId=get('#tm_assign_profile'), requirementId=get('#tm_assign_requirement');
+    if(!profileId || !requirementId) throw new Error('Choose a worker and requirement.');
+    const result=await window.YWIAPI?.manageOperations?.({
+      action:'training_assignment_save',profile_id:profileId,requirement_id:requirementId,
+      equipment_item_id:get('#tm_assign_equipment') || null,equipment_category:get('#tm_assign_category') || null,
+      assignment_status:get('#tm_assign_status') || 'required',due_date:get('#tm_assign_due') || null,
+      assignment_note:get('#tm_assign_note') || ''
+    });
+    if(!result?.ok) throw new Error(result?.error || 'Training assignment could not be saved.');
+    return result;
+  }
+
+  async function saveTrainingRecord(section) {
+    const get=(id)=>section.querySelector(id)?.value || '';
+    const profileId=get('#tm_record_profile'), courseId=get('#tm_record_course');
+    if(!profileId || !courseId) throw new Error('Choose a worker and training course.');
+    const result=await window.YWIAPI?.manageOperations?.({
+      action:'training_record_save',profile_id:profileId,course_id:courseId,
+      completion_status:get('#tm_record_status') || 'completed',
+      completed_at:get('#tm_record_completed') || null,expires_at:get('#tm_record_expires') || null,
+      trainer_name:get('#tm_record_trainer'),provider_name:get('#tm_record_provider'),
+      certificate_number:get('#tm_record_certificate'),license_number:get('#tm_record_license'),
+      notes:get('#tm_record_notes'),supervisor_verified:!!section.querySelector('#tm_record_verified')?.checked
+    });
+    if(!result?.ok) throw new Error(result?.error || 'Training evidence could not be saved.');
+    return result;
+  }
+
+  async function saveTrainingAuthorization(section) {
+    const get=(id)=>section.querySelector(id)?.value || '';
+    const profileId=get('#tm_auth_profile'), requirementId=get('#tm_auth_requirement');
+    if(!profileId || !requirementId) throw new Error('Choose a worker and internal-authorization requirement.');
+    const result=await window.YWIAPI?.manageOperations?.({
+      action:'training_internal_authorization_decision',profile_id:profileId,requirement_id:requirementId,
+      equipment_item_id:get('#tm_auth_equipment') || null,equipment_category:get('#tm_auth_category') || null,
+      authorization_status:get('#tm_auth_status') || 'pending',
+      expires_at:get('#tm_auth_expires') || null,evidence_reference:get('#tm_auth_evidence'),
+      decision_note:get('#tm_auth_note')
+    });
+    if(!result?.ok) throw new Error(result?.error || 'Internal authorization decision could not be saved.');
+    return result;
   }
 
   function deriveIncidentInvestigations(payload = {}) {
@@ -913,6 +1084,7 @@
       ${safetyCommandCentreMarkup(summary)}
       ${jobHazardPlanningMarkup(summary, role)}
       ${incidentInvestigationMarkup(summary, role)}
+      ${trainingMatrixMarkup(summary, role)}
       ${summaryMarkup(summary)}
       <div class="admin-panel-block" style="margin-top:16px;">
         <div class="section-heading"><div><h3 style="margin:0;">Field safety quick actions</h3><p class="section-subtitle">Open the most-used field workflows quickly on phone, tablet, or desktop.</p></div></div>
@@ -1033,6 +1205,48 @@
         finally{investigationCloseBtn.disabled=false;}
         return;
       }
+      const trainingLoadBtn=event.target.closest('[data-training-load-profile]');
+      if(trainingLoadBtn && section.contains(trainingLoadBtn)){
+        loadTrainingMatrixContext(section,trainingLoadBtn);
+        section.querySelector('#tm_assign_profile')?.scrollIntoView?.({block:'center'});
+        return;
+      }
+      const trainingAssignmentBtn=event.target.closest('[data-training-assignment-save]');
+      if(trainingAssignmentBtn && section.contains(trainingAssignmentBtn)){
+        const msg=section.querySelector('#tm_message');
+        try{
+          trainingAssignmentBtn.disabled=true;
+          await saveTrainingAssignment(section);
+          if(msg) msg.textContent='Training requirement assignment saved. Matrix readiness will refresh from the authoritative records.';
+          state.lastLoadedAt=0; await loadLiveSummary();
+        }catch(error){if(msg) msg.textContent=error?.message || 'Training assignment could not be saved.';}
+        finally{trainingAssignmentBtn.disabled=false;}
+        return;
+      }
+      const trainingRecordBtn=event.target.closest('[data-training-record-save]');
+      if(trainingRecordBtn && section.contains(trainingRecordBtn)){
+        const msg=section.querySelector('#tm_message');
+        try{
+          trainingRecordBtn.disabled=true;
+          await saveTrainingRecord(section);
+          if(msg) msg.textContent='Training evidence saved in the existing training-record authority. This does not by itself establish legal authorization.';
+          state.lastLoadedAt=0; await loadLiveSummary();
+        }catch(error){if(msg) msg.textContent=error?.message || 'Training evidence could not be saved.';}
+        finally{trainingRecordBtn.disabled=false;}
+        return;
+      }
+      const trainingAuthBtn=event.target.closest('[data-training-authorization-save]');
+      if(trainingAuthBtn && section.contains(trainingAuthBtn)){
+        const msg=section.querySelector('#tm_message');
+        try{
+          trainingAuthBtn.disabled=true;
+          const result=await saveTrainingAuthorization(section);
+          if(msg) msg.textContent='Internal-company authorization saved as ' + (result?.record?.authorization_status || 'pending') + '. External/legal authority remains separate.';
+          state.lastLoadedAt=0; await loadLiveSummary();
+        }catch(error){if(msg) msg.textContent=error?.message || 'Internal authorization decision could not be saved.';}
+        finally{trainingAuthBtn.disabled=false;}
+        return;
+      }
       const routeBtn = event.target.closest('[data-route]');
       if (routeBtn && section.contains(routeBtn)) {
         window.YWIRouter?.showSection?.(routeBtn.getAttribute('data-route') || 'toolbox');
@@ -1103,6 +1317,6 @@
     });
   }
 
-  window.YWIHSEOpsUI = Object.freeze({ init, refresh: loadLiveSummary, normalizeSummary, deriveSafetyCommandCentre, deriveJobHazardPlanning, deriveIncidentInvestigations, build:BUILD });
+  window.YWIHSEOpsUI = Object.freeze({ init, refresh: loadLiveSummary, normalizeSummary, deriveSafetyCommandCentre, deriveJobHazardPlanning, deriveIncidentInvestigations, deriveTrainingMatrix, build:BUILD });
   document.addEventListener('DOMContentLoaded', init);
 })();

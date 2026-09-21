@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 54, 'Exactly 54 operations actions must be contracted through Schema 217.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 54);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 58, 'Exactly 58 operations actions must be contracted through Schema 218.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 58);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
@@ -116,6 +116,26 @@ assert.equal(incidentInvestigationClose.ownerModule, 'safety');
 assert.equal(incidentInvestigationClose.minimum, 'approve');
 assert.equal(incidentInvestigationClose.mode, 'write');
 assert.equal(incidentInvestigationClose.eventKey, 'safety.incident_investigation.closed');
+
+const trainingRequirement = resolveModuleWriteBoundary('training_requirement_save');
+assert.equal(trainingRequirement.ownerModule, 'safety');
+assert.equal(trainingRequirement.minimum, 'approve');
+assert.equal(trainingRequirement.eventKey, 'safety.training_requirement.saved');
+
+const trainingAssignment = resolveModuleWriteBoundary('training_assignment_save');
+assert.equal(trainingAssignment.ownerModule, 'safety');
+assert.equal(trainingAssignment.minimum, 'approve');
+assert.equal(trainingAssignment.eventKey, 'safety.training_assignment.saved');
+
+const trainingRecord = resolveModuleWriteBoundary('training_record_save');
+assert.equal(trainingRecord.ownerModule, 'safety');
+assert.equal(trainingRecord.minimum, 'approve');
+assert.equal(trainingRecord.eventKey, 'safety.training_record.saved');
+
+const trainingAuthorization = resolveModuleWriteBoundary('training_internal_authorization_decision');
+assert.equal(trainingAuthorization.ownerModule, 'safety');
+assert.equal(trainingAuthorization.minimum, 'approve');
+assert.equal(trainingAuthorization.eventKey, 'safety.training_internal_authorization.decided');
 
 const recurringProgram = resolveModuleWriteBoundary('recurring_service_program_save');
 assert.equal(recurringProgram.ownerModule, 'jobs');
@@ -222,7 +242,7 @@ for (const action of Array.from(MODULE_WRITE_ACTIONS)) {
   if (boundary.crossModule) assert.ok(boundary.eventKey, `Cross-module contract needs event key: ${action}`);
 }
 
-console.log('PASS boundary-exact-54-actions');
+console.log('PASS boundary-exact-58-actions');
 console.log('PASS boundary-build320-attention-management');
 console.log('PASS boundary-build322-recurring-service-management');
 console.log('PASS boundary-build323-property-site-management');
@@ -230,6 +250,7 @@ console.log('PASS boundary-build324-estimate-job-invoice-management');
 console.log('PASS boundary-build325-landscape-production-management');
 console.log('PASS boundary-build328-job-hazard-plans');
 console.log('PASS boundary-build329-incident-investigation');
+console.log('PASS boundary-build330-training-certification-matrix');
 console.log('PASS boundary-finance-read-write-ownership');
 console.log('PASS boundary-jobs-cross-module-event');
 console.log('PASS boundary-admin-write-ownership');
@@ -237,4 +258,4 @@ console.log('PASS boundary-disabled-payment-mutation');
 console.log('PASS boundary-unknown-action-fails-closed');
 console.log('PASS boundary-audit-metadata');
 console.log('PASS boundary-all-contracts-valid');
-console.log('\nSchema 217 module write-boundary behavior gate passed: 13/13 checks.');
+console.log('\nSchema 218 module write-boundary behavior gate passed: 13/13 checks.');
