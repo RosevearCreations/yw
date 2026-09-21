@@ -33,7 +33,7 @@ must(endpoint,[
 assert.ok(!endpoint.includes('subtotal,total_amount,total_cost'), 'Mobile crew response must not expose work-order Finance totals.');
 
 must(api,['fetchMobileCrewContext','mobile-crew-context','ywi_rpc_mobile_crew_context','window.YWI_SB || window._sb'],'API client');
-must(migration,['security definer','auth.uid()','ywi_effective_module_access','assignment-filtered','ywi_rpc_mobile_crew_context','revoke all on function public.ywi_rpc_mobile_crew_context(integer) from public, anon','grant execute on function public.ywi_rpc_mobile_crew_context(integer) to authenticated','v_mobile_crew_app_v2_security_assertions','215 as expected_schema_version','exposes no Finance totals'],'schema 215 mobile crew RPC');
+must(migration,['security definer','auth.uid()','ywi_effective_module_access','assignment-filtered','ywi_rpc_mobile_crew_context','revoke execute on function public.ywi_rpc_mobile_crew_context(integer) from public, anon','grant execute on function public.ywi_rpc_mobile_crew_context(integer) to authenticated','v_mobile_crew_app_v2_security_assertions','215 as expected_schema_version','exposes no Finance totals'],'schema 215 mobile crew RPC');
 must(mobile,[
   'Mobile Crew App v2',
   'My Route',
