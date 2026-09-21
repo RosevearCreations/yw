@@ -294,7 +294,7 @@ Create role/equipment-based training requirements for orientation, WHMIS where a
 
 Give each significant asset an operational identity with asset code, QR/barcode, make/model/serial, purchase date/cost, assigned crew/location, status, manuals, photos, hours/meter where supported, accessories, current lockout state, latest inspection, next maintenance, lifecycle cost and replacement state.
 
-#### 332 — Daily Equipment Inspection & Lockout
+#### **332 — Daily Equipment Inspection & Lockout** is implemented
 
 Create machine-specific pre-use/post-use inspections covering guards/safety systems, fluids, blades/cutting components, tires/wheels, fuel/battery, accessories, damage and defects. Safety-critical failure should create lockout, repair/service work, supervisor review and verified return to service.
 
