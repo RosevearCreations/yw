@@ -778,6 +778,15 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     });
   }
 
+  async function fetchMobileCrewContext(payload = {}) {
+    return jsonFetch('mobile-crew-context', {
+      method: 'POST',
+      body: payload,
+      requireAuth: true,
+      timeoutMs: 20000
+    });
+  }
+
   async function loadAdminDirectory(payload = {}) {
     const body = (payload && typeof payload === 'object') ? { ...payload } : {};
     const requestedTimeout = Number(body.timeoutMs || 0);
@@ -1087,6 +1096,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     fetchProfileScope,
     saveMyProfile,
     fetchJobsDirectory,
+    fetchMobileCrewContext,
     loadAdminDirectory,
     loadAdminSelectors,
     manageAdminEntity,
