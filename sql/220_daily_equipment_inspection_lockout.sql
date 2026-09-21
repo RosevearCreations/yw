@@ -223,4 +223,46 @@ select
   count(*) filter(where return_to_service_status in ('blocked','ready_for_verification'))::int as return_to_service_pending_count
 from public.equipment_daily_inspections;
 
+revoke all on table public.v_equipment_daily_inspection_templates from public,anon,authenticated;
+revoke all on table public.v_equipment_daily_inspection_workbench from public,anon,authenticated;
+revoke all on table public.v_equipment_daily_inspection_summary from public,anon,authenticated;
+grant select on table public.v_equipment_daily_inspection_templates to service_role;
+grant select on table public.v_equipment_daily_inspection_workbench to service_role;
+grant select on table public.v_equipment_daily_inspection_summary to service_role;
+
+insert into public.app_schema_versions(
+  schema_version,schema_name,description,status,applied_at,applied_by,notes,migration_key,release_label
+) values (
+  220,'daily_equipment_inspection_lockout',
+  'Build 332 daily equipment pre-use/post-use inspection, fail-closed critical lockout, supervisor review and verified return to service.',
+  'applied',now(),'schema220',
+  'Reuses equipment_items, existing equipment lockout fields and equipment_service_tasks; does not replace asset, service or preventive-maintenance authority.',
+  '220_daily_equipment_inspection_lockout.sql','schema220'
+)
+on conflict(schema_version) do update set
+  schema_name=excluded.schema_name,description=excluded.description,status='applied',applied_at=now(),
+  applied_by=excluded.applied_by,notes=excluded.notes,migration_key=excluded.migration_key,release_label=excluded.release_label;
+
+create or replace view public.v_schema_drift_status
+with (security_invoker=true)
+as
+select
+  220 as expected_schema_version,
+  coalesce(max(schema_version) filter(where status='applied'),0) as latest_applied_schema_version,
+  case
+    when coalesce(max(schema_version) filter(where status='applied'),0)=220 then 'current'
+    when coalesce(max(schema_version) filter(where status='applied'),0)>220 then 'ahead'
+    else 'drift'
+  end as drift_status,
+  case
+    when coalesce(max(schema_version) filter(where status='applied'),0)=220 then 'Live database matches the repository schema marker.'
+    when coalesce(max(schema_version) filter(where status='applied'),0)>220 then 'Live database is ahead of the repository schema marker.'
+    else 'Live database is behind the repository schema marker.'
+  end as message,
+  now() as checked_at
+from public.app_schema_versions;
+
+revoke all on table public.v_schema_drift_status from public,anon,authenticated;
+grant select on table public.v_schema_drift_status to service_role;
+
 commit;
