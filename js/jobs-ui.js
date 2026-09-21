@@ -2257,11 +2257,9 @@
           opened = Boolean(win);
         } catch {}
       }
-      setNotice(
-        e.jobCommercialSummary,
-        `Build 317 accountant package v2 generated${exportId ? ` · ${exportId}` : ''} with ${fileCount} data file(s). ${opened ? 'Private signed download opened.' : 'Use the generated export row to request a fresh private signed download if the browser blocked the new tab.'}`
-      );
+      const successMessage = `Build 317 accountant package v2 generated${exportId ? ` · ${exportId}` : ''} with ${fileCount} data file(s). ${opened ? 'Private signed download opened.' : 'Use the generated export row to request a fresh private signed download if the browser blocked the new tab.'}`;
       await loadData();
+      setNotice(e.jobCommercialSummary, successMessage);
     }
 
     async function lockOrReopenFirstAccountingPeriod() {
