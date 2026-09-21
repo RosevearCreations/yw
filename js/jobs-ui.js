@@ -92,7 +92,9 @@
       remittanceFilingReview: [],
       monthEndCloseWorkbench: [],
       equipmentAccountability: [],
-      equipmentServiceTasks: []
+      equipmentServiceTasks: [],
+      equipmentRegistryV2: [],
+      equipmentRegistryV2Summary: []
     };
 
     function ensureLayout() {
@@ -188,7 +190,7 @@
           <div class="section-heading">
             <div>
               <h2>Equipment</h2>
-              <p class="section-subtitle">Manage rental-style asset records, pool keys, serials, images, purchase history, signed checkout/return events, and post-return damage evidence.</p>
+              <p class="section-subtitle">Build 331 registry v2: operational asset identity, hardened QR/barcode lookup, crew/location assignment, manuals/photos/accessories, meters, lifecycle cost and replacement planning—while existing custody, inspection, lockout and service workflows remain authoritative.</p>
             </div>
             <div class="admin-heading-actions">
               <a href="#admin" class="secondary" id="eq_open_admin_link">Open Admin Queue</a>
@@ -207,6 +209,7 @@
             <label>Status<input id="eq_status" type="text" value="available" /></label>
             <label>Current Job<input id="eq_current_job_code" type="text" /></label>
             <label>Assigned Supervisor<input id="eq_assigned_supervisor" type="text" /></label>
+            <label>Assigned Crew<select id="eq_assigned_crew"><option value="">No saved crew</option></select></label>
             <label>Serial<input id="eq_serial" type="text" /></label>
             <label>Asset Tag<input id="eq_asset_tag" type="text" /></label>
             <label>QR Code / Scan Value<input id="eq_qr_code_value" type="text" placeholder="QR or NFC value" /></label>
@@ -219,6 +222,10 @@
             <label>Year<input id="eq_year" type="number" min="1900" max="2100" /></label>
             <label>Purchase Date<input id="eq_purchase_date" type="date" /></label>
             <label>Purchase Price<input id="eq_purchase_price" type="number" min="0" step="0.01" /></label>
+            <label>Purchase Vendor<input id="eq_purchase_vendor" type="text" /></label>
+            <label>Recorded Purchase Cost<input id="eq_purchase_cost" type="number" min="0" step="0.01" /></label>
+            <label>Warranty Expiry<input id="eq_warranty_expiry" type="date" /></label>
+            <label>Manufacture Year<input id="eq_manufacture_year" type="number" min="1900" max="2100" /></label>
             <label>Condition<input id="eq_condition" type="text" value="ready" /></label>
             <label>Image URL<input id="eq_image_url" type="url" /></label>
             <label>Service Interval (days)<input id="eq_service_interval_days" type="number" min="0" step="1" /></label>
@@ -229,6 +236,43 @@
             <label>Defect Status<input id="eq_defect_status" type="text" value="clear" /></label>
             <label>Defect Notes<input id="eq_defect_notes" type="text" /></label>
             <label style="display:flex;align-items:center;gap:8px;"> <input id="eq_is_locked_out" type="checkbox" /> Locked Out </label>
+          </div>
+          <div id="equipment_registry_v2" class="admin-panel-block" data-build="331" style="margin-top:16px;">
+            <div class="section-heading">
+              <div>
+                <span class="module-kicker">Build 331 · operational asset identity</span>
+                <h3 style="margin:4px 0 0;">Equipment Registry &amp; QR System v2</h3>
+                <p class="section-subtitle">QR identity uses the existing exact server-side identifier registry. A scan never bypasses custody, lockout, inspection or service authority.</p>
+              </div>
+            </div>
+            <div id="eq_registry_summary" class="notice" style="margin-bottom:12px;">Load an asset to review registry readiness and lifecycle evidence.</div>
+            <div class="grid">
+              <label>Meter Type<select id="eq_meter_type"><option value="none">None</option><option value="hours">Hours</option><option value="odometer">Odometer</option><option value="cycles">Cycles</option><option value="other">Other</option></select></label>
+              <label>Meter Unit<input id="eq_meter_unit" type="text" placeholder="hours, km, cycles…" /></label>
+              <label>Current Meter<input id="eq_meter_value" type="number" min="0" step="0.01" /></label>
+              <label>Meter Reading At<input id="eq_meter_at" type="datetime-local" /></label>
+              <label>Replacement State<select id="eq_replacement_state"><option value="retain">Retain</option><option value="monitor">Monitor</option><option value="plan_replacement">Plan replacement</option><option value="replace">Replace</option><option value="retired">Retired</option></select></label>
+              <label>Replacement Target<input id="eq_replacement_target_date" type="date" /></label>
+              <label>Replacement Estimate<input id="eq_replacement_estimated_cost" type="number" min="0" step="0.01" /></label>
+              <label>QR Label Value<input id="eq_qr_label_preview" type="text" readonly /></label>
+            </div>
+            <label style="display:block;margin-top:10px;">Replacement Reason<textarea id="eq_replacement_reason" rows="2"></textarea></label>
+            <div class="hseops-inline-actions" style="margin-top:10px;">
+              <button id="eq_copy_qr_label" class="secondary" type="button">Copy QR Label Value</button>
+              <span class="muted">The QR token is unique and resolves through the same hardened scanner already used for custody events.</span>
+            </div>
+            <div class="grid" style="margin-top:12px;">
+              <label>Manuals / Documents
+                <textarea id="eq_registry_documents" rows="5" placeholder="manual | Owner Manual | https://… | v1 | notes"></textarea>
+              </label>
+              <label>Registry Photos
+                <textarea id="eq_registry_photos" rows="5" placeholder="profile | https://… | Front view"></textarea>
+              </label>
+              <label>Accessories
+                <textarea id="eq_registry_accessories" rows="5" placeholder="Battery | 2 | active | SERIAL | 125.00 | notes"></textarea>
+              </label>
+            </div>
+            <p class="section-subtitle" style="margin-top:10px;">Recorded lifecycle cost is acquisition cost plus recorded service-history cost. Open service estimates are shown separately and are not treated as actual cost.</p>
           </div>
           <label style="display:block;margin-top:12px;">Comments
             <textarea id="eq_comments" rows="2" placeholder="Damage notes, maintenance notes, rental comments"></textarea>
@@ -968,6 +1012,7 @@
         eqStatus: $('#eq_status'),
         eqCurrentJobCode: $('#eq_current_job_code'),
         eqAssignedSupervisor: $('#eq_assigned_supervisor'),
+        eqAssignedCrew: $('#eq_assigned_crew'),
         eqSerial: $('#eq_serial'),
         eqPoolKey: $('#eq_pool_key'),
         eqAssetTag: $('#eq_asset_tag'),
@@ -981,6 +1026,10 @@
         eqYear: $('#eq_year'),
         eqPurchaseDate: $('#eq_purchase_date'),
         eqPurchasePrice: $('#eq_purchase_price'),
+        eqPurchaseVendor: $('#eq_purchase_vendor'),
+        eqPurchaseCost: $('#eq_purchase_cost'),
+        eqWarrantyExpiry: $('#eq_warranty_expiry'),
+        eqManufactureYear: $('#eq_manufacture_year'),
         eqCondition: $('#eq_condition'),
         eqImageUrl: $('#eq_image_url'),
         eqServiceIntervalDays: $('#eq_service_interval_days'),
@@ -992,6 +1041,20 @@
         eqDefectNotes: $('#eq_defect_notes'),
         eqIsLockedOut: $('#eq_is_locked_out'),
         eqComments: $('#eq_comments'),
+        eqMeterType: $('#eq_meter_type'),
+        eqMeterUnit: $('#eq_meter_unit'),
+        eqMeterValue: $('#eq_meter_value'),
+        eqMeterAt: $('#eq_meter_at'),
+        eqReplacementState: $('#eq_replacement_state'),
+        eqReplacementTargetDate: $('#eq_replacement_target_date'),
+        eqReplacementEstimatedCost: $('#eq_replacement_estimated_cost'),
+        eqReplacementReason: $('#eq_replacement_reason'),
+        eqQrLabelPreview: $('#eq_qr_label_preview'),
+        eqCopyQrLabel: $('#eq_copy_qr_label'),
+        eqRegistryDocuments: $('#eq_registry_documents'),
+        eqRegistryPhotos: $('#eq_registry_photos'),
+        eqRegistryAccessories: $('#eq_registry_accessories'),
+        eqRegistrySummary: $('#eq_registry_summary'),
         eqAccessNotice: $('#equipment_access_notice'),
         eqWorkerSignature: $('#eq_worker_signature'),
         eqSupervisorSignature: $('#eq_supervisor_signature'),
