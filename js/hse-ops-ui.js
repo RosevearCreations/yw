@@ -7,7 +7,7 @@
 'use strict';
 
 (function () {
-  const BUILD = 328;
+  const BUILD = 329;
   const SAFETY_COMMAND_CENTRE_BUILD = 327;
   const SECTION_ID = 'hseops';
   const ADMIN_CACHE_KEY = 'ywi_admin_directory_cache_v1';
@@ -72,6 +72,18 @@
       uploads: Array.isArray(summary?.monitorSummary) ? summary.monitorSummary.length : 0,
       packets: Array.isArray(summary?.linkedContext) ? summary.linkedContext.length : 0,
       safetyCommand: summary?.commandCentre?.counts || {},
+      hazardPlans: {
+        open: summary?.hazardPlanning?.openPlans?.length || 0,
+        ready: summary?.hazardPlanning?.ready?.length || 0,
+        reviewOpen: summary?.hazardPlanning?.reviewOpen?.length || 0
+      },
+      investigations: {
+        reports: summary?.incidentInvestigations?.reports?.length || 0,
+        active: summary?.incidentInvestigations?.active?.length || 0,
+        ready: summary?.incidentInvestigations?.ready?.length || 0,
+        changes: summary?.incidentInvestigations?.changesRequired?.length || 0,
+        blocked: summary?.incidentInvestigations?.closureBlocked?.length || 0
+      },
       acctOpen: acct.open_sync_exception_count || 0
     });
   }
@@ -456,8 +468,206 @@
       monitorShortcuts: deriveMonitorReviewSummary(payload),
       commandCentre: deriveSafetyCommandCentre(payload),
       hazardPlanning: deriveJobHazardPlanning(payload),
+      incidentInvestigations: deriveIncidentInvestigations(payload),
       savedAt: new Date().toISOString()
     };
+  }
+
+  function deriveIncidentInvestigations(payload = {}) {
+    const reports = rows(payload, 'incident_near_miss_history');
+    const investigations = rows(payload, 'incident_investigations');
+    const bySubmission = new Map(investigations.map((row) => [String(row?.source_submission_id || ''), row]));
+    const uninvestigated = reports.filter((row) => !bySubmission.has(String(row?.submission_id || '')));
+    const active = investigations.filter((row) => String(row?.investigation_status || '').toLowerCase() !== 'closed');
+    const ready = active.filter((row) => String(row?.investigation_status || '').toLowerCase() === 'ready_for_review');
+    const changesRequired = active.filter((row) => String(row?.investigation_status || '').toLowerCase() === 'changes_required' || String(row?.supervisor_review_status || '').toLowerCase() === 'changes_required');
+    const closureBlocked = active.filter((row) => {
+      if (String(row?.supervisor_review_status || '').toLowerCase() !== 'approved') return false;
+      const open = Number(row?.open_corrective_action_count || 0);
+      const count = Number(row?.corrective_action_count || 0);
+      return open > 0 || (!!row?.corrective_action_required && count === 0) || !row?.closure_ready;
+    });
+    const highSeverityOpen = active.filter((row) => ['high','critical'].includes(String(row?.severity || '').toLowerCase()));
+    return { reports, investigations, bySubmission, uninvestigated, active, ready, changesRequired, closureBlocked, highSeverityOpen };
+  }
+
+  function investigationList(value, limit = 48) {
+    return String(value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean).slice(0, limit);
+  }
+
+  function investigationRowLabel(row) {
+    const bits = [
+      row?.investigation_number || ('Incident #' + (row?.source_submission_id || '')),
+      row?.site_label || '',
+      row?.incident_kind || row?.event_classification || '',
+      row?.severity ? String(row.severity).toUpperCase() : ''
+    ].filter(Boolean);
+    return bits.join(' · ');
+  }
+
+  function incidentInvestigationMarkup(summary, role) {
+    const inv = summary?.incidentInvestigations || { reports:[], investigations:[], uninvestigated:[], active:[], ready:[], changesRequired:[], closureBlocked:[], highSeverityOpen:[] };
+    const canApprove = window.YWISecurity?.hasMinRole?.(role, 'supervisor');
+    const reportOptions = (inv.reports || []).map((row) =>
+      '<option value="' + escHtml(row.submission_id || '') + '">' +
+      escHtml([row.submission_date || '', row.site_label || 'Unknown site', row.incident_kind || 'incident', row.severity || 'medium', row.event_summary || ''].filter(Boolean).join(' · ')) +
+      '</option>'
+    ).join('');
+    const recent = [...(inv.investigations || [])].sort((a,b)=>String(b?.updated_at || '').localeCompare(String(a?.updated_at || ''))).slice(0,18);
+    const cards = recent.map((row) => {
+      const actions = canApprove && String(row?.investigation_status || '').toLowerCase() !== 'closed'
+        ? '<div class="hseops-inline-actions"><button type="button" data-investigation-review="approve" data-investigation-id="' + escHtml(row.id || '') + '">Approve review</button><button type="button" data-investigation-review="changes_required" data-investigation-id="' + escHtml(row.id || '') + '">Changes required</button></div>'
+        : '';
+      const actionBits = [
+        'Photos: ' + Number(row?.photo_count || 0),
+        'Actions: ' + Number(row?.corrective_action_count || 0),
+        Number(row?.open_corrective_action_count || 0) ? 'Open actions: ' + Number(row.open_corrective_action_count) : '',
+        Number(row?.overdue_corrective_action_count || 0) ? 'Overdue: ' + Number(row.overdue_corrective_action_count) : '',
+        row?.closure_ready ? 'Closure ready' : ''
+      ].filter(Boolean).join(' • ');
+      return '<article class="hseops-card" data-investigation-row="' + escHtml(row.id || '') + '"><button type="button" class="hseops-card-link" data-investigation-load="' + escHtml(row.id || '') + '"><strong>' + escHtml(investigationRowLabel(row)) + '</strong><span>Status: ' + escHtml(row.investigation_status || 'in_progress') + ' • Review: ' + escHtml(row.supervisor_review_status || 'pending') + '</span><small>' + escHtml(actionBits) + '</small><em>Open investigation</em></button>' + actions + '</article>';
+    }).join('');
+
+    return '<section id="incidentNearMissInvestigation" class="admin-panel-block" data-build="329" style="margin-top:16px;">'
+      + '<div class="section-heading"><div><span class="module-kicker">Build 329 · investigation &amp; closure</span><h3 style="margin:4px 0 0;">Incident &amp; Near-Miss Investigation</h3><p class="section-subtitle">Investigate an existing incident/near-miss submission without replacing the immediate field report, its photos, or the established corrective-action workflow.</p></div></div>'
+      + '<div class="notice" style="margin-bottom:14px;"><strong>Immediate safety response comes first.</strong> This investigation record supports internal fact finding, contributing/root-factor analysis, corrective-action follow-through, supervisor review and closure evidence. It is not a legal-compliance or external-reporting certificate and must not delay emergency, medical, environmental or regulatory actions that may be required.</div>'
+      + '<div class="admin-backbone-summary">'
+      + '<div class="admin-backbone-card"><span>Awaiting investigation</span><strong>' + escHtml(inv.uninvestigated?.length || 0) + '</strong><small>Existing incident reports with no investigation record yet.</small></div>'
+      + '<div class="admin-backbone-card"><span>Active investigations</span><strong>' + escHtml(inv.active?.length || 0) + '</strong><small>Open fact-finding and review work.</small></div>'
+      + '<div class="admin-backbone-card"><span>Ready for review</span><strong>' + escHtml(inv.ready?.length || 0) + '</strong><small>Root cause and investigation summary recorded.</small></div>'
+      + '<div class="admin-backbone-card"><span>Changes required</span><strong>' + escHtml(inv.changesRequired?.length || 0) + '</strong><small>Supervisor returned investigation for more work.</small></div>'
+      + '<div class="admin-backbone-card"><span>Closure blockers</span><strong>' + escHtml(inv.closureBlocked?.length || 0) + '</strong><small>Approved investigations still missing action resolution/evidence.</small></div>'
+      + '<div class="admin-backbone-card"><span>High severity open</span><strong>' + escHtml(inv.highSeverityOpen?.length || 0) + '</strong><small>High/critical records still active.</small></div>'
+      + '</div>'
+      + '<details class="admin-panel-block" open style="margin-top:14px;"><summary><strong>Investigation workbench</strong></summary>'
+      + '<input id="inc_inv_id" type="hidden"><div class="hseops-grid" style="margin-top:12px;">'
+      + '<label>Incident submission<select id="inc_inv_submission"><option value="">Choose incident report</option>' + reportOptions + '</select></label>'
+      + '<label>Investigation status<select id="inc_inv_status"><option value="in_progress">In progress</option><option value="ready_for_review">Ready for supervisor review</option><option value="changes_required">Changes required</option></select></label>'
+      + '<label>Classification<input id="inc_inv_classification" type="text" placeholder="near_miss, injury_illness, property_damage…"></label>'
+      + '<label>Severity<select id="inc_inv_severity"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label>'
+      + '</div>'
+      + '<div class="hseops-grid" style="margin-top:10px;"><label>People involved — one per line<textarea id="inc_inv_people" rows="4"></textarea></label><label>Witness accounts / references — one per line<textarea id="inc_inv_witnesses" rows="4"></textarea></label><label>Equipment involved — one per line<textarea id="inc_inv_equipment" rows="4"></textarea></label></div>'
+      + '<label style="display:block;margin-top:10px;">Initial response / scene actions<textarea id="inc_inv_response" rows="3" placeholder="First aid, shutdown, barricade, notification, spill control, scene preservation…"></textarea></label>'
+      + '<div class="hseops-grid" style="margin-top:10px;"><label><input id="inc_inv_scene_secured" type="checkbox"> Scene / area secured</label><label><input id="inc_inv_hazard_controlled" type="checkbox"> Immediate hazard controlled</label></div>'
+      + '<div class="hseops-grid" style="margin-top:10px;"><label>Contributing factors — one per line<textarea id="inc_inv_contributing" rows="5"></textarea></label><label>Root factors — one per line<textarea id="inc_inv_root_factors" rows="5"></textarea></label></div>'
+      + '<label style="display:block;margin-top:10px;">Root-cause summary<textarea id="inc_inv_root_summary" rows="3"></textarea></label>'
+      + '<label style="display:block;margin-top:10px;">Investigation summary<textarea id="inc_inv_summary" rows="4"></textarea></label>'
+      + '<div class="hseops-grid" style="margin-top:10px;"><label><input id="inc_inv_action_required" type="checkbox"> Corrective action required</label><label>Corrective-action rationale<textarea id="inc_inv_action_rationale" rows="3"></textarea></label></div>'
+      + '<label style="display:block;margin-top:10px;">External reporting assessment note<textarea id="inc_inv_external_note" rows="3" placeholder="Record who assessed reporting/notification needs and what follow-up is required. This note does not itself satisfy any external reporting duty."></textarea></label>'
+      + '<label style="display:block;margin-top:10px;">Investigation event note<input id="inc_inv_event_note" type="text" placeholder="Optional reason/context for this save"></label>'
+      + '<div class="section-heading" style="margin-top:16px;"><div><h4 style="margin:0;">Closure evidence</h4><p class="section-subtitle">Closure stays blocked until supervisor approval, required corrective actions are linked/resolved, and evidence references are recorded.</p></div></div>'
+      + '<label>Closure summary<textarea id="inc_inv_closure_summary" rows="3"></textarea></label>'
+      + '<label style="display:block;margin-top:10px;">Closure evidence references — one per line<textarea id="inc_inv_closure_evidence" rows="4" placeholder="Submission photo reference, corrective-action event, repair record, training evidence, supervisor verification…"></textarea></label>'
+      + '<div class="hseops-inline-actions" style="margin-top:12px;"><button type="button" data-investigation-save="1">Save investigation</button><button type="button" data-investigation-review-current="approve">Approve review</button><button type="button" data-investigation-review-current="changes_required">Changes required</button><button type="button" data-investigation-review-current="reopen">Reopen</button><button type="button" data-investigation-close="1">Close investigation</button><button type="button" data-route="incident">Open immediate incident report</button><button type="button" data-route="reports">Open safety reports</button></div>'
+      + '<div id="inc_inv_message" class="notice" aria-live="polite" style="margin-top:10px;">Choose an existing incident/near-miss report. Its original report and photos remain authoritative evidence.</div>'
+      + '</details>'
+      + '<div class="section-heading" style="margin-top:16px;"><div><h4 style="margin:0;">Recent investigations</h4><p class="section-subtitle">Select a record to continue fact finding, review corrective-action blockers, or prepare evidence-gated closure.</p></div></div>'
+      + (cards ? '<div class="hseops-grid hseops-grid--compact">' + cards + '</div>' : '<div class="notice">No investigations have been opened yet.</div>')
+      + '</section>';
+  }
+
+  function fillInvestigationWorkbench(section, row) {
+    if(!section || !row) return;
+    const set=(id,value)=>{const el=section.querySelector(id);if(el) el.value=value ?? '';};
+    const check=(id,value)=>{const el=section.querySelector(id);if(el) el.checked=!!value;};
+    set('#inc_inv_id',row.id || '');
+    set('#inc_inv_submission',row.source_submission_id || '');
+    set('#inc_inv_status',row.investigation_status === 'closed' ? 'in_progress' : (row.investigation_status || 'in_progress'));
+    set('#inc_inv_classification',row.event_classification || row.incident_kind || '');
+    set('#inc_inv_severity',row.severity || 'medium');
+    set('#inc_inv_people',(Array.isArray(row.people_involved)?row.people_involved:[]).join('\n'));
+    set('#inc_inv_witnesses',(Array.isArray(row.witness_accounts)?row.witness_accounts:[]).join('\n'));
+    set('#inc_inv_equipment',(Array.isArray(row.equipment_involved)?row.equipment_involved:[]).join('\n'));
+    set('#inc_inv_response',row.initial_response_summary || row.reported_immediate_actions || '');
+    check('#inc_inv_scene_secured',row.scene_secured);
+    check('#inc_inv_hazard_controlled',row.immediate_hazard_controlled);
+    set('#inc_inv_contributing',(Array.isArray(row.contributing_factors)?row.contributing_factors:[]).join('\n'));
+    set('#inc_inv_root_factors',(Array.isArray(row.root_factors)?row.root_factors:[]).join('\n'));
+    set('#inc_inv_root_summary',row.root_cause_summary || row.reported_root_cause_summary || '');
+    set('#inc_inv_summary',row.investigation_summary || '');
+    check('#inc_inv_action_required',row.corrective_action_required);
+    set('#inc_inv_action_rationale',row.corrective_action_rationale || '');
+    set('#inc_inv_external_note',row.external_reporting_assessment_note || '');
+    set('#inc_inv_closure_summary',row.closure_summary || '');
+    set('#inc_inv_closure_evidence',(Array.isArray(row.closure_evidence)?row.closure_evidence:[]).join('\n'));
+    const msg=section.querySelector('#inc_inv_message');
+    if(msg) msg.textContent=(row.investigation_number || ('Incident #' + (row.source_submission_id || ''))) + ' loaded. Photos: ' + Number(row.photo_count || 0) + ' · Corrective actions: ' + Number(row.corrective_action_count || 0) + ' · Open actions: ' + Number(row.open_corrective_action_count || 0) + ' · Review: ' + (row.supervisor_review_status || 'pending') + '.';
+  }
+
+  function seedInvestigationFromReport(section, submissionId) {
+    const inv=state.summary?.incidentInvestigations;
+    if(!inv) return;
+    const existing=(inv.investigations || []).find((row)=>String(row?.source_submission_id || '')===String(submissionId || ''));
+    if(existing){ fillInvestigationWorkbench(section,existing); return; }
+    const report=(inv.reports || []).find((row)=>String(row?.submission_id || '')===String(submissionId || ''));
+    if(!report) return;
+    fillInvestigationWorkbench(section,{
+      id:'',source_submission_id:report.submission_id,event_classification:report.incident_kind || 'incident',
+      severity:report.severity || 'medium',initial_response_summary:report.immediate_actions_taken || '',
+      root_cause_summary:report.root_cause_summary || '',witness_accounts:investigationList(report.witness_names || ''),
+      equipment_involved:report.equipment_code ? [report.equipment_code] : [],
+      immediate_hazard_controlled:false,corrective_action_required:hasText(report.corrective_action_required),
+      corrective_action_rationale:report.corrective_action_required || '',photo_count:report.image_count || 0
+    });
+    const msg=section.querySelector('#inc_inv_message');
+    if(msg) msg.textContent='New investigation seeded from the existing report. Verify every field against the actual evidence before saving.';
+  }
+
+  function investigationPayload(section) {
+    const get=(id)=>section.querySelector(id)?.value || '';
+    const checked=(id)=>!!section.querySelector(id)?.checked;
+    const submissionId=Number(get('#inc_inv_submission'));
+    if(!Number.isSafeInteger(submissionId) || submissionId<=0) throw new Error('Choose an incident / near-miss submission.');
+    return {
+      action:'incident_investigation_save',
+      id:get('#inc_inv_id') || null,
+      source_submission_id:submissionId,
+      investigation_status:get('#inc_inv_status') || 'in_progress',
+      event_classification:get('#inc_inv_classification') || 'incident',
+      severity:get('#inc_inv_severity') || 'medium',
+      people_involved:investigationList(get('#inc_inv_people')),
+      witness_accounts:investigationList(get('#inc_inv_witnesses')),
+      equipment_involved:investigationList(get('#inc_inv_equipment')),
+      initial_response_summary:get('#inc_inv_response'),
+      scene_secured:checked('#inc_inv_scene_secured'),
+      immediate_hazard_controlled:checked('#inc_inv_hazard_controlled'),
+      contributing_factors:investigationList(get('#inc_inv_contributing')),
+      root_factors:investigationList(get('#inc_inv_root_factors')),
+      root_cause_summary:get('#inc_inv_root_summary'),
+      investigation_summary:get('#inc_inv_summary'),
+      corrective_action_required:checked('#inc_inv_action_required'),
+      corrective_action_rationale:get('#inc_inv_action_rationale'),
+      external_reporting_assessment_note:get('#inc_inv_external_note'),
+      event_note:get('#inc_inv_event_note')
+    };
+  }
+
+  async function runInvestigationSave(section) {
+    if(!window.YWIAPI?.manageOperations) throw new Error('Operations API is not loaded.');
+    const result=await window.YWIAPI.manageOperations(investigationPayload(section));
+    if(!result?.ok) throw new Error(result?.error || 'Incident investigation could not be saved.');
+    return result;
+  }
+
+  async function runInvestigationReview(section, decision, investigationId = '') {
+    if(!window.YWIAPI?.manageOperations) throw new Error('Operations API is not loaded.');
+    const id=investigationId || section.querySelector('#inc_inv_id')?.value || '';
+    if(!id) throw new Error('Save or select an investigation first.');
+    const note=window.prompt?.('Supervisor investigation review note (optional):','') || '';
+    const result=await window.YWIAPI.manageOperations({action:'incident_investigation_review',investigation_id:id,decision,note});
+    if(!result?.ok) throw new Error(result?.error || 'Investigation review could not be recorded.');
+    return result;
+  }
+
+  async function runInvestigationClose(section) {
+    if(!window.YWIAPI?.manageOperations) throw new Error('Operations API is not loaded.');
+    const id=section.querySelector('#inc_inv_id')?.value || '';
+    if(!id) throw new Error('Save or select an investigation first.');
+    const closureSummary=section.querySelector('#inc_inv_closure_summary')?.value || '';
+    const closureEvidence=investigationList(section.querySelector('#inc_inv_closure_evidence')?.value,40);
+    const result=await window.YWIAPI.manageOperations({action:'incident_investigation_close',investigation_id:id,closure_summary:closureSummary,closure_evidence:closureEvidence});
+    if(!result?.ok) throw new Error(result?.error || 'Investigation could not be closed.');
+    return result;
   }
 
   function deriveJobHazardPlanning(payload = {}) {
@@ -702,6 +912,7 @@
       </div>
       ${safetyCommandCentreMarkup(summary)}
       ${jobHazardPlanningMarkup(summary, role)}
+      ${incidentInvestigationMarkup(summary, role)}
       ${summaryMarkup(summary)}
       <div class="admin-panel-block" style="margin-top:16px;">
         <div class="section-heading"><div><h3 style="margin:0;">Field safety quick actions</h3><p class="section-subtitle">Open the most-used field workflows quickly on phone, tablet, or desktop.</p></div></div>
@@ -775,6 +986,53 @@
         }
         return;
       }
+      const investigationLoadBtn=event.target.closest('[data-investigation-load]');
+      if(investigationLoadBtn && section.contains(investigationLoadBtn)){
+        const id=investigationLoadBtn.getAttribute('data-investigation-load') || '';
+        const row=rows(state.payload,'incident_investigations').find((item)=>String(item?.id || '')===id);
+        if(row) fillInvestigationWorkbench(section,row);
+        section.querySelector('#inc_inv_submission')?.scrollIntoView?.({block:'center'});
+        return;
+      }
+      const investigationSaveBtn=event.target.closest('[data-investigation-save]');
+      if(investigationSaveBtn && section.contains(investigationSaveBtn)){
+        const msg=section.querySelector('#inc_inv_message');
+        try{
+          investigationSaveBtn.disabled=true;
+          if(msg) msg.textContent='Saving investigation…';
+          const result=await runInvestigationSave(section);
+          if(msg) msg.textContent='Saved ' + (result?.record?.investigation_number || 'incident investigation') + '. Supervisor review and closure remain separate explicit steps.';
+          state.lastLoadedAt=0; await loadLiveSummary();
+        }catch(error){if(msg) msg.textContent=error?.message || 'Investigation could not be saved.';}
+        finally{investigationSaveBtn.disabled=false;}
+        return;
+      }
+      const investigationReviewBtn=event.target.closest('[data-investigation-review],[data-investigation-review-current]');
+      if(investigationReviewBtn && section.contains(investigationReviewBtn)){
+        const msg=section.querySelector('#inc_inv_message');
+        const decision=investigationReviewBtn.getAttribute('data-investigation-review') || investigationReviewBtn.getAttribute('data-investigation-review-current') || '';
+        const id=investigationReviewBtn.getAttribute('data-investigation-id') || '';
+        try{
+          investigationReviewBtn.disabled=true;
+          await runInvestigationReview(section,decision,id);
+          if(msg) msg.textContent='Supervisor investigation review recorded. This did not close the incident investigation or the original incident submission.';
+          state.lastLoadedAt=0; await loadLiveSummary();
+        }catch(error){if(msg) msg.textContent=error?.message || 'Investigation review could not be recorded.';}
+        finally{investigationReviewBtn.disabled=false;}
+        return;
+      }
+      const investigationCloseBtn=event.target.closest('[data-investigation-close]');
+      if(investigationCloseBtn && section.contains(investigationCloseBtn)){
+        const msg=section.querySelector('#inc_inv_message');
+        try{
+          investigationCloseBtn.disabled=true;
+          await runInvestigationClose(section);
+          if(msg) msg.textContent='Investigation closed with evidence. The original incident submission and its photos remain unchanged.';
+          state.lastLoadedAt=0; await loadLiveSummary();
+        }catch(error){if(msg) msg.textContent=error?.message || 'Investigation closure is blocked.';}
+        finally{investigationCloseBtn.disabled=false;}
+        return;
+      }
       const routeBtn = event.target.closest('[data-route]');
       if (routeBtn && section.contains(routeBtn)) {
         window.YWIRouter?.showSection?.(routeBtn.getAttribute('data-route') || 'toolbox');
@@ -795,6 +1053,8 @@
     section.addEventListener('change', (event) => {
       const templateSelect=event.target.closest?.('#jh_plan_template');
       if(templateSelect && section.contains(templateSelect)) applyHazardTemplate(section,templateSelect.value || '');
+      const incidentSelect=event.target.closest?.('#inc_inv_submission');
+      if(incidentSelect && section.contains(incidentSelect)) seedInvestigationFromReport(section,incidentSelect.value || '');
     });
   }
 
@@ -843,6 +1103,6 @@
     });
   }
 
-  window.YWIHSEOpsUI = Object.freeze({ init, refresh: loadLiveSummary, normalizeSummary, deriveSafetyCommandCentre, deriveJobHazardPlanning, build:BUILD });
+  window.YWIHSEOpsUI = Object.freeze({ init, refresh: loadLiveSummary, normalizeSummary, deriveSafetyCommandCentre, deriveJobHazardPlanning, deriveIncidentInvestigations, build:BUILD });
   document.addEventListener('DOMContentLoaded', init);
 })();
