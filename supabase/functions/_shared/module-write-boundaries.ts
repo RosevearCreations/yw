@@ -29,6 +29,10 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
   job_hazard_template_save: contract('job_hazard_template_save', 'safety', 'approve', 'write', 'job_hazard_plans', 'safety.job_hazard_template.saved'),
   job_hazard_plan_save: contract('job_hazard_plan_save', 'safety', 'create', 'write', 'job_hazard_plans', 'safety.job_hazard_plan.saved'),
   job_hazard_plan_review: contract('job_hazard_plan_review', 'safety', 'approve', 'write', 'job_hazard_plans', 'safety.job_hazard_plan.reviewed'),
+  incident_investigation_save: contract('incident_investigation_save', 'safety', 'approve', 'write', 'incident_investigation', 'safety.incident_investigation.saved'),
+  incident_investigation_review: contract('incident_investigation_review', 'safety', 'approve', 'write', 'incident_investigation', 'safety.incident_investigation.reviewed'),
+  incident_investigation_close: contract('incident_investigation_close', 'safety', 'approve', 'write', 'incident_investigation', 'safety.incident_investigation.closed'),
+
 
 
   payment_action_request: contract('payment_action_request', 'finance', 'create', 'write', 'payments', 'finance.payment_action.requested'),
