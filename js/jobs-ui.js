@@ -1317,6 +1317,30 @@
       if (current) selectEl.value = current;
     }
 
+    function fillServiceTemplateSelect(selectEl) {
+      if (!selectEl) return;
+      const current = selectEl.value;
+      const rows = Array.isArray(state.servicePricingTemplates) ? state.servicePricingTemplates : [];
+      selectEl.innerHTML = '<option value="">No service template</option>' + rows.map((row) => {
+        const value = row.id || '';
+        const label = [row.template_code, row.template_name].filter(Boolean).join(' — ') || row.id || '';
+        return `<option value="${escHtml(value)}">${escHtml(label)}</option>`;
+      }).join('');
+      if (current) selectEl.value = current;
+    }
+
+    function fillTaxCodeSelect(selectEl) {
+      if (!selectEl) return;
+      const current = selectEl.value;
+      const rows = Array.isArray(state.taxCodes) ? state.taxCodes : [];
+      selectEl.innerHTML = '<option value="">No tax code</option>' + rows.map((row) => {
+        const value = row.id || '';
+        const label = [row.code, row.name].filter(Boolean).join(' — ') || row.id || '';
+        return `<option value="${escHtml(value)}">${escHtml(label)}</option>`;
+      }).join('');
+      if (current) selectEl.value = current;
+    }
+
     function toLocalDateTimeInput(value) {
       const clean=String(value || '').trim();
       if(!clean) return '';
