@@ -298,7 +298,7 @@ Give each significant asset an operational identity with asset code, QR/barcode,
 
 Create machine-specific pre-use/post-use inspections covering guards/safety systems, fluids, blades/cutting components, tires/wheels, fuel/battery, accessories, damage and defects. Safety-critical failure should create lockout, repair/service work, supervisor review and verified return to service.
 
-#### 333 — Fleet, Trailer & Vehicle Operations
+#### **333 — Fleet, Trailer & Vehicle Operations** is implemented
 
 Manage trucks/trailers with identity, odometer, registration/insurance evidence, inspection, maintenance, tire status, towing assignment, hitch/trailer compatibility, crew/job assignment, trailer load/content readiness, fuel, damage and downtime.
 
