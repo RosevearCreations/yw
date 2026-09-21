@@ -2,6 +2,8 @@
 -- Schema 215 adds a signed-in, assignment-filtered read RPC for the phone crew workspace.
 -- It reuses canonical dispatch/property/production/evidence/closeout authorities and exposes no Finance totals.
 
+begin;
+
 create or replace function public.ywi_rpc_mobile_crew_context(p_days integer default 7)
 returns jsonb
 language plpgsql
@@ -319,3 +321,26 @@ select 'mobile_crew_finance_fields_excluded',
 
 revoke all on public.v_mobile_crew_app_v2_security_assertions from public,anon,authenticated;
 grant select on public.v_mobile_crew_app_v2_security_assertions to service_role;
+
+create or replace view public.v_schema_drift_status
+with (security_invoker=true)
+as
+select
+  215 as expected_schema_version,
+  coalesce(max(schema_version) filter(where status='applied'),0) as latest_applied_schema_version,
+  case
+    when coalesce(max(schema_version) filter(where status='applied'),0)=215 then 'current'
+    when coalesce(max(schema_version) filter(where status='applied'),0)>215 then 'ahead'
+    else 'drift'
+  end as drift_status,
+  case
+    when coalesce(max(schema_version) filter(where status='applied'),0)=215 then 'Live database matches the repository schema marker.'
+    when coalesce(max(schema_version) filter(where status='applied'),0)>215 then 'Live database is ahead of the repository schema marker.'
+    else 'Live database is behind the repository schema marker.'
+  end as message,
+  now() as checked_at
+from public.app_schema_versions;
+revoke all on table public.v_schema_drift_status from public,anon,authenticated;
+grant select on table public.v_schema_drift_status to service_role;
+
+commit;
