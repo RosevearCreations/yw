@@ -1142,6 +1142,221 @@ serve(async (req) => {
       return Response.json({ ok:true, record:data, signout_id: signout.id }, { headers:corsHeaders });
     }
 
+    if (body.entity === 'equipment' && body.action === 'fleet_profile_upsert') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const assetClass=String(body.asset_class || 'vehicle').trim().toLowerCase();
+      if(!['truck','trailer','vehicle'].includes(assetClass)) return Response.json({ok:false,error:'Fleet asset class must be truck, trailer, or vehicle.'},{status:400,headers:corsHeaders});
+      const maxTow=body.max_tow_kg === '' || body.max_tow_kg == null ? null : Number(body.max_tow_kg);
+      const gvwr=body.trailer_gvwr_kg === '' || body.trailer_gvwr_kg == null ? null : Number(body.trailer_gvwr_kg);
+      if(maxTow !== null && (!Number.isFinite(maxTow) || maxTow < 0)) return Response.json({ok:false,error:'Maximum tow capacity must be nonnegative.'},{status:400,headers:corsHeaders});
+      if(gvwr !== null && (!Number.isFinite(gvwr) || gvwr < 0)) return Response.json({ok:false,error:'Trailer GVWR must be nonnegative.'},{status:400,headers:corsHeaders});
+      const tireStatus=String(body.tire_status || 'unknown').trim().toLowerCase();
+      if(!['unknown','good','monitor','service_due','unsafe'].includes(tireStatus)) return Response.json({ok:false,error:'Unsupported tire status.'},{status:400,headers:corsHeaders});
+      const operationalStatus=String(body.operational_status || 'ready').trim().toLowerCase();
+      if(!['ready','assigned','service_due','downtime','out_of_service'].includes(operationalStatus)) return Response.json({ok:false,error:'Unsupported fleet operational status.'},{status:400,headers:corsHeaders});
+      const damageStatus=String(body.damage_status || 'clear').trim().toLowerCase();
+      if(!['clear','reported','repair_required','monitor'].includes(damageStatus)) return Response.json({ok:false,error:'Unsupported fleet damage status.'},{status:400,headers:corsHeaders});
+      const fuelType=String(body.fuel_type || (assetClass==='trailer' ? 'none' : 'gasoline')).trim().toLowerCase();
+      if(!['gasoline','diesel','electric','hybrid','propane','other','none'].includes(fuelType)) return Response.json({ok:false,error:'Unsupported fleet fuel type.'},{status:400,headers:corsHeaders});
+      const now=new Date().toISOString();
+      const {data,error}=await supabase.from('equipment_fleet_profiles').upsert({
+        equipment_item_id:equipmentId,
+        asset_class:assetClass,
+        vin_or_unit_number:String(body.vin_or_unit_number || '').trim() || null,
+        plate_number:String(body.plate_number || '').trim() || null,
+        registration_expiry:body.registration_expiry || null,
+        insurance_policy_reference:String(body.insurance_policy_reference || '').trim() || null,
+        insurance_expiry:body.insurance_expiry || null,
+        annual_vehicle_inspection_due:body.annual_vehicle_inspection_due || null,
+        tire_status:tireStatus,
+        hitch_class:String(body.hitch_class || '').trim() || null,
+        max_tow_kg:maxTow,
+        trailer_gvwr_kg:gvwr,
+        trailer_connector:String(body.trailer_connector || '').trim() || null,
+        fuel_type:fuelType,
+        operational_status:operationalStatus,
+        damage_status:damageStatus,
+        downtime_reason:body.downtime_reason || null,
+        downtime_started_at:body.downtime_started_at || null,
+        notes:body.notes || null,
+        updated_by_profile_id:actorProfile.id,
+        updated_at:now
+      },{onConflict:'equipment_item_id'}).select('*').single();
+      if(error) throw error;
+      if(body.odometer_km !== '' && body.odometer_km != null){
+        const odometer=Number(body.odometer_km);
+        if(!Number.isFinite(odometer) || odometer < 0) return Response.json({ok:false,error:'Odometer must be nonnegative.'},{status:400,headers:corsHeaders});
+        await supabase.from('equipment_items').update({meter_type:'odometer',meter_unit:'km',current_meter_value:odometer,current_meter_at:now,updated_at:now}).eq('id',equipmentId);
+      }
+      return Response.json({ok:true,build:333,schema:221,record:data},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'equipment' && body.action === 'fleet_readiness_record') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const {data:profile}=await supabase.from('equipment_fleet_profiles').select('*').eq('equipment_item_id',equipmentId).maybeSingle();
+      if(!profile) return Response.json({ok:false,error:'Save a fleet profile before recording readiness.'},{status:409,headers:corsHeaders});
+      const tireStatus=String(body.tire_status || profile.tire_status || 'unknown').trim().toLowerCase();
+      const reg=body.registration_verified === true;
+      const ins=body.insurance_verified === true;
+      const inspection=body.vehicle_inspection_verified === true;
+      const hitchRequired=profile.asset_class === 'trailer' || profile.asset_class === 'truck';
+      const hitchOk=!hitchRequired || body.hitch_compatible === true;
+      const loadRequired=profile.asset_class === 'trailer';
+      const loadOk=!loadRequired || body.trailer_load_ready === true;
+      const blocked=!reg || !ins || !inspection || tireStatus === 'unsafe' || !hitchOk || !loadOk;
+      const review=!blocked && (tireStatus === 'monitor' || tireStatus === 'service_due' || tireStatus === 'unknown');
+      const readinessStatus=blocked ? 'blocked' : (review ? 'needs_review' : 'ready');
+      const jobId=body.job_code ? await resolveJobIdByCode(supabase,body.job_code) : (body.job_id || null);
+      const {data,error}=await supabase.from('fleet_readiness_checks').insert({
+        equipment_item_id:equipmentId,
+        job_id:jobId,
+        registration_verified:reg,
+        insurance_verified:ins,
+        vehicle_inspection_verified:inspection,
+        tire_status:tireStatus,
+        hitch_compatible:hitchRequired ? hitchOk : null,
+        trailer_load_ready:loadRequired ? loadOk : null,
+        load_summary:body.load_summary || null,
+        issue_summary:body.issue_summary || null,
+        readiness_status:readinessStatus,
+        checked_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(error) throw error;
+      return Response.json({ok:true,build:333,schema:221,record:data,readiness_status:readinessStatus},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'equipment' && body.action === 'fleet_fuel_record') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const litres=Number(body.quantity_litres || 0);
+      const totalCost=body.total_cost === '' || body.total_cost == null ? null : Number(body.total_cost);
+      const odometer=body.odometer_km === '' || body.odometer_km == null ? null : Number(body.odometer_km);
+      if(!Number.isFinite(litres) || litres <= 0) return Response.json({ok:false,error:'Fuel quantity in litres must be greater than zero.'},{status:400,headers:corsHeaders});
+      if(totalCost !== null && (!Number.isFinite(totalCost) || totalCost < 0)) return Response.json({ok:false,error:'Fuel total cost must be nonnegative.'},{status:400,headers:corsHeaders});
+      if(odometer !== null && (!Number.isFinite(odometer) || odometer < 0)) return Response.json({ok:false,error:'Odometer must be nonnegative.'},{status:400,headers:corsHeaders});
+      const jobId=body.job_code ? await resolveJobIdByCode(supabase,body.job_code) : (body.job_id || null);
+      const {data:profile}=await supabase.from('equipment_fleet_profiles').select('fuel_type').eq('equipment_item_id',equipmentId).maybeSingle();
+      const {data,error}=await supabase.from('fleet_fuel_logs').insert({
+        equipment_item_id:equipmentId,
+        job_id:jobId,
+        fuel_type:String(body.fuel_type || profile?.fuel_type || 'gasoline'),
+        quantity_litres:litres,
+        total_cost:totalCost,
+        odometer_km:odometer,
+        supplier:body.supplier || null,
+        receipt_reference:body.receipt_reference || null,
+        notes:body.notes || null,
+        recorded_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(error) throw error;
+      if(odometer !== null){
+        const now=new Date().toISOString();
+        await supabase.from('equipment_items').update({meter_type:'odometer',meter_unit:'km',current_meter_value:odometer,current_meter_at:now,updated_at:now}).eq('id',equipmentId);
+      }
+      return Response.json({ok:true,build:333,schema:221,record:data},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'equipment' && body.action === 'fleet_towing_assign') {
+      const truckId = await resolveEquipmentIdByCode(supabase, body.truck_equipment_code);
+      const trailerId = await resolveEquipmentIdByCode(supabase, body.trailer_equipment_code);
+      if(!truckId || !trailerId || truckId===trailerId) return Response.json({ok:false,error:'Distinct towing-unit and trailer equipment codes are required.'},{status:400,headers:corsHeaders});
+      const {data:truck}=await supabase.from('equipment_fleet_profiles').select('*').eq('equipment_item_id',truckId).maybeSingle();
+      const {data:trailer}=await supabase.from('equipment_fleet_profiles').select('*').eq('equipment_item_id',trailerId).maybeSingle();
+      if(!truck || !trailer) return Response.json({ok:false,error:'Both towing unit and trailer require fleet profiles.'},{status:409,headers:corsHeaders});
+      if(!['truck','vehicle'].includes(String(truck.asset_class)) || trailer.asset_class!=='trailer') return Response.json({ok:false,error:'Tow assignment requires a truck/vehicle towing unit and a trailer.'},{status:409,headers:corsHeaders});
+      const hitchCompatible=!!truck.hitch_class && !!trailer.hitch_class && String(truck.hitch_class).toLowerCase()===String(trailer.hitch_class).toLowerCase();
+      const capacityCompatible=Number(truck.max_tow_kg || 0)>0 && Number(trailer.trailer_gvwr_kg || 0)>0 && Number(truck.max_tow_kg)>=Number(trailer.trailer_gvwr_kg);
+      if(!hitchCompatible || !capacityCompatible) return Response.json({ok:false,error:'Tow assignment blocked: hitch or towing-capacity compatibility failed.',compatibility:{hitch_compatible:hitchCompatible,tow_capacity_compatible:capacityCompatible}},{status:409,headers:corsHeaders});
+      const {data:existing}=await supabase.from('fleet_towing_assignments').select('id').eq('trailer_equipment_item_id',trailerId).is('released_at',null).limit(1);
+      if((existing || []).length) return Response.json({ok:false,error:'Trailer already has an active towing assignment.'},{status:409,headers:corsHeaders});
+      const jobId=body.job_code ? await resolveJobIdByCode(supabase,body.job_code) : (body.job_id || null);
+      let assignedCrewId=body.assigned_crew_id || null;
+      if(!assignedCrewId && body.assigned_crew) assignedCrewId=await resolveCrewIdByNameOrCode(supabase,String(body.assigned_crew));
+      const now=new Date().toISOString();
+      const {data,error}=await supabase.from('fleet_towing_assignments').insert({
+        truck_equipment_item_id:truckId,
+        trailer_equipment_item_id:trailerId,
+        job_id:jobId,
+        assigned_crew_id:assignedCrewId,
+        assigned_at:now,
+        hitch_compatible:true,
+        tow_capacity_compatible:true,
+        compatibility_snapshot:{truck_hitch_class:truck.hitch_class,trailer_hitch_class:trailer.hitch_class,max_tow_kg:truck.max_tow_kg,trailer_gvwr_kg:trailer.trailer_gvwr_kg,trailer_connector:trailer.trailer_connector},
+        assignment_notes:body.assignment_notes || null,
+        assigned_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(error) throw error;
+      await supabase.from('equipment_fleet_profiles').update({operational_status:'assigned',updated_by_profile_id:actorProfile.id,updated_at:now}).in('equipment_item_id',[truckId,trailerId]);
+      return Response.json({ok:true,build:333,schema:221,record:data,compatibility:{hitch_compatible:true,tow_capacity_compatible:true}},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'equipment' && body.action === 'fleet_towing_release') {
+      const assignmentId=String(body.assignment_id || '').trim();
+      if(!assignmentId) return Response.json({ok:false,error:'Tow assignment is required.'},{status:400,headers:corsHeaders});
+      const {data:assignment}=await supabase.from('fleet_towing_assignments').select('*').eq('id',assignmentId).maybeSingle();
+      if(!assignment) return Response.json({ok:false,error:'Tow assignment not found.'},{status:404,headers:corsHeaders});
+      if(assignment.released_at) return Response.json({ok:true,build:333,schema:221,record:assignment},{headers:corsHeaders});
+      const now=new Date().toISOString();
+      const {data,error}=await supabase.from('fleet_towing_assignments').update({released_at:now,released_by_profile_id:actorProfile.id,release_notes:body.release_notes || null,updated_at:now}).eq('id',assignmentId).select('*').single();
+      if(error) throw error;
+      await supabase.from('equipment_fleet_profiles').update({operational_status:'ready',updated_by_profile_id:actorProfile.id,updated_at:now}).in('equipment_item_id',[assignment.truck_equipment_item_id,assignment.trailer_equipment_item_id]);
+      return Response.json({ok:true,build:333,schema:221,record:data},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'equipment' && body.action === 'fleet_downtime_start') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const reason=String(body.downtime_reason || '').trim();
+      if(!reason) return Response.json({ok:false,error:'Downtime reason is required.'},{status:400,headers:corsHeaders});
+      const jobId=body.job_code ? await resolveJobIdByCode(supabase,body.job_code) : (body.job_id || null);
+      const now=new Date().toISOString();
+      const {data:task,error:taskError}=await supabase.from('equipment_service_tasks').insert({
+        equipment_item_id:equipmentId,
+        job_id:jobId,
+        task_type:'repair',
+        task_status:'open',
+        priority:String(body.priority || 'high'),
+        failure_reason:body.damage_summary || reason,
+        estimated_cost:Number(body.estimated_service_cost || 0),
+        notes:body.notes || reason,
+        created_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(taskError) throw taskError;
+      const {data,error}=await supabase.from('fleet_downtime_events').insert({
+        equipment_item_id:equipmentId,
+        job_id:jobId,
+        service_task_id:task?.id || null,
+        damage_summary:body.damage_summary || null,
+        downtime_reason:reason,
+        started_at:now,
+        opened_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(error) throw error;
+      await supabase.from('equipment_fleet_profiles').update({operational_status:'downtime',damage_status:body.damage_summary ? 'repair_required' : 'reported',downtime_reason:reason,downtime_started_at:now,updated_by_profile_id:actorProfile.id,updated_at:now}).eq('equipment_item_id',equipmentId);
+      await supabase.from('equipment_items').update({status:'maintenance',defect_status:'open',defect_notes:body.damage_summary || reason,updated_at:now}).eq('id',equipmentId);
+      return Response.json({ok:true,build:333,schema:221,record:data,service_task_id:task?.id || null},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'equipment' && body.action === 'fleet_downtime_clear') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const {data:rows}=await supabase.from('fleet_downtime_events').select('*').eq('equipment_item_id',equipmentId).is('ended_at',null).order('started_at',{ascending:false}).limit(1);
+      const event=(rows || [])[0];
+      if(!event) return Response.json({ok:false,error:'No open fleet downtime event was found.'},{status:409,headers:corsHeaders});
+      if(event.service_task_id){
+        const {data:task}=await supabase.from('equipment_service_tasks').select('task_status').eq('id',event.service_task_id).maybeSingle();
+        if(!['resolved','cancelled'].includes(String(task?.task_status || ''))) return Response.json({ok:false,error:'Repair/service task must be resolved before fleet downtime can be cleared.'},{status:409,headers:corsHeaders});
+      }
+      const now=new Date().toISOString();
+      const {data,error}=await supabase.from('fleet_downtime_events').update({ended_at:now,resolution_notes:body.resolution_notes || null,closed_by_profile_id:actorProfile.id,updated_at:now}).eq('id',event.id).select('*').single();
+      if(error) throw error;
+      await supabase.from('equipment_fleet_profiles').update({operational_status:'ready',damage_status:'clear',downtime_reason:null,downtime_started_at:null,updated_by_profile_id:actorProfile.id,updated_at:now}).eq('equipment_item_id',equipmentId);
+      await supabase.from('equipment_items').update({status:'available',defect_status:'clear',defect_notes:null,updated_at:now}).eq('id',equipmentId);
+      return Response.json({ok:true,build:333,schema:221,record:data},{headers:corsHeaders});
+    }
+
     if (body.entity === 'equipment' && body.action === 'daily_inspection_submit') {
       const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
       if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
