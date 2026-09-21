@@ -120,6 +120,7 @@ jobs:
       - run: npm run test:incident-near-miss-investigation
       - run: npm run test:training-certification-matrix
       - run: npm run test:equipment-registry-qr-v2
+      - run: npm run test:daily-equipment-inspection-lockout
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -184,6 +185,7 @@ jobs:
       - run: npm run test:browser:incident-near-miss-investigation
       - run: npm run test:browser:training-certification-matrix
       - run: npm run test:browser:equipment-registry-qr-v2
+      - run: npm run test:browser:daily-equipment-inspection-lockout
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
