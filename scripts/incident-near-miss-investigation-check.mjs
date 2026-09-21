@@ -76,7 +76,7 @@ assert.ok(!selector329.includes('submitted_by_name'),'Build 329 investigation se
 assert.ok(!selector329.includes('submitted_by_profile_id'),'Build 329 investigation selector must not expose reporter profile identity.');
 
 must(hse,[
-  'const BUILD = 329',
+  'data-build="329"',
   'Incident &amp; Near-Miss Investigation',
   'deriveIncidentInvestigations',
   "action:'incident_investigation_save'",
@@ -102,7 +102,7 @@ must(help,[
   'Existing incident-linked corrective-action tasks remain the corrective-action authority',
   'a closed record is not by itself proof of legal compliance'
 ],'Build 329 Help');
-must(roadmap,['**329 — Incident & Near-Miss Investigation** are implemented','330 — Training & Certification Matrix'],'Build 329 roadmap');
+must(roadmap,['329 — Incident & Near-Miss Investigation','330 — Training & Certification Matrix'],'Build 329 roadmap history');
 must(pkg,['test:incident-near-miss-investigation','test:browser:incident-near-miss-investigation'],'Build 329 package scripts');
 must(workflow,['npm run test:incident-near-miss-investigation','npm run test:browser:incident-near-miss-investigation'],'Build 329 CI wiring');
 
