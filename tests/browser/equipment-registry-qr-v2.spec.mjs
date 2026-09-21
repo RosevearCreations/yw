@@ -102,8 +102,8 @@ test('Build 331 renders existing equipment authority as Registry & QR v2',async(
   await expect(page.locator('#eq_registry_documents')).toHaveValue(/Owner Manual/);
   await expect(page.locator('#eq_registry_photos')).toHaveValue(/mow331\.jpg/);
   await expect(page.locator('#eq_registry_accessories')).toHaveValue(/Battery/);
-  await expect(page.locator('#eq_registry_summary')).toContainText('Recorded lifecycle $9725.00');
-  await expect(page.locator('#eq_registry_summary')).toContainText('Open service estimate $350.00');
+  await expect(page.locator('#eq_registry_summary')).toContainText('Recorded lifecycle 9725.00');
+  await expect(page.locator('#eq_registry_summary')).toContainText('Open service estimate 350.00');
   await expect(page.locator('#eq_scan_code')).toBeAttached();
 });
 
