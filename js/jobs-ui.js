@@ -1617,6 +1617,193 @@
       );
     }
 
+    function getActiveFleetRow() {
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || ''));
+      if(!active) return null;
+      return (state.fleetOperations || []).find((row)=>String(row.equipment_code || '')===String(active.equipment_code || '')) || null;
+    }
+
+    function fillFleetFormForActiveEquipment() {
+      const e=els();
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || '')) || null;
+      const row=getActiveFleetRow();
+      if(!active) return;
+      const category=String(active.category || '').toLowerCase();
+      const inferredClass=category.includes('trailer') ? 'trailer' : (category.includes('truck') ? 'truck' : 'vehicle');
+      if(e.eqFleetAssetClass) e.eqFleetAssetClass.value=row?.asset_class || inferredClass;
+      if(e.eqFleetVin) e.eqFleetVin.value=row?.vin_or_unit_number || '';
+      if(e.eqFleetPlate) e.eqFleetPlate.value=row?.plate_number || '';
+      if(e.eqFleetOdometer) e.eqFleetOdometer.value=row?.odometer_or_meter_value ?? (active.meter_type==='odometer' ? active.current_meter_value ?? '' : '');
+      if(e.eqFleetRegistrationExpiry) e.eqFleetRegistrationExpiry.value=row?.registration_expiry || '';
+      if(e.eqFleetInsuranceRef) e.eqFleetInsuranceRef.value=row?.insurance_policy_reference || '';
+      if(e.eqFleetInsuranceExpiry) e.eqFleetInsuranceExpiry.value=row?.insurance_expiry || '';
+      if(e.eqFleetInspectionDue) e.eqFleetInspectionDue.value=row?.annual_vehicle_inspection_due || '';
+      if(e.eqFleetTireStatus) e.eqFleetTireStatus.value=row?.tire_status || 'unknown';
+      if(e.eqFleetHitchClass) e.eqFleetHitchClass.value=row?.hitch_class || '';
+      if(e.eqFleetMaxTowKg) e.eqFleetMaxTowKg.value=row?.max_tow_kg ?? '';
+      if(e.eqFleetTrailerGvwrKg) e.eqFleetTrailerGvwrKg.value=row?.trailer_gvwr_kg ?? '';
+      if(e.eqFleetTrailerConnector) e.eqFleetTrailerConnector.value=row?.trailer_connector || '';
+      if(e.eqFleetFuelType) e.eqFleetFuelType.value=row?.fuel_type || (inferredClass==='trailer' ? 'none' : 'gasoline');
+      if(e.eqFleetOperationalStatus) e.eqFleetOperationalStatus.value=row?.operational_status || 'ready';
+      if(e.eqFleetDamageStatus) e.eqFleetDamageStatus.value=row?.damage_status || 'clear';
+      if(e.eqFleetNotes) e.eqFleetNotes.value=row?.fleet_notes || '';
+      if(e.eqFleetFuelOdometer) e.eqFleetFuelOdometer.value=row?.odometer_or_meter_value ?? '';
+      if(e.eqFleetTowTruck && inferredClass!=='trailer') e.eqFleetTowTruck.value=active.equipment_code || '';
+      if(e.eqFleetTowTrailer && inferredClass==='trailer') e.eqFleetTowTrailer.value=active.equipment_code || '';
+      if(e.eqFleetSummary) setNotice(e.eqFleetSummary,row
+        ? `${active.equipment_code} · ${row.asset_class || inferredClass} · ${row.operational_status || 'ready'} · readiness ${row.latest_readiness_status || 'not recorded'} · tires ${row.tire_status || 'unknown'} · downtime ${Number(row.open_downtime_count || 0)}.`
+        : `${active.equipment_code} has no fleet profile yet. Save one when this asset is a truck, trailer or road vehicle.`
+      );
+    }
+
+    function renderFleetOperationsWorkbench() {
+      const e=els();
+      const summary=state.fleetOperationsSummary?.[0] || {};
+      if(e.eqFleetSummary && !state.editingEquipmentCode) setNotice(e.eqFleetSummary,
+        `Fleet: ${Number(summary.fleet_asset_count || 0)} asset(s), ${Number(summary.truck_count || 0)} truck(s), ${Number(summary.trailer_count || 0)} trailer(s), ${Number(summary.downtime_count || 0)} down. Attention — registration ${Number(summary.registration_attention_count || 0)}, insurance ${Number(summary.insurance_attention_count || 0)}, inspection ${Number(summary.inspection_attention_count || 0)}, tires ${Number(summary.tire_attention_count || 0)}.`
+      );
+      if(e.eqFleetOperationsBody){
+        const rows=(state.fleetOperations || []).slice(0,100);
+        e.eqFleetOperationsBody.innerHTML=rows.length ? rows.map((row)=>`<tr>
+          <td>${escHtml(row.equipment_code || '')}</td>
+          <td>${escHtml(row.asset_class || '')}</td>
+          <td>${escHtml(row.plate_number || '—')}</td>
+          <td>${row.odometer_or_meter_value ?? '—'} ${escHtml(row.meter_unit || '')}</td>
+          <td>${escHtml(row.latest_readiness_status || 'not recorded')}</td>
+          <td>${escHtml(row.tire_status || 'unknown')}</td>
+          <td>${Number(row.fuel_cost_total || 0).toFixed(2)}</td>
+          <td>${Number(row.open_downtime_count || 0) ? 'DOWN' : escHtml(row.operational_status || 'ready')}</td>
+        </tr>`).join('') : '<tr><td colspan="8" class="muted">No fleet profiles recorded yet.</td></tr>';
+      }
+      if(e.eqFleetTowingBody){
+        const rows=(state.fleetTowingAssignments || []).slice(0,100);
+        e.eqFleetTowingBody.innerHTML=rows.length ? rows.map((row)=>`<tr>
+          <td>${escHtml(row.truck_equipment_code || '')}</td>
+          <td>${escHtml(row.trailer_equipment_code || '')}</td>
+          <td>${escHtml(row.job_id || '—')}</td>
+          <td>${row.hitch_compatible && row.tow_capacity_compatible ? 'Verified' : 'Blocked'}</td>
+          <td>${row.released_at ? 'Released' : 'Active'}</td>
+          <td>${row.released_at ? '—' : `<button type="button" class="secondary" data-fleet-tow-release="${escHtml(row.id)}">Release</button>`}</td>
+        </tr>`).join('') : '<tr><td colspan="6" class="muted">No towing assignments recorded yet.</td></tr>';
+      }
+    }
+
+    async function saveFleetProfile() {
+      const e=els();
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || ''));
+      if(!active?.equipment_code) return setNotice(e.eqFleetSummary,'Load an equipment item before saving a fleet profile.',true);
+      const resp=await api.manageJobsEntity({
+        entity:'equipment',action:'fleet_profile_upsert',equipment_code:active.equipment_code,
+        asset_class:e.eqFleetAssetClass?.value || 'vehicle',
+        vin_or_unit_number:e.eqFleetVin?.value?.trim?.() || null,
+        plate_number:e.eqFleetPlate?.value?.trim?.() || null,
+        odometer_km:e.eqFleetOdometer?.value || null,
+        registration_expiry:e.eqFleetRegistrationExpiry?.value || null,
+        insurance_policy_reference:e.eqFleetInsuranceRef?.value?.trim?.() || null,
+        insurance_expiry:e.eqFleetInsuranceExpiry?.value || null,
+        annual_vehicle_inspection_due:e.eqFleetInspectionDue?.value || null,
+        tire_status:e.eqFleetTireStatus?.value || 'unknown',
+        hitch_class:e.eqFleetHitchClass?.value?.trim?.() || null,
+        max_tow_kg:e.eqFleetMaxTowKg?.value || null,
+        trailer_gvwr_kg:e.eqFleetTrailerGvwrKg?.value || null,
+        trailer_connector:e.eqFleetTrailerConnector?.value?.trim?.() || null,
+        fuel_type:e.eqFleetFuelType?.value || 'gasoline',
+        operational_status:e.eqFleetOperationalStatus?.value || 'ready',
+        damage_status:e.eqFleetDamageStatus?.value || 'clear',
+        notes:e.eqFleetNotes?.value?.trim?.() || null
+      });
+      if(!resp?.ok) return setNotice(e.eqFleetSummary,resp?.error || 'Fleet profile save failed.',true);
+      setNotice(e.eqFleetSummary,'Fleet profile saved.');
+      await loadData();
+    }
+
+    async function recordFleetReadiness() {
+      const e=els();
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || ''));
+      if(!active?.equipment_code) return setNotice(e.eqFleetSummary,'Load a fleet asset before recording readiness.',true);
+      const resp=await api.manageJobsEntity({
+        entity:'equipment',action:'fleet_readiness_record',equipment_code:active.equipment_code,
+        job_code:e.eqFleetReadinessJob?.value?.trim?.() || null,
+        registration_verified:!!e.eqFleetRegVerified?.checked,
+        insurance_verified:!!e.eqFleetInsVerified?.checked,
+        vehicle_inspection_verified:!!e.eqFleetVehicleInspectionVerified?.checked,
+        tire_status:e.eqFleetTireStatus?.value || 'unknown',
+        hitch_compatible:!!e.eqFleetHitchCompatible?.checked,
+        trailer_load_ready:!!e.eqFleetLoadReady?.checked,
+        load_summary:e.eqFleetLoadSummary?.value?.trim?.() || null,
+        issue_summary:e.eqFleetIssueSummary?.value?.trim?.() || null
+      });
+      if(!resp?.ok) return setNotice(e.eqFleetSummary,resp?.error || 'Fleet readiness record failed.',true);
+      setNotice(e.eqFleetSummary,`Fleet readiness saved as ${resp.readiness_status || 'recorded'}.`);
+      await loadData();
+    }
+
+    async function recordFleetFuel() {
+      const e=els();
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || ''));
+      if(!active?.equipment_code) return setNotice(e.eqFleetSummary,'Load a fleet asset before recording fuel.',true);
+      const resp=await api.manageJobsEntity({
+        entity:'equipment',action:'fleet_fuel_record',equipment_code:active.equipment_code,
+        job_code:e.eqFleetFuelJob?.value?.trim?.() || null,
+        fuel_type:e.eqFleetFuelType?.value || 'gasoline',
+        quantity_litres:e.eqFleetFuelLitres?.value || null,
+        total_cost:e.eqFleetFuelCost?.value || null,
+        odometer_km:e.eqFleetFuelOdometer?.value || null,
+        supplier:e.eqFleetFuelSupplier?.value?.trim?.() || null,
+        receipt_reference:e.eqFleetFuelReceipt?.value?.trim?.() || null
+      });
+      if(!resp?.ok) return setNotice(e.eqFleetSummary,resp?.error || 'Fleet fuel record failed.',true);
+      setNotice(e.eqFleetSummary,'Fuel evidence recorded.');
+      await loadData();
+    }
+
+    async function assignFleetTow() {
+      const e=els();
+      const resp=await api.manageJobsEntity({
+        entity:'equipment',action:'fleet_towing_assign',
+        truck_equipment_code:e.eqFleetTowTruck?.value?.trim?.() || '',
+        trailer_equipment_code:e.eqFleetTowTrailer?.value?.trim?.() || '',
+        job_code:e.eqFleetTowJob?.value?.trim?.() || null,
+        assignment_notes:e.eqFleetTowNotes?.value?.trim?.() || null
+      });
+      if(!resp?.ok) return setNotice(e.eqFleetSummary,resp?.error || 'Tow assignment failed.',true);
+      setNotice(e.eqFleetSummary,'Tow pair assigned with hitch and capacity compatibility verified.');
+      await loadData();
+    }
+
+    async function releaseFleetTow(id) {
+      if(!id) return;
+      const notes=window.prompt('Tow release notes:','') || '';
+      const resp=await api.manageJobsEntity({entity:'equipment',action:'fleet_towing_release',assignment_id:id,release_notes:notes});
+      if(!resp?.ok) return setNotice(els().eqFleetSummary,resp?.error || 'Tow release failed.',true);
+      await loadData();
+    }
+
+    async function startFleetDowntime() {
+      const e=els();
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || ''));
+      if(!active?.equipment_code) return setNotice(e.eqFleetSummary,'Load a fleet asset before starting downtime.',true);
+      const reason=(window.prompt('Downtime reason:','') || '').trim();
+      if(!reason) return;
+      const damage=(window.prompt('Damage summary (optional):','') || '').trim();
+      const resp=await api.manageJobsEntity({entity:'equipment',action:'fleet_downtime_start',equipment_code:active.equipment_code,downtime_reason:reason,damage_summary:damage || null});
+      if(!resp?.ok) return setNotice(e.eqFleetSummary,resp?.error || 'Fleet downtime start failed.',true);
+      setNotice(e.eqFleetSummary,'Fleet downtime opened and a repair service task was created.');
+      await loadData();
+    }
+
+    async function clearFleetDowntime() {
+      const e=els();
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || ''));
+      if(!active?.equipment_code) return setNotice(e.eqFleetSummary,'Load a fleet asset before clearing downtime.',true);
+      const notes=(window.prompt('Downtime resolution notes:','') || '').trim();
+      if(!window.confirm('Clear fleet downtime after the linked repair/service task has been resolved?')) return;
+      const resp=await api.manageJobsEntity({entity:'equipment',action:'fleet_downtime_clear',equipment_code:active.equipment_code,resolution_notes:notes || null});
+      if(!resp?.ok) return setNotice(e.eqFleetSummary,resp?.error || 'Fleet downtime clearance is blocked.',true);
+      setNotice(e.eqFleetSummary,'Fleet downtime cleared.');
+      await loadData();
+    }
+
     function getActiveEquipmentRow() {
       return (state.equipment || []).find((row) => String(row.equipment_code || '') === String(state.editingEquipmentCode || '')) || null;
     }
@@ -2269,6 +2456,7 @@
       if (e.eqDailyInspectionMeter) e.eqDailyInspectionMeter.value = row.current_meter_value ?? '';
       if (e.eqDailyInspectionMeterUnit) e.eqDailyInspectionMeterUnit.value = row.meter_unit || '';
       fillDailyInspectionTemplateSelect();
+      fillFleetFormForActiveEquipment();
       e.eqComments.value = row.comments || '';
       e.eqNotes.value = row.notes || '';
       if (e.eqArrivalTestStatus) e.eqArrivalTestStatus.value = row.last_arrival_test_status || 'not_recorded';
@@ -3160,6 +3348,7 @@
       }
       renderEquipmentAccountabilityDepth();
       renderDailyInspectionWorkbench();
+      renderFleetOperationsWorkbench();
     }
 
 
@@ -3322,6 +3511,9 @@
         state.dailyInspectionTemplates = Array.isArray(resp?.equipment_daily_inspection_templates) ? resp.equipment_daily_inspection_templates : [];
         state.dailyInspectionWorkbench = Array.isArray(resp?.equipment_daily_inspection_workbench) ? resp.equipment_daily_inspection_workbench : [];
         state.dailyInspectionSummary = Array.isArray(resp?.equipment_daily_inspection_summary) ? resp.equipment_daily_inspection_summary : [];
+        state.fleetOperations = Array.isArray(resp?.fleet_vehicle_operations) ? resp.fleet_vehicle_operations : [];
+        state.fleetOperationsSummary = Array.isArray(resp?.fleet_operations_summary) ? resp.fleet_operations_summary : [];
+        state.fleetTowingAssignments = Array.isArray(resp?.fleet_towing_assignments) ? resp.fleet_towing_assignments : [];
         renderAccountingDepthTables();
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
