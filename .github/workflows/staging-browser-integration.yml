@@ -117,6 +117,7 @@ jobs:
       - run: npm run test:mobile-crew-app-v2
       - run: npm run test:safety-compliance-command-centre
       - run: npm run test:job-hazard-site-safety-plans
+      - run: npm run test:incident-near-miss-investigation
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -178,6 +179,7 @@ jobs:
       - run: npm run test:browser:mobile-crew-app-v2
       - run: npm run test:browser:safety-compliance-command-centre
       - run: npm run test:browser:job-hazard-site-safety-plans
+      - run: npm run test:browser:incident-near-miss-investigation
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
