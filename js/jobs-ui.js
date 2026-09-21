@@ -4312,6 +4312,37 @@
           if(rtn) verifyDailyInspectionReturn(rtn.getAttribute('data-daily-inspection-return'));
         });
       }
+      if (e.eqFleetSaveProfile && e.eqFleetSaveProfile.dataset.bound !== '1') {
+        e.eqFleetSaveProfile.dataset.bound='1';
+        e.eqFleetSaveProfile.addEventListener('click',saveFleetProfile);
+      }
+      if (e.eqFleetRecordReadiness && e.eqFleetRecordReadiness.dataset.bound !== '1') {
+        e.eqFleetRecordReadiness.dataset.bound='1';
+        e.eqFleetRecordReadiness.addEventListener('click',recordFleetReadiness);
+      }
+      if (e.eqFleetRecordFuel && e.eqFleetRecordFuel.dataset.bound !== '1') {
+        e.eqFleetRecordFuel.dataset.bound='1';
+        e.eqFleetRecordFuel.addEventListener('click',recordFleetFuel);
+      }
+      if (e.eqFleetAssignTow && e.eqFleetAssignTow.dataset.bound !== '1') {
+        e.eqFleetAssignTow.dataset.bound='1';
+        e.eqFleetAssignTow.addEventListener('click',assignFleetTow);
+      }
+      if (e.eqFleetStartDowntime && e.eqFleetStartDowntime.dataset.bound !== '1') {
+        e.eqFleetStartDowntime.dataset.bound='1';
+        e.eqFleetStartDowntime.addEventListener('click',startFleetDowntime);
+      }
+      if (e.eqFleetClearDowntime && e.eqFleetClearDowntime.dataset.bound !== '1') {
+        e.eqFleetClearDowntime.dataset.bound='1';
+        e.eqFleetClearDowntime.addEventListener('click',clearFleetDowntime);
+      }
+      if (e.eqFleetTowingBody && e.eqFleetTowingBody.dataset.bound !== '1') {
+        e.eqFleetTowingBody.dataset.bound='1';
+        e.eqFleetTowingBody.addEventListener('click',(event)=>{
+          const release=event.target.closest('[data-fleet-tow-release]');
+          if(release) releaseFleetTow(release.getAttribute('data-fleet-tow-release'));
+        });
+      }
       if (e.eqScanCode && e.eqScanCode.dataset.bound !== '1') {
         e.eqScanCode.dataset.bound = '1';
         e.eqScanCode.addEventListener('click', scanOrEnterEquipmentCode);
