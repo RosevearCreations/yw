@@ -2355,6 +2355,104 @@ serve(async (req) => {
       return Response.json({ok:true,build:324,schema:213,record:data},{headers:corsHeaders});
     }
 
+    if (action === 'job_hazard_template_save') {
+      requireRank(profile,30,action);
+      const templateCode=clean(body.template_code,80).toLowerCase().replace(/[^a-z0-9_]+/g,'_');
+      const templateName=clean(body.template_name,180);
+      const workType=clean(body.work_type,80).toLowerCase().replace(/[^a-z0-9_]+/g,'_');
+      if(!templateName || !workType) throw new HttpError(400,'Template name and work type are required.');
+      const list=(value:any,limit=32,max=800)=>Array.isArray(value) ? value.slice(0,limit).map((item:any)=>clean(item,max)).filter(Boolean) : [];
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,
+        template_code:templateCode || workType,
+        template_name:templateName,
+        work_type:workType,
+        hazard_prompts:list(body.hazard_prompts),
+        default_controls:list(body.default_controls),
+        required_ppe:list(body.required_ppe,20,300),
+        requires_toolbox_talk:body.requires_toolbox_talk===true,
+        requires_site_inspection:body.requires_site_inspection!==false,
+        requires_weather_review:body.requires_weather_review===true,
+        requires_heat_review:body.requires_heat_review===true,
+        requires_chemical_review:body.requires_chemical_review===true,
+        requires_traffic_control:body.requires_traffic_control===true,
+        requires_machinery_review:body.requires_machinery_review===true,
+        requires_lifting_review:body.requires_lifting_review===true,
+        requires_utility_locate_review:body.requires_utility_locate_review===true,
+        requires_public_control:body.requires_public_control===true,
+        notes:clean(body.notes,2200)||null,
+        is_active:body.is_active!==false
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_job_hazard_template_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:'saved',entity_type:'job_hazard_plan_template',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{template_code:payload.template_code,work_type:payload.work_type},
+        response_payload:{revision:(data as any)?.revision || null}
+      });
+      return Response.json({ok:true,build:328,schema:216,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'job_hazard_plan_save') {
+      requireRank(profile,20,action);
+      const packetId=clean(body.hse_packet_id,80);
+      const templateId=clean(body.template_id,80);
+      if(!isUuid(packetId) || !isUuid(templateId)) throw new HttpError(400,'Valid HSE packet and safety-plan template are required.');
+      const list=(value:any,limit=48,max=1000)=>Array.isArray(value) ? value.slice(0,limit).map((item:any)=>clean(item,max)).filter(Boolean) : [];
+      const rawConditions=(body.actual_conditions && typeof body.actual_conditions==='object' && !Array.isArray(body.actual_conditions)) ? body.actual_conditions : {};
+      const conditions:any={};
+      for(const [key,value] of Object.entries(rawConditions).slice(0,30)){
+        const safeKey=clean(key,80).replace(/[^a-zA-Z0-9_. -]/g,'');
+        if(safeKey) conditions[safeKey]=clean(value,1000);
+      }
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,
+        hse_packet_id:packetId,template_id:templateId,
+        field_date:clean(body.field_date,20)||null,
+        plan_status:clean(body.plan_status || 'draft',30).toLowerCase(),
+        actual_conditions:conditions,
+        identified_hazards:list(body.identified_hazards),
+        active_controls:list(body.active_controls),
+        additional_controls:clean(body.additional_controls,2600)||null,
+        stop_work_required:body.stop_work_required===true,
+        stop_work_reason:clean(body.stop_work_reason,1800)||null,
+        emergency_notes:clean(body.emergency_notes,2200)||null,
+        public_interaction_notes:clean(body.public_interaction_notes,2200)||null,
+        utility_locate_reference:clean(body.utility_locate_reference,1000)||null,
+        utility_locate_confirmed:body.utility_locate_confirmed===true
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_job_hazard_plan_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:payload.plan_status,entity_type:'job_hazard_site_safety_plan',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{hse_packet_id:packetId,template_id:templateId,plan_status:payload.plan_status,stop_work_required:payload.stop_work_required},
+        response_payload:{plan_number:(data as any)?.plan_number || null,supervisor_review_status:(data as any)?.supervisor_review_status || null}
+      });
+      return Response.json({ok:true,build:328,schema:216,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'job_hazard_plan_review') {
+      requireRank(profile,30,action);
+      const planId=clean(body.plan_id,80);
+      const decision=clean(body.decision,30).toLowerCase();
+      const note=clean(body.note,2200);
+      if(!isUuid(planId)) throw new HttpError(400,'Valid safety plan is required.');
+      if(!['approve','changes_required','reopen'].includes(decision)) throw new HttpError(400,'Unsupported safety-plan review decision.');
+      const {data,error}=await supabase.rpc('ywi_rpc_job_hazard_plan_review',{
+        p_plan_id:planId,p_actor_profile_id:profile.id,p_decision:decision,p_note:note||null
+      });
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:decision,entity_type:'job_hazard_site_safety_plan',
+        entity_id:planId,actor_profile_id:profile.id,
+        request_payload:{decision,has_note:Boolean(note)},
+        response_payload:{supervisor_review_status:(data as any)?.supervisor_review_status || null}
+      });
+      return Response.json({ok:true,build:328,schema:216,record:data},{headers:corsHeaders});
+    }
+
     if (action === 'property_site_save') {
       requireRank(profile,45,action);
       const id=isUuid(body.id) ? clean(body.id,80) : null;
