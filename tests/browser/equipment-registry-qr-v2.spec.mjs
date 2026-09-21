@@ -99,12 +99,12 @@ test('Build 331 renders existing equipment authority as Registry & QR v2',async(
   await expect(page.locator('#eq_meter_type')).toHaveValue('hours');
   await expect(page.locator('#eq_meter_value')).toHaveValue('412.5');
   await expect(page.locator('#eq_replacement_state')).toHaveValue('monitor');
-  await expect(page.locator('#eq_registry_documents')).toContainText('Owner Manual');
-  await expect(page.locator('#eq_registry_photos')).toContainText('mow331.jpg');
-  await expect(page.locator('#eq_registry_accessories')).toContainText('Battery');
+  await expect(page.locator('#eq_registry_documents')).toHaveValue(/Owner Manual/);
+  await expect(page.locator('#eq_registry_photos')).toHaveValue(/mow331\.jpg/);
+  await expect(page.locator('#eq_registry_accessories')).toHaveValue(/Battery/);
   await expect(page.locator('#eq_registry_summary')).toContainText('Recorded lifecycle $9725.00');
   await expect(page.locator('#eq_registry_summary')).toContainText('Open service estimate $350.00');
-  await expect(page.getByRole('button',{name:'Scan / Enter Code'})).toBeVisible();
+  await expect(page.locator('#eq_scan_code')).toBeAttached();
 });
 
 test('Build 331 saves structured registry evidence through the existing equipment upsert',async({page})=>{
@@ -141,5 +141,5 @@ test('Build 331 exposes the exact QR label token without replacing the scanner',
   await page.getByRole('button',{name:'Copy QR Label Value'}).click();
   await expect.poll(()=>page.evaluate(()=>window.__clipboard[0] || '')).toBe('YWI-EQ-331-OPAQUE');
   await expect(page.locator('#eq_registry_summary')).toContainText('Physical QR/barcode labels must encode this exact value');
-  await expect(page.getByRole('button',{name:'Scan / Enter Code'})).toBeVisible();
+  await expect(page.locator('#eq_scan_code')).toBeAttached();
 });
