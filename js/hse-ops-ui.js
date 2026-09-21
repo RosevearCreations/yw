@@ -72,6 +72,18 @@
       uploads: Array.isArray(summary?.monitorSummary) ? summary.monitorSummary.length : 0,
       packets: Array.isArray(summary?.linkedContext) ? summary.linkedContext.length : 0,
       safetyCommand: summary?.commandCentre?.counts || {},
+      hazardPlans: {
+        open: summary?.hazardPlanning?.openPlans?.length || 0,
+        ready: summary?.hazardPlanning?.ready?.length || 0,
+        reviewOpen: summary?.hazardPlanning?.reviewOpen?.length || 0
+      },
+      investigations: {
+        reports: summary?.incidentInvestigations?.reports?.length || 0,
+        active: summary?.incidentInvestigations?.active?.length || 0,
+        ready: summary?.incidentInvestigations?.ready?.length || 0,
+        changes: summary?.incidentInvestigations?.changesRequired?.length || 0,
+        blocked: summary?.incidentInvestigations?.closureBlocked?.length || 0
+      },
       acctOpen: acct.open_sync_exception_count || 0
     });
   }
