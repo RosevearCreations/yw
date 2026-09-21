@@ -3592,6 +3592,16 @@
       ensureCommercialPanel();
       bind();
       applyRoleVisibility();
+      if (!canManage()) {
+        const e = els();
+        setNotice(e.jobSummary, 'Mobile Crew App v2 is available from Today with assignment-filtered My Jobs / My Route. The full Jobs directory remains Supervisor+.', false);
+        if (!state.jobs.length) clearJobForm();
+        if (!state.equipment.length) clearEquipmentForm();
+        restoreDrafts();
+        initSignaturePads();
+        renderRequirementReviewPanel();
+        return;
+      }
       await loadData();
       if (!state.jobs.length) clearJobForm();
       if (!state.equipment.length) clearEquipmentForm();

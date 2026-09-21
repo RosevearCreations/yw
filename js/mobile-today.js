@@ -10,7 +10,12 @@
     bound: false,
     deferredInstallPrompt: null,
     lastRenderKey: '',
-    jobsObserver: null
+    jobsObserver: null,
+    crewContext: null,
+    crewLoading: false,
+    crewError: '',
+    crewLoadedAt: 0,
+    crewTab: 'route'
   };
 
   function authState() {
@@ -135,6 +140,14 @@
       .field-sync-health[data-sync-state="current"] .field-sync-state{border-color:rgba(52,211,153,.35);color:#d7ffe9}.field-sync-health[data-sync-state="pending"] .field-sync-state{border-color:rgba(251,191,36,.38);color:#fff3c4}.field-sync-health[data-sync-state="conflict"] .field-sync-state,.field-sync-health[data-sync-state="offline"] .field-sync-state{border-color:rgba(248,113,113,.4);color:#ffd4d4}
       .field-sync-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.field-sync-metric{min-width:0;padding:9px 10px;border-radius:11px;background:rgba(148,163,184,.07)}.field-sync-metric span{display:block;font-size:.75rem;color:var(--text-faint,#94a3b8)}.field-sync-metric strong{display:block;margin-top:2px;font-size:1.05rem}
       .field-sync-note{margin:10px 0 0;color:var(--text-soft,#cbd5e1);line-height:1.45}.field-sync-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+      .mobile-crew-v2{margin:0 0 16px;padding:14px;border:1px solid rgba(148,163,184,.22);border-radius:16px;background:rgba(15,23,42,.78)}
+      .mobile-crew-v2-head{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}.mobile-crew-v2-head h2{margin:0;font-size:1.15rem}.mobile-crew-v2-head p{margin:4px 0 0;color:var(--text-soft,#cbd5e1)}
+      .mobile-crew-v2-tabs,.mobile-crew-v2-actions{display:flex;gap:8px;flex-wrap:wrap}.mobile-crew-v2-tabs{margin:12px 0}.mobile-crew-v2-tabs button[aria-selected="true"]{outline:2px solid currentColor}
+      .mobile-crew-v2-list{display:grid;gap:10px}.mobile-crew-v2-card{padding:12px;border:1px solid rgba(148,163,184,.2);border-radius:14px;background:rgba(148,163,184,.06)}
+      .mobile-crew-v2-card-head{display:flex;gap:8px;justify-content:space-between;align-items:flex-start}.mobile-crew-v2-card h3{margin:0;font-size:1rem}.mobile-crew-v2-card p{margin:5px 0;line-height:1.4}
+      .mobile-crew-v2-meta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.mobile-crew-v2-chip{display:inline-flex;padding:4px 8px;border-radius:999px;background:rgba(148,163,184,.1);font-size:.78rem}
+      .mobile-crew-v2-notes{margin:8px 0;padding:9px;border-radius:10px;background:rgba(148,163,184,.07)}.mobile-crew-v2-notes strong{display:block;margin-bottom:3px}
+      .mobile-crew-v2-actions button{min-height:42px}.mobile-crew-v2-empty{padding:12px;border-radius:12px;background:rgba(148,163,184,.06);color:var(--text-soft,#cbd5e1)}
       .jobs-desktop-workbench{display:none}.jobs-sync-health{margin:12px 0}.job-workbench-result{align-self:end;min-height:42px;display:flex;align-items:center;color:var(--text-soft,#cbd5e1)}
       @media(max-width:520px){.field-sync-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.field-sync-actions>*{flex:1 1 145px}}
       @media(min-width:900px){.jobs-desktop-workbench{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(170px,.7fr) auto auto;gap:10px;align-items:end;padding:12px;margin:10px 0 12px;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(15,23,42,.48)}.jobs-desktop-workbench label{min-width:0}.jobs-desktop-workbench button{min-height:44px}}
@@ -284,6 +297,220 @@
     if (result) result.textContent = `${visible} of ${rows.length} jobs shown`;
   }
 
+  function crewEscape(value) {
+    return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+  }
+
+  function crewCacheKey() {
+    const profileId = authState().profile?.id || authState().user?.id || 'anonymous';
+    return 'ywi_mobile_crew_v2_' + profileId;
+  }
+
+  function readCrewCache() {
+    try {
+      const raw = sessionStorage.getItem(crewCacheKey());
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed?.payload?.build === 326 ? parsed : null;
+    } catch { return null; }
+  }
+
+  function writeCrewCache(payload) {
+    try { sessionStorage.setItem(crewCacheKey(), JSON.stringify({ saved_at: new Date().toISOString(), payload })); } catch {}
+  }
+
+  function crewApi() { return window.YWIAPI || null; }
+
+  async function loadMobileCrewContext(force = false) {
+    const signedIn = !!authState().isAuthenticated;
+    if (!signedIn || state.crewLoading) return;
+    if (!force && state.crewContext && Date.now() - state.crewLoadedAt < 60000) return;
+    if (navigator.onLine === false) {
+      const cached = readCrewCache();
+      if (cached?.payload) {
+        state.crewContext = cached.payload;
+        state.crewError = 'Offline — showing the last crew snapshot from this signed-in browser session.';
+      } else {
+        state.crewError = 'Offline — no crew snapshot is cached in this signed-in browser session yet.';
+      }
+      renderMobileCrewApp();
+      return;
+    }
+    if (!crewApi()?.fetchMobileCrewContext) return;
+    state.crewLoading = true;
+    state.crewError = '';
+    renderMobileCrewApp();
+    try {
+      const payload = await crewApi().fetchMobileCrewContext({ days: 7 });
+      if (!payload?.ok) throw new Error(payload?.error || 'Mobile crew context did not load.');
+      state.crewContext = payload;
+      state.crewLoadedAt = Date.now();
+      writeCrewCache(payload);
+    } catch (error) {
+      const cached = readCrewCache();
+      if (cached?.payload) state.crewContext = cached.payload;
+      state.crewError = (error?.message || 'Mobile crew context failed.') + (cached?.payload ? ' Showing the last signed-in-session snapshot.' : '');
+    } finally {
+      state.crewLoading = false;
+      renderMobileCrewApp();
+    }
+  }
+
+  function crewDateTime(value) {
+    if (!value) return 'Unscheduled';
+    const date = new Date(value);
+    if (Number.isNaN(date.valueOf())) return String(value);
+    return date.toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+  }
+
+  function crewTitle(row) {
+    return row?.job?.job_name || row?.work_order?.work_type || row?.job?.job_code || row?.work_order?.work_order_number || 'Assigned work';
+  }
+
+  function crewSiteLine(row) {
+    const site = row?.site || {};
+    return [site.site_name, site.service_address, site.city].filter(Boolean).join(' · ') || 'Site details unavailable';
+  }
+
+  function crewPropertyNotes(row) {
+    const site = row?.site || {};
+    const access = [site.access_notes,site.gate_fence_summary,site.parking_trailer_limits,site.pet_notes,site.recurring_property_instructions].filter(Boolean).join(' • ');
+    const hazard = [site.hazard_notes,site.slope_notes,site.drainage_wet_area_notes,site.utility_locate_notes,site.tree_brush_notes].filter(Boolean).join(' • ');
+    return { access, hazard };
+  }
+
+  function crewActionButton(label, action, index, enabled = true) {
+    return '<button type="button" class="secondary" data-crew-action="' + crewEscape(action) + '" data-crew-index="' + index + '"' + (enabled ? '' : ' disabled') + '>' + crewEscape(label) + '</button>';
+  }
+
+  function crewActionMarkup(row, index) {
+    const caps = state.crewContext?.capabilities || {};
+    const online = navigator.onLine !== false;
+    const session = row?.latest_session || null;
+    const inProgress = session?.session_status === 'in_progress';
+    const buttons = [
+      crewActionButton('Clock / Break','clock',index,true),
+      crewActionButton('Safety / Inspection','safety',index,true),
+      crewActionButton('Equipment Scan','equipment',index,!!caps.equipment_scan)
+    ];
+    if (caps.production_capture) {
+      buttons.push(crewActionButton(inProgress ? 'Finish Visit' : 'Start Visit',inProgress ? 'finish_visit' : 'start_visit',index,online));
+      buttons.push(crewActionButton('Production Qty','quantity',index,online && !!session?.id));
+    }
+    if (caps.live_update) buttons.push(crewActionButton('Live Update','live_update',index,online));
+    if (caps.execution_proof) buttons.push(crewActionButton('Execution Proof','execution_proof',index,online));
+    if (caps.deficiency_rework) buttons.push(crewActionButton('Deficiency / Rework','deficiency',index,online));
+    if (caps.closeout_request) buttons.push(crewActionButton('Closeout Request','closeout',index,online));
+    return buttons.join('');
+  }
+
+  function crewCard(row, index) {
+    const notes = crewPropertyNotes(row);
+    const dispatch = row?.dispatch || {};
+    const production = row?.production || {};
+    const evidence = row?.evidence || {};
+    const routeOrder = dispatch.route_order || row?.route?.stop?.stop_order || '';
+    const equipmentProblems = (row?.equipment || []).filter((item) => item?.is_locked_out || (item?.defect_status && item.defect_status !== 'clear' && item.defect_status !== 'none'));
+    const materialCount = production.material_issues?.length || 0;
+    const quantityCount = production.quantities?.length || 0;
+    const proofCount = evidence.proofs?.length || 0;
+    const closeoutStatus = row?.closeout?.closeout_status || 'not submitted';
+    return '<article class="mobile-crew-v2-card" data-crew-card="' + index + '">' +
+      '<div class="mobile-crew-v2-card-head"><div><h3>' + crewEscape(crewTitle(row)) + '</h3><p>' + crewEscape(crewSiteLine(row)) + '</p></div><span class="mobile-crew-v2-chip">' + crewEscape(dispatch.schedule_status || row?.work_order?.status || 'scheduled') + '</span></div>' +
+      '<div class="mobile-crew-v2-meta">' +
+        (routeOrder ? '<span class="mobile-crew-v2-chip">Stop ' + crewEscape(routeOrder) + '</span>' : '') +
+        '<span class="mobile-crew-v2-chip">' + crewEscape(crewDateTime(dispatch.scheduled_start || row?.work_order?.scheduled_start)) + '</span>' +
+        '<span class="mobile-crew-v2-chip">' + materialCount + ' material use</span>' +
+        '<span class="mobile-crew-v2-chip">' + quantityCount + ' production qty</span>' +
+        '<span class="mobile-crew-v2-chip">' + proofCount + ' proof</span>' +
+        '<span class="mobile-crew-v2-chip">Closeout: ' + crewEscape(closeoutStatus) + '</span>' +
+      '</div>' +
+      (notes.access ? '<div class="mobile-crew-v2-notes"><strong>Property access</strong>' + crewEscape(notes.access) + '</div>' : '') +
+      (notes.hazard ? '<div class="mobile-crew-v2-notes"><strong>Hazards / site notes</strong>' + crewEscape(notes.hazard) + '</div>' : '') +
+      (dispatch.dispatch_notes ? '<div class="mobile-crew-v2-notes"><strong>Dispatch notes</strong>' + crewEscape(dispatch.dispatch_notes) + '</div>' : '') +
+      (equipmentProblems.length ? '<div class="mobile-crew-v2-notes"><strong>Equipment attention</strong>' + equipmentProblems.map((item) => crewEscape(item.equipment_name || item.equipment_code || item.id) + (item.is_locked_out ? ' — LOCKED OUT' : ' — ' + crewEscape(item.defect_status))).join('<br>') + '</div>' : '') +
+      '<div class="mobile-crew-v2-actions">' + crewActionMarkup(row,index) + '</div>' +
+    '</article>';
+  }
+
+  function renderMobileCrewApp() {
+    const today = document.getElementById('today');
+    if (!today) return;
+    let panel = document.getElementById('mobileCrewAppV2');
+    if (!panel) {
+      panel = document.createElement('section');
+      panel.id = 'mobileCrewAppV2';
+      panel.className = 'mobile-crew-v2';
+      panel.setAttribute('aria-live','polite');
+      const grid = document.getElementById('mobileTodayGrid');
+      if (grid?.parentElement === today) today.insertBefore(panel, grid);
+      else today.appendChild(panel);
+    }
+    const payload = state.crewContext;
+    const rows = state.crewTab === 'jobs' ? (payload?.my_jobs || []) : (payload?.my_route || []);
+    const snapshot = syncSnapshot();
+    const syncCopy = state.crewError || (snapshot.online ? 'Assignment-filtered live field context.' : 'Offline — server writes are disabled; local supported forms retain their own drafts/outbox.');
+    panel.innerHTML =
+      '<div class="mobile-crew-v2-head"><div><h2>Mobile Crew App v2</h2><p>My Jobs, My Route and field actions for 390/430-width phones.</p></div><span class="field-sync-state">' + crewEscape(syncLabel(snapshot)) + '</span></div>' +
+      '<div class="mobile-crew-v2-tabs"><button type="button" class="secondary" data-crew-tab="route" aria-selected="' + (state.crewTab === 'route') + '">My Route</button><button type="button" class="secondary" data-crew-tab="jobs" aria-selected="' + (state.crewTab === 'jobs') + '">My Jobs</button><button type="button" class="secondary" data-crew-refresh="1"' + (state.crewLoading || !snapshot.online ? ' disabled' : '') + '>' + (state.crewLoading ? 'Refreshing…' : 'Refresh') + '</button></div>' +
+      '<p class="field-sync-note">' + crewEscape(syncCopy) + '</p>' +
+      '<div class="mobile-crew-v2-list">' + (state.crewLoading && !payload ? '<div class="mobile-crew-v2-empty">Loading assigned field work…</div>' : rows.length ? rows.map(crewCard).join('') : '<div class="mobile-crew-v2-empty">No assigned work is in the current seven-day crew window.</div>') + '</div>';
+    panel.querySelectorAll('[data-crew-tab]').forEach((button) => button.addEventListener('click', () => { state.crewTab = button.dataset.crewTab || 'route'; renderMobileCrewApp(); }));
+    panel.querySelector('[data-crew-refresh]')?.addEventListener('click', () => loadMobileCrewContext(true));
+    panel.querySelectorAll('[data-crew-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewAction, Number(button.dataset.crewIndex || 0))));
+  }
+
+  async function crewOperation(payload) {
+    if (navigator.onLine === false) throw new Error('This server action needs a connection. Supported Safety forms and drafts can still be used offline.');
+    if (!crewApi()?.manageOperations) throw new Error('Operations service is unavailable.');
+    return crewApi().manageOperations(payload);
+  }
+
+  async function runCrewAction(action, index) {
+    const row = (state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route)?.[index] || null;
+    if (!row && !['clock','safety','equipment'].includes(action)) return;
+    if (action === 'clock') return router()?.showSection?.('me');
+    if (action === 'safety') return router()?.showSection?.('inspect');
+    if (action === 'equipment') return router()?.showSection?.('equipment');
+    const workOrderId = row?.work_order?.id || row?.dispatch?.work_order_id || '';
+    try {
+      if (action === 'start_visit') {
+        await crewOperation({ action:'landscape_production_session_save', work_order_id:workOrderId, dispatch_schedule_item_id:row?.dispatch?.id || null, session_date:new Date().toISOString().slice(0,10), session_status:'in_progress', started_at:new Date().toISOString(), workability_status:row?.dispatch?.workability_state || 'not_recorded', weather_summary:row?.dispatch?.weather_summary || null, completion_state:'open', production_notes:'Started from Mobile Crew App v2.' });
+      } else if (action === 'finish_visit') {
+        const note = window.prompt('Completion / production note (optional):','') || '';
+        await crewOperation({ action:'landscape_production_session_save', id:row?.latest_session?.id, work_order_id:workOrderId, session_status:'completed', ended_at:new Date().toISOString(), completion_state:'complete', production_notes:note || 'Completed from Mobile Crew App v2.' });
+      } else if (action === 'quantity') {
+        if (!row?.latest_session?.id) throw new Error('Start the visit before recording production quantity.');
+        const metric = window.prompt('What did we measure? (example: Mowing area, Mulch installed)','');
+        if (!metric) return;
+        const actual = window.prompt('Actual quantity','0');
+        if (actual === null) return;
+        const unit = window.prompt('Unit (example: sq ft, bags, loads, each)','') || '';
+        await crewOperation({ action:'landscape_production_quantity_save', job_session_id:row.latest_session.id, record_type:'production', activity_type:'other', metric_label:metric, actual_quantity:Number(actual || 0), unit_label:unit, is_active:true });
+      } else if (action === 'live_update') {
+        const message = window.prompt('Staff live update','');
+        if (!message) return;
+        await crewOperation({ action:'work_order_live_update_create', work_order_id:workOrderId, job_session_id:row?.latest_session?.id || null, visibility:'staff', update_type:'progress', title:'Mobile field update', message, occurred_at:new Date().toISOString(), customer_notification_requested:false });
+      } else if (action === 'execution_proof') {
+        const notes = window.prompt('Execution proof notes','');
+        if (!notes) return;
+        await crewOperation({ action:'work_order_execution_proof_submit', work_order_id:workOrderId, job_session_id:row?.latest_session?.id || null, dispatch_schedule_item_id:row?.dispatch?.id || null, proof_type:'progress', title:'Mobile execution proof', staff_notes:notes, customer_visible:false, occurred_at:new Date().toISOString(), asset_ids:[] });
+      } else if (action === 'deficiency') {
+        const message = window.prompt('Describe deficiency, rework or follow-up needed','');
+        if (!message) return;
+        await crewOperation({ action:'work_order_live_update_create', work_order_id:workOrderId, job_session_id:row?.latest_session?.id || null, visibility:'staff', update_type:'deficiency', title:'Deficiency / rework', message, occurred_at:new Date().toISOString(), customer_notification_requested:false });
+      } else if (action === 'closeout') {
+        const summary = window.prompt('Customer-safe closeout summary','');
+        if (!summary) return;
+        await crewOperation({ action:'work_order_closeout_submit', work_order_id:workOrderId, customer_summary:summary, staff_closeout_notes:'Submitted from Mobile Crew App v2.', invoice_ready_requested:false, review_request_requested:false, before_asset_ids:[], after_asset_ids:[] });
+      }
+      state.crewError = '';
+      await loadMobileCrewContext(true);
+    } catch (error) {
+      state.crewError = error?.message || 'Field action failed.';
+      renderMobileCrewApp();
+    }
+  }
+
   function renderJobsSyncHealth() {
     const jobs = document.getElementById('jobs');
     if (!jobs) return;
@@ -365,6 +592,8 @@
     updateStatus();
     renderSyncHealth();
     renderInstallCard();
+    renderMobileCrewApp();
+    if (authState().isAuthenticated) loadMobileCrewContext(false);
     ensureJobsDesktopWorkbench();
     document.dispatchEvent(new CustomEvent('ywi:mobile-today-rendered', {
       detail: { role: currentRole(), outbox_count: snapshot.forms, action_count: snapshot.actions, conflict_count: snapshot.conflicts }
@@ -379,9 +608,9 @@
       state.deferredInstallPrompt = event;
       renderInstallCard();
     });
-    window.addEventListener('online', render);
+    window.addEventListener('online', () => { render(); loadMobileCrewContext(true); });
     window.addEventListener('offline', render);
-    document.addEventListener('ywi:auth-changed', render);
+    document.addEventListener('ywi:auth-changed', () => { state.crewContext=null; state.crewLoadedAt=0; render(); loadMobileCrewContext(true); });
     document.addEventListener('ywi:route-shown', render);
     document.addEventListener('ywi:mobile-badges-updated', render);
     document.addEventListener('ywi:mobile-drafts-updated', render);
@@ -393,7 +622,7 @@
 
   window.YWIMobileToday = {
     bind, render, countOutboxItems, countActionItems, countConflictItems, countDraftForms,
-    syncSnapshot, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench
+    syncSnapshot, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp
   };
   document.addEventListener('DOMContentLoaded', bind);
 })();
