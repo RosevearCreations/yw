@@ -80,7 +80,7 @@ must(selector,[
 ],'Build 328 bounded selector');
 
 must(hse,[
-  'const BUILD = 328',
+  'data-build="328"',
   'Job Hazard &amp; Site Safety Plans',
   'deriveJobHazardPlanning',
   "action:'job_hazard_plan_save'",
@@ -92,7 +92,7 @@ must(hse,[
 ],'Build 328 Safety UI');
 
 must(help,['Build 328 — Job Hazard &amp; Site Safety Plans','actual field date and conditions','does <strong>not</strong> automatically complete HSE field signoff'],'Build 328 Help');
-must(roadmap,['**328 — Job Hazard & Site Safety Plans** are implemented','329 — Incident & Near-Miss Investigation'],'Build 328 roadmap');
+must(roadmap,['328 — Job Hazard & Site Safety Plans','329 — Incident & Near-Miss Investigation'],'Build 328 roadmap history');
 must(pkg,['test:job-hazard-site-safety-plans','test:browser:job-hazard-site-safety-plans'],'Build 328 package scripts');
 must(workflow,['npm run test:job-hazard-site-safety-plans','npm run test:browser:job-hazard-site-safety-plans'],'Build 328 CI wiring');
 

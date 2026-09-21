@@ -52,7 +52,7 @@
       <div class="section-heading">
         <div>
           <h2>Incident / Near Miss</h2>
-          <p class="section-subtitle">Report injuries, near misses, property damage, vehicle events, and immediate corrective actions before details are lost.</p>
+          <p class="section-subtitle">Report injuries/illness, near misses, property, vehicle/equipment and environmental events, plus immediate corrective actions before details are lost.</p>
         </div>
       </div>
       <div id="inc_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
@@ -71,6 +71,7 @@
               <option value="equipment_damage">Equipment Damage</option>
               <option value="vehicle_event">Vehicle Event</option>
               <option value="spill_release">Spill / Release</option>
+              <option value="environmental_event">Environmental Event / Release</option>
               <option value="public_incident">Public / Third-Party Incident</option>
               <option value="other">Other</option>
             </select>

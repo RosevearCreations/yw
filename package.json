@@ -135,7 +135,9 @@
     "test:safety-compliance-command-centre": "node scripts/safety-compliance-command-centre-check.mjs",
     "test:browser:safety-compliance-command-centre": "playwright test --config=playwright.config.mjs tests/browser/safety-compliance-command-centre.spec.mjs",
     "test:job-hazard-site-safety-plans": "node scripts/job-hazard-site-safety-plans-check.mjs",
-    "test:browser:job-hazard-site-safety-plans": "playwright test --config=playwright.config.mjs tests/browser/job-hazard-site-safety-plans.spec.mjs"
+    "test:browser:job-hazard-site-safety-plans": "playwright test --config=playwright.config.mjs tests/browser/job-hazard-site-safety-plans.spec.mjs",
+    "test:incident-near-miss-investigation": "node scripts/incident-near-miss-investigation-check.mjs",
+    "test:browser:incident-near-miss-investigation": "playwright test --config=playwright.config.mjs tests/browser/incident-near-miss-investigation.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

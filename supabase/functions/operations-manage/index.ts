@@ -2453,6 +2453,89 @@ serve(async (req) => {
       return Response.json({ok:true,build:328,schema:216,record:data},{headers:corsHeaders});
     }
 
+    if (action === 'incident_investigation_save') {
+      requireRank(profile,30,action);
+      const sourceSubmissionId=int(body.source_submission_id,0);
+      if(sourceSubmissionId<=0) throw new HttpError(400,'Valid incident submission is required.');
+      const statusValue=clean(body.investigation_status || 'in_progress',30).toLowerCase();
+      if(!['in_progress','ready_for_review','changes_required'].includes(statusValue)) throw new HttpError(400,'Unsupported investigation status.');
+      const severity=clean(body.severity || 'medium',20).toLowerCase();
+      if(!['low','medium','high','critical'].includes(severity)) throw new HttpError(400,'Unsupported incident severity.');
+      const list=(value:any,limit=48,max=1200)=>Array.isArray(value) ? value.slice(0,limit).map((item:any)=>clean(item,max)).filter(Boolean) : [];
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,
+        source_submission_id:sourceSubmissionId,
+        investigation_status:statusValue,
+        event_classification:clean(body.event_classification || 'incident',80).toLowerCase().replace(/[^a-z0-9_]+/g,'_'),
+        severity,
+        people_involved:list(body.people_involved),
+        witness_accounts:list(body.witness_accounts),
+        equipment_involved:list(body.equipment_involved),
+        initial_response_summary:clean(body.initial_response_summary,3000)||null,
+        scene_secured:body.scene_secured===true,
+        immediate_hazard_controlled:body.immediate_hazard_controlled===true,
+        contributing_factors:list(body.contributing_factors),
+        root_factors:list(body.root_factors),
+        root_cause_summary:clean(body.root_cause_summary,3500)||null,
+        investigation_summary:clean(body.investigation_summary,4500)||null,
+        corrective_action_required:body.corrective_action_required===true,
+        corrective_action_rationale:clean(body.corrective_action_rationale,3000)||null,
+        external_reporting_assessment_note:clean(body.external_reporting_assessment_note,3000)||null,
+        event_note:clean(body.event_note,1600)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_incident_investigation_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:statusValue,entity_type:'incident_investigation',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{source_submission_id:sourceSubmissionId,investigation_status:statusValue,event_classification:payload.event_classification,severity,corrective_action_required:payload.corrective_action_required},
+        response_payload:{investigation_number:(data as any)?.investigation_number || null,supervisor_review_status:(data as any)?.supervisor_review_status || null}
+      });
+      return Response.json({ok:true,build:329,schema:217,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'incident_investigation_review') {
+      requireRank(profile,30,action);
+      const investigationId=clean(body.investigation_id,80);
+      const decision=clean(body.decision,30).toLowerCase();
+      const note=clean(body.note,2400);
+      if(!isUuid(investigationId)) throw new HttpError(400,'Valid incident investigation is required.');
+      if(!['approve','changes_required','reopen'].includes(decision)) throw new HttpError(400,'Unsupported investigation review decision.');
+      const {data,error}=await supabase.rpc('ywi_rpc_incident_investigation_review',{
+        p_investigation_id:investigationId,p_actor_profile_id:profile.id,p_decision:decision,p_note:note||null
+      });
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:decision,entity_type:'incident_investigation',
+        entity_id:investigationId,actor_profile_id:profile.id,
+        request_payload:{decision,has_note:Boolean(note)},
+        response_payload:{investigation_status:(data as any)?.investigation_status || null,supervisor_review_status:(data as any)?.supervisor_review_status || null}
+      });
+      return Response.json({ok:true,build:329,schema:217,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'incident_investigation_close') {
+      requireRank(profile,30,action);
+      const investigationId=clean(body.investigation_id,80);
+      const closureSummary=clean(body.closure_summary,4000);
+      const closureEvidence=Array.isArray(body.closure_evidence) ? body.closure_evidence.slice(0,40).map((item:any)=>clean(item,1200)).filter(Boolean) : [];
+      if(!isUuid(investigationId)) throw new HttpError(400,'Valid incident investigation is required.');
+      if(!closureSummary) throw new HttpError(400,'Closure summary is required.');
+      if(!closureEvidence.length) throw new HttpError(400,'At least one closure-evidence reference is required.');
+      const {data,error}=await supabase.rpc('ywi_rpc_incident_investigation_close',{
+        p_investigation_id:investigationId,p_actor_profile_id:profile.id,
+        p_closure_summary:closureSummary,p_closure_evidence:closureEvidence
+      });
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:'closed',entity_type:'incident_investigation',
+        entity_id:investigationId,actor_profile_id:profile.id,
+        request_payload:{closure_evidence_count:closureEvidence.length},
+        response_payload:{investigation_number:(data as any)?.investigation_number || null,closed_at:(data as any)?.closed_at || null}
+      });
+      return Response.json({ok:true,build:329,schema:217,record:data},{headers:corsHeaders});
+    }
+
     if (action === 'property_site_save') {
       requireRank(profile,45,action);
       const id=isUuid(body.id) ? clean(body.id,80) : null;

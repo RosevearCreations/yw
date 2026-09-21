@@ -162,6 +162,14 @@ serve(async (req) => {
     const clientSiteHazards = await safeList(supabase, 'client_sites', 'id,site_code,site_name,service_address,city,hazard_notes,slope_notes,drainage_wet_area_notes,utility_locate_notes,tree_brush_notes,is_active,property_reviewed_at,updated_at', 'site_name', 250, true);
     const jobHazardPlanTemplates = await safeList(supabase, 'v_job_hazard_plan_template_directory', '*', 'template_name', 250, true);
     const jobHazardSiteSafetyPlans = await safeList(supabase, 'v_job_hazard_site_safety_plan_directory', '*', 'updated_at', 250, false);
+    const incidentInvestigations = await safeList(
+      supabase,
+      'v_incident_investigation_directory',
+      'id,investigation_number,source_submission_id,investigation_status,event_classification,severity,submission_date,event_time,submission_status,site_id,site_code,site_name,site_label,job_code,work_order_number,route_code,reported_equipment_code,incident_kind,medical_treatment_required,lost_time,property_damage,vehicle_involved,anonymous_report,event_summary,reported_immediate_actions,reported_root_cause_summary,reported_witness_names,photo_count,people_involved,witness_accounts,equipment_involved,initial_response_summary,scene_secured,immediate_hazard_controlled,contributing_factors,root_factors,root_cause_summary,investigation_summary,corrective_action_required,corrective_action_rationale,external_reporting_assessment_note,corrective_action_count,open_corrective_action_count,overdue_corrective_action_count,last_corrective_action_at,supervisor_review_status,supervisor_review_note,supervisor_reviewed_at,closure_summary,closure_evidence,closed_at,investigation_event_count,last_investigation_event_at,last_investigation_event_type,created_at,updated_at,review_ready,closure_ready',
+      'updated_at',
+      180,
+      false
+    );
     return Response.json({
       ok: true,
       linked_hse_packets: mergeRowsById(linkedHsePackets, hseProgress),
@@ -187,7 +195,8 @@ serve(async (req) => {
       safety_submissions: safetySubmissions,
       client_site_hazards: clientSiteHazards,
       job_hazard_plan_templates: jobHazardPlanTemplates,
-      job_hazard_site_safety_plans: jobHazardSiteSafetyPlans
+      job_hazard_site_safety_plans: jobHazardSiteSafetyPlans,
+      incident_investigations: incidentInvestigations
     }, { headers: corsHeaders });
   }
 
