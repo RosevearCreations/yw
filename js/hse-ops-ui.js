@@ -8,6 +8,7 @@
 
 (function () {
   const BUILD = 328;
+  const SAFETY_COMMAND_CENTRE_BUILD = 327;
   const SECTION_ID = 'hseops';
   const ADMIN_CACHE_KEY = 'ywi_admin_directory_cache_v1';
   const HSE_CACHE_KEY = 'ywi_hse_ops_cache_v1';
@@ -394,9 +395,9 @@
     const command = summary?.commandCentre || { metrics:[], queue:[] };
     const metrics = Array.isArray(command.metrics) ? command.metrics : [];
     const queue = Array.isArray(command.queue) ? command.queue : [];
-    return '<section id="safetyComplianceCommandCentre" class="admin-panel-block" data-build="' + escHtml(BUILD) + '" style="margin-top:16px;">'
+    return '<section id="safetyComplianceCommandCentre" class="admin-panel-block" data-build="' + escHtml(SAFETY_COMMAND_CENTRE_BUILD) + '" style="margin-top:16px;">'
       + '<div class="section-heading"><div>'
-      + '<span class="module-kicker">Build ' + escHtml(BUILD) + ' · operating centre</span>'
+      + '<span class="module-kicker">Build ' + escHtml(SAFETY_COMMAND_CENTRE_BUILD) + ' · operating centre</span>'
       + '<h3 style="margin:4px 0 0;">Safety &amp; Compliance Command Centre</h3>'
       + '<p class="section-subtitle">One supervisor view of safety work that needs attention, using existing HSE, incident, training, PPE, equipment, property and signoff authorities.</p>'
       + '</div></div>'
