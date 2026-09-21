@@ -160,6 +160,8 @@ serve(async (req) => {
     const equipmentLockouts = await safeList(supabase, 'equipment_items', 'id,equipment_code,equipment_name,category,status,defect_status,is_locked_out,locked_out_at,lockout_reason,current_job_id,assigned_supervisor_profile_id,updated_at', 'updated_at', 250, false);
     const safetySubmissions = await safeList(supabase, 'submissions', 'id,site,site_id,form_type,date,status,reviewed_at,signed_off_at,requires_admin_review,supervisor_profile_id,created_at,updated_at', 'created_at', 250, false);
     const clientSiteHazards = await safeList(supabase, 'client_sites', 'id,site_code,site_name,service_address,city,hazard_notes,slope_notes,drainage_wet_area_notes,utility_locate_notes,tree_brush_notes,is_active,property_reviewed_at,updated_at', 'site_name', 250, true);
+    const jobHazardPlanTemplates = await safeList(supabase, 'v_job_hazard_plan_template_directory', '*', 'template_name', 250, true);
+    const jobHazardSiteSafetyPlans = await safeList(supabase, 'v_job_hazard_site_safety_plan_directory', '*', 'updated_at', 250, false);
     return Response.json({
       ok: true,
       linked_hse_packets: mergeRowsById(linkedHsePackets, hseProgress),
@@ -183,7 +185,9 @@ serve(async (req) => {
       equipment_jsa_hazards: equipmentJsaHazards,
       equipment_lockouts: equipmentLockouts,
       safety_submissions: safetySubmissions,
-      client_site_hazards: clientSiteHazards
+      client_site_hazards: clientSiteHazards,
+      job_hazard_plan_templates: jobHazardPlanTemplates,
+      job_hazard_site_safety_plans: jobHazardSiteSafetyPlans
     }, { headers: corsHeaders });
   }
 

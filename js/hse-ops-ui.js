@@ -7,7 +7,8 @@
 'use strict';
 
 (function () {
-  const BUILD = 327;
+  const BUILD = 328;
+  const SAFETY_COMMAND_CENTRE_BUILD = 327;
   const SECTION_ID = 'hseops';
   const ADMIN_CACHE_KEY = 'ywi_admin_directory_cache_v1';
   const HSE_CACHE_KEY = 'ywi_hse_ops_cache_v1';
@@ -394,9 +395,9 @@
     const command = summary?.commandCentre || { metrics:[], queue:[] };
     const metrics = Array.isArray(command.metrics) ? command.metrics : [];
     const queue = Array.isArray(command.queue) ? command.queue : [];
-    return '<section id="safetyComplianceCommandCentre" class="admin-panel-block" data-build="' + escHtml(BUILD) + '" style="margin-top:16px;">'
+    return '<section id="safetyComplianceCommandCentre" class="admin-panel-block" data-build="' + escHtml(SAFETY_COMMAND_CENTRE_BUILD) + '" style="margin-top:16px;">'
       + '<div class="section-heading"><div>'
-      + '<span class="module-kicker">Build ' + escHtml(BUILD) + ' · operating centre</span>'
+      + '<span class="module-kicker">Build ' + escHtml(SAFETY_COMMAND_CENTRE_BUILD) + ' · operating centre</span>'
       + '<h3 style="margin:4px 0 0;">Safety &amp; Compliance Command Centre</h3>'
       + '<p class="section-subtitle">One supervisor view of safety work that needs attention, using existing HSE, incident, training, PPE, equipment, property and signoff authorities.</p>'
       + '</div></div>'
@@ -454,8 +455,133 @@
       linkedShortcuts: deriveLinkedContextSummary(payload),
       monitorShortcuts: deriveMonitorReviewSummary(payload),
       commandCentre: deriveSafetyCommandCentre(payload),
+      hazardPlanning: deriveJobHazardPlanning(payload),
       savedAt: new Date().toISOString()
     };
+  }
+
+  function deriveJobHazardPlanning(payload = {}) {
+    const templates = rows(payload, 'job_hazard_plan_templates').filter((row) => row?.is_active !== false);
+    const plans = rows(payload, 'job_hazard_site_safety_plans');
+    const openPlans = plans.filter((row) => !['closed'].includes(String(row?.plan_status || '').toLowerCase()));
+    const ready = plans.filter((row) => String(row?.plan_status || '').toLowerCase() === 'ready_for_signoff');
+    const reviewOpen = plans.filter((row) => String(row?.supervisor_review_status || 'pending').toLowerCase() !== 'approved');
+    const stopWork = openPlans.filter((row) => !!row?.stop_work_required);
+    const utilityOpen = openPlans.filter((row) => !!row?.requires_utility_locate_review && !row?.utility_locate_confirmed);
+    return { templates, plans, openPlans, ready, reviewOpen, stopWork, utilityOpen };
+  }
+
+  function textLines(value, limit = 48) {
+    return String(value || '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean).slice(0, limit);
+  }
+
+  function hazardTemplateRequirements(row) {
+    return [
+      row?.requires_toolbox_talk ? 'toolbox talk' : '',
+      row?.requires_site_inspection ? 'site inspection' : '',
+      row?.requires_weather_review ? 'weather' : '',
+      row?.requires_heat_review ? 'heat' : '',
+      row?.requires_chemical_review ? 'chemical/SDS' : '',
+      row?.requires_traffic_control ? 'traffic control' : '',
+      row?.requires_machinery_review ? 'machinery/tools' : '',
+      row?.requires_lifting_review ? 'lifting/manual handling' : '',
+      row?.requires_utility_locate_review ? 'utility locate' : '',
+      row?.requires_public_control ? 'public separation' : ''
+    ].filter(Boolean).join(' • ');
+  }
+
+  function jobHazardPlanningMarkup(summary, role) {
+    const planning = summary?.hazardPlanning || { templates:[], plans:[], openPlans:[], ready:[], reviewOpen:[], stopWork:[], utilityOpen:[] };
+    const templates = planning.templates || [];
+    const packets = rows(state.payload, 'linked_hse_packets').filter((row) => String(row?.packet_status || '').toLowerCase() !== 'closed');
+    const plans = [...(planning.plans || [])].sort((a,b)=>String(b?.updated_at || '').localeCompare(String(a?.updated_at || ''))).slice(0,18);
+    const canReview = window.YWISecurity?.hasMinRole?.(role, 'supervisor');
+    const templateOptions = templates.map((row)=>'<option value="' + escHtml(row.id || '') + '">' + escHtml(row.template_name || row.work_type || 'Safety plan') + ' · r' + escHtml(row.revision || 1) + '</option>').join('');
+    const packetOptions = packets.map((row)=>'<option value="' + escHtml(row.id || '') + '">' + escHtml(row.packet_number || 'HSE packet') + (row.work_order_number ? ' · ' + escHtml(row.work_order_number) : '') + '</option>').join('');
+    const templateCards = templates.map((row)=>'<button class="hseops-card" type="button" data-hazard-template="' + escHtml(row.id || '') + '"><strong>' + escHtml(row.template_name || row.work_type || 'Template') + '</strong><span>' + escHtml((row.hazard_prompts || []).slice(0,3).join(' • ') || 'Record actual hazards before work.') + '</span><small>' + escHtml(hazardTemplateRequirements(row) || 'Site-specific assessment required') + '</small><em>Use template</em></button>').join('');
+    const planCards = plans.map((row)=>{
+      const site = row.site_name || row.work_order_number || row.packet_number || 'Linked HSE packet';
+      const review = String(row.supervisor_review_status || 'pending').toLowerCase();
+      const status = String(row.plan_status || 'draft').toLowerCase();
+      const controls = Array.isArray(row.active_controls) ? row.active_controls.length : 0;
+      const actions = canReview
+        ? '<div class="hseops-inline-actions"><button type="button" data-hazard-review="approve" data-plan-id="' + escHtml(row.id || '') + '">Approve review</button><button type="button" data-hazard-review="changes_required" data-plan-id="' + escHtml(row.id || '') + '">Changes required</button></div>'
+        : '';
+      return '<article class="hseops-card" data-hazard-plan-row="' + escHtml(row.id || '') + '"><strong>' + escHtml(row.plan_number || 'Safety plan') + '</strong><span>' + escHtml(row.template_name || row.work_type || '') + ' · ' + escHtml(site) + '</span><small>Status: ' + escHtml(status) + ' • Supervisor review: ' + escHtml(review) + ' • Controls: ' + escHtml(controls) + (row.utility_locate_confirmed ? ' • Locate recorded' : '') + (row.stop_work_required ? ' • STOP WORK' : '') + '</small>' + actions + '</article>';
+    }).join('');
+
+    return '<section id="jobHazardSiteSafetyPlans" class="admin-panel-block" data-build="328" style="margin-top:16px;">'
+      + '<div class="section-heading"><div><span class="module-kicker">Build 328 · field planning</span><h3 style="margin:4px 0 0;">Job Hazard &amp; Site Safety Plans</h3><p class="section-subtitle">Start from a reusable landscaping work-type template, then record the actual site conditions, hazards and controls against the existing HSE packet.</p></div></div>'
+      + '<div class="notice" style="margin-bottom:14px;"><strong>Plan the work that is actually in front of the crew.</strong> Templates are prompts, not proof that a site is safe. Conditions can change; stop work and reassess when the plan no longer matches the field. This record is operational evidence, not a legal-compliance certificate.</div>'
+      + '<div class="admin-backbone-summary">'
+      + '<div class="admin-backbone-card"><span>Reusable templates</span><strong>' + escHtml(templates.length) + '</strong><small>Landscaping work-type starting points.</small></div>'
+      + '<div class="admin-backbone-card"><span>Open field plans</span><strong>' + escHtml(planning.openPlans?.length || 0) + '</strong><small>Plans still active against HSE packets.</small></div>'
+      + '<div class="admin-backbone-card"><span>Ready for signoff</span><strong>' + escHtml(planning.ready?.length || 0) + '</strong><small>Still separate from actual HSE field signoff.</small></div>'
+      + '<div class="admin-backbone-card"><span>Supervisor review open</span><strong>' + escHtml(planning.reviewOpen?.length || 0) + '</strong><small>Review never auto-closes the HSE packet.</small></div>'
+      + '<div class="admin-backbone-card"><span>Stop-work flags</span><strong>' + escHtml(planning.stopWork?.length || 0) + '</strong><small>Plans explicitly holding work.</small></div>'
+      + '<div class="admin-backbone-card"><span>Utility locate open</span><strong>' + escHtml(planning.utilityOpen?.length || 0) + '</strong><small>Locate-sensitive plans missing confirmation/reference.</small></div>'
+      + '</div>'
+      + '<details class="admin-panel-block" open style="margin-top:14px;"><summary><strong>Create / update field plan</strong></summary>'
+      + '<div class="hseops-grid" style="margin-top:12px;">'
+      + '<label>HSE packet<select id="jh_plan_packet"><option value="">Choose packet</option>' + packetOptions + '</select></label>'
+      + '<label>Work-type template<select id="jh_plan_template"><option value="">Choose template</option>' + templateOptions + '</select></label>'
+      + '<label>Field date<input id="jh_plan_date" type="date" value="' + escHtml(new Date().toISOString().slice(0,10)) + '"></label>'
+      + '<label>Plan status<select id="jh_plan_status"><option value="draft">Draft</option><option value="in_progress">In progress</option><option value="ready_for_signoff">Ready for signoff</option></select></label>'
+      + '</div>'
+      + '<label style="display:block;margin-top:10px;">Actual field conditions<textarea id="jh_plan_conditions" rows="3" placeholder="Weather, ground, slope, access, crew, public activity, changing conditions…"></textarea></label>'
+      + '<div class="hseops-grid" style="margin-top:10px;"><label>Identified hazards — one per line<textarea id="jh_plan_hazards" rows="6"></textarea></label><label>Active controls — one per line<textarea id="jh_plan_controls" rows="6"></textarea></label></div>'
+      + '<label style="display:block;margin-top:10px;">Additional controls<textarea id="jh_plan_additional" rows="2"></textarea></label>'
+      + '<div class="hseops-grid" style="margin-top:10px;"><label><input id="jh_plan_stop" type="checkbox"> Stop work required</label><label>Stop-work reason<input id="jh_plan_stop_reason" type="text"></label><label><input id="jh_plan_utility_confirmed" type="checkbox"> Utility locate confirmed</label><label>Utility locate / authorization reference<input id="jh_plan_utility_ref" type="text"></label></div>'
+      + '<label style="display:block;margin-top:10px;">Emergency / escalation notes<textarea id="jh_plan_emergency" rows="2"></textarea></label>'
+      + '<label style="display:block;margin-top:10px;">Public / pedestrian interaction notes<textarea id="jh_plan_public" rows="2"></textarea></label>'
+      + '<div class="hseops-inline-actions" style="margin-top:12px;"><button type="button" data-hazard-plan-save="1">Save field safety plan</button><button type="button" data-route="toolbox">Open Toolbox Talk</button><button type="button" data-route="inspect">Open Site Inspection</button><button type="button" data-route="ppe">Open PPE Check</button></div>'
+      + '<div id="jh_plan_status_message" class="notice" aria-live="polite" style="margin-top:10px;">Select a packet and template. Template controls are starting prompts; edit them to match actual field conditions.</div>'
+      + '</details>'
+      + '<div class="section-heading" style="margin-top:16px;"><div><h4 style="margin:0;">Reusable template library</h4><p class="section-subtitle">The initial library covers mowing, trimming/edging, blowers, chainsaw/brush work, hedge work, loading/unloading, trailers/towing, roadside, digging/utility concerns, permitted application work, weather, slips/trips, slopes and public interaction.</p></div></div>'
+      + (templateCards ? '<div class="hseops-grid hseops-grid--compact">' + templateCards + '</div>' : '<div class="notice">Template library will appear after Schema 216 is deployed.</div>')
+      + '<div class="section-heading" style="margin-top:16px;"><div><h4 style="margin:0;">Recent site safety plans</h4><p class="section-subtitle">Supervisor review is explicit and separate from HSE field signoff/closeout.</p></div></div>'
+      + (planCards ? '<div class="hseops-grid hseops-grid--compact">' + planCards + '</div>' : '<div class="notice">No field safety plans are loaded yet.</div>')
+      + '</section>';
+  }
+
+  async function saveJobHazardPlan(section) {
+    if(!window.YWIAPI?.manageOperations) throw new Error('Operations API is not loaded.');
+    const packetId=section.querySelector('#jh_plan_packet')?.value || '';
+    const templateId=section.querySelector('#jh_plan_template')?.value || '';
+    if(!packetId || !templateId) throw new Error('Choose an HSE packet and work-type template.');
+    const payload={
+      action:'job_hazard_plan_save',
+      hse_packet_id:packetId,
+      template_id:templateId,
+      field_date:section.querySelector('#jh_plan_date')?.value || '',
+      plan_status:section.querySelector('#jh_plan_status')?.value || 'draft',
+      actual_conditions:{field_notes:section.querySelector('#jh_plan_conditions')?.value || ''},
+      identified_hazards:textLines(section.querySelector('#jh_plan_hazards')?.value),
+      active_controls:textLines(section.querySelector('#jh_plan_controls')?.value),
+      additional_controls:section.querySelector('#jh_plan_additional')?.value || '',
+      stop_work_required:!!section.querySelector('#jh_plan_stop')?.checked,
+      stop_work_reason:section.querySelector('#jh_plan_stop_reason')?.value || '',
+      utility_locate_confirmed:!!section.querySelector('#jh_plan_utility_confirmed')?.checked,
+      utility_locate_reference:section.querySelector('#jh_plan_utility_ref')?.value || '',
+      emergency_notes:section.querySelector('#jh_plan_emergency')?.value || '',
+      public_interaction_notes:section.querySelector('#jh_plan_public')?.value || ''
+    };
+    const result=await window.YWIAPI.manageOperations(payload);
+    if(!result?.ok) throw new Error(result?.error || 'Safety plan could not be saved.');
+    return result;
+  }
+
+  function applyHazardTemplate(section, templateId) {
+    const template=rows(state.payload,'job_hazard_plan_templates').find((row)=>String(row?.id || '')===String(templateId || ''));
+    if(!template) return;
+    const select=section.querySelector('#jh_plan_template');
+    if(select) select.value=String(template.id || '');
+    const hazards=section.querySelector('#jh_plan_hazards');
+    const controls=section.querySelector('#jh_plan_controls');
+    if(hazards && !hazards.value.trim()) hazards.value=(Array.isArray(template.hazard_prompts)?template.hazard_prompts:[]).join('\n');
+    if(controls && !controls.value.trim()) controls.value=(Array.isArray(template.default_controls)?template.default_controls:[]).join('\n');
+    const status=section.querySelector('#jh_plan_status_message');
+    if(status) status.textContent=(template.template_name || template.work_type || 'Template') + ' selected. Review every prompt and change the controls to match actual field conditions.';
   }
 
   function quickActionsMarkup() {
@@ -575,6 +701,7 @@
         <p style="margin:8px 0 0;">Use this area to move field safety forward from a phone without digging through the full Admin page. ${escHtml(label)} access still controls which linked packet and monitoring shortcuts are available.</p>
       </div>
       ${safetyCommandCentreMarkup(summary)}
+      ${jobHazardPlanningMarkup(summary, role)}
       ${summaryMarkup(summary)}
       <div class="admin-panel-block" style="margin-top:16px;">
         <div class="section-heading"><div><h3 style="margin:0;">Field safety quick actions</h3><p class="section-subtitle">Open the most-used field workflows quickly on phone, tablet, or desktop.</p></div></div>
@@ -604,7 +731,50 @@
     const section = getSection();
     if (!section || section.dataset.boundClicks === '1') return;
     section.dataset.boundClicks = '1';
-    section.addEventListener('click', (event) => {
+    section.addEventListener('click', async (event) => {
+      const templateBtn = event.target.closest('[data-hazard-template]');
+      if (templateBtn && section.contains(templateBtn)) {
+        applyHazardTemplate(section, templateBtn.getAttribute('data-hazard-template') || '');
+        section.querySelector('#jh_plan_template')?.scrollIntoView?.({block:'center'});
+        return;
+      }
+      const saveBtn = event.target.closest('[data-hazard-plan-save]');
+      if (saveBtn && section.contains(saveBtn)) {
+        const status=section.querySelector('#jh_plan_status_message');
+        try {
+          saveBtn.disabled=true;
+          if(status) status.textContent='Saving field safety plan…';
+          const result=await saveJobHazardPlan(section);
+          if(status) status.textContent='Saved ' + (result?.record?.plan_number || 'field safety plan') + '. Supervisor review and HSE field signoff remain separate steps.';
+          state.lastLoadedAt=0;
+          await loadLiveSummary();
+        } catch(error) {
+          if(status) status.textContent=error?.message || 'Safety plan could not be saved.';
+        } finally {
+          saveBtn.disabled=false;
+        }
+        return;
+      }
+      const reviewBtn = event.target.closest('[data-hazard-review]');
+      if (reviewBtn && section.contains(reviewBtn)) {
+        const planId=reviewBtn.getAttribute('data-plan-id') || '';
+        const decision=reviewBtn.getAttribute('data-hazard-review') || '';
+        const status=section.querySelector('#jh_plan_status_message');
+        try {
+          reviewBtn.disabled=true;
+          const note=window.prompt?.('Supervisor review note (optional):','') || '';
+          const result=await window.YWIAPI?.manageOperations?.({action:'job_hazard_plan_review',plan_id:planId,decision,note});
+          if(!result?.ok) throw new Error(result?.error || 'Supervisor review could not be recorded.');
+          if(status) status.textContent='Supervisor review recorded. HSE field signoff/closeout was not changed.';
+          state.lastLoadedAt=0;
+          await loadLiveSummary();
+        } catch(error) {
+          if(status) status.textContent=error?.message || 'Supervisor review could not be recorded.';
+        } finally {
+          reviewBtn.disabled=false;
+        }
+        return;
+      }
       const routeBtn = event.target.closest('[data-route]');
       if (routeBtn && section.contains(routeBtn)) {
         window.YWIRouter?.showSection?.(routeBtn.getAttribute('data-route') || 'toolbox');
@@ -621,6 +791,10 @@
           document.dispatchEvent(new CustomEvent('ywi:admin-focus-request', { detail: { entity, preferredId, summary: summaryText, targetEntity } }));
         }, 80);
       }
+    });
+    section.addEventListener('change', (event) => {
+      const templateSelect=event.target.closest?.('#jh_plan_template');
+      if(templateSelect && section.contains(templateSelect)) applyHazardTemplate(section,templateSelect.value || '');
     });
   }
 
@@ -669,6 +843,6 @@
     });
   }
 
-  window.YWIHSEOpsUI = Object.freeze({ init, refresh: loadLiveSummary, normalizeSummary, deriveSafetyCommandCentre, build:BUILD });
+  window.YWIHSEOpsUI = Object.freeze({ init, refresh: loadLiveSummary, normalizeSummary, deriveSafetyCommandCentre, deriveJobHazardPlanning, build:BUILD });
   document.addEventListener('DOMContentLoaded', init);
 })();

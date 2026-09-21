@@ -34,7 +34,7 @@ must(selector,[
 ],'Build 327 HSE selector');
 
 must(hse,[
-  'const BUILD = 327',
+  'const SAFETY_COMMAND_CENTRE_BUILD = 327',
   'deriveSafetyCommandCentre',
   'Safety &amp; Compliance Command Centre',
   "key:'open_hazards'",
@@ -54,10 +54,14 @@ must(hse,[
 ],'Build 327 Safety UI');
 
 assert.ok(!selector.includes('subtotal,total_amount,total_cost'), 'Build 327 HSE selector must not expose Finance totals.');
-assert.ok(!hse.includes('manageOperations('), 'Build 327 command centre must not create a new mutation path.');
+const commandCentreStart=hse.indexOf('function safetyCommandCentreMarkup');
+const commandCentreEnd=hse.indexOf('function normalizeSummary',commandCentreStart);
+const commandCentreSource=hse.slice(commandCentreStart,commandCentreEnd);
+assert.ok(commandCentreStart>=0 && commandCentreEnd>commandCentreStart);
+assert.ok(!commandCentreSource.includes('manageOperations('), 'Build 327 command centre itself must remain read-only even when later Safety builds add separate workflows.');
 
 must(help,['Safety &amp; Compliance Command Centre','Build 327','not a legal-compliance certificate'],'Build 327 Help');
-must(roadmap,['**327 — Safety & Compliance Command Centre** are implemented','next planned autonomous item is **328 — Job Hazard & Site Safety Plans**'],'Build 327 roadmap closure');
+must(roadmap,['327 — Safety & Compliance Command Centre','328 — Job Hazard & Site Safety Plans'],'Build 327 roadmap history');
 must(pkg,['test:safety-compliance-command-centre','test:browser:safety-compliance-command-centre'],'Build 327 package scripts');
 must(workflow,['npm run test:safety-compliance-command-centre','npm run test:browser:safety-compliance-command-centre'],'Build 327 CI wiring');
 

@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 48, 'Exactly 48 operations actions must be contracted through Schema 214.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 48);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 51, 'Exactly 51 operations actions must be contracted through Schema 216.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 51);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
@@ -80,6 +80,24 @@ assert.equal(attentionResolve.ownerModule, 'admin');
 assert.equal(attentionResolve.minimum, 'manage');
 assert.equal(attentionResolve.mode, 'write');
 assert.equal(attentionResolve.eventKey, 'admin.operations_attention.resolved');
+
+const hazardTemplate = resolveModuleWriteBoundary('job_hazard_template_save');
+assert.equal(hazardTemplate.ownerModule, 'safety');
+assert.equal(hazardTemplate.minimum, 'approve');
+assert.equal(hazardTemplate.mode, 'write');
+assert.equal(hazardTemplate.eventKey, 'safety.job_hazard_template.saved');
+
+const hazardPlan = resolveModuleWriteBoundary('job_hazard_plan_save');
+assert.equal(hazardPlan.ownerModule, 'safety');
+assert.equal(hazardPlan.minimum, 'create');
+assert.equal(hazardPlan.mode, 'write');
+assert.equal(hazardPlan.eventKey, 'safety.job_hazard_plan.saved');
+
+const hazardReview = resolveModuleWriteBoundary('job_hazard_plan_review');
+assert.equal(hazardReview.ownerModule, 'safety');
+assert.equal(hazardReview.minimum, 'approve');
+assert.equal(hazardReview.mode, 'write');
+assert.equal(hazardReview.eventKey, 'safety.job_hazard_plan.reviewed');
 
 const recurringProgram = resolveModuleWriteBoundary('recurring_service_program_save');
 assert.equal(recurringProgram.ownerModule, 'jobs');
