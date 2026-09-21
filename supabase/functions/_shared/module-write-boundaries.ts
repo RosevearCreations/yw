@@ -32,6 +32,11 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
   incident_investigation_save: contract('incident_investigation_save', 'safety', 'approve', 'write', 'incident_investigation', 'safety.incident_investigation.saved'),
   incident_investigation_review: contract('incident_investigation_review', 'safety', 'approve', 'write', 'incident_investigation', 'safety.incident_investigation.reviewed'),
   incident_investigation_close: contract('incident_investigation_close', 'safety', 'approve', 'write', 'incident_investigation', 'safety.incident_investigation.closed'),
+  training_requirement_save: contract('training_requirement_save', 'safety', 'approve', 'write', 'training_matrix', 'safety.training_requirement.saved'),
+  training_assignment_save: contract('training_assignment_save', 'safety', 'approve', 'write', 'training_matrix', 'safety.training_assignment.saved'),
+  training_record_save: contract('training_record_save', 'safety', 'approve', 'write', 'training_matrix', 'safety.training_record.saved'),
+  training_internal_authorization_decision: contract('training_internal_authorization_decision', 'safety', 'approve', 'write', 'training_matrix', 'safety.training_internal_authorization.decided'),
+
 
 
 
