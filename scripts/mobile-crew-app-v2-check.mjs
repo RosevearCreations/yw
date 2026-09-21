@@ -8,11 +8,13 @@ const api=read('js/api.js');
 const jobs=read('js/jobs-ui.js');
 const help=read('help.html');
 const roadmap=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
+const migration=read('sql/215_mobile_crew_app_v2.sql');
 
 const must=(source, needles, label)=>needles.forEach((needle)=>assert.ok(source.includes(needle), label + ': missing ' + needle));
 
 must(endpoint,[
   'build:326',
+  'schema:215',
   'assignment_filtered:true',
   'finance_exposed:false',
   'assigned_crew_profile_ids',
@@ -30,7 +32,8 @@ must(endpoint,[
 ],'mobile crew context');
 assert.ok(!endpoint.includes('subtotal,total_amount,total_cost'), 'Mobile crew response must not expose work-order Finance totals.');
 
-must(api,['fetchMobileCrewContext','mobile-crew-context'],'API client');
+must(api,['fetchMobileCrewContext','mobile-crew-context','ywi_rpc_mobile_crew_context','window.YWI_SB || window._sb'],'API client');
+must(migration,['security definer','auth.uid()','ywi_effective_module_access','assignment-filtered','ywi_rpc_mobile_crew_context','revoke all on function public.ywi_rpc_mobile_crew_context(integer) from public, anon','grant execute on function public.ywi_rpc_mobile_crew_context(integer) to authenticated','v_mobile_crew_app_v2_security_assertions','finance_exposed'],'schema 215 mobile crew RPC');
 must(mobile,[
   'Mobile Crew App v2',
   'My Route',
