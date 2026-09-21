@@ -281,7 +281,7 @@ begin
 end;
 $$;
 
-revoke all on function public.ywi_rpc_mobile_crew_context(integer) from public, anon;
+revoke execute on function public.ywi_rpc_mobile_crew_context(integer) from public, anon;
 grant execute on function public.ywi_rpc_mobile_crew_context(integer) to authenticated;
 grant execute on function public.ywi_rpc_mobile_crew_context(integer) to service_role;
 
