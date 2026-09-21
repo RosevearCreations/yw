@@ -1565,6 +1565,7 @@
         status: e.eqStatus?.value || '',
         current_job_code: e.eqCurrentJobCode?.value || '',
         assigned_supervisor_name: e.eqAssignedSupervisor?.value || '',
+        assigned_crew_id: e.eqAssignedCrew?.value || '',
         serial_number: e.eqSerial?.value || '',
         asset_tag: e.eqAssetTag?.value || '',
         qr_code_value: e.eqQrCodeValue?.value || '',
@@ -1576,6 +1577,10 @@
         purchase_year: e.eqYear?.value || '',
         purchase_date: e.eqPurchaseDate?.value || '',
         purchase_price: e.eqPurchasePrice?.value || '',
+        purchase_vendor: e.eqPurchaseVendor?.value || '',
+        purchase_cost: e.eqPurchaseCost?.value || '',
+        warranty_expiry_date: e.eqWarrantyExpiry?.value || '',
+        year_of_manufacture: e.eqManufactureYear?.value || '',
         condition_status: e.eqCondition?.value || '',
         image_url: e.eqImageUrl?.value || '',
         service_interval_days: e.eqServiceIntervalDays?.value || '',
@@ -1586,6 +1591,17 @@
         defect_status: e.eqDefectStatus?.value || '',
         defect_notes: e.eqDefectNotes?.value || '',
         is_locked_out: !!e.eqIsLockedOut?.checked,
+        meter_type: e.eqMeterType?.value || 'none',
+        meter_unit: e.eqMeterUnit?.value || '',
+        current_meter_value: e.eqMeterValue?.value || '',
+        current_meter_at: e.eqMeterAt?.value || '',
+        replacement_state: e.eqReplacementState?.value || 'retain',
+        replacement_target_date: e.eqReplacementTargetDate?.value || '',
+        replacement_estimated_cost: e.eqReplacementEstimatedCost?.value || '',
+        replacement_reason: e.eqReplacementReason?.value || '',
+        registry_documents_text: e.eqRegistryDocuments?.value || '',
+        registry_photos_text: e.eqRegistryPhotos?.value || '',
+        registry_accessories_text: e.eqRegistryAccessories?.value || '',
         comments: e.eqComments?.value || '',
         notes: e.eqNotes?.value || '',
         worker_signature_name: e.eqWorkerSignature?.value || '',
@@ -1673,6 +1689,7 @@
         e.eqStatus.value = eqDraft.status || 'available';
         e.eqCurrentJobCode.value = eqDraft.current_job_code || '';
         e.eqAssignedSupervisor.value = eqDraft.assigned_supervisor_name || '';
+        if (e.eqAssignedCrew) e.eqAssignedCrew.value = eqDraft.assigned_crew_id || '';
         e.eqSerial.value = eqDraft.serial_number || '';
         e.eqAssetTag.value = eqDraft.asset_tag || '';
         if (e.eqQrCodeValue) e.eqQrCodeValue.value = eqDraft.qr_code_value || '';
@@ -1684,6 +1701,10 @@
         e.eqYear.value = eqDraft.purchase_year || '';
         e.eqPurchaseDate.value = eqDraft.purchase_date || '';
         e.eqPurchasePrice.value = eqDraft.purchase_price || '';
+        if (e.eqPurchaseVendor) e.eqPurchaseVendor.value = eqDraft.purchase_vendor || '';
+        if (e.eqPurchaseCost) e.eqPurchaseCost.value = eqDraft.purchase_cost || '';
+        if (e.eqWarrantyExpiry) e.eqWarrantyExpiry.value = eqDraft.warranty_expiry_date || '';
+        if (e.eqManufactureYear) e.eqManufactureYear.value = eqDraft.year_of_manufacture || '';
         e.eqCondition.value = eqDraft.condition_status || 'ready';
         e.eqImageUrl.value = eqDraft.image_url || '';
         e.eqServiceIntervalDays.value = eqDraft.service_interval_days || '';
@@ -1694,6 +1715,18 @@
         e.eqDefectStatus.value = eqDraft.defect_status || 'clear';
         e.eqDefectNotes.value = eqDraft.defect_notes || '';
         e.eqIsLockedOut.checked = !!eqDraft.is_locked_out;
+        if (e.eqMeterType) e.eqMeterType.value = eqDraft.meter_type || 'none';
+        if (e.eqMeterUnit) e.eqMeterUnit.value = eqDraft.meter_unit || '';
+        if (e.eqMeterValue) e.eqMeterValue.value = eqDraft.current_meter_value || '';
+        if (e.eqMeterAt) e.eqMeterAt.value = eqDraft.current_meter_at || '';
+        if (e.eqReplacementState) e.eqReplacementState.value = eqDraft.replacement_state || 'retain';
+        if (e.eqReplacementTargetDate) e.eqReplacementTargetDate.value = eqDraft.replacement_target_date || '';
+        if (e.eqReplacementEstimatedCost) e.eqReplacementEstimatedCost.value = eqDraft.replacement_estimated_cost || '';
+        if (e.eqReplacementReason) e.eqReplacementReason.value = eqDraft.replacement_reason || '';
+        if (e.eqRegistryDocuments) e.eqRegistryDocuments.value = eqDraft.registry_documents_text || '';
+        if (e.eqRegistryPhotos) e.eqRegistryPhotos.value = eqDraft.registry_photos_text || '';
+        if (e.eqRegistryAccessories) e.eqRegistryAccessories.value = eqDraft.registry_accessories_text || '';
+        syncEquipmentQrPreview();
         e.eqComments.value = eqDraft.comments || '';
         e.eqNotes.value = eqDraft.notes || '';
         e.eqWorkerSignature.value = eqDraft.worker_signature_name || '';
@@ -2769,7 +2802,7 @@
         state.equipment.forEach((row) => {
           const tr = document.createElement('tr');
           const siteLabel = row.current_site_code || row.current_site_name || row.home_site_code || row.home_site_name || '';
-        tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}<br><span class="muted">${escHtml(siteLabel)}</span></td><td>${escHtml(row.status)}<br><span class="muted">${escHtml(row.last_transfer_status || '')}</span></td><td>${escHtml(row.serial_number || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td><td>${escHtml(row.next_service_due_date || '')}</td><td>${escHtml(row.next_inspection_due_date || '')}</td><td>${row.is_locked_out ? 'Yes' : 'No'}</td><td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code)}">Load</button></td>`;
+        tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}<br><span class="muted">${escHtml(siteLabel)}</span></td><td>${escHtml(row.status)}<br><span class="muted">${escHtml(row.registry_readiness_status || row.last_transfer_status || '')}</span></td><td>${escHtml(row.serial_number || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td><td>${escHtml(row.next_service_due_date || '')}</td><td>${escHtml(row.next_inspection_due_date || '')}</td><td>${row.is_locked_out ? 'Yes' : 'No'}</td><td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code)}">Load</button></td>`;
           e.eqListBody.appendChild(tr);
         });
       }
@@ -2965,17 +2998,21 @@
         state.monthEndCloseWorkbench = Array.isArray(resp?.month_end_close_workbench) ? resp.month_end_close_workbench : [];
         state.equipmentAccountability = Array.isArray(resp?.equipment_accountability) ? resp.equipment_accountability : [];
         state.equipmentServiceTasks = Array.isArray(resp?.equipment_service_tasks) ? resp.equipment_service_tasks : [];
+        state.equipmentRegistryV2 = Array.isArray(resp?.equipment_registry_v2) ? resp.equipment_registry_v2 : [];
+        state.equipmentRegistryV2Summary = Array.isArray(resp?.equipment_registry_v2_summary) ? resp.equipment_registry_v2_summary : [];
         renderAccountingDepthTables();
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
         fillSiteSelect(e.eqCurrentSite);
         fillSiteSelect(e.eqTargetSite);
         fillCrewSelect(e.jobCrewId);
+        fillCrewSelect(e.eqAssignedCrew);
         fillServiceTemplateSelect(e.jobServicePricingTemplateId);
         fillTaxCodeSelect(e.jobSalesTaxCodeId);
         fillEmployeeDataList();
         renderJobs();
         renderEquipment();
+        renderEquipmentRegistrySummary(null);
         renderRequirementReviewPanel();
         renderJobActivity();
         renderJobTracking();
@@ -3190,6 +3227,7 @@
           status: e.eqStatus?.value?.trim?.() || 'available',
           current_job_code: e.eqCurrentJobCode?.value?.trim?.() || '',
           assigned_supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '',
+          assigned_crew_id: e.eqAssignedCrew?.value || null,
           serial_number: e.eqSerial?.value?.trim?.() || '',
           equipment_pool_key: e.eqPoolKey?.value?.trim?.() || '',
           asset_tag: e.eqAssetTag?.value?.trim?.() || '',
@@ -3202,6 +3240,10 @@
           purchase_year: e.eqYear?.value ? Number(e.eqYear.value) : null,
           purchase_date: e.eqPurchaseDate?.value || null,
           purchase_price: e.eqPurchasePrice?.value ? Number(e.eqPurchasePrice.value) : null,
+          purchase_vendor: e.eqPurchaseVendor?.value?.trim?.() || '',
+          purchase_cost: e.eqPurchaseCost?.value ? Number(e.eqPurchaseCost.value) : (e.eqPurchasePrice?.value ? Number(e.eqPurchasePrice.value) : null),
+          warranty_expiry_date: e.eqWarrantyExpiry?.value || null,
+          year_of_manufacture: e.eqManufactureYear?.value ? Number(e.eqManufactureYear.value) : (e.eqYear?.value ? Number(e.eqYear.value) : null),
           condition_status: e.eqCondition?.value?.trim?.() || '',
           image_url: e.eqImageUrl?.value?.trim?.() || '',
           service_interval_days: e.eqServiceIntervalDays?.value ? Number(e.eqServiceIntervalDays.value) : null,
@@ -3212,12 +3254,26 @@
           defect_status: e.eqDefectStatus?.value?.trim?.() || 'clear',
           defect_notes: e.eqDefectNotes?.value?.trim?.() || '',
           is_locked_out: !!e.eqIsLockedOut?.checked,
+          meter_type: e.eqMeterType?.value || 'none',
+          meter_unit: e.eqMeterUnit?.value?.trim?.() || '',
+          current_meter_value: e.eqMeterValue?.value === '' ? null : Number(e.eqMeterValue?.value || 0),
+          current_meter_at: e.eqMeterAt?.value || null,
+          replacement_state: e.eqReplacementState?.value || 'retain',
+          replacement_target_date: e.eqReplacementTargetDate?.value || null,
+          replacement_estimated_cost: e.eqReplacementEstimatedCost?.value === '' ? null : Number(e.eqReplacementEstimatedCost?.value || 0),
+          replacement_reason: e.eqReplacementReason?.value?.trim?.() || '',
+          registry_documents: parseRegistryDocuments(e.eqRegistryDocuments?.value || ''),
+          registry_photos: parseRegistryPhotos(e.eqRegistryPhotos?.value || ''),
+          registry_accessories: parseRegistryAccessories(e.eqRegistryAccessories?.value || ''),
           comments: e.eqComments?.value?.trim?.() || '',
           notes: e.eqNotes?.value?.trim?.() || ''
         });
         if (!resp?.ok) throw new Error(resp?.error || 'Equipment save failed');
         clearDrafts('equipment');
-        setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} saved.`);
+        const saved=resp?.record || {};
+        if (saved.qr_code_value && e.eqQrCodeValue) e.eqQrCodeValue.value=saved.qr_code_value;
+        syncEquipmentQrPreview();
+        setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} saved. QR ${saved.qr_identity_status || 'assigned'}; registry ${saved.registry_readiness_status || 'updated'}.`);
         await loadData();
       } catch (err) {
         setNotice(e.eqSummary, err?.message || 'Failed to save equipment.', true);
@@ -3724,6 +3780,14 @@
       if (e.eqScanCode && e.eqScanCode.dataset.bound !== '1') {
         e.eqScanCode.dataset.bound = '1';
         e.eqScanCode.addEventListener('click', scanOrEnterEquipmentCode);
+      }
+      if (e.eqCopyQrLabel && e.eqCopyQrLabel.dataset.bound !== '1') {
+        e.eqCopyQrLabel.dataset.bound = '1';
+        e.eqCopyQrLabel.addEventListener('click', copyEquipmentQrToken);
+      }
+      if (e.eqQrCodeValue && e.eqQrCodeValue.dataset.registryPreviewBound !== '1') {
+        e.eqQrCodeValue.dataset.registryPreviewBound = '1';
+        e.eqQrCodeValue.addEventListener('input', syncEquipmentQrPreview);
       }
       if (e.eqSave && e.eqSave.dataset.bound !== '1') {
         e.eqSave.dataset.bound = '1';
