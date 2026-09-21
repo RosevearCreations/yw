@@ -7,6 +7,7 @@
 'use strict';
 
 (function () {
+  const BUILD = 327;
   const SECTION_ID = 'hseops';
   const ADMIN_CACHE_KEY = 'ywi_admin_directory_cache_v1';
   const HSE_CACHE_KEY = 'ywi_hse_ops_cache_v1';
@@ -69,6 +70,7 @@
       alerts: Array.isArray(summary?.alerts) ? summary.alerts.length : 0,
       uploads: Array.isArray(summary?.monitorSummary) ? summary.monitorSummary.length : 0,
       packets: Array.isArray(summary?.linkedContext) ? summary.linkedContext.length : 0,
+      safetyCommand: summary?.commandCentre?.counts || {},
       acctOpen: acct.open_sync_exception_count || 0
     });
   }
@@ -213,6 +215,200 @@
     ].filter((row) => row.record_count > 0);
   }
 
+
+  function rows(payload, key) {
+    return Array.isArray(payload?.[key]) ? payload[key].filter(Boolean) : [];
+  }
+
+  function isClosedStatus(value) {
+    return ['closed','complete','completed','resolved','approved','cancelled','canceled','waived']
+      .includes(String(value || '').trim().toLowerCase());
+  }
+
+  function hasText(value) {
+    return String(value || '').trim().length > 0;
+  }
+
+  function submissionNeedsReview(row) {
+    if (!row) return false;
+    return !isClosedStatus(row.status)
+      || (!!row.requires_admin_review && !row.reviewed_at)
+      || !row.signed_off_at;
+  }
+
+  function packetNeedsAssessment(row) {
+    if (!row || isClosedStatus(row.packet_status)) return false;
+    const pairs = [
+      ['inspection_required','inspection_completed'],
+      ['emergency_review_required','emergency_review_completed'],
+      ['weather_monitoring_required','weather_monitoring_completed'],
+      ['heat_monitoring_required','heat_monitoring_completed'],
+      ['chemical_handling_required','chemical_handling_completed'],
+      ['traffic_control_required','traffic_control_completed'],
+      ['machinery_review_required','machinery_review_completed'],
+      ['lifting_review_required','lifting_review_completed'],
+      ['cones_barriers_required','cones_barriers_completed']
+    ];
+    return pairs.some(([required, completed]) => !!row?.[required] && !row?.[completed]);
+  }
+
+  function siteHasRecordedHazard(row) {
+    return [
+      row?.hazard_notes,
+      row?.slope_notes,
+      row?.drainage_wet_area_notes,
+      row?.utility_locate_notes,
+      row?.tree_brush_notes
+    ].some(hasText);
+  }
+
+  function safetyQueuePriority(value) {
+    return { critical:0, high:1, urgent:1, overdue:1, medium:2, warning:2, low:3, info:4 }[String(value || '').toLowerCase()] ?? 5;
+  }
+
+  function deriveSafetyCommandCentre(payload = {}) {
+    const actionItems = rows(payload, 'hse_packet_action_items').filter((row) => !!row?.needs_attention);
+    const packets = rows(payload, 'linked_hse_packets');
+    const equipmentHazards = rows(payload, 'equipment_jsa_hazards').filter((row) => !isClosedStatus(row?.status));
+    const submissions = rows(payload, 'safety_submissions');
+    const incidents = rows(payload, 'incident_near_miss_history').filter((row) => {
+      const actionOpen = hasText(row?.corrective_action_required) && !isClosedStatus(row?.corrective_action_status);
+      return !isClosedStatus(row?.status) || !row?.last_reviewed_at || actionOpen;
+    });
+    const corrective = rows(payload, 'corrective_action_tasks').filter((row) => !isClosedStatus(row?.status));
+    const training = rows(payload, 'training_records').filter((row) => !!row?.is_expired || !!row?.expires_within_30_days);
+    const lockouts = rows(payload, 'equipment_lockouts').filter((row) => !!row?.is_locked_out);
+    const scorecards = rows(payload, 'site_safety_scorecards').filter((row) =>
+      Number(row?.open_corrective_count || 0) > 0
+      || Number(row?.overdue_corrective_count || 0) > 0
+      || Number(row?.escalation_attention_count || 0) > 0
+      || ['attention','needs_attention','review','blocked','red','warning'].includes(String(row?.scorecard_status || '').toLowerCase())
+    );
+    const unreviewedPropertyHazards = rows(payload, 'client_site_hazards').filter((row) =>
+      row?.is_active !== false && siteHasRecordedHazard(row) && !row?.property_reviewed_at
+    );
+    const siteRefs = new Set([
+      ...scorecards.map((row) => String(row?.site_id || row?.site_ref || row?.site_code || row?.site_label || '')).filter(Boolean),
+      ...unreviewedPropertyHazards.map((row) => String(row?.id || row?.site_code || row?.site_name || '')).filter(Boolean)
+    ]);
+    const pendingAssessments = packets.filter(packetNeedsAssessment);
+    const pendingInspectionSubmissions = submissions.filter((row) => String(row?.form_type || '').toUpperCase() === 'C' && submissionNeedsReview(row));
+    const toolboxTalks = submissions.filter((row) => String(row?.form_type || '').toUpperCase() === 'E' && submissionNeedsReview(row));
+    const ppeReviews = submissions.filter((row) => String(row?.form_type || '').toUpperCase() === 'D' && submissionNeedsReview(row));
+    const signoffPackets = packets.filter((row) => !!row?.field_signoff_required && !row?.field_signoff_completed && !isClosedStatus(row?.packet_status));
+    const unsignedSubmissions = submissions.filter((row) => !row?.signed_off_at && !isClosedStatus(row?.status));
+    const overdueActions = corrective.filter((row) => !!row?.is_overdue);
+    const supervisorQueue = rows(payload, 'supervisor_safety_queue');
+
+    const metrics = [
+      { key:'open_hazards', label:'Open hazards', count:actionItems.length + equipmentHazards.length, route:'inspect', note:'HSE follow-up and equipment/JSA hazard records still needing action.' },
+      { key:'required_assessments', label:'Required assessments', count:pendingAssessments.length + pendingInspectionSubmissions.length, route:'inspect', note:'Required packet assessments or site inspections still awaiting completion/review.' },
+      { key:'toolbox_talks', label:'Toolbox talks', count:toolboxTalks.length, route:'toolbox', note:'Toolbox-talk records still awaiting review or signoff.' },
+      { key:'incidents', label:'Incidents / near misses', count:incidents.length, route:'incident', note:'Incident or near-miss records still needing review or corrective follow-up.' },
+      { key:'corrective_actions', label:'Corrective actions', count:corrective.length, route:'reports', note:'Open corrective-action tasks.' },
+      { key:'training_expiries', label:'Training expiries', count:training.length, route:'reports', note:'Expired or expiring-within-30-days training records.' },
+      { key:'ppe_issues', label:'PPE issues / review', count:ppeReviews.length, route:'ppe', note:'PPE checks still awaiting review or signoff; individual PPE failures remain in the source record.' },
+      { key:'equipment_lockouts', label:'Equipment lockouts', count:lockouts.length, route:'equipment', note:'Equipment currently marked locked out by the equipment authority.' },
+      { key:'site_hazards', label:'Site hazard attention', count:siteRefs.size, route:'inspect', note:'Site scorecard attention or recorded property hazards not yet property-reviewed.' },
+      { key:'supervisor_signoff', label:'Supervisor signoff', count:signoffPackets.length + unsignedSubmissions.length, route:'log', note:'Required HSE packet signoff or safety submissions still unsigned.' },
+      { key:'overdue_actions', label:'Overdue safety actions', count:overdueActions.length, route:'reports', note:'Corrective actions explicitly marked overdue.' }
+    ];
+
+    const queue = [
+      ...supervisorQueue.map((row) => ({
+        key:'supervisor-' + String(row?.queue_id || ''),
+        priority:String(row?.queue_priority || 'medium'),
+        headline:String(row?.headline || 'Safety follow-up'),
+        context:String(row?.primary_context || ''),
+        owner:String(row?.owner_name || row?.supervisor_name || ''),
+        due:String(row?.due_label || ''),
+        route:'reports',
+        sortAt:String(row?.sort_at || '')
+      })),
+      ...lockouts.map((row) => ({
+        key:'lockout-' + String(row?.id || row?.equipment_code || ''),
+        priority:'high',
+        headline:'Equipment locked out: ' + String(row?.equipment_code || row?.equipment_name || 'equipment'),
+        context:String(row?.lockout_reason || row?.defect_status || 'Safety lockout'),
+        owner:'',
+        due:'',
+        route:'equipment',
+        sortAt:String(row?.locked_out_at || row?.updated_at || '')
+      })),
+      ...incidents.map((row) => ({
+        key:'incident-' + String(row?.submission_id || ''),
+        priority:['critical','high'].includes(String(row?.severity || '').toLowerCase()) ? String(row?.severity).toLowerCase() : 'medium',
+        headline:String(row?.event_summary || row?.incident_kind || 'Incident / near miss review'),
+        context:String(row?.site_label || row?.job_code || row?.work_order_number || ''),
+        owner:String(row?.corrective_action_owner || ''),
+        due:String(row?.corrective_action_due_date || ''),
+        route:'incident',
+        sortAt:String(row?.updated_at || row?.created_at || row?.submission_date || '')
+      })),
+      ...signoffPackets.map((row) => ({
+        key:'signoff-' + String(row?.id || row?.packet_number || ''),
+        priority:'medium',
+        headline:'Supervisor signoff: ' + String(row?.packet_number || 'HSE packet'),
+        context:String(row?.standalone_project_name || row?.packet_type || ''),
+        owner:'',
+        due:'',
+        route:'log',
+        sortAt:String(row?.updated_at || row?.ready_for_closeout_at || '')
+      }))
+    ].sort((a, b) => {
+      const rank = safetyQueuePriority(a.priority) - safetyQueuePriority(b.priority);
+      if (rank) return rank;
+      return String(b.sortAt || '').localeCompare(String(a.sortAt || ''));
+    }).slice(0, 12);
+
+    return {
+      metrics,
+      queue,
+      counts:Object.fromEntries(metrics.map((row) => [row.key, row.count])),
+      generatedAt:new Date().toISOString()
+    };
+  }
+
+  function safetyMetricMarkup(metric) {
+    return '<button class="hseops-card" type="button" data-route="' + escHtml(metric.route) + '" data-safety-metric="' + escHtml(metric.key) + '">'
+      + '<strong>' + escHtml(metric.count) + '</strong>'
+      + '<span>' + escHtml(metric.label) + '</span>'
+      + '<small>' + escHtml(metric.note) + '</small>'
+      + '<em>Open source workflow</em></button>';
+  }
+
+  function safetyQueueMarkup(item) {
+    const details = [
+      item.priority ? 'Priority: ' + item.priority : '',
+      item.owner ? 'Owner: ' + item.owner : '',
+      item.due ? 'Due: ' + item.due : ''
+    ].filter(Boolean).join(' • ');
+    return '<button class="hseops-card hseops-card--accent" type="button" data-route="' + escHtml(item.route) + '" data-safety-queue-key="' + escHtml(item.key) + '">'
+      + '<strong>' + escHtml(item.headline) + '</strong>'
+      + '<span>' + escHtml(item.context || 'Safety follow-up') + '</span>'
+      + '<small>' + escHtml(details) + '</small>'
+      + '<em>Review source</em></button>';
+  }
+
+  function safetyCommandCentreMarkup(summary) {
+    const command = summary?.commandCentre || { metrics:[], queue:[] };
+    const metrics = Array.isArray(command.metrics) ? command.metrics : [];
+    const queue = Array.isArray(command.queue) ? command.queue : [];
+    return '<section id="safetyComplianceCommandCentre" class="admin-panel-block" data-build="' + escHtml(BUILD) + '" style="margin-top:16px;">'
+      + '<div class="section-heading"><div>'
+      + '<span class="module-kicker">Build ' + escHtml(BUILD) + ' · operating centre</span>'
+      + '<h3 style="margin:4px 0 0;">Safety &amp; Compliance Command Centre</h3>'
+      + '<p class="section-subtitle">One supervisor view of safety work that needs attention, using existing HSE, incident, training, PPE, equipment, property and signoff authorities.</p>'
+      + '</div></div>'
+      + '<div class="notice" style="margin-bottom:14px;"><strong>Operational readiness, not a legal-compliance certificate.</strong> These indicators help find missing or overdue safety work. A form, check, or GREEN count does not by itself establish legal or regulatory compliance.</div>'
+      + '<div class="hseops-grid hseops-grid--compact" aria-label="Safety command centre metrics">' + metrics.map(safetyMetricMarkup).join('') + '</div>'
+      + '<div class="section-heading" style="margin-top:16px;"><div><h4 style="margin:0;">Priority safety queue</h4><p class="section-subtitle">Highest-priority open safety work from existing supervisor, incident, lockout and signoff records.</p></div></div>'
+      + (queue.length
+        ? '<div class="hseops-grid hseops-grid--compact safety-command-queue">' + queue.map(safetyQueueMarkup).join('') + '</div>'
+        : '<div class="notice">No priority safety items are currently loaded for this supervisor view.</div>')
+      + '</section>';
+  }
+
   function normalizeSummary(payload = {}) {
     const hseSummary = Array.isArray(payload?.hse_dashboard_summary) ? payload.hse_dashboard_summary[0] : null;
     const accountingSummary = Array.isArray(payload?.accounting_review_summary) ? payload.accounting_review_summary[0] : null;
@@ -257,6 +453,7 @@
       latestTraffic,
       linkedShortcuts: deriveLinkedContextSummary(payload),
       monitorShortcuts: deriveMonitorReviewSummary(payload),
+      commandCentre: deriveSafetyCommandCentre(payload),
       savedAt: new Date().toISOString()
     };
   }
@@ -377,6 +574,7 @@
         <strong>Current focus</strong>
         <p style="margin:8px 0 0;">Use this area to move field safety forward from a phone without digging through the full Admin page. ${escHtml(label)} access still controls which linked packet and monitoring shortcuts are available.</p>
       </div>
+      ${safetyCommandCentreMarkup(summary)}
       ${summaryMarkup(summary)}
       <div class="admin-panel-block" style="margin-top:16px;">
         <div class="section-heading"><div><h3 style="margin:0;">Field safety quick actions</h3><p class="section-subtitle">Open the most-used field workflows quickly on phone, tablet, or desktop.</p></div></div>
@@ -471,6 +669,6 @@
     });
   }
 
-  window.YWIHSEOpsUI = { init, refresh: loadLiveSummary };
+  window.YWIHSEOpsUI = Object.freeze({ init, refresh: loadLiveSummary, normalizeSummary, deriveSafetyCommandCentre, build:BUILD });
   document.addEventListener('DOMContentLoaded', init);
 })();

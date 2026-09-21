@@ -160,3 +160,11 @@
           <p>Customer signoff is shown as closeout status where appropriate; staff do not impersonate the customer. Customer approval/signoff continues through the existing customer portal authority. Schema 215 provides a signed-in assignment-filtered RPC fallback when the dedicated Edge Function is not deployed, using the same Jobs permission model and excluding Finance totals. When offline, server writes are disabled and the screen can show only the last assignment snapshot from the current signed-in browser session; supported Safety forms keep their own local draft/outbox behavior and pending/conflict state stays visible.</p>
         </section>
 
+        <section class="help-section" id="safety-compliance-command-centre">
+          <h2>Safety &amp; Compliance Command Centre</h2>
+          <p>Build 327 turns the existing Ontario Safety Operations module into one supervisor safety operating centre. It summarizes open hazards, required assessments, toolbox-talk review, incident/near-miss follow-up, corrective actions, training expiry, PPE review, equipment lockouts, site hazard attention, supervisor signoff and overdue safety actions.</p>
+          <p>The centre reads existing authorities such as HSE packets, safety submissions, incident history, corrective-action tasks, training records, site safety scorecards, property hazard context and equipment lockout state. It does not create a second incident, training, PPE, equipment or property system, and each card opens the established source workflow for review or action.</p>
+          <p>Safety records stay independent from employee performance-management outcomes. Anonymous or confidential incident reporter identity is not surfaced in the command-centre selector payload. Finance totals are not part of this safety scope.</p>
+          <p>The command centre is operational decision support, not a legal-compliance certificate. A completed form, check, GREEN count or dashboard indicator does not by itself establish OHSA, OSHA or other regulatory compliance; supervisors must use the applicable source workflow, evidence and legal requirements for the work being performed.</p>
+        </section>
+
