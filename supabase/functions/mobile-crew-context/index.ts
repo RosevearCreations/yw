@@ -185,7 +185,7 @@ serve(async (req) => {
     });
 
     return Response.json({
-      ok:true, build:326, schema:214,
+      ok:true, build:326, schema:215,
       profile:{ id:profile.id, full_name:profile.full_name, role:normalizeRole(profile.role) },
       window:{ from,to,days:requestedDays },
       capabilities:{
