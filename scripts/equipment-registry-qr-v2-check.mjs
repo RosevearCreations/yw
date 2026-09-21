@@ -54,7 +54,7 @@ must(scanManage,[
   "from('equipment_identifier_registry')",
   'identifier_value',
   'equipment_master_id',
-  'resolved_identifier_kind'
+  'identifierKind:registryRow.identifier_kind'
 ],'Existing exact server-side scan resolver');
 must(scanner,[
   'BarcodeDetector',
