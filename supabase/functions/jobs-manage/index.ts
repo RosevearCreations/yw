@@ -872,7 +872,18 @@ serve(async (req) => {
       const currentSiteId = await resolveSiteIdByCodeOrName(supabase, body.current_site || body.current_site_name || body.home_site);
       const targetSiteId = await resolveSiteIdByCodeOrName(supabase, body.target_site || body.destination_site || body.destination_site_name);
       const currentJobId = await resolveJobIdByCode(supabase, body.current_job_code);
-      const assignedCrewId = await resolveCrewIdByNameOrCode(supabase, body.assigned_crew || body.assigned_crew_code || body.assigned_crew_name);
+      const assignedCrewInput=String(body.assigned_crew_id || body.assigned_crew || body.assigned_crew_code || body.assigned_crew_name || '').trim();
+      let assignedCrewId=null;
+      if(assignedCrewInput){
+        if(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(assignedCrewInput)){
+          const {data:crew}=await supabase.from('crews').select('id').eq('id',assignedCrewInput).maybeSingle();
+          if(!crew?.id) return Response.json({ok:false,error:'Assigned crew was not found.'},{status:400,headers:corsHeaders});
+          assignedCrewId=crew.id;
+        } else {
+          assignedCrewId=await resolveCrewIdByNameOrCode(supabase,assignedCrewInput);
+          if(!assignedCrewId) return Response.json({ok:false,error:'Assigned crew was not found.'},{status:400,headers:corsHeaders});
+        }
+      }
       const poolKey = normalizePoolKey(body.equipment_pool_key || body.category || body.equipment_name || body.equipment_code);
       const transferStatus = body.is_locked_out ? 'locked_out' : (targetSiteId ? 'reserved' : (body.last_transfer_status || 'ready'));
       const { data: existingEquipment } = await supabase.from('equipment_items')
