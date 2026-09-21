@@ -26,6 +26,10 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
   operations_queue_list: contract('operations_queue_list', 'admin', 'view', 'read', 'operations_control_plane'),
   operations_attention_defer: contract('operations_attention_defer', 'admin', 'manage', 'write', 'operations_attention', 'admin.operations_attention.deferred'),
   operations_attention_resolve: contract('operations_attention_resolve', 'admin', 'manage', 'write', 'operations_attention', 'admin.operations_attention.resolved'),
+  job_hazard_template_save: contract('job_hazard_template_save', 'safety', 'approve', 'write', 'job_hazard_plans', 'safety.job_hazard_template.saved'),
+  job_hazard_plan_save: contract('job_hazard_plan_save', 'safety', 'create', 'write', 'job_hazard_plans', 'safety.job_hazard_plan.saved'),
+  job_hazard_plan_review: contract('job_hazard_plan_review', 'safety', 'approve', 'write', 'job_hazard_plans', 'safety.job_hazard_plan.reviewed'),
+
 
   payment_action_request: contract('payment_action_request', 'finance', 'create', 'write', 'payments', 'finance.payment_action.requested'),
   payment_action_decision: contract('payment_action_decision', 'finance', 'approve', 'write', 'payments', 'finance.payment_action.decided'),
