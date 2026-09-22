@@ -34,7 +34,7 @@
       '<label>Seasonal status<select id="workforce336Seasonal"><option value="year_round">Year round</option><option value="spring_summer">Spring / summer</option><option value="fall_winter">Fall / winter</option><option value="seasonal">Seasonal</option><option value="on_call">On call</option><option value="inactive">Inactive</option></select></label>',
       '<label>Active from<input id="workforce336ActiveFrom" type="date"></label><label>Active until<input id="workforce336ActiveUntil" type="date"></label>',
       '<label>Account active<input id="workforce336IsActive" type="checkbox"></label></div>',
-      '<details style="margin-top:10px;"><summary>Private contact / emergency information</summary><div class="grid" style="margin-top:10px;">',
+      '<details id="workforce336PrivateContacts" style="margin-top:10px;"><summary>Private contact / emergency information</summary><div class="grid" style="margin-top:10px;">',
       '<label>Phone<input id="workforce336Phone" type="tel"></label><label>Address 1<input id="workforce336Address1" type="text"></label><label>Address 2<input id="workforce336Address2" type="text"></label>',
       '<label>City<input id="workforce336City" type="text"></label><label>Province<input id="workforce336Province" type="text"></label><label>Postal code<input id="workforce336Postal" type="text"></label>',
       '<label>Emergency contact<input id="workforce336EmergencyName" type="text"></label><label>Emergency phone<input id="workforce336EmergencyPhone" type="tel"></label></div></details>',
