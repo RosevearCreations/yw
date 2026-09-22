@@ -1537,7 +1537,7 @@
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
-      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','job_create_estimate','job_add_estimate_line','job_render_quote_package','job_print_quote_package','job_send_quote_package','job_mark_quote_viewed','job_mark_quote_accepted','job_mark_quote_declined','job_convert_to_package','job_release_review','job_evaluate_thresholds','job_completion_review','job_add_closeout_item','job_add_closeout_evidence','job_queue_accounting','job_create_invoice_candidate','job_create_journal_candidate','job_queue_arap_review','job_export_closeout_summary','job_export_accountant_handoff','job_generate_accountant_package_v2','eq_save','eq_checkout','eq_verify_arrival','eq_return','eq_verify_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear','eq_daily_inspection_submit','eq_fleet_save_profile','eq_fleet_start_downtime','eq_fleet_clear_downtime','eq_fleet_record_readiness','eq_fleet_record_fuel','eq_fleet_assign_tow'].forEach((id)=>{
+      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','job_create_estimate','job_add_estimate_line','job_render_quote_package','job_print_quote_package','job_send_quote_package','job_mark_quote_viewed','job_mark_quote_accepted','job_mark_quote_declined','job_convert_to_package','job_release_review','job_evaluate_thresholds','job_completion_review','job_add_closeout_item','job_add_closeout_evidence','job_queue_accounting','job_create_invoice_candidate','job_create_journal_candidate','job_queue_arap_review','job_export_closeout_summary','job_export_accountant_handoff','job_generate_accountant_package_v2','eq_save','eq_checkout','eq_verify_arrival','eq_return','eq_verify_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear','eq_daily_inspection_submit','eq_fleet_save_profile','eq_fleet_start_downtime','eq_fleet_clear_downtime','eq_fleet_record_readiness','eq_fleet_record_fuel','eq_fleet_assign_tow','eq_pm_save_plan','eq_pm_open_task','eq_pm_complete','eq_pm_apply_status'].forEach((id)=>{
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
@@ -2696,6 +2696,8 @@
       if (e.eqDailyInspectionMeterUnit) e.eqDailyInspectionMeterUnit.value = row.meter_unit || '';
       fillDailyInspectionTemplateSelect();
       fillFleetFormForActiveEquipment();
+      state.selectedPreventiveMaintenancePlanId=null;
+      fillPreventiveMaintenanceForm();
       e.eqComments.value = row.comments || '';
       e.eqNotes.value = row.notes || '';
       if (e.eqArrivalTestStatus) e.eqArrivalTestStatus.value = row.last_arrival_test_status || 'not_recorded';
@@ -3588,6 +3590,7 @@
       renderEquipmentAccountabilityDepth();
       renderDailyInspectionWorkbench();
       renderFleetOperationsWorkbench();
+      renderPreventiveMaintenanceWorkbench();
     }
 
 
@@ -3753,6 +3756,8 @@
         state.fleetOperations = Array.isArray(resp?.fleet_vehicle_operations) ? resp.fleet_vehicle_operations : [];
         state.fleetOperationsSummary = Array.isArray(resp?.fleet_operations_summary) ? resp.fleet_operations_summary : [];
         state.fleetTowingAssignments = Array.isArray(resp?.fleet_towing_assignments) ? resp.fleet_towing_assignments : [];
+        state.preventiveMaintenanceWorkbench = Array.isArray(resp?.preventive_maintenance_workbench) ? resp.preventive_maintenance_workbench : [];
+        state.preventiveMaintenanceSummary = Array.isArray(resp?.preventive_maintenance_summary) ? resp.preventive_maintenance_summary : [];
         renderAccountingDepthTables();
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
@@ -4580,6 +4585,41 @@
         e.eqFleetTowingBody.addEventListener('click',(event)=>{
           const release=event.target.closest('[data-fleet-tow-release]');
           if(release) releaseFleetTow(release.getAttribute('data-fleet-tow-release'));
+        });
+      }
+      if (e.eqPmPlanSelect && e.eqPmPlanSelect.dataset.bound !== '1') {
+        e.eqPmPlanSelect.dataset.bound='1';
+        e.eqPmPlanSelect.addEventListener('change',()=>{
+          state.selectedPreventiveMaintenancePlanId=e.eqPmPlanSelect.value || null;
+          fillPreventiveMaintenanceForm();
+        });
+      }
+      if (e.eqPmSavePlan && e.eqPmSavePlan.dataset.bound !== '1') {
+        e.eqPmSavePlan.dataset.bound='1';
+        e.eqPmSavePlan.addEventListener('click',savePreventiveMaintenancePlan);
+      }
+      if (e.eqPmOpenTask && e.eqPmOpenTask.dataset.bound !== '1') {
+        e.eqPmOpenTask.dataset.bound='1';
+        e.eqPmOpenTask.addEventListener('click',openPreventiveMaintenanceTask);
+      }
+      if (e.eqPmComplete && e.eqPmComplete.dataset.bound !== '1') {
+        e.eqPmComplete.dataset.bound='1';
+        e.eqPmComplete.addEventListener('click',completePreventiveMaintenance);
+      }
+      if (e.eqPmApplyStatus && e.eqPmApplyStatus.dataset.bound !== '1') {
+        e.eqPmApplyStatus.dataset.bound='1';
+        e.eqPmApplyStatus.addEventListener('click',applyPreventiveMaintenancePlanStatus);
+      }
+      if (e.eqPmBody && e.eqPmBody.dataset.bound !== '1') {
+        e.eqPmBody.dataset.bound='1';
+        e.eqPmBody.addEventListener('click',(event)=>{
+          const btn=event.target.closest('[data-pm-load]');
+          if(!btn) return;
+          const equipmentCode=btn.getAttribute('data-pm-equipment') || '';
+          const row=(state.equipment || []).find((item)=>String(item.equipment_code || '')===String(equipmentCode));
+          if(row) loadEquipmentIntoForm(row);
+          state.selectedPreventiveMaintenancePlanId=btn.getAttribute('data-pm-load') || null;
+          fillPreventiveMaintenanceForm();
         });
       }
       if (e.eqScanCode && e.eqScanCode.dataset.bound !== '1') {
