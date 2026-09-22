@@ -303,6 +303,8 @@ serve(async (req) => {
   const fleetVehicleOperations = await safeSelect(supabase, 'v_fleet_vehicle_operations', '*', (query) => query.order('equipment_code', { ascending:true }).limit(1000));
   const fleetOperationsSummary = await safeSelect(supabase, 'v_fleet_operations_summary', '*', (query) => query.limit(1));
   const fleetTowingAssignments = await safeSelect(supabase, 'v_fleet_towing_assignment_directory', '*', (query) => query.order('assigned_at', { ascending:false }).limit(1000));
+  const preventiveMaintenanceWorkbench = await safeSelect(supabase, 'v_preventive_maintenance_workbench', '*', (query) => query.order('due_status', { ascending:true }).order('equipment_code', { ascending:true }).limit(1500));
+  const preventiveMaintenanceSummary = await safeSelect(supabase, 'v_preventive_maintenance_summary', '*', (query) => query.limit(1));
   const { data: inspections } = await supabase.from('v_equipment_inspection_history').select('*').order('inspected_at', { ascending:false }).limit(200);
   const { data: maintenance } = await supabase.from('v_equipment_maintenance_history').select('*').order('performed_at', { ascending:false }).limit(200);
   const { data: evidenceAssetsRaw } = await supabase.from('equipment_evidence_assets').select('*').order('created_at', { ascending:false }).limit(1000);
@@ -427,6 +429,8 @@ serve(async (req) => {
     fleet_vehicle_operations: fleetVehicleOperations || [],
     fleet_operations_summary: fleetOperationsSummary || [],
     fleet_towing_assignments: fleetTowingAssignments || [],
+    preventive_maintenance_workbench: preventiveMaintenanceWorkbench || [],
+    preventive_maintenance_summary: preventiveMaintenanceSummary || [],
     requirements: requirements || [],
     signouts: signoutRows,
     equipment_transfer_verifications: equipmentTransferVerifications || [],
