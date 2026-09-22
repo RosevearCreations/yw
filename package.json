@@ -145,7 +145,9 @@
     "test:daily-equipment-inspection-lockout": "node scripts/daily-equipment-inspection-lockout-check.mjs",
     "test:browser:daily-equipment-inspection-lockout": "playwright test --config=playwright.config.mjs tests/browser/daily-equipment-inspection-lockout.spec.mjs",
     "test:fleet-trailer-vehicle-operations": "node scripts/fleet-trailer-vehicle-operations-check.mjs",
-    "test:browser:fleet-trailer-vehicle-operations": "playwright test --config=playwright.config.mjs tests/browser/fleet-trailer-vehicle-operations.spec.mjs"
+    "test:browser:fleet-trailer-vehicle-operations": "playwright test --config=playwright.config.mjs tests/browser/fleet-trailer-vehicle-operations.spec.mjs",
+    "test:preventive-maintenance-engine": "node scripts/preventive-maintenance-engine-check.mjs",
+    "test:browser:preventive-maintenance-engine": "playwright test --config=playwright.config.mjs tests/browser/preventive-maintenance-engine.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

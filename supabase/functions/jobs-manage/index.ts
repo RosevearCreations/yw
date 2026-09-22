@@ -1527,30 +1527,259 @@ serve(async (req) => {
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
     }
 
+    if (body.entity === 'equipment' && body.action === 'preventive_maintenance_plan_upsert') {
+      const equipmentId=await resolveEquipmentIdByCode(supabase,body.equipment_code);
+      if(!equipmentId) return Response.json({ok:false,error:'Equipment required'},{status:400,headers:corsHeaders});
+      const planCode=String(body.plan_code || '').trim().toUpperCase();
+      const planName=String(body.plan_name || '').trim();
+      if(!planCode || !planName) return Response.json({ok:false,error:'Plan code and plan name are required.'},{status:400,headers:corsHeaders});
+      const maintenanceType=String(body.maintenance_type || 'service').trim().toLowerCase();
+      const allowedTypes=['oil','filter','blade','sharpening','belt','lubrication','tires','battery','winterization','storage','preseason_setup','repair','inspection','service','other'];
+      if(!allowedTypes.includes(maintenanceType)) return Response.json({ok:false,error:'Unsupported preventive maintenance type.'},{status:400,headers:corsHeaders});
+      const scheduleBasis=String(body.schedule_basis || 'date').trim().toLowerCase();
+      if(!['date','hours','kilometres','seasonal'].includes(scheduleBasis)) return Response.json({ok:false,error:'Schedule basis must be date, hours, kilometres, or seasonal.'},{status:400,headers:corsHeaders});
+      const {data:item}=await supabase.from('equipment_items').select('id,current_meter_value,meter_unit').eq('id',equipmentId).maybeSingle();
+      const intervalDays=body.interval_days === '' || body.interval_days == null ? null : Number(body.interval_days);
+      const intervalMeter=body.interval_meter === '' || body.interval_meter == null ? null : Number(body.interval_meter);
+      const dueMeterInput=body.due_meter === '' || body.due_meter == null ? null : Number(body.due_meter);
+      const leadDays=body.lead_days === '' || body.lead_days == null ? 14 : Number(body.lead_days);
+      const leadMeter=body.lead_meter === '' || body.lead_meter == null ? 10 : Number(body.lead_meter);
+      const estimatedCost=body.estimated_cost === '' || body.estimated_cost == null ? 0 : Number(body.estimated_cost);
+      if(!Number.isInteger(leadDays) || leadDays<0 || leadDays>365) return Response.json({ok:false,error:'Lead days must be 0–365.'},{status:400,headers:corsHeaders});
+      if(!Number.isFinite(leadMeter) || leadMeter<0 || !Number.isFinite(estimatedCost) || estimatedCost<0) return Response.json({ok:false,error:'Lead meter and estimated cost must be nonnegative.'},{status:400,headers:corsHeaders});
+      let meterUnit:string|null=null;
+      let dueMeter:number|null=dueMeterInput;
+      let dueDate:string|null=body.due_date || null;
+      let seasonalMonth=body.seasonal_month === '' || body.seasonal_month == null ? null : Number(body.seasonal_month);
+      let seasonalDay=body.seasonal_day === '' || body.seasonal_day == null ? null : Number(body.seasonal_day);
+      if(scheduleBasis==='date'){
+        if(!Number.isInteger(intervalDays) || Number(intervalDays)<=0) return Response.json({ok:false,error:'Date schedules require a positive interval in days.'},{status:400,headers:corsHeaders});
+        if(!dueDate){
+          const base=new Date(String(body.anchor_date || new Date().toISOString().slice(0,10))+'T12:00:00Z');
+          base.setUTCDate(base.getUTCDate()+Number(intervalDays));
+          dueDate=base.toISOString().slice(0,10);
+        }
+      }
+      if(scheduleBasis==='hours' || scheduleBasis==='kilometres'){
+        if(!Number.isFinite(intervalMeter) || Number(intervalMeter)<=0) return Response.json({ok:false,error:'Meter schedules require a positive interval.'},{status:400,headers:corsHeaders});
+        meterUnit=scheduleBasis==='hours' ? 'hours' : 'km';
+        if(dueMeter===null) dueMeter=Number(item?.current_meter_value || 0)+Number(intervalMeter);
+        if(!Number.isFinite(dueMeter) || Number(dueMeter)<0) return Response.json({ok:false,error:'Due meter must be nonnegative.'},{status:400,headers:corsHeaders});
+      }
+      if(scheduleBasis==='seasonal'){
+        if(!Number.isInteger(seasonalMonth) || seasonalMonth<1 || seasonalMonth>12 || !Number.isInteger(seasonalDay) || seasonalDay<1 || seasonalDay>31) {
+          return Response.json({ok:false,error:'Seasonal schedules require a valid month and day.'},{status:400,headers:corsHeaders});
+        }
+        if(!dueDate){
+          const today=new Date();
+          let year=today.getUTCFullYear();
+          let candidate=new Date(Date.UTC(year,seasonalMonth-1,seasonalDay,12,0,0));
+          if(candidate.getUTCMonth()!==seasonalMonth-1 || candidate.getUTCDate()!==seasonalDay) return Response.json({ok:false,error:'Seasonal month/day is not a valid calendar date.'},{status:400,headers:corsHeaders});
+          if(candidate < new Date(Date.UTC(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate(),12,0,0))) candidate=new Date(Date.UTC(++year,seasonalMonth-1,seasonalDay,12,0,0));
+          dueDate=candidate.toISOString().slice(0,10);
+        }
+      }
+      const planStatus=String(body.plan_status || 'active').trim().toLowerCase();
+      if(!['active','paused','retired'].includes(planStatus)) return Response.json({ok:false,error:'Unsupported maintenance plan status.'},{status:400,headers:corsHeaders});
+      const now=new Date().toISOString();
+      const {data,error}=await supabase.from('preventive_maintenance_plans').upsert({
+        equipment_item_id:equipmentId,
+        plan_code:planCode,
+        plan_name:planName,
+        maintenance_type:maintenanceType,
+        schedule_basis:scheduleBasis,
+        interval_days:scheduleBasis==='date' ? intervalDays : null,
+        meter_unit:meterUnit,
+        interval_meter:(scheduleBasis==='hours'||scheduleBasis==='kilometres') ? intervalMeter : null,
+        anchor_date:body.anchor_date || null,
+        seasonal_month:scheduleBasis==='seasonal' ? seasonalMonth : null,
+        seasonal_day:scheduleBasis==='seasonal' ? seasonalDay : null,
+        due_date:(scheduleBasis==='date'||scheduleBasis==='seasonal') ? dueDate : null,
+        due_meter:(scheduleBasis==='hours'||scheduleBasis==='kilometres') ? dueMeter : null,
+        lead_days:leadDays,
+        lead_meter:leadMeter,
+        plan_status:planStatus,
+        default_provider_name:String(body.default_provider_name || '').trim() || null,
+        estimated_cost:estimatedCost,
+        instructions:String(body.instructions || '').trim() || null,
+        created_by_profile_id:actorProfile.id,
+        updated_by_profile_id:actorProfile.id,
+        updated_at:now
+      },{onConflict:'equipment_item_id,plan_code'}).select('*').single();
+      if(error) throw error;
+      return Response.json({ok:true,build:334,schema:222,record:data},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'equipment' && body.action === 'preventive_maintenance_open_task') {
+      const planId=String(body.plan_id || '').trim();
+      if(!planId) return Response.json({ok:false,error:'Preventive maintenance plan is required.'},{status:400,headers:corsHeaders});
+      const {data:workbench}=await supabase.from('v_preventive_maintenance_workbench').select('*').eq('id',planId).maybeSingle();
+      if(!workbench) return Response.json({ok:false,error:'Preventive maintenance plan not found.'},{status:404,headers:corsHeaders});
+      if(!['overdue','due','due_soon'].includes(String(workbench.due_status || ''))) return Response.json({ok:false,error:'Preventive maintenance is not due yet.'},{status:409,headers:corsHeaders});
+      if(workbench.service_task_id && !['resolved','cancelled'].includes(String(workbench.service_task_status || ''))) {
+        return Response.json({ok:false,error:'This maintenance plan already has an open service task.',service_task_id:workbench.service_task_id},{status:409,headers:corsHeaders});
+      }
+      const dueAt=workbench.due_date ? new Date(String(workbench.due_date)+'T17:00:00Z').toISOString() : null;
+      const {data:task,error:taskError}=await supabase.from('equipment_service_tasks').insert({
+        equipment_item_id:workbench.equipment_item_id,
+        task_type:'preventive_maintenance',
+        task_status:'open',
+        priority:workbench.due_status==='overdue' ? 'high' : 'normal',
+        failure_reason:null,
+        estimated_cost:Number(workbench.estimated_cost || 0),
+        due_at:dueAt,
+        notes:`Preventive maintenance: ${workbench.plan_name} (${workbench.plan_code}). ${workbench.instructions || ''}`.trim(),
+        created_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(taskError) throw taskError;
+      const {data:event,error:eventError}=await supabase.from('preventive_maintenance_events').insert({
+        plan_id:planId,
+        equipment_item_id:workbench.equipment_item_id,
+        event_type:'task_opened',
+        due_date_snapshot:workbench.due_date || null,
+        due_meter_snapshot:workbench.due_meter ?? null,
+        meter_value:workbench.current_meter_value ?? null,
+        service_task_id:task.id,
+        notes:body.notes || null,
+        recorded_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(eventError) throw eventError;
+      return Response.json({ok:true,build:334,schema:222,record:event,service_task:task},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'equipment' && body.action === 'preventive_maintenance_complete') {
+      const planId=String(body.plan_id || '').trim();
+      if(!planId) return Response.json({ok:false,error:'Preventive maintenance plan is required.'},{status:400,headers:corsHeaders});
+      const {data:plan}=await supabase.from('preventive_maintenance_plans').select('*').eq('id',planId).maybeSingle();
+      if(!plan) return Response.json({ok:false,error:'Preventive maintenance plan not found.'},{status:404,headers:corsHeaders});
+      const {data:item}=await supabase.from('equipment_items').select('id,current_meter_value,meter_unit,is_locked_out').eq('id',plan.equipment_item_id).maybeSingle();
+      const completedAt=body.completed_at || new Date().toISOString();
+      const completedDate=new Date(completedAt);
+      if(Number.isNaN(completedDate.valueOf())) return Response.json({ok:false,error:'Completion date is invalid.'},{status:400,headers:corsHeaders});
+      const meterValueRaw=body.meter_value === '' || body.meter_value == null ? item?.current_meter_value : Number(body.meter_value);
+      const meterValue=meterValueRaw == null ? null : Number(meterValueRaw);
+      if(meterValue !== null && (!Number.isFinite(meterValue) || meterValue<0)) return Response.json({ok:false,error:'Completion meter must be nonnegative.'},{status:400,headers:corsHeaders});
+      if(['hours','kilometres'].includes(String(plan.schedule_basis)) && meterValue===null) return Response.json({ok:false,error:'Meter-based maintenance completion requires a meter reading.'},{status:400,headers:corsHeaders});
+      const cost=body.cost_amount === '' || body.cost_amount == null ? 0 : Number(body.cost_amount);
+      if(!Number.isFinite(cost) || cost<0) return Response.json({ok:false,error:'Maintenance cost must be nonnegative.'},{status:400,headers:corsHeaders});
+      let nextDueDate:string|null=null;
+      let nextDueMeter:number|null=null;
+      if(plan.schedule_basis==='date'){
+        const next=new Date(completedDate);
+        next.setUTCDate(next.getUTCDate()+Number(plan.interval_days || 0));
+        nextDueDate=next.toISOString().slice(0,10);
+      } else if(plan.schedule_basis==='hours' || plan.schedule_basis==='kilometres'){
+        nextDueMeter=Number(meterValue || 0)+Number(plan.interval_meter || 0);
+      } else if(plan.schedule_basis==='seasonal'){
+        const month=Number(plan.seasonal_month);
+        const day=Number(plan.seasonal_day);
+        let year=completedDate.getUTCFullYear();
+        let next=new Date(Date.UTC(year,month-1,day,12,0,0));
+        const completionDay=new Date(Date.UTC(completedDate.getUTCFullYear(),completedDate.getUTCMonth(),completedDate.getUTCDate(),12,0,0));
+        if(next<=completionDay) next=new Date(Date.UTC(year+1,month-1,day,12,0,0));
+        nextDueDate=next.toISOString().slice(0,10);
+      }
+      const provider=String(body.provider_name || plan.default_provider_name || '').trim() || null;
+      const notes=String(body.notes || '').trim() || null;
+      const {data:history,error:historyError}=await supabase.from('equipment_service_history').insert({
+        equipment_item_id:plan.equipment_item_id,
+        serviced_at:completedAt,
+        service_type:plan.maintenance_type || 'service',
+        notes,
+        vendor_name:provider,
+        cost,
+        serviced_by_profile_id:actorProfile.id,
+        serviced_by_name:actorProfile.full_name || actorProfile.email || null
+      }).select('*').single();
+      if(historyError) throw historyError;
+      let serviceTaskId=body.service_task_id || null;
+      if(!serviceTaskId){
+        const {data:events}=await supabase.from('preventive_maintenance_events').select('service_task_id,event_at').eq('plan_id',planId).not('service_task_id','is',null).order('event_at',{ascending:false}).limit(1);
+        serviceTaskId=(events || [])[0]?.service_task_id || null;
+      }
+      if(serviceTaskId){
+        const {data:task}=await supabase.from('equipment_service_tasks').select('task_status').eq('id',serviceTaskId).maybeSingle();
+        if(task && !['resolved','cancelled'].includes(String(task.task_status || ''))){
+          await supabase.from('equipment_service_tasks').update({
+            task_status:'resolved',
+            actual_cost:cost,
+            resolved_at:completedAt,
+            resolved_by_profile_id:actorProfile.id,
+            updated_at:new Date().toISOString()
+          }).eq('id',serviceTaskId);
+        }
+      }
+      const {data:updatedPlan,error:planError}=await supabase.from('preventive_maintenance_plans').update({
+        due_date:nextDueDate,
+        due_meter:nextDueMeter,
+        last_completed_at:completedAt,
+        last_completed_meter:meterValue,
+        updated_by_profile_id:actorProfile.id,
+        updated_at:new Date().toISOString()
+      }).eq('id',planId).select('*').single();
+      if(planError) throw planError;
+      const {data:event,error:eventError}=await supabase.from('preventive_maintenance_events').insert({
+        plan_id:planId,
+        equipment_item_id:plan.equipment_item_id,
+        event_type:'completed',
+        due_date_snapshot:plan.due_date || null,
+        due_meter_snapshot:plan.due_meter ?? null,
+        meter_value:meterValue,
+        service_task_id:serviceTaskId,
+        service_history_id:history.id,
+        cost_amount:cost,
+        provider_name:provider,
+        notes,
+        recorded_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(eventError) throw eventError;
+      const itemUpdate:any={last_service_date:completedAt.slice(0,10),updated_at:new Date().toISOString()};
+      if(nextDueDate) itemUpdate.next_service_due_date=nextDueDate;
+      if(meterValue !== null && ['hours','kilometres'].includes(String(plan.schedule_basis))){
+        itemUpdate.current_meter_value=meterValue;
+        itemUpdate.current_meter_at=completedAt;
+        itemUpdate.meter_type=plan.schedule_basis==='hours' ? 'hours' : 'odometer';
+        itemUpdate.meter_unit=plan.schedule_basis==='hours' ? 'hours' : 'km';
+      }
+      await supabase.from('equipment_items').update(itemUpdate).eq('id',plan.equipment_item_id);
+      return Response.json({ok:true,build:334,schema:222,record:event,plan:updatedPlan,service_history:history,lockout_preserved:!!item?.is_locked_out},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'equipment' && body.action === 'preventive_maintenance_plan_status') {
+      const planId=String(body.plan_id || '').trim();
+      const status=String(body.plan_status || '').trim().toLowerCase();
+      if(!planId || !['active','paused','retired'].includes(status)) return Response.json({ok:false,error:'Plan and active/paused/retired status are required.'},{status:400,headers:corsHeaders});
+      const {data:plan,error}=await supabase.from('preventive_maintenance_plans').update({plan_status:status,updated_by_profile_id:actorProfile.id,updated_at:new Date().toISOString()}).eq('id',planId).select('*').single();
+      if(error) throw error;
+      await supabase.from('preventive_maintenance_events').insert({
+        plan_id:planId,
+        equipment_item_id:plan.equipment_item_id,
+        event_type:status==='paused' ? 'paused' : (status==='retired' ? 'retired' : 'reactivated'),
+        notes:body.notes || null,
+        recorded_by_profile_id:actorProfile.id
+      });
+      return Response.json({ok:true,build:334,schema:222,record:plan},{headers:corsHeaders});
+    }
+
     if (body.entity === 'equipment' && body.action === 'maintenance') {
       const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
       if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
       const performedAt = body.performed_at || new Date().toISOString();
       const nextDueDate = body.next_due_date || null;
-      const { data, error } = await supabase.from('equipment_maintenance_history').insert({
+      const { data, error } = await supabase.from('equipment_service_history').insert({
         equipment_item_id: equipmentId,
-        performed_by_profile_id: actorProfile.id,
-        performed_at: performedAt,
-        maintenance_type: body.maintenance_type || 'service',
-        provider_name: body.provider_name ?? null,
-        cost_amount: body.cost_amount ?? null,
-        notes: body.notes ?? null,
-        next_due_date: nextDueDate
+        serviced_by_profile_id: actorProfile.id,
+        serviced_by_name: actorProfile.full_name || actorProfile.email || null,
+        serviced_at: performedAt,
+        service_type: body.maintenance_type || 'service',
+        vendor_name: body.provider_name ?? null,
+        cost: body.cost_amount ?? null,
+        notes: body.notes ?? null
       }).select('*').single();
       if (error) throw error;
       await supabase.from('equipment_items').update({
-        last_service_date: performedAt,
+        last_service_date: performedAt.slice(0,10),
         next_service_due_date: nextDueDate,
-        defect_status: 'clear',
-        defect_notes: null,
-        is_locked_out: false,
-        locked_out_at: null,
-        locked_out_by_profile_id: null,
         updated_at: new Date().toISOString()
       }).eq('id', equipmentId);
       await insertNotification(supabase, { notification_type:'equipment_maintenance', target_table:'equipment_items', target_id:equipmentId, recipient_role:'admin', title:`Equipment service: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, maintenance_type: body.maintenance_type || 'service', provider_name: body.provider_name || null, next_due_date: nextDueDate }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment service: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, maintenance_type: body.maintenance_type || 'service', provider_name: body.provider_name || null, next_due_date: nextDueDate } });

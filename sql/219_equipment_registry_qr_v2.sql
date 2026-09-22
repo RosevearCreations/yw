@@ -338,7 +338,7 @@ select
   count(*) filter(where replacement_state in ('plan_replacement','replace','retired'))::int as replacement_attention_count,
   coalesce(sum(recorded_lifecycle_cost_total),0)::numeric(14,2) as recorded_lifecycle_cost_total,
   coalesce(sum(open_service_estimated_cost),0)::numeric(14,2) as open_service_estimated_cost,
-  max(coalesce(registry_v2_updated_at,updated_at)) as last_updated_at
+  max(registry_v2_updated_at) as last_updated_at
 from public.v_equipment_registry_v2;
 
 revoke all on table public.v_equipment_registry_v2 from public,anon,authenticated;

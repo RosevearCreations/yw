@@ -302,7 +302,7 @@ Create machine-specific pre-use/post-use inspections covering guards/safety syst
 
 Manage trucks/trailers with identity, odometer, registration/insurance evidence, inspection, maintenance, tire status, towing assignment, hitch/trailer compatibility, crew/job assignment, trailer load/content readiness, fuel, damage and downtime.
 
-#### 334 — Preventive Maintenance Engine
+#### **334 — Preventive Maintenance Engine** is implemented
 
 Schedule equipment/fleet maintenance by date, hours, kilometres and seasonal milestones. Track oil, filters, blades, sharpening, belts, lubrication, tires, batteries, winterization/storage, preseason setup, repairs, service history and downtime.
 
