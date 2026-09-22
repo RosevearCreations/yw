@@ -1877,6 +1877,172 @@
       await loadData();
     }
 
+    function getPreventiveMaintenanceRowsForActive() {
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || '')) || null;
+      if(!active) return [];
+      return (state.preventiveMaintenanceWorkbench || []).filter((row)=>Number(row.equipment_item_id || 0)===Number(active.id || 0) || String(row.equipment_code || '')===String(active.equipment_code || ''));
+    }
+
+    function getSelectedPreventiveMaintenancePlan() {
+      const e=els();
+      const planId=String(e.eqPmPlanSelect?.value || state.selectedPreventiveMaintenancePlanId || '');
+      return (state.preventiveMaintenanceWorkbench || []).find((row)=>String(row.id || '')===planId) || null;
+    }
+
+    function fillPreventiveMaintenanceForm() {
+      const e=els();
+      if(!e.eqPmPlanSelect) return;
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || '')) || null;
+      const rows=getPreventiveMaintenanceRowsForActive();
+      const current=String(state.selectedPreventiveMaintenancePlanId || e.eqPmPlanSelect.value || '');
+      e.eqPmPlanSelect.innerHTML='<option value="">New plan</option>'+rows.map((row)=>`<option value="${escHtml(row.id)}">${escHtml(row.plan_code || '')} · ${escHtml(row.plan_name || '')}</option>`).join('');
+      const chosen=rows.find((row)=>String(row.id)===current) || rows[0] || null;
+      state.selectedPreventiveMaintenancePlanId=chosen?.id || null;
+      e.eqPmPlanSelect.value=chosen?.id || '';
+      if(!active){
+        setNotice(e.eqPmSummary,'Load an equipment item to manage preventive maintenance.');
+        return;
+      }
+      if(!chosen){
+        if(e.eqPmPlanCode) e.eqPmPlanCode.value='';
+        if(e.eqPmPlanName) e.eqPmPlanName.value='';
+        if(e.eqPmMaintenanceType) e.eqPmMaintenanceType.value='service';
+        if(e.eqPmScheduleBasis) e.eqPmScheduleBasis.value=active.meter_type==='hours' ? 'hours' : (active.meter_type==='odometer' ? 'kilometres' : 'date');
+        if(e.eqPmIntervalDays) e.eqPmIntervalDays.value='';
+        if(e.eqPmIntervalMeter) e.eqPmIntervalMeter.value='';
+        if(e.eqPmDueDate) e.eqPmDueDate.value='';
+        if(e.eqPmDueMeter) e.eqPmDueMeter.value='';
+        if(e.eqPmSeasonMonth) e.eqPmSeasonMonth.value='';
+        if(e.eqPmSeasonDay) e.eqPmSeasonDay.value='';
+        if(e.eqPmLeadDays) e.eqPmLeadDays.value='14';
+        if(e.eqPmLeadMeter) e.eqPmLeadMeter.value='10';
+        if(e.eqPmProvider) e.eqPmProvider.value='';
+        if(e.eqPmEstimatedCost) e.eqPmEstimatedCost.value='';
+        if(e.eqPmPlanStatus) e.eqPmPlanStatus.value='active';
+        if(e.eqPmInstructions) e.eqPmInstructions.value='';
+        setNotice(e.eqPmSummary,`${active.equipment_code} has no preventive maintenance plan yet.`);
+        return;
+      }
+      if(e.eqPmPlanCode) e.eqPmPlanCode.value=chosen.plan_code || '';
+      if(e.eqPmPlanName) e.eqPmPlanName.value=chosen.plan_name || '';
+      if(e.eqPmMaintenanceType) e.eqPmMaintenanceType.value=chosen.maintenance_type || 'service';
+      if(e.eqPmScheduleBasis) e.eqPmScheduleBasis.value=chosen.schedule_basis || 'date';
+      if(e.eqPmIntervalDays) e.eqPmIntervalDays.value=chosen.interval_days ?? '';
+      if(e.eqPmIntervalMeter) e.eqPmIntervalMeter.value=chosen.interval_meter ?? '';
+      if(e.eqPmDueDate) e.eqPmDueDate.value=chosen.due_date || '';
+      if(e.eqPmDueMeter) e.eqPmDueMeter.value=chosen.due_meter ?? '';
+      if(e.eqPmSeasonMonth) e.eqPmSeasonMonth.value=chosen.seasonal_month ?? '';
+      if(e.eqPmSeasonDay) e.eqPmSeasonDay.value=chosen.seasonal_day ?? '';
+      if(e.eqPmLeadDays) e.eqPmLeadDays.value=chosen.lead_days ?? 14;
+      if(e.eqPmLeadMeter) e.eqPmLeadMeter.value=chosen.lead_meter ?? 10;
+      if(e.eqPmProvider) e.eqPmProvider.value=chosen.default_provider_name || '';
+      if(e.eqPmEstimatedCost) e.eqPmEstimatedCost.value=chosen.estimated_cost ?? '';
+      if(e.eqPmPlanStatus) e.eqPmPlanStatus.value=chosen.plan_status || 'active';
+      if(e.eqPmInstructions) e.eqPmInstructions.value=chosen.instructions || '';
+      const dueLabel=chosen.schedule_basis==='hours' || chosen.schedule_basis==='kilometres'
+        ? `${chosen.due_meter ?? '—'} ${chosen.meter_unit || ''} (current ${chosen.current_meter_value ?? '—'})`
+        : (chosen.due_date || 'not scheduled');
+      setNotice(e.eqPmSummary,`${active.equipment_code} · ${chosen.plan_code} · ${String(chosen.due_status || 'scheduled').replaceAll('_',' ')} · next ${dueLabel} · service task ${chosen.service_task_status || 'none'}.`);
+    }
+
+    function renderPreventiveMaintenanceWorkbench() {
+      const e=els();
+      const summary=state.preventiveMaintenanceSummary?.[0] || {};
+      if(e.eqPmSummary && !state.editingEquipmentCode) setNotice(e.eqPmSummary,
+        `Preventive maintenance: ${Number(summary.active_plan_count || 0)} active plan(s), ${Number(summary.overdue_count || 0)} overdue, ${Number(summary.due_count || 0)} due, ${Number(summary.due_soon_count || 0)} due soon, ${Number(summary.open_service_task_count || 0)} open service task(s).`
+      );
+      if(e.eqPmBody){
+        const rows=(state.preventiveMaintenanceWorkbench || []).slice(0,150);
+        e.eqPmBody.innerHTML=rows.length ? rows.map((row)=>{
+          const due=row.schedule_basis==='hours' || row.schedule_basis==='kilometres'
+            ? `${row.due_meter ?? '—'} ${escHtml(row.meter_unit || '')}`
+            : escHtml(row.due_date || '—');
+          return `<tr>
+            <td>${escHtml(row.equipment_code || '')}</td>
+            <td>${escHtml(row.plan_code || '')} · ${escHtml(row.plan_name || '')}</td>
+            <td>${escHtml(String(row.maintenance_type || '').replaceAll('_',' '))}</td>
+            <td>${escHtml(row.schedule_basis || '')}</td>
+            <td>${due}</td>
+            <td>${escHtml(String(row.due_status || row.plan_status || '').replaceAll('_',' '))}</td>
+            <td>${escHtml(row.service_task_status || (row.service_task_id ? 'open' : '—'))}</td>
+            <td><button type="button" class="secondary" data-pm-load="${escHtml(row.id)}" data-pm-equipment="${escHtml(row.equipment_code || '')}">Load</button></td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="8" class="muted">No preventive maintenance plans recorded yet.</td></tr>';
+      }
+    }
+
+    async function savePreventiveMaintenancePlan() {
+      const e=els();
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || ''));
+      if(!active?.equipment_code) return setNotice(e.eqPmSummary,'Load an equipment item before saving a maintenance plan.',true);
+      const numOrNull=(value)=>value === '' || value == null ? null : Number(value);
+      const resp=await api.manageJobsEntity({
+        entity:'equipment',action:'preventive_maintenance_plan_upsert',equipment_code:active.equipment_code,
+        plan_code:e.eqPmPlanCode?.value?.trim?.() || '',
+        plan_name:e.eqPmPlanName?.value?.trim?.() || '',
+        maintenance_type:e.eqPmMaintenanceType?.value || 'service',
+        schedule_basis:e.eqPmScheduleBasis?.value || 'date',
+        interval_days:numOrNull(e.eqPmIntervalDays?.value),
+        interval_meter:numOrNull(e.eqPmIntervalMeter?.value),
+        due_date:e.eqPmDueDate?.value || null,
+        due_meter:numOrNull(e.eqPmDueMeter?.value),
+        seasonal_month:numOrNull(e.eqPmSeasonMonth?.value),
+        seasonal_day:numOrNull(e.eqPmSeasonDay?.value),
+        lead_days:numOrNull(e.eqPmLeadDays?.value) ?? 14,
+        lead_meter:numOrNull(e.eqPmLeadMeter?.value) ?? 10,
+        default_provider_name:e.eqPmProvider?.value?.trim?.() || null,
+        estimated_cost:numOrNull(e.eqPmEstimatedCost?.value) ?? 0,
+        plan_status:e.eqPmPlanStatus?.value || 'active',
+        instructions:e.eqPmInstructions?.value?.trim?.() || null
+      });
+      if(!resp?.ok) return setNotice(e.eqPmSummary,resp?.error || 'Maintenance plan save failed.',true);
+      state.selectedPreventiveMaintenancePlanId=resp.record?.id || null;
+      setNotice(e.eqPmSummary,'Preventive maintenance plan saved.');
+      await loadData();
+    }
+
+    async function openPreventiveMaintenanceTask() {
+      const e=els();
+      const plan=getSelectedPreventiveMaintenancePlan();
+      if(!plan?.id) return setNotice(e.eqPmSummary,'Select a maintenance plan before opening service work.',true);
+      const resp=await api.manageJobsEntity({entity:'equipment',action:'preventive_maintenance_open_task',plan_id:plan.id});
+      if(!resp?.ok) return setNotice(e.eqPmSummary,resp?.error || 'Preventive maintenance service task could not be opened.',true);
+      setNotice(e.eqPmSummary,'Due preventive maintenance service task opened.');
+      await loadData();
+    }
+
+    async function completePreventiveMaintenance() {
+      const e=els();
+      const plan=getSelectedPreventiveMaintenancePlan();
+      const active=(state.equipment || []).find((row)=>String(row.equipment_code || '')===String(state.editingEquipmentCode || ''));
+      if(!plan?.id || !active) return setNotice(e.eqPmSummary,'Select a maintenance plan before recording completion.',true);
+      const provider=window.prompt('Provider / technician:',plan.default_provider_name || '') || '';
+      const costText=window.prompt('Cost:',String(plan.estimated_cost || 0));
+      if(costText===null) return;
+      const cost=Number(costText || 0);
+      const notes=window.prompt('Completion notes:',plan.instructions || '') || '';
+      const meterValue=active.current_meter_value == null ? null : Number(active.current_meter_value);
+      const resp=await api.manageJobsEntity({
+        entity:'equipment',action:'preventive_maintenance_complete',plan_id:plan.id,
+        provider_name:provider || null,cost_amount:cost,notes:notes || null,meter_value:meterValue,
+        service_task_id:plan.service_task_id || null
+      });
+      if(!resp?.ok) return setNotice(e.eqPmSummary,resp?.error || 'Maintenance completion failed.',true);
+      setNotice(e.eqPmSummary,resp.lockout_preserved ? 'Maintenance recorded. Existing safety lockout remains in force.' : 'Maintenance recorded and the next preventive milestone was advanced.');
+      await loadData();
+    }
+
+    async function applyPreventiveMaintenancePlanStatus() {
+      const e=els();
+      const plan=getSelectedPreventiveMaintenancePlan();
+      if(!plan?.id) return setNotice(e.eqPmSummary,'Select a maintenance plan before changing its status.',true);
+      const status=e.eqPmPlanStatus?.value || 'active';
+      const resp=await api.manageJobsEntity({entity:'equipment',action:'preventive_maintenance_plan_status',plan_id:plan.id,plan_status:status});
+      if(!resp?.ok) return setNotice(e.eqPmSummary,resp?.error || 'Maintenance plan status update failed.',true);
+      setNotice(e.eqPmSummary,`Maintenance plan is now ${status}.`);
+      await loadData();
+    }
+
     function getActiveEquipmentRow() {
       return (state.equipment || []).find((row) => String(row.equipment_code || '') === String(state.editingEquipmentCode || '')) || null;
     }
