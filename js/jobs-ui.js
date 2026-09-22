@@ -4702,6 +4702,23 @@
         return;
       }
       await loadData();
+      try {
+        if (!window.YWIMaterialsControl?.mount) {
+          await new Promise((resolve, reject) => {
+            const existing=document.querySelector('script[data-build335-materials-control]');
+            if (existing) { existing.addEventListener('load', resolve, { once:true }); existing.addEventListener('error', reject, { once:true }); return; }
+            const script=document.createElement('script');
+            script.src='/js/jobs-materials-control.js?v=2026-09-21b335';
+            script.dataset.build335MaterialsControl='1';
+            script.addEventListener('load', resolve, { once:true });
+            script.addEventListener('error', reject, { once:true });
+            document.head.appendChild(script);
+          });
+        }
+        await window.YWIMaterialsControl?.mount?.({ api, getAccessProfile, getCurrentRole });
+      } catch (err) {
+        console.warn('Build 335 materials control addon could not initialize.', err);
+      }
       if (!state.jobs.length) clearJobForm();
       if (!state.equipment.length) clearEquipmentForm();
       restoreDrafts();
