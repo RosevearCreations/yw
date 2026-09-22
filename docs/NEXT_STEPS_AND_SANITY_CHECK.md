@@ -320,7 +320,7 @@ Track shift time, job/visit time, travel time, breaks, overtime, missed punches,
 
 #### **338 — Performance & Development** is implemented
 
-Support role expectations, coaching, recognition, attendance patterns, training/development plans, documented reviews, improvement actions and follow-up dates while keeping Safety incident truth separate from performance-management outcomes. Build 338 reuses canonical profiles, workforce skills, Build 330 training/certification truth and Build 337 timekeeping evidence; Safety incidents and near misses are not joined into performance-management outcomes.
+Support role expectations, coaching, recognition, attendance patterns, training/development plans, documented reviews, improvement actions and follow-up dates while keeping Safety incident truth separate from performance-management outcomes. This release reuses canonical profiles, workforce skills, existing training/certification truth and existing timekeeping evidence; Safety incidents and near misses are not joined into performance-management outcomes.
 
 #### 339 — Hiring & Onboarding Workflow
 
