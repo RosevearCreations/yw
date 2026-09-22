@@ -38,7 +38,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
-  if (['module_permissions','workforce','timekeeping'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
+  if (['module_permissions','workforce','timekeeping','performance'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
@@ -240,6 +240,37 @@ serve(async (req) => {
       workforce_private_contacts:privateContacts,
       workforce_training_readiness:trainingReadiness,
       privacy_boundary:'Home address and emergency-contact fields are returned only by this Admin-manage workforce scope. Operational workforce views omit them.'
+    }, { headers:corsHeaders });
+  }
+
+  if (scope === 'performance') {
+    const [overview,expectations,coaching,plans,reviews,actions,attendancePatterns,skills,trainingReadiness] = await Promise.all([
+      safeList(supabase,'v_workforce_performance_development_overview','*','full_name',500,true),
+      safeList(supabase,'workforce_role_expectations','*','sort_order',500,true),
+      safeList(supabase,'workforce_coaching_records','*','observed_on',1500,false),
+      safeList(supabase,'workforce_development_plans','*','target_date',1000,false),
+      safeList(supabase,'workforce_performance_reviews','*','review_period_end',1000,false),
+      safeList(supabase,'workforce_improvement_actions','*','due_date',1000,false),
+      safeList(supabase,'v_workforce_attendance_patterns','*','last_shift_at',500,false),
+      safeList(supabase,'workforce_skills','id,skill_code,skill_name,skill_category,is_active','skill_name',500,true),
+      safeList(supabase,'v_training_certification_matrix','profile_id,requirement_code,requirement_name,assignment_due_date,expires_at,readiness_status,internal_authorization_status,updated_at','updated_at',1500,false)
+    ]);
+    return Response.json({
+      ok:true,
+      scope:'performance',
+      actor_role:actorRole,
+      actor_profile_id:actorId,
+      performance_overview:overview,
+      performance_expectations:expectations,
+      performance_coaching:coaching,
+      performance_development_plans:plans,
+      performance_reviews:reviews,
+      performance_improvement_actions:actions,
+      attendance_patterns:attendancePatterns,
+      performance_skills:skills,
+      training_readiness:trainingReadiness,
+      safety_boundary:'Safety incident and near-miss truth is intentionally not returned by this performance scope.',
+      authority_boundary:'Attendance context is derived from Build 337 timekeeping evidence; training and authorization truth remains with Build 330.'
     }, { headers:corsHeaders });
   }
 

@@ -322,13 +322,27 @@
       document.head.appendChild(script);
     }
 
+    function loadBuild338PerformanceDevelopment() {
+      if (window.YWIPerformanceDevelopmentUI?.mount) {
+        window.YWIPerformanceDevelopmentUI.mount({ api:window.YWIAPI });
+        return;
+      }
+      if (document.querySelector('script[data-ywi-build338-performance]')) return;
+      const script=document.createElement('script');
+      script.src='/js/admin-performance-development-ui.js?v=2026-09-22b338';
+      script.dataset.ywiBuild338Performance='1';
+      script.addEventListener('load',()=>window.YWIPerformanceDevelopmentUI?.mount?.({ api:window.YWIAPI }),{once:true});
+      script.addEventListener('error',()=>console.warn('Build 338 performance development UI failed to load.'),{once:true});
+      document.head.appendChild(script);
+    }
+
     function loadGroupOnce(key) {
       if (loadedGroups.has(key)) return;
       const group = currentGroup(key);
       if (!group) return;
       loadedGroups.add(key);
       if (group.route) return;
-      if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); }
+      if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); }
       const button = group.refresh ? document.getElementById(group.refresh) : null;
       if (button && !button.disabled) setTimeout(() => button.click(), 0);
     }
