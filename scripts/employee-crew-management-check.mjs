@@ -56,6 +56,7 @@ must(manage,[
   "'workforce_availability'",
   "'workforce_crew'",
   "event_type:'workforce_profile_updated'",
+  "Only an admin can promote a workforce profile to admin.",
   "event_type:'workforce_crew_updated'",
   "membership_status:'ended'"
 ],'Admin workforce write boundary');
@@ -78,7 +79,7 @@ must(hub,[
 
 must(help,[
   'Build 336 — Employee &amp; Crew Management',
-  'privacy-aware',
+  'Privacy-aware information:',
   'Build 330',
   'does not grant equipment or legal authorization'
 ],'Build 336 Help');
