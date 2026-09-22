@@ -833,6 +833,8 @@ serve(async (req) => {
     }
     const totalElapsedMinutes = Math.max(0, Math.floor((new Date(nowIso).getTime() - new Date(entry.signed_in_at).getTime()) / 60000));
     const paidWorkMinutes = Math.max(0, totalElapsedMinutes - unpaidBreakMinutes);
+    const requestedTravelMinutes = Math.max(0, Math.round(Number(body.travel_minutes || 0)));
+    const travelMinutes = Math.min(requestedTravelMinutes, paidWorkMinutes);
     const { data: updated, error } = await supabase.from('employee_time_entries').update({
       clock_status: 'signed_out',
       signed_out_at: nowIso,
@@ -840,6 +842,7 @@ serve(async (req) => {
       total_elapsed_minutes: totalElapsedMinutes,
       unpaid_break_minutes: unpaidBreakMinutes,
       paid_work_minutes: paidWorkMinutes,
+      travel_minutes: travelMinutes,
       notes: String(body.notes || entry.notes || '').trim() || null,
       ...getClockOutGeoPayload(body),
       updated_at: nowIso,
@@ -866,7 +869,7 @@ serve(async (req) => {
       related_job_id: updated.job_id,
       related_profile_id: actorId,
       created_by_profile_id: actorId,
-      metadata: { paid_work_minutes: paidWorkMinutes, unpaid_break_minutes: unpaidBreakMinutes, crew_hours_id: syncedHours?.id || null, clock_out_geo_source: String(body.geo_source || '') || null, clock_out_photo_note: String(body.photo_note || '').trim() || null },
+      metadata: { paid_work_minutes: paidWorkMinutes, unpaid_break_minutes: unpaidBreakMinutes, travel_minutes: travelMinutes, crew_hours_id: syncedHours?.id || null, clock_out_geo_source: String(body.geo_source || '') || null, clock_out_photo_note: String(body.photo_note || '').trim() || null },
       occurred_at: nowIso,
     });
     const context = await getClockContext(supabase, actorId, actorProfile);

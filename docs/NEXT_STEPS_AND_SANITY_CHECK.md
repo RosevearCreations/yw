@@ -314,9 +314,9 @@ Track gasoline/diesel where applicable, oil, trimmer line, blades, fertilizer, s
 
 Create practical workforce operations for employee status, role, supervisor, crew, skills, availability, privacy-aware contact/emergency information, assigned training, equipment authorization, seasonal status and active/inactive dates.
 
-#### 337 — Timekeeping, Attendance & Payroll Evidence
+#### **337 — Timekeeping, Attendance & Payroll Evidence** is implemented
 
-Track shift time, job/visit time, travel time, breaks, overtime, missed punches, corrections, employee explanation, supervisor approval, job-cost allocation and payroll-ready export/evidence. Time corrections remain auditable.
+Track shift time, job/visit time, travel time, breaks, overtime, missed punches, corrections, employee explanation, supervisor approval, job-cost allocation and payroll-ready export/evidence. Time corrections remain auditable. This release reuses the canonical employee time, break, attendance review, job-session crew-hour and Finance payroll-export authorities; correction evidence records before/after snapshots and explicit review.
 
 #### 338 — Performance & Development
 
