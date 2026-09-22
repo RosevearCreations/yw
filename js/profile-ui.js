@@ -95,6 +95,7 @@
       timeActiveSince: $('#me_time_active_since'),
       timePaidMinutes: $('#me_time_paid_minutes'),
       timeBreakMinutes: $('#me_time_break_minutes'),
+      timeTravelMinutes: $('#me_time_travel_minutes'),
       timeLocationStatus: $('#me_time_location_status'),
       timePhotoNote: $('#me_time_photo_note'),
       timePhotoFile: $('#me_time_photo_file'),
@@ -183,6 +184,7 @@
         timeActiveSince: $('#me_time_active_since'),
         timePaidMinutes: $('#me_time_paid_minutes'),
         timeBreakMinutes: $('#me_time_break_minutes'),
+      timeTravelMinutes: $('#me_time_travel_minutes'),
         timeLocationStatus: $('#me_time_location_status'),
         timePhotoNote: $('#me_time_photo_note'),
         timePhotoFile: $('#me_time_photo_file'),
@@ -262,6 +264,7 @@
             <label>Active Since<input id="me_time_active_since" type="text" readonly /></label>
             <label>Paid Minutes<input id="me_time_paid_minutes" type="text" readonly /></label>
             <label>Unpaid Break Minutes<input id="me_time_break_minutes" type="text" readonly /></label>
+            <label>Travel Minutes<input id="me_time_travel_minutes" type="number" min="0" step="1" value="0" /></label>
             <label>Location Status<input id="me_time_location_status" type="text" readonly /></label>
             <label style="display:flex;align-items:center;gap:8px;"><input id="me_time_capture_location" type="checkbox" checked /> Use current location on clock in/out</label>
           </div>
@@ -654,6 +657,7 @@ async function saveWorkerSdsAcknowledgement(overrides = {}) {
       try {
         const payload = { notes: els.timeNotes?.value?.trim?.() || null };
         if (action === 'employee_clock_in') payload.job_id = els.timeJob?.value || null;
+        if (action === 'employee_clock_out') payload.travel_minutes = Math.max(0, Number(els.timeTravelMinutes?.value || 0));
         if (els.timePhotoNote?.value) payload.photo_note = els.timePhotoNote.value.trim() || null;
         if (els.timeCaptureLocation?.checked && navigator.geolocation) {
           try {

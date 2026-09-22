@@ -308,13 +308,27 @@
       document.head.appendChild(script);
     }
 
+    function loadBuild337Timekeeping() {
+      if (window.YWITimekeepingUI?.mount) {
+        window.YWITimekeepingUI.mount({ api:window.YWIAPI });
+        return;
+      }
+      if (document.querySelector('script[data-ywi-build337-timekeeping]')) return;
+      const script=document.createElement('script');
+      script.src='/js/admin-timekeeping-ui.js?v=2026-09-22b337';
+      script.dataset.ywiBuild337Timekeeping='1';
+      script.addEventListener('load',()=>window.YWITimekeepingUI?.mount?.({ api:window.YWIAPI }),{once:true});
+      script.addEventListener('error',()=>console.warn('Build 337 timekeeping UI failed to load.'),{once:true});
+      document.head.appendChild(script);
+    }
+
     function loadGroupOnce(key) {
       if (loadedGroups.has(key)) return;
       const group = currentGroup(key);
       if (!group) return;
       loadedGroups.add(key);
       if (group.route) return;
-      if (key === 'people') loadBuild336Workforce();
+      if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); }
       const button = group.refresh ? document.getElementById(group.refresh) : null;
       if (button && !button.disabled) setTimeout(() => button.click(), 0);
     }

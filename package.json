@@ -151,7 +151,9 @@
     "test:fuel-consumables-materials-control": "node scripts/fuel-consumables-materials-control-check.mjs",
     "test:browser:fuel-consumables-materials-control": "playwright test --config=playwright.config.mjs tests/browser/fuel-consumables-materials-control.spec.mjs",
     "test:employee-crew-management": "node scripts/employee-crew-management-check.mjs",
-    "test:browser:employee-crew-management": "playwright test --config=playwright.config.mjs tests/browser/employee-crew-management.spec.mjs"
+    "test:browser:employee-crew-management": "playwright test --config=playwright.config.mjs tests/browser/employee-crew-management.spec.mjs",
+    "test:timekeeping-attendance-payroll-evidence": "node scripts/timekeeping-attendance-payroll-evidence-check.mjs",
+    "test:browser:timekeeping-attendance-payroll-evidence": "playwright test --config=playwright.config.mjs tests/browser/timekeeping-attendance-payroll-evidence.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

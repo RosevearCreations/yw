@@ -40,7 +40,7 @@ const workforceView=migration.slice(migration.indexOf('create or replace view pu
 for(const sensitive of ['address_line1','address_line2','emergency_contact_name','emergency_contact_phone']) assert.ok(!workforceView.includes(sensitive),'Operational workforce view must omit '+sensitive);
 
 must(directory,[
-  "['module_permissions','workforce'].includes(key)",
+  "['module_permissions','workforce','timekeeping'].includes(key)",
   "scope === 'workforce'",
   'v_workforce_employee_directory',
   'v_workforce_crew_directory',
@@ -74,7 +74,7 @@ must(ui,[
 must(hub,[
   'loadBuild336Workforce',
   '/js/admin-workforce-ui.js?v=2026-09-22b336',
-  "if (key === 'people') loadBuild336Workforce();"
+  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); }"
 ],'Build 336 lazy loading');
 
 must(help,[
@@ -83,7 +83,7 @@ must(help,[
   'Build 330',
   'does not grant equipment or legal authorization'
 ],'Build 336 Help');
-must(roadmap,['#### **336 — Employee & Crew Management** is implemented','#### 337 — Timekeeping, Attendance & Payroll Evidence'],'Build 336 roadmap');
+must(roadmap,['#### **336 — Employee & Crew Management** is implemented','#### **337 — Timekeeping, Attendance & Payroll Evidence** is implemented'],'Build 336 roadmap');
 must(pkg,['test:employee-crew-management','test:browser:employee-crew-management'],'Build 336 package scripts');
 must(workflow,['npm run test:employee-crew-management','npm run test:browser:employee-crew-management'],'Build 336 CI wiring');
 

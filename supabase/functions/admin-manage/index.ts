@@ -60,7 +60,7 @@ function moduleRequirementForEntity(entity: unknown, action: unknown): ModuleReq
   if (SAFETY_ENTITIES.has(key)) return { moduleKey:'safety', minimum };
   if (FINANCE_ENTITIES.has(key)) return { moduleKey:'finance', minimum };
   if (JOB_ENTITIES.has(key)) return { moduleKey:'jobs', minimum };
-  return { moduleKey:'admin', minimum: key.startsWith('admin_') || ['profile','credential','catalog','site','notification','workforce_profile','workforce_skill','workforce_profile_skill','workforce_availability','workforce_crew'].includes(key) ? 'manage' : minimum };
+  return { moduleKey:'admin', minimum: key.startsWith('admin_') || ['profile','credential','catalog','site','notification','workforce_profile','workforce_skill','workforce_profile_skill','workforce_availability','workforce_crew','timekeeping_correction','timekeeping_approval'].includes(key) ? 'manage' : minimum };
 }
 
 function addMonthsToDate(baseDate?: string | null, months?: number | null) {
@@ -2245,6 +2245,136 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       }
       await recordSiteActivity(supabase, { event_type: 'staff_updated', entity_type: 'profile', entity_id: data.id, severity: 'info', title: 'Staff profile updated', summary: `${data.full_name || data.email || data.id} was updated.`, metadata: { role: data.role || null, staff_tier: data.staff_tier || null, employment_status: data.employment_status || null }, related_profile_id: data.id, created_by_profile_id: actorId });
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+    }
+
+    if (entity === 'timekeeping_correction') {
+      const timeEntryId=String(body.time_entry_id || '').trim();
+      const itemId=String(body.item_id || body.correction_id || '').trim();
+      if (action === 'create') {
+        if(!timeEntryId) return Response.json({ok:false,error:'time_entry_id is required.'},{status:400,headers:corsHeaders});
+        const entry=await fetchSingle(supabase,'employee_time_entries',timeEntryId);
+        if(!entry?.id) return Response.json({ok:false,error:'Employee time entry not found.'},{status:404,headers:corsHeaders});
+        const correctionReason=String(body.correction_reason || '').trim();
+        const employeeExplanation=String(body.employee_explanation || '').trim();
+        if(!correctionReason || !employeeExplanation) return Response.json({ok:false,error:'Correction reason and employee explanation are required.'},{status:400,headers:corsHeaders});
+        const requestedSignedIn=asNullableDateTime(body.requested_signed_in_at);
+        const requestedSignedOut=asNullableDateTime(body.requested_signed_out_at);
+        if(requestedSignedIn && requestedSignedOut && new Date(requestedSignedOut).getTime()<new Date(requestedSignedIn).getTime()) {
+          return Response.json({ok:false,error:'Requested clock-out cannot be before clock-in.'},{status:400,headers:corsHeaders});
+        }
+        const requestedBreak=body.requested_break_minutes === '' || body.requested_break_minutes == null ? null : Math.max(0,Math.round(asNumber(body.requested_break_minutes,0)));
+        const requestedTravel=body.requested_travel_minutes === '' || body.requested_travel_minutes == null ? null : Math.max(0,Math.round(asNumber(body.requested_travel_minutes,0)));
+        const beforeSnapshot={
+          signed_in_at:entry.signed_in_at||null,signed_out_at:entry.signed_out_at||null,
+          paid_work_minutes:Number(entry.paid_work_minutes||0),unpaid_break_minutes:Number(entry.unpaid_break_minutes||0),
+          approved_break_minutes_override:entry.approved_break_minutes_override??null,travel_minutes:Number(entry.travel_minutes||0),
+          supervisor_approval_status:entry.supervisor_approval_status||'pending',correction_version:Number(entry.correction_version||0)
+        };
+        const {data,error}=await supabase.from('employee_time_corrections').insert({
+          time_entry_id:entry.id,correction_status:'pending',correction_reason:correctionReason,
+          employee_explanation:employeeExplanation,requested_signed_in_at:requestedSignedIn,
+          requested_signed_out_at:requestedSignedOut,requested_break_minutes:requestedBreak,
+          requested_travel_minutes:requestedTravel,before_snapshot:beforeSnapshot,
+          requested_by_profile_id:actorId,requested_at:new Date().toISOString(),
+          created_at:new Date().toISOString(),updated_at:new Date().toISOString()
+        }).select('*').single();
+        if(error) throw error;
+        await supabase.from('employee_time_entries').update({
+          employee_explanation:employeeExplanation,supervisor_approval_status:'pending',
+          supervisor_approval_note:null,supervisor_approved_by_profile_id:null,supervisor_approved_at:null,
+          updated_at:new Date().toISOString()
+        }).eq('id',entry.id);
+        return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+
+      if (action === 'approve' || action === 'reject') {
+        if(!itemId) return Response.json({ok:false,error:'Correction id is required.'},{status:400,headers:corsHeaders});
+        const correction=await fetchSingle(supabase,'employee_time_corrections',itemId);
+        if(!correction?.id) return Response.json({ok:false,error:'Correction request not found.'},{status:404,headers:corsHeaders});
+        if(String(correction.correction_status||'')!=='pending') return Response.json({ok:false,error:'Only pending correction requests can be reviewed.'},{status:400,headers:corsHeaders});
+        const entry=await fetchSingle(supabase,'employee_time_entries',correction.time_entry_id);
+        if(!entry?.id) return Response.json({ok:false,error:'Employee time entry not found.'},{status:404,headers:corsHeaders});
+        const nowIso=new Date().toISOString();
+        const reviewNote=String(body.review_note || '').trim() || null;
+        if(action === 'reject') {
+          const {data,error}=await supabase.from('employee_time_corrections').update({
+            correction_status:'rejected',reviewed_by_profile_id:actorId,reviewed_at:nowIso,review_note:reviewNote,updated_at:nowIso
+          }).eq('id',correction.id).select('*').single();
+          if(error) throw error;
+          await supabase.from('employee_time_entries').update({
+            supervisor_approval_status:'returned',supervisor_approval_note:reviewNote,
+            supervisor_approved_by_profile_id:actorId,supervisor_approved_at:nowIso,updated_at:nowIso
+          }).eq('id',entry.id);
+          return Response.json({ok:true,record:data},{headers:corsHeaders});
+        }
+
+        const signedIn=correction.requested_signed_in_at || entry.signed_in_at;
+        const signedOut=correction.requested_signed_out_at || entry.signed_out_at;
+        if(!signedIn || !signedOut) return Response.json({ok:false,error:'A completed clock-in and clock-out are required before applying a correction.'},{status:400,headers:corsHeaders});
+        const elapsed=Math.max(0,Math.floor((new Date(signedOut).getTime()-new Date(signedIn).getTime())/60000));
+        const breakMinutes=correction.requested_break_minutes == null
+          ? Number(entry.approved_break_minutes_override ?? entry.unpaid_break_minutes ?? 0)
+          : Math.max(0,Number(correction.requested_break_minutes||0));
+        const paidMinutes=Math.max(0,elapsed-breakMinutes);
+        const travelMinutes=correction.requested_travel_minutes == null
+          ? Number(entry.travel_minutes||0)
+          : Math.max(0,Number(correction.requested_travel_minutes||0));
+        if(travelMinutes>paidMinutes) return Response.json({ok:false,error:'Travel minutes cannot exceed paid work minutes.'},{status:400,headers:corsHeaders});
+        const nextVersion=Number(entry.correction_version||0)+1;
+        const entryPatch={
+          signed_in_at:signedIn,signed_out_at:signedOut,clock_status:'signed_out',
+          total_elapsed_minutes:elapsed,unpaid_break_minutes:breakMinutes,approved_break_minutes_override:breakMinutes,
+          paid_work_minutes:paidMinutes,travel_minutes:travelMinutes,employee_explanation:correction.employee_explanation,
+          supervisor_approval_status:'approved',supervisor_approval_note:reviewNote,
+          supervisor_approved_by_profile_id:actorId,supervisor_approved_at:nowIso,
+          correction_version:nextVersion,updated_at:nowIso
+        };
+        const {data:updatedEntry,error:entryError}=await supabase.from('employee_time_entries').update(entryPatch).eq('id',entry.id).select('*').single();
+        if(entryError) throw entryError;
+        const hours=Number((paidMinutes/60).toFixed(2));
+        const overtime=Math.max(0,Number((hours-8).toFixed(2)));
+        const regular=Math.max(0,Number((hours-overtime).toFixed(2)));
+        await supabase.from('job_session_crew_hours').update({
+          started_at:signedIn,ended_at:signedOut,hours_worked:hours,regular_hours:regular,overtime_hours:overtime,
+          break_minutes:breakMinutes,pay_code:overtime>0?'mixed':'regular',updated_at:nowIso
+        }).eq('time_entry_id',entry.id);
+        const afterSnapshot={
+          signed_in_at:updatedEntry.signed_in_at,signed_out_at:updatedEntry.signed_out_at,
+          paid_work_minutes:Number(updatedEntry.paid_work_minutes||0),unpaid_break_minutes:Number(updatedEntry.unpaid_break_minutes||0),
+          approved_break_minutes_override:updatedEntry.approved_break_minutes_override??null,
+          travel_minutes:Number(updatedEntry.travel_minutes||0),supervisor_approval_status:updatedEntry.supervisor_approval_status,
+          correction_version:Number(updatedEntry.correction_version||0)
+        };
+        const {data,error}=await supabase.from('employee_time_corrections').update({
+          correction_status:'approved',reviewed_by_profile_id:actorId,reviewed_at:nowIso,review_note:reviewNote,
+          applied_at:nowIso,after_snapshot:afterSnapshot,updated_at:nowIso
+        }).eq('id',correction.id).select('*').single();
+        if(error) throw error;
+        return Response.json({ok:true,record:data,time_entry:updatedEntry},{headers:corsHeaders});
+      }
+    }
+
+    if (entity === 'timekeeping_approval' && action === 'approve') {
+      const timeEntryId=String(body.time_entry_id || '').trim();
+      if(!timeEntryId) return Response.json({ok:false,error:'time_entry_id is required.'},{status:400,headers:corsHeaders});
+      const entry=await fetchSingle(supabase,'employee_time_entries',timeEntryId);
+      if(!entry?.id) return Response.json({ok:false,error:'Employee time entry not found.'},{status:404,headers:corsHeaders});
+      if(!entry.signed_out_at || ['active','paused'].includes(String(entry.clock_status||''))) {
+        return Response.json({ok:false,error:'The shift must be clocked out before payroll evidence approval.'},{status:400,headers:corsHeaders});
+      }
+      const {data:pendingCorrections,error:pendingError}=await supabase.from('employee_time_corrections').select('id').eq('time_entry_id',entry.id).eq('correction_status','pending').limit(1);
+      if(pendingError) throw pendingError;
+      if((pendingCorrections||[]).length) return Response.json({ok:false,error:'Pending correction requests must be resolved before payroll evidence approval.'},{status:400,headers:corsHeaders});
+      const {data:openReviews,error:reviewError}=await supabase.from('v_employee_time_review_queue').select('time_entry_id').eq('time_entry_id',entry.id).eq('needs_review',true).limit(1);
+      if(reviewError) throw reviewError;
+      if((openReviews||[]).length) return Response.json({ok:false,error:'Attendance review exceptions must be resolved before payroll evidence approval.'},{status:400,headers:corsHeaders});
+      const nowIso=new Date().toISOString();
+      const {data,error}=await supabase.from('employee_time_entries').update({
+        supervisor_approval_status:'approved',supervisor_approval_note:String(body.approval_note||'').trim()||null,
+        supervisor_approved_by_profile_id:actorId,supervisor_approved_at:nowIso,updated_at:nowIso
+      }).eq('id',entry.id).select('*').single();
+      if(error) throw error;
+      return Response.json({ok:true,record:data},{headers:corsHeaders});
     }
 
     if (entity === 'workforce_profile' && action === 'save') {
