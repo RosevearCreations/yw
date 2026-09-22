@@ -3848,6 +3848,11 @@
         state.estimateLines = Array.isArray(resp?.estimate_lines) ? resp.estimate_lines : [];
         state.workOrders = Array.isArray(resp?.work_orders) ? resp.work_orders : [];
         state.workOrderLines = Array.isArray(resp?.work_order_lines) ? resp.work_order_lines : [];
+        state.materialStockControl = Array.isArray(resp?.material_stock_control) ? resp.material_stock_control : [];
+        state.materialControlSummary = Array.isArray(resp?.material_control_summary) ? resp.material_control_summary : [];
+        state.fuelConsumablesSummary = Array.isArray(resp?.fuel_consumables_summary) ? resp.fuel_consumables_summary : [];
+        state.materialVendors = Array.isArray(resp?.material_vendors) ? resp.material_vendors : [];
+        state.materialUnits = Array.isArray(resp?.material_units) ? resp.material_units : [];
         state.completionReviews = Array.isArray(resp?.job_completion_reviews) ? resp.job_completion_reviews : [];
         state.accountingQueue = Array.isArray(resp?.job_accounting_ready_queue) ? resp.job_accounting_ready_queue : [];
         state.commercialApprovals = Array.isArray(resp?.commercial_approval_events) ? resp.commercial_approval_events : [];
@@ -3906,6 +3911,7 @@
         fillTaxCodeSelect(e.jobSalesTaxCodeId);
         fillEmployeeDataList();
         renderJobs();
+        renderMaterialsControlWorkbench();
         renderEquipment();
         renderEquipmentRegistrySummary(null);
         renderRequirementReviewPanel();
@@ -4667,6 +4673,38 @@
       if (e.jobLoad && e.jobLoad.dataset.bound !== '1') {
         e.jobLoad.dataset.bound = '1';
         e.jobLoad.addEventListener('click', loadData);
+      }
+      if (e.materialControlSelect && e.materialControlSelect.dataset.bound !== '1') {
+        e.materialControlSelect.dataset.bound='1';
+        e.materialControlSelect.addEventListener('change',()=>{
+          state.selectedMaterialId=e.materialControlSelect.value || null;
+          fillMaterialControlForm();
+        });
+      }
+      if (e.materialControlBody && e.materialControlBody.dataset.bound !== '1') {
+        e.materialControlBody.dataset.bound='1';
+        e.materialControlBody.addEventListener('click',(event)=>{
+          const btn=event.target.closest('[data-material-load]');
+          if(!btn) return;
+          state.selectedMaterialId=btn.getAttribute('data-material-load') || null;
+          renderMaterialsControlWorkbench();
+          fillMaterialControlForm();
+        });
+      }
+      if (e.materialControlSave && e.materialControlSave.dataset.bound !== '1') {
+        e.materialControlSave.dataset.bound='1'; e.materialControlSave.addEventListener('click',saveMaterialControl);
+      }
+      if (e.materialControlReceipt && e.materialControlReceipt.dataset.bound !== '1') {
+        e.materialControlReceipt.dataset.bound='1'; e.materialControlReceipt.addEventListener('click',recordMaterialReceipt);
+      }
+      if (e.materialControlIssue && e.materialControlIssue.dataset.bound !== '1') {
+        e.materialControlIssue.dataset.bound='1'; e.materialControlIssue.addEventListener('click',recordMaterialIssue);
+      }
+      if (e.materialControlAdjust && e.materialControlAdjust.dataset.bound !== '1') {
+        e.materialControlAdjust.dataset.bound='1'; e.materialControlAdjust.addEventListener('click',recordMaterialAdjustment);
+      }
+      if (e.materialControlCycleCount && e.materialControlCycleCount.dataset.bound !== '1') {
+        e.materialControlCycleCount.dataset.bound='1'; e.materialControlCycleCount.addEventListener('click',recordMaterialCycleCount);
       }
       if (e.jobClear && e.jobClear.dataset.bound !== '1') {
         e.jobClear.dataset.bound = '1';
