@@ -64,7 +64,7 @@ must(ui,[
   "action:'fleet_towing_assign'"
 ],'Build 333 UI');
 
-must(help,['Build 333 — Fleet, Trailer &amp; Vehicle Operations','Build 334 remains the separate preventive-maintenance scheduling authority'],'Build 333 Help');
+must(help,['Build 333 — Fleet, Trailer &amp; Vehicle Operations','Preventive-maintenance scheduling is handled separately by Build 334'],'Build 333 Help');
 must(roadmap,['**333 — Fleet, Trailer & Vehicle Operations** is implemented','334 — Preventive Maintenance Engine'],'Build 333 roadmap');
 must(pkg,['test:fleet-trailer-vehicle-operations','test:browser:fleet-trailer-vehicle-operations'],'Build 333 package scripts');
 must(workflow,['npm run test:fleet-trailer-vehicle-operations','npm run test:browser:fleet-trailer-vehicle-operations'],'Build 333 CI wiring');
