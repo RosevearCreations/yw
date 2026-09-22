@@ -149,7 +149,9 @@
     "test:preventive-maintenance-engine": "node scripts/preventive-maintenance-engine-check.mjs",
     "test:browser:preventive-maintenance-engine": "playwright test --config=playwright.config.mjs tests/browser/preventive-maintenance-engine.spec.mjs",
     "test:fuel-consumables-materials-control": "node scripts/fuel-consumables-materials-control-check.mjs",
-    "test:browser:fuel-consumables-materials-control": "playwright test --config=playwright.config.mjs tests/browser/fuel-consumables-materials-control.spec.mjs"
+    "test:browser:fuel-consumables-materials-control": "playwright test --config=playwright.config.mjs tests/browser/fuel-consumables-materials-control.spec.mjs",
+    "test:employee-crew-management": "node scripts/employee-crew-management-check.mjs",
+    "test:browser:employee-crew-management": "playwright test --config=playwright.config.mjs tests/browser/employee-crew-management.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

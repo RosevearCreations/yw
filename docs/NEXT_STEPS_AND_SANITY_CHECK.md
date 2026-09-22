@@ -310,7 +310,7 @@ Schedule equipment/fleet maintenance by date, hours, kilometres and seasonal mil
 
 Track gasoline/diesel where applicable, oil, trimmer line, blades, fertilizer, seed, sod, mulch, soil, gravel/stone, plants, landscape fabric, disposal supplies and other consumables with stock, reorder, supplier, unit cost, job use, waste and variance.
 
-#### 336 — Employee & Crew Management
+#### **336 — Employee & Crew Management** is implemented
 
 Create practical workforce operations for employee status, role, supervisor, crew, skills, availability, privacy-aware contact/emergency information, assigned training, equipment authorization, seasonal status and active/inactive dates.
 
