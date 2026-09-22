@@ -60,7 +60,7 @@ function moduleRequirementForEntity(entity: unknown, action: unknown): ModuleReq
   if (SAFETY_ENTITIES.has(key)) return { moduleKey:'safety', minimum };
   if (FINANCE_ENTITIES.has(key)) return { moduleKey:'finance', minimum };
   if (JOB_ENTITIES.has(key)) return { moduleKey:'jobs', minimum };
-  return { moduleKey:'admin', minimum: key.startsWith('admin_') || ['profile','credential','catalog','site','notification'].includes(key) ? 'manage' : minimum };
+  return { moduleKey:'admin', minimum: key.startsWith('admin_') || ['profile','credential','catalog','site','notification','workforce_skill','workforce_profile_skill','workforce_availability','workforce_crew'].includes(key) ? 'manage' : minimum };
 }
 
 function addMonthsToDate(baseDate?: string | null, months?: number | null) {
@@ -1798,6 +1798,10 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         seniority_level: body.seniority_level ?? null,
         employment_status: body.employment_status ?? 'active',
         staff_tier: body.staff_tier ?? body.role ?? 'employee',
+        workforce_availability_status: body.workforce_availability_status ?? 'available',
+        seasonal_status: body.seasonal_status ?? 'year_round',
+        workforce_active_from: asNullableDate(body.workforce_active_from),
+        workforce_active_until: asNullableDate(body.workforce_active_until),
         start_date: body.start_date ?? null,
         years_employed: body.years_employed ?? null,
         notes: body.notes ?? null,
@@ -2205,6 +2209,10 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         seniority_level: body.seniority_level ?? null,
         employment_status: body.employment_status ?? null,
         staff_tier: body.staff_tier ?? null,
+        workforce_availability_status: body.workforce_availability_status ?? 'available',
+        seasonal_status: body.seasonal_status ?? 'year_round',
+        workforce_active_from: asNullableDate(body.workforce_active_from),
+        workforce_active_until: asNullableDate(body.workforce_active_until),
         previous_employee: !!body.previous_employee,
         trade_specialty: body.trade_specialty ?? null,
         strengths: body.strengths ?? null,
@@ -2237,6 +2245,180 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       }
       await recordSiteActivity(supabase, { event_type: 'staff_updated', entity_type: 'profile', entity_id: data.id, severity: 'info', title: 'Staff profile updated', summary: `${data.full_name || data.email || data.id} was updated.`, metadata: { role: data.role || null, staff_tier: data.staff_tier || null, employment_status: data.employment_status || null }, related_profile_id: data.id, created_by_profile_id: actorId });
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+    }
+
+    if (entity === 'workforce_skill') {
+      const itemId = String(body.item_id || body.skill_id || '').trim();
+      const skillCode = String(body.skill_code || '').trim().toUpperCase().replace(/[^A-Z0-9_]+/g,'_').replace(/^_+|_+$/g,'');
+      const patch: Record<string, unknown> = {
+        skill_code:skillCode,
+        skill_name:String(body.skill_name || '').trim(),
+        skill_category:String(body.skill_category || 'general').trim().toLowerCase() || 'general',
+        description:asNullableText(body.description),
+        authorization_boundary_note:asNullableText(body.authorization_boundary_note) || 'Operational skill evidence only. This record does not grant equipment, driving, regulated-task, trade, pesticide, or other legal authorization.',
+        is_active:body.is_active !== false,
+        updated_by_profile_id:actorId,
+        updated_at:new Date().toISOString(),
+      };
+      if (action === 'create') {
+        if (!patch.skill_code || !patch.skill_name) return Response.json({ok:false,error:'Skill code and name are required.'},{status:400,headers:corsHeaders});
+        const {data,error}=await supabase.from('workforce_skills').insert({...patch,created_by_profile_id:actorId}).select('*').single();
+        if(error) throw error;
+        await recordSiteActivity(supabase,{event_type:'workforce_skill_created',entity_type:'workforce_skill',entity_id:data.id,severity:'info',title:'Workforce skill created',summary:data.skill_name,metadata:{skill_code:data.skill_code},created_by_profile_id:actorId});
+        return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+      if (!itemId) return Response.json({ok:false,error:'Skill id is required.'},{status:400,headers:corsHeaders});
+      if (action === 'update') {
+        if (!patch.skill_code || !patch.skill_name) return Response.json({ok:false,error:'Skill code and name are required.'},{status:400,headers:corsHeaders});
+        const {data,error}=await supabase.from('workforce_skills').update(patch).eq('id',itemId).select('*').single();
+        if(error) throw error;
+        return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+      if (action === 'delete' || action === 'archive') {
+        const {data,error}=await supabase.from('workforce_skills').update({is_active:false,updated_by_profile_id:actorId,updated_at:new Date().toISOString()}).eq('id',itemId).select('*').single();
+        if(error) throw error;
+        return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+    }
+
+    if (entity === 'workforce_profile_skill') {
+      const profileId=String(body.profile_id || '').trim();
+      const skillId=String(body.skill_id || '').trim();
+      if (!profileId || !skillId) return Response.json({ok:false,error:'profile_id and skill_id are required.'},{status:400,headers:corsHeaders});
+      if (action === 'remove' || action === 'delete') {
+        const {data,error}=await supabase.from('workforce_profile_skills').update({is_active:false,updated_by_profile_id:actorId,updated_at:new Date().toISOString()}).eq('profile_id',profileId).eq('skill_id',skillId).select('*').single();
+        if(error) throw error;
+        return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+      if (action === 'save' || action === 'upsert' || action === 'create' || action === 'update') {
+        const patch={
+          profile_id:profileId,
+          skill_id:skillId,
+          proficiency_level:String(body.proficiency_level || 'basic').trim().toLowerCase(),
+          evidence_note:asNullableText(body.evidence_note),
+          verified_by_profile_id:body.verified === true ? actorId : (body.verified_by_profile_id || null),
+          verified_at:body.verified === true ? new Date().toISOString() : asNullableDateTime(body.verified_at),
+          active_from:asNullableDate(body.active_from),
+          active_until:asNullableDate(body.active_until),
+          is_active:body.is_active !== false,
+          updated_by_profile_id:actorId,
+          updated_at:new Date().toISOString(),
+        };
+        const {data,error}=await supabase.from('workforce_profile_skills').upsert(
+          {...patch,created_by_profile_id:actorId},
+          {onConflict:'profile_id,skill_id'}
+        ).select('*').single();
+        if(error) throw error;
+        await recordSiteActivity(supabase,{event_type:'workforce_skill_assigned',entity_type:'profile',entity_id:profileId,severity:'info',title:'Workforce skill updated',summary:'Operational skill assignment updated.',metadata:{skill_id:skillId,proficiency_level:patch.proficiency_level},related_profile_id:profileId,created_by_profile_id:actorId});
+        return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+    }
+
+    if (entity === 'workforce_availability') {
+      const profileId=String(body.profile_id || '').trim();
+      if (!profileId) return Response.json({ok:false,error:'profile_id is required.'},{status:400,headers:corsHeaders});
+      const itemId=String(body.item_id || body.availability_id || '').trim();
+      if ((action === 'remove' || action === 'delete') && itemId) {
+        const {data,error}=await supabase.from('workforce_availability_windows').update({is_active:false,updated_by_profile_id:actorId,updated_at:new Date().toISOString()}).eq('id',itemId).select('*').single();
+        if(error) throw error;
+        return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+      if (action === 'save' || action === 'create' || action === 'update') {
+        const dayRaw=body.day_of_week;
+        const patch={
+          profile_id:profileId,
+          availability_status:String(body.availability_status || 'available').trim().toLowerCase(),
+          day_of_week:dayRaw === '' || dayRaw === null || dayRaw === undefined ? null : Number(dayRaw),
+          start_time:asNullableText(body.start_time),
+          end_time:asNullableText(body.end_time),
+          effective_from:asNullableDate(body.effective_from),
+          effective_until:asNullableDate(body.effective_until),
+          availability_note:asNullableText(body.availability_note),
+          is_active:body.is_active !== false,
+          updated_by_profile_id:actorId,
+          updated_at:new Date().toISOString(),
+        };
+        let data,error;
+        if(itemId) ({data,error}=await supabase.from('workforce_availability_windows').update(patch).eq('id',itemId).select('*').single());
+        else ({data,error}=await supabase.from('workforce_availability_windows').insert({...patch,created_by_profile_id:actorId}).select('*').single());
+        if(error) throw error;
+        await recordSiteActivity(supabase,{event_type:'workforce_availability_updated',entity_type:'profile',entity_id:profileId,severity:'info',title:'Workforce availability updated',summary:'Availability evidence updated.',metadata:{availability_status:patch.availability_status,day_of_week:patch.day_of_week},related_profile_id:profileId,created_by_profile_id:actorId});
+        return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+    }
+
+    if (entity === 'workforce_crew') {
+      const now=new Date().toISOString();
+      const today=now.slice(0,10);
+      const itemId=String(body.crew_id || body.item_id || '').trim();
+      if (action === 'archive' || action === 'delete') {
+        if(!itemId) return Response.json({ok:false,error:'Crew id is required.'},{status:400,headers:corsHeaders});
+        const {data,error}=await supabase.from('crews').update({crew_status:'archived',seasonal_status:'inactive',active_until:today,updated_at:now}).eq('id',itemId).select('*').single();
+        if(error) throw error;
+        await supabase.from('crew_members').update({membership_status:'ended',active_until:today,updated_at:now}).eq('crew_id',itemId).eq('membership_status','active');
+        return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+      if (action === 'save' || action === 'create' || action === 'update') {
+        const supervisorId=String(body.supervisor_profile_id || '').trim() || await resolveProfileIdByNameOrEmail(supabase,body.supervisor_name);
+        const leadId=String(body.lead_profile_id || '').trim() || await resolveProfileIdByNameOrEmail(supabase,body.lead_name);
+        const patch={
+          crew_code:asNullableText(body.crew_code),
+          crew_name:String(body.crew_name || '').trim(),
+          supervisor_profile_id:supervisorId || null,
+          lead_profile_id:leadId || null,
+          service_area_id:String(body.service_area_id || '').trim() || null,
+          crew_kind:String(body.crew_kind || 'general').trim() || 'general',
+          crew_status:String(body.crew_status || 'active').trim().toLowerCase(),
+          seasonal_status:String(body.seasonal_status || 'year_round').trim().toLowerCase(),
+          active_from:asNullableDate(body.active_from),
+          active_until:asNullableDate(body.active_until),
+          default_equipment_notes:asNullableText(body.default_equipment_notes),
+          notes:asNullableText(body.notes),
+          updated_at:now,
+        };
+        if(!patch.crew_name) return Response.json({ok:false,error:'Crew name is required.'},{status:400,headers:corsHeaders});
+        let crew,error;
+        if(itemId) ({data:crew,error}=await supabase.from('crews').update(patch).eq('id',itemId).select('*').single());
+        else ({data:crew,error}=await supabase.from('crews').insert({...patch,created_by_profile_id:actorId}).select('*').single());
+        if(error) throw error;
+        const crewId=crew.id;
+        if(Array.isArray(body.members)){
+          const desired=new Map<string,any>();
+          for(const raw of body.members){
+            const profileId=String(raw?.profile_id || '').trim();
+            if(!profileId) continue;
+            desired.set(profileId,{
+              profile_id:profileId,
+              member_role:String(raw?.member_role || 'member').trim().toLowerCase() || 'member',
+              is_primary:raw?.is_primary === true,
+              membership_status:String(raw?.membership_status || 'active').trim().toLowerCase() || 'active',
+              active_from:asNullableDate(raw?.active_from),
+              active_until:asNullableDate(raw?.active_until),
+            });
+          }
+          if(supervisorId) desired.set(supervisorId,{...(desired.get(supervisorId)||{}),profile_id:supervisorId,member_role:'supervisor',is_primary:true,membership_status:'active'});
+          if(leadId) desired.set(leadId,{...(desired.get(leadId)||{}),profile_id:leadId,member_role:'lead',is_primary:true,membership_status:'active'});
+          const {data:existingRows,error:existingError}=await supabase.from('crew_members').select('*').eq('crew_id',crewId);
+          if(existingError) throw existingError;
+          for(const existing of (existingRows||[])){
+            if(!desired.has(String(existing.profile_id)) && existing.membership_status!=='ended'){
+              const {error:endError}=await supabase.from('crew_members').update({membership_status:'ended',active_until:existing.active_until || today,updated_at:now}).eq('id',existing.id);
+              if(endError) throw endError;
+            }
+          }
+          for(const member of desired.values()){
+            const existing=(existingRows||[]).find((row:any)=>String(row.profile_id)===String(member.profile_id));
+            const rowPatch={...member,crew_id:crewId,added_by_profile_id:existing?.added_by_profile_id || actorId,updated_at:now};
+            let memberError;
+            if(existing?.id) ({error:memberError}=await supabase.from('crew_members').update(rowPatch).eq('id',existing.id));
+            else ({error:memberError}=await supabase.from('crew_members').insert(rowPatch));
+            if(memberError) throw memberError;
+          }
+        }
+        const {data:members}=await supabase.from('crew_members').select('*').eq('crew_id',crewId).order('is_primary',{ascending:false});
+        await recordSiteActivity(supabase,{event_type:'workforce_crew_updated',entity_type:'crew',entity_id:crewId,severity:'info',title:'Crew updated',summary:crew.crew_name,metadata:{crew_status:crew.crew_status,seasonal_status:crew.seasonal_status,member_count:(members||[]).filter((m:any)=>m.membership_status==='active').length},created_by_profile_id:actorId});
+        return Response.json({ok:true,record:crew,members:members||[]},{headers:corsHeaders});
+      }
     }
 
     if (entity === 'site' && action === 'create') {
