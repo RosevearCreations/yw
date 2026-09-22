@@ -153,7 +153,9 @@
     "test:employee-crew-management": "node scripts/employee-crew-management-check.mjs",
     "test:browser:employee-crew-management": "playwright test --config=playwright.config.mjs tests/browser/employee-crew-management.spec.mjs",
     "test:timekeeping-attendance-payroll-evidence": "node scripts/timekeeping-attendance-payroll-evidence-check.mjs",
-    "test:browser:timekeeping-attendance-payroll-evidence": "playwright test --config=playwright.config.mjs tests/browser/timekeeping-attendance-payroll-evidence.spec.mjs"
+    "test:browser:timekeeping-attendance-payroll-evidence": "playwright test --config=playwright.config.mjs tests/browser/timekeeping-attendance-payroll-evidence.spec.mjs",
+    "test:performance-development": "node scripts/performance-development-check.mjs",
+    "test:browser:performance-development": "playwright test --config=playwright.config.mjs tests/browser/performance-development.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
