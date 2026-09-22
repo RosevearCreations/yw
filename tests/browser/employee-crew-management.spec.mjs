@@ -56,6 +56,8 @@ test('Build 336 writes through bounded canonical workforce actions',async({page}
   await boot(page);
   await page.selectOption('#workforce336Seasonal','spring_summer');
   await page.selectOption('#workforce336AvailabilityStatus','limited');
+  await page.locator('#workforce336PrivateContacts > summary').click();
+  await expect(page.locator('#workforce336PrivateContacts')).toHaveAttribute('open','');
   await page.fill('#workforce336Phone','519-555-0111');
   await page.click('#workforce336SaveProfile');
 
