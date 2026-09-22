@@ -1527,6 +1527,179 @@ serve(async (req) => {
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
     }
 
+    if (body.entity === 'material' && body.action === 'material_catalog_upsert') {
+      if (!(await hasModuleAccess(supabase, actorProfile, 'finance', 'create'))) {
+        return Response.json({ok:false,error:'Finance create access is required to maintain material catalog costs and suppliers.',module_key:'finance',required_access:'create'},{status:403,headers:corsHeaders});
+      }
+      const materialId=String(body.material_id || '').trim();
+      const sku=String(body.sku || '').trim().toUpperCase() || null;
+      const itemName=String(body.item_name || '').trim();
+      if(!itemName) return Response.json({ok:false,error:'Material name is required.'},{status:400,headers:corsHeaders});
+      const num=(v:any, fallback:any=null)=>v === '' || v == null ? fallback : Number(v);
+      const defaultUnitCost=num(body.default_unit_cost,0);
+      const reorderPoint=num(body.reorder_point,null);
+      const reorderQuantity=num(body.reorder_quantity,null);
+      const targetStockQuantity=num(body.target_stock_quantity,null);
+      const openingQuantity=num(body.opening_quantity,0);
+      for(const [label,value] of [['Default unit cost',defaultUnitCost],['Reorder point',reorderPoint],['Reorder quantity',reorderQuantity],['Target stock',targetStockQuantity],['Opening quantity',openingQuantity]] as const){
+        if(value !== null && (!Number.isFinite(Number(value)) || Number(value)<0)) return Response.json({ok:false,error:`${label} must be nonnegative.`},{status:400,headers:corsHeaders});
+      }
+      const patch:any={
+        sku,item_name:itemName,material_category:String(body.material_category || '').trim() || null,
+        unit_id:body.unit_id || null,default_unit_cost:defaultUnitCost,
+        inventory_tracked:body.inventory_tracked !== false,
+        reorder_point:reorderPoint,reorder_quantity:reorderQuantity,target_stock_quantity:targetStockQuantity,
+        opening_quantity:openingQuantity,preferred_vendor_id:body.preferred_vendor_id || null,
+        supplier_sku:String(body.supplier_sku || '').trim() || null,
+        storage_location:String(body.storage_location || '').trim() || null,
+        notes:String(body.notes || '').trim() || null,is_active:body.is_active !== false,
+        updated_at:new Date().toISOString()
+      };
+      let result:any=null;
+      if(materialId){
+        const {data,error}=await supabase.from('materials_catalog').update(patch).eq('id',materialId).select('*').single();
+        if(error) throw error; result=data;
+      } else if(sku){
+        const {data,error}=await supabase.from('materials_catalog').upsert(patch,{onConflict:'sku'}).select('*').single();
+        if(error) throw error; result=data;
+      } else {
+        const {data,error}=await supabase.from('materials_catalog').insert(patch).select('*').single();
+        if(error) throw error; result=data;
+      }
+      return Response.json({ok:true,build:335,schema:223,record:result},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'material' && body.action === 'material_stock_receipt') {
+      if (!(await hasModuleAccess(supabase, actorProfile, 'finance', 'create'))) {
+        return Response.json({ok:false,error:'Finance create access is required to record material receipts and costs.',module_key:'finance',required_access:'create'},{status:403,headers:corsHeaders});
+      }
+      const materialId=String(body.material_id || '').trim();
+      const quantity=Number(body.quantity || 0);
+      const unitCost=Number(body.unit_cost ?? 0);
+      if(!materialId || !Number.isFinite(quantity) || quantity<=0) return Response.json({ok:false,error:'Material and a positive receipt quantity are required.'},{status:400,headers:corsHeaders});
+      if(!Number.isFinite(unitCost) || unitCost<0) return Response.json({ok:false,error:'Unit cost must be nonnegative.'},{status:400,headers:corsHeaders});
+      const {data:material}=await supabase.from('materials_catalog').select('*').eq('id',materialId).maybeSingle();
+      if(!material) return Response.json({ok:false,error:'Material not found.'},{status:404,headers:corsHeaders});
+      const workOrderId=String(body.work_order_id || '').trim() || null;
+      let clientSiteId:any=null;
+      if(workOrderId){
+        const {data:wo}=await supabase.from('work_orders').select('id,client_site_id').eq('id',workOrderId).maybeSingle();
+        if(!wo) return Response.json({ok:false,error:'Work order not found.'},{status:404,headers:corsHeaders});
+        clientSiteId=wo.client_site_id || null;
+      }
+      const vendorId=body.vendor_id || material.preferred_vendor_id || null;
+      const receiptNumber=`MR-335-${Date.now()}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;
+      const {data:receipt,error:receiptError}=await supabase.from('material_receipts').insert({
+        receipt_number:receiptNumber,vendor_id:vendorId,client_site_id:clientSiteId,work_order_id:workOrderId,
+        receipt_status:'received',receipt_date:body.receipt_date || new Date().toISOString().slice(0,10),
+        received_by_profile_id:actorProfile.id,notes:String(body.notes || '').trim() || null,
+        created_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(receiptError) throw receiptError;
+      const lineTotal=Number((quantity*unitCost).toFixed(2));
+      const {data:line,error:lineError}=await supabase.from('material_receipt_lines').insert({
+        receipt_id:receipt.id,line_order:1,material_id:materialId,
+        description:material.item_name,unit_id:material.unit_id || null,quantity,unit_cost:unitCost,line_total:lineTotal,
+        work_order_line_id:body.work_order_line_id || null
+      }).select('*').single();
+      if(lineError) throw lineError;
+      await supabase.from('materials_catalog').update({
+        default_unit_cost:unitCost,
+        preferred_vendor_id:vendorId || material.preferred_vendor_id || null,
+        updated_at:new Date().toISOString()
+      }).eq('id',materialId);
+      return Response.json({ok:true,build:335,schema:223,record:receipt,line},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'material' && body.action === 'material_stock_issue') {
+      const materialId=String(body.material_id || '').trim();
+      const quantity=Number(body.quantity || 0);
+      const plannedQuantity=body.planned_quantity === '' || body.planned_quantity == null ? null : Number(body.planned_quantity);
+      const usageType=String(body.usage_type || 'job_use').trim().toLowerCase();
+      if(!materialId || !Number.isFinite(quantity) || quantity<=0) return Response.json({ok:false,error:'Material and a positive issue quantity are required.'},{status:400,headers:corsHeaders});
+      if(plannedQuantity !== null && (!Number.isFinite(plannedQuantity) || plannedQuantity<0)) return Response.json({ok:false,error:'Planned quantity must be nonnegative.'},{status:400,headers:corsHeaders});
+      if(!['job_use','waste','internal_use','adjustment'].includes(usageType)) return Response.json({ok:false,error:'Unsupported material usage type.'},{status:400,headers:corsHeaders});
+      const workOrderId=String(body.work_order_id || '').trim() || null;
+      if(usageType==='job_use' && !workOrderId) return Response.json({ok:false,error:'Job use requires a work order.'},{status:400,headers:corsHeaders});
+      const {data:stock}=await supabase.from('v_material_stock_control').select('*').eq('id',materialId).maybeSingle();
+      if(!stock) return Response.json({ok:false,error:'Material not found.'},{status:404,headers:corsHeaders});
+      if(stock.inventory_tracked && Number(stock.stock_on_hand || 0)+1e-9 < quantity) {
+        return Response.json({ok:false,error:'Insufficient stock for this issue.',stock_on_hand:Number(stock.stock_on_hand || 0)},{status:409,headers:corsHeaders});
+      }
+      let clientSiteId:any=null;
+      if(workOrderId){
+        const {data:wo}=await supabase.from('work_orders').select('id,client_site_id').eq('id',workOrderId).maybeSingle();
+        if(!wo) return Response.json({ok:false,error:'Work order not found.'},{status:404,headers:corsHeaders});
+        clientSiteId=wo.client_site_id || null;
+      }
+      const unitCost=Number(stock.current_unit_cost ?? stock.default_unit_cost ?? 0);
+      const issueTotal=Number((quantity*unitCost).toFixed(2));
+      const estimatedTotal=plannedQuantity === null ? issueTotal : Number((plannedQuantity*unitCost).toFixed(2));
+      const issueNumber=`MI-335-${Date.now()}-${crypto.randomUUID().slice(0,6).toUpperCase()}`;
+      const {data:issue,error:issueError}=await supabase.from('material_issues').insert({
+        issue_number:issueNumber,work_order_id:workOrderId,client_site_id:clientSiteId,issue_status:'issued',
+        issue_date:body.issue_date || new Date().toISOString().slice(0,10),issued_by_profile_id:actorProfile.id,
+        line_count:1,quantity_total:quantity,issue_total:issueTotal,estimated_material_total:estimatedTotal,
+        variance_amount:Number((issueTotal-estimatedTotal).toFixed(2)),
+        notes:String(body.notes || '').trim() || null,created_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(issueError) throw issueError;
+      const {data:line,error:lineError}=await supabase.from('material_issue_lines').insert({
+        issue_id:issue.id,line_order:1,material_id:materialId,work_order_line_id:body.work_order_line_id || null,
+        description:stock.item_name,unit_id:stock.unit_id || null,quantity,unit_cost:unitCost,line_total:issueTotal,
+        usage_type:usageType,planned_quantity:plannedQuantity,
+        waste_reason:usageType==='waste' ? (String(body.waste_reason || body.notes || '').trim() || 'Waste recorded') : null,
+        notes:String(body.notes || '').trim() || null
+      }).select('*').single();
+      if(lineError) throw lineError;
+      return Response.json({ok:true,build:335,schema:223,record:issue,line,stock_before:Number(stock.stock_on_hand || 0)},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'material' && body.action === 'material_stock_adjust') {
+      const materialId=String(body.material_id || '').trim();
+      const quantityDelta=Number(body.quantity_delta || 0);
+      const adjustmentType=String(body.adjustment_type || 'other').trim().toLowerCase();
+      const reason=String(body.reason || '').trim();
+      if(!materialId || !Number.isFinite(quantityDelta) || quantityDelta===0) return Response.json({ok:false,error:'Material and a non-zero stock adjustment are required.'},{status:400,headers:corsHeaders});
+      if(!['cycle_count','receipt_correction','issue_correction','damage_loss','found','transfer','other'].includes(adjustmentType)) return Response.json({ok:false,error:'Unsupported stock adjustment type.'},{status:400,headers:corsHeaders});
+      if(!reason) return Response.json({ok:false,error:'Stock adjustment reason is required.'},{status:400,headers:corsHeaders});
+      const {data:stock}=await supabase.from('v_material_stock_control').select('*').eq('id',materialId).maybeSingle();
+      if(!stock) return Response.json({ok:false,error:'Material not found.'},{status:404,headers:corsHeaders});
+      if(stock.inventory_tracked && Number(stock.stock_on_hand || 0)+quantityDelta < -1e-9) return Response.json({ok:false,error:'Stock adjustment would make on-hand quantity negative.'},{status:409,headers:corsHeaders});
+      const {data,error}=await supabase.from('material_stock_adjustments').insert({
+        material_id:materialId,adjustment_type:adjustmentType,quantity_delta:quantityDelta,
+        unit_cost:Number(stock.current_unit_cost ?? stock.default_unit_cost ?? 0),
+        work_order_id:body.work_order_id || null,job_id:body.job_id || null,reason,
+        recorded_by_profile_id:actorProfile.id
+      }).select('*').single();
+      if(error) throw error;
+      return Response.json({ok:true,build:335,schema:223,record:data},{headers:corsHeaders});
+    }
+
+    if (body.entity === 'material' && body.action === 'material_cycle_count') {
+      const materialId=String(body.material_id || '').trim();
+      const countedQuantity=Number(body.counted_quantity);
+      const reason=String(body.reason || 'Cycle count').trim();
+      if(!materialId || !Number.isFinite(countedQuantity) || countedQuantity<0) return Response.json({ok:false,error:'Material and a nonnegative counted quantity are required.'},{status:400,headers:corsHeaders});
+      const {data:stock}=await supabase.from('v_material_stock_control').select('*').eq('id',materialId).maybeSingle();
+      if(!stock) return Response.json({ok:false,error:'Material not found.'},{status:404,headers:corsHeaders});
+      const current=Number(stock.stock_on_hand || 0);
+      const delta=Number((countedQuantity-current).toFixed(2));
+      let adjustment:any=null;
+      if(Math.abs(delta)>0.000001){
+        const {data,error}=await supabase.from('material_stock_adjustments').insert({
+          material_id:materialId,adjustment_type:'cycle_count',quantity_delta:delta,
+          unit_cost:Number(stock.current_unit_cost ?? stock.default_unit_cost ?? 0),
+          reason,recorded_by_profile_id:actorProfile.id
+        }).select('*').single();
+        if(error) throw error; adjustment=data;
+      }
+      await supabase.from('materials_catalog').update({
+        last_counted_at:new Date().toISOString(),last_counted_by_profile_id:actorProfile.id,updated_at:new Date().toISOString()
+      }).eq('id',materialId);
+      return Response.json({ok:true,build:335,schema:223,record:adjustment,counted_quantity:countedQuantity,previous_stock_on_hand:current,quantity_delta:delta},{headers:corsHeaders});
+    }
+
     if (body.entity === 'equipment' && body.action === 'preventive_maintenance_plan_upsert') {
       const equipmentId=await resolveEquipmentIdByCode(supabase,body.equipment_code);
       if(!equipmentId) return Response.json({ok:false,error:'Equipment required'},{status:400,headers:corsHeaders});

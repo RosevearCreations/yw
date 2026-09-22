@@ -305,6 +305,17 @@ serve(async (req) => {
   const fleetTowingAssignments = await safeSelect(supabase, 'v_fleet_towing_assignment_directory', '*', (query) => query.order('assigned_at', { ascending:false }).limit(1000));
   const preventiveMaintenanceWorkbench = await safeSelect(supabase, 'v_preventive_maintenance_workbench', '*', (query) => query.order('due_status', { ascending:true }).order('equipment_code', { ascending:true }).limit(1500));
   const preventiveMaintenanceSummary = await safeSelect(supabase, 'v_preventive_maintenance_summary', '*', (query) => query.limit(1));
+  const materialStockControlRaw = await safeSelect(supabase, 'v_material_stock_control', '*', (query) => query.order('reorder_required', { ascending:false }).order('item_name', { ascending:true }).limit(1500));
+  const materialControlSummaryRaw = await safeSelect(supabase, 'v_material_control_summary', '*', (query) => query.limit(1));
+  const fuelConsumablesSummaryRaw = await safeSelect(supabase, 'v_fuel_consumables_summary', '*', (query) => query.order('fuel_type', { ascending:true }).limit(50));
+  const materialVendors = await safeSelect(supabase, 'ap_vendors', 'id,vendor_code,legal_name,display_name,is_active', (query) => query.eq('is_active',true).order('legal_name', { ascending:true }).limit(1000));
+  const materialUnits = await safeSelect(supabase, 'units_of_measure', 'id,code,name,category,is_active', (query) => query.eq('is_active',true).order('sort_order', { ascending:true }).limit(500));
+  const materialStockControl = financeAllowed ? materialStockControlRaw : (materialStockControlRaw || []).map((row:any)=>{
+    const {default_unit_cost,current_unit_cost,default_bill_rate,stock_value,...safe}=row;
+    return {...safe,default_unit_cost:null,current_unit_cost:null,default_bill_rate:null,stock_value:null};
+  });
+  const materialControlSummary = financeAllowed ? materialControlSummaryRaw : (materialControlSummaryRaw || []).map((row:any)=>({...row,stock_value_total:null}));
+  const fuelConsumablesSummary = financeAllowed ? fuelConsumablesSummaryRaw : (fuelConsumablesSummaryRaw || []).map((row:any)=>({...row,total_cost:null,average_cost_per_litre:null}));
   const { data: inspections } = await supabase.from('v_equipment_inspection_history').select('*').order('inspected_at', { ascending:false }).limit(200);
   const { data: maintenance } = await supabase.from('v_equipment_maintenance_history').select('*').order('performed_at', { ascending:false }).limit(200);
   const { data: evidenceAssetsRaw } = await supabase.from('equipment_evidence_assets').select('*').order('created_at', { ascending:false }).limit(1000);
@@ -431,6 +442,11 @@ serve(async (req) => {
     fleet_towing_assignments: fleetTowingAssignments || [],
     preventive_maintenance_workbench: preventiveMaintenanceWorkbench || [],
     preventive_maintenance_summary: preventiveMaintenanceSummary || [],
+    material_stock_control: materialStockControl || [],
+    material_control_summary: materialControlSummary || [],
+    fuel_consumables_summary: fuelConsumablesSummary || [],
+    material_vendors: materialVendors || [],
+    material_units: materialUnits || [],
     requirements: requirements || [],
     signouts: signoutRows,
     equipment_transfer_verifications: equipmentTransferVerifications || [],

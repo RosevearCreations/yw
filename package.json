@@ -147,7 +147,9 @@
     "test:fleet-trailer-vehicle-operations": "node scripts/fleet-trailer-vehicle-operations-check.mjs",
     "test:browser:fleet-trailer-vehicle-operations": "playwright test --config=playwright.config.mjs tests/browser/fleet-trailer-vehicle-operations.spec.mjs",
     "test:preventive-maintenance-engine": "node scripts/preventive-maintenance-engine-check.mjs",
-    "test:browser:preventive-maintenance-engine": "playwright test --config=playwright.config.mjs tests/browser/preventive-maintenance-engine.spec.mjs"
+    "test:browser:preventive-maintenance-engine": "playwright test --config=playwright.config.mjs tests/browser/preventive-maintenance-engine.spec.mjs",
+    "test:fuel-consumables-materials-control": "node scripts/fuel-consumables-materials-control-check.mjs",
+    "test:browser:fuel-consumables-materials-control": "playwright test --config=playwright.config.mjs tests/browser/fuel-consumables-materials-control.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

@@ -123,6 +123,7 @@ jobs:
       - run: npm run test:daily-equipment-inspection-lockout
       - run: npm run test:fleet-trailer-vehicle-operations
       - run: npm run test:preventive-maintenance-engine
+      - run: npm run test:fuel-consumables-materials-control
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -190,6 +191,7 @@ jobs:
       - run: npm run test:browser:daily-equipment-inspection-lockout
       - run: npm run test:browser:fleet-trailer-vehicle-operations
       - run: npm run test:browser:preventive-maintenance-engine
+      - run: npm run test:browser:fuel-consumables-materials-control
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
