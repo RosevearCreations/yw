@@ -318,9 +318,9 @@ Create practical workforce operations for employee status, role, supervisor, cre
 
 Track shift time, job/visit time, travel time, breaks, overtime, missed punches, corrections, employee explanation, supervisor approval, job-cost allocation and payroll-ready export/evidence. Time corrections remain auditable. This release reuses the canonical employee time, break, attendance review, job-session crew-hour and Finance payroll-export authorities; correction evidence records before/after snapshots and explicit review.
 
-#### 338 — Performance & Development
+#### **338 — Performance & Development** is implemented
 
-Support role expectations, coaching, recognition, attendance patterns, training/development plans, documented reviews, improvement actions and follow-up dates while keeping Safety incident truth separate from performance-management outcomes.
+Support role expectations, coaching, recognition, attendance patterns, training/development plans, documented reviews, improvement actions and follow-up dates while keeping Safety incident truth separate from performance-management outcomes. Build 338 reuses canonical profiles, workforce skills, Build 330 training/certification truth and Build 337 timekeeping evidence; Safety incidents and near misses are not joined into performance-management outcomes.
 
 #### 339 — Hiring & Onboarding Workflow
 
