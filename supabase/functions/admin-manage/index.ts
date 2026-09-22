@@ -60,7 +60,7 @@ function moduleRequirementForEntity(entity: unknown, action: unknown): ModuleReq
   if (SAFETY_ENTITIES.has(key)) return { moduleKey:'safety', minimum };
   if (FINANCE_ENTITIES.has(key)) return { moduleKey:'finance', minimum };
   if (JOB_ENTITIES.has(key)) return { moduleKey:'jobs', minimum };
-  return { moduleKey:'admin', minimum: key.startsWith('admin_') || ['profile','credential','catalog','site','notification','workforce_skill','workforce_profile_skill','workforce_availability','workforce_crew'].includes(key) ? 'manage' : minimum };
+  return { moduleKey:'admin', minimum: key.startsWith('admin_') || ['profile','credential','catalog','site','notification','workforce_profile','workforce_skill','workforce_profile_skill','workforce_availability','workforce_crew'].includes(key) ? 'manage' : minimum };
 }
 
 function addMonthsToDate(baseDate?: string | null, months?: number | null) {
@@ -2245,6 +2245,42 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       }
       await recordSiteActivity(supabase, { event_type: 'staff_updated', entity_type: 'profile', entity_id: data.id, severity: 'info', title: 'Staff profile updated', summary: `${data.full_name || data.email || data.id} was updated.`, metadata: { role: data.role || null, staff_tier: data.staff_tier || null, employment_status: data.employment_status || null }, related_profile_id: data.id, created_by_profile_id: actorId });
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+    }
+
+    if (entity === 'workforce_profile' && action === 'save') {
+      const profileId=String(body.profile_id || '').trim();
+      if(!profileId) return Response.json({ok:false,error:'profile_id is required.'},{status:400,headers:corsHeaders});
+      const existing=await resolveProfileByIdOrEmail(supabase,profileId,null);
+      if(!existing?.id) return Response.json({ok:false,error:'Workforce profile not found.'},{status:404,headers:corsHeaders});
+      const normalizedRole=String(body.role ?? existing.role ?? 'employee').trim().toLowerCase() || 'employee';
+      const patch: Record<string,unknown>={
+        role:normalizedRole,
+        is_active:body.is_active === undefined ? existing.is_active : !!body.is_active,
+        employment_status:body.employment_status ?? existing.employment_status ?? 'active',
+        current_position:body.current_position === undefined ? existing.current_position : asNullableText(body.current_position),
+        default_supervisor_profile_id:body.supervisor_profile_id === undefined ? existing.default_supervisor_profile_id : (String(body.supervisor_profile_id || '').trim() || null),
+        workforce_availability_status:body.workforce_availability_status ?? existing.workforce_availability_status ?? 'available',
+        seasonal_status:body.seasonal_status ?? existing.seasonal_status ?? 'year_round',
+        workforce_active_from:body.workforce_active_from === undefined ? existing.workforce_active_from : asNullableDate(body.workforce_active_from),
+        workforce_active_until:body.workforce_active_until === undefined ? existing.workforce_active_until : asNullableDate(body.workforce_active_until),
+        phone:body.phone === undefined ? existing.phone : asNullableText(body.phone),
+        address_line1:body.address_line1 === undefined ? existing.address_line1 : asNullableText(body.address_line1),
+        address_line2:body.address_line2 === undefined ? existing.address_line2 : asNullableText(body.address_line2),
+        city:body.city === undefined ? existing.city : asNullableText(body.city),
+        province:body.province === undefined ? existing.province : asNullableText(body.province),
+        postal_code:body.postal_code === undefined ? existing.postal_code : asNullableText(body.postal_code),
+        emergency_contact_name:body.emergency_contact_name === undefined ? existing.emergency_contact_name : asNullableText(body.emergency_contact_name),
+        emergency_contact_phone:body.emergency_contact_phone === undefined ? existing.emergency_contact_phone : asNullableText(body.emergency_contact_phone),
+        updated_at:new Date().toISOString(),
+      };
+      const {data,error}=await supabase.from('profiles').update(patch).eq('id',profileId).select('*').single();
+      if(error) throw error;
+      if(normalizedRole!==normalizeRole(existing.role)){
+        const authResp=await supabase.auth.admin.updateUserById(profileId,{user_metadata:{...(userData.user.id===profileId ? userData.user.user_metadata || {} : {}),role:normalizedRole}});
+        if(authResp.error) return Response.json({ok:false,error:authResp.error.message},{status:400,headers:corsHeaders});
+      }
+      await recordSiteActivity(supabase,{event_type:'workforce_profile_updated',entity_type:'profile',entity_id:profileId,severity:'info',title:'Workforce profile updated',summary:data.full_name || data.email || profileId,metadata:{role:data.role,employment_status:data.employment_status,seasonal_status:data.seasonal_status,availability_status:data.workforce_availability_status},related_profile_id:profileId,created_by_profile_id:actorId});
+      return Response.json({ok:true,record:data},{headers:corsHeaders});
     }
 
     if (entity === 'workforce_skill') {
