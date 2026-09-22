@@ -306,7 +306,7 @@ Manage trucks/trailers with identity, odometer, registration/insurance evidence,
 
 Schedule equipment/fleet maintenance by date, hours, kilometres and seasonal milestones. Track oil, filters, blades, sharpening, belts, lubrication, tires, batteries, winterization/storage, preseason setup, repairs, service history and downtime.
 
-#### 335 — Fuel, Consumables & Materials Control
+#### **335 — Fuel, Consumables & Materials Control** is implemented
 
 Track gasoline/diesel where applicable, oil, trimmer line, blades, fertilizer, seed, sod, mulch, soil, gravel/stone, plants, landscape fabric, disposal supplies and other consumables with stock, reorder, supplier, unit cost, job use, waste and variance.
 
