@@ -38,7 +38,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
-  if (['module_permissions'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
+  if (['module_permissions','workforce'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
@@ -209,6 +209,37 @@ serve(async (req) => {
       module_role_defaults:roleDefaults,
       module_permission_overrides:overrides,
       module_permission_audit:audit
+    }, { headers:corsHeaders });
+  }
+
+  if (scope === 'workforce') {
+    const [
+      workforceProfiles,workforceCrews,workforceSkills,profileSkills,availabilityWindows,workforceSummary,
+      privateContacts,trainingReadiness
+    ] = await Promise.all([
+      safeList(supabase,'v_workforce_employee_directory','*','full_name',500,true),
+      safeList(supabase,'v_workforce_crew_directory','*','crew_name',250,true),
+      safeList(supabase,'v_workforce_skill_directory','*','skill_name',250,true),
+      safeList(supabase,'workforce_profile_skills','id,profile_id,skill_id,proficiency_level,evidence_note,verified_by_profile_id,verified_at,active_from,active_until,is_active,updated_at','updated_at',1000,false),
+      safeList(supabase,'workforce_availability_windows','id,profile_id,availability_status,day_of_week,start_time,end_time,effective_from,effective_until,availability_note,is_active,updated_at','updated_at',1000,false),
+      safeList(supabase,'v_workforce_summary','*',undefined,5,true),
+      safeList(supabase,'profiles','id,phone,address_line1,address_line2,city,province,postal_code,emergency_contact_name,emergency_contact_phone','full_name',500,true),
+      safeList(supabase,'v_training_certification_matrix','profile_id,requirement_code,requirement_name,equipment_category,equipment_item_id,equipment_code,equipment_name,assignment_due_date,expires_at,readiness_status,internal_authorization_required,internal_authorization_status,internal_authorization_expires_at,updated_at','updated_at',1500,false)
+    ]);
+    return Response.json({
+      ok:true,
+      scope:'workforce',
+      actor_role:actorRole,
+      actor_profile_id:actorId,
+      workforce_profiles:workforceProfiles,
+      workforce_crews:workforceCrews,
+      workforce_skills:workforceSkills,
+      workforce_profile_skills:profileSkills,
+      workforce_availability_windows:availabilityWindows,
+      workforce_summary:workforceSummary,
+      workforce_private_contacts:privateContacts,
+      workforce_training_readiness:trainingReadiness,
+      privacy_boundary:'Home address and emergency-contact fields are returned only by this Admin-manage workforce scope. Operational workforce views omit them.'
     }, { headers:corsHeaders });
   }
 
