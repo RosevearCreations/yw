@@ -31,13 +31,14 @@ async function mount(page){
   await page.evaluate((data)=>{
     window.__calls=[];
     window.prompt=(message,def)=>{
-      if(String(message).includes('quantity received')) return '25';
-      if(String(message).includes('unit cost')) return '0.72';
-      if(String(message).includes('quantity to issue')) return '10';
-      if(String(message).includes('planned quantity')) return '8';
-      if(String(message).includes('quantity delta')) return '-2';
-      if(String(message).includes('counted quantity')) return '90';
-      if(String(message).includes('reason')) return 'Cycle count';
+      const promptText=String(message).toLowerCase();
+      if(promptText.includes('quantity received')) return '25';
+      if(promptText.includes('unit cost')) return '0.72';
+      if(promptText.includes('quantity to issue')) return '10';
+      if(promptText.includes('planned quantity')) return '8';
+      if(promptText.includes('quantity delta')) return '-2';
+      if(promptText.includes('counted quantity')) return '90';
+      if(promptText.includes('reason')) return 'Cycle count';
       return def || '';
     };
     window.confirm=()=>true;
