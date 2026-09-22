@@ -8,6 +8,8 @@ const migration=read('sql/225_timekeeping_attendance_payroll_evidence.sql');
 const directory=read('supabase/functions/admin-directory/index.ts');
 const manage=read('supabase/functions/admin-manage/index.ts');
 const ui=read('js/admin-timekeeping-ui.js');
+const profile=read('js/profile-ui.js');
+const account=read('supabase/functions/account-maintenance/index.ts');
 const hub=read('js/admin-hub-ui.js');
 const help=read('help.html');
 const roadmap=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
@@ -55,6 +57,18 @@ must(manage,[
   'correction_version',
   'Pending correction requests must be resolved before payroll evidence approval.'
 ],'Timekeeping write boundary');
+
+must(profile,[
+  "timeTravelMinutes: $('#me_time_travel_minutes')",
+  'Travel Minutes<input id="me_time_travel_minutes"',
+  "if (action === 'employee_clock_out') payload.travel_minutes"
+],'Employee travel capture');
+
+must(account,[
+  'const requestedTravelMinutes = Math.max(0, Math.round(Number(body.travel_minutes || 0)))',
+  'travel_minutes: travelMinutes',
+  'travel_minutes: travelMinutes, crew_hours_id'
+],'Travel-time persistence');
 
 must(ui,[
   'Build 337 — Timekeeping, Attendance & Payroll Evidence',
