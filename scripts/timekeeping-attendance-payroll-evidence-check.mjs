@@ -82,7 +82,7 @@ must(ui,[
 must(hub,[
   'loadBuild337Timekeeping',
   '/js/admin-timekeeping-ui.js?v=2026-09-22b337',
-  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); }"
+  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); }"
 ],'Build 337 lazy loading');
 
 must(help,[
