@@ -5,32 +5,8 @@
 
 begin;
 
--- Compatibility hardening for the existing maintenance-history authority used by jobs-manage.
-create table if not exists public.equipment_maintenance_history (
-  id uuid primary key default gen_random_uuid(),
-  equipment_item_id bigint not null references public.equipment_items(id) on delete cascade,
-  performed_by_profile_id uuid references public.profiles(id) on delete set null,
-  performed_at timestamptz not null default now(),
-  maintenance_type text not null default 'service',
-  provider_name text,
-  cost_amount numeric(12,2),
-  notes text,
-  next_due_date date,
-  created_at timestamptz not null default now()
-);
-
-alter table public.equipment_maintenance_history
-  add column if not exists performed_by_profile_id uuid references public.profiles(id) on delete set null,
-  add column if not exists performed_at timestamptz not null default now(),
-  add column if not exists maintenance_type text not null default 'service',
-  add column if not exists provider_name text,
-  add column if not exists cost_amount numeric(12,2),
-  add column if not exists notes text,
-  add column if not exists next_due_date date,
-  add column if not exists created_at timestamptz not null default now();
-
-create index if not exists equipment_maintenance_history_item_idx
-  on public.equipment_maintenance_history(equipment_item_id,performed_at desc);
+-- The existing equipment_service_history table remains the maintenance/service history authority.
+-- Build 334 exposes a compatibility directory view for the older UI naming only.
 
 create table if not exists public.preventive_maintenance_plans (
   id uuid primary key default gen_random_uuid(),
@@ -84,7 +60,7 @@ create table if not exists public.preventive_maintenance_events (
   due_meter_snapshot numeric(14,2),
   meter_value numeric(14,2),
   service_task_id uuid references public.equipment_service_tasks(id) on delete set null,
-  maintenance_history_id uuid references public.equipment_maintenance_history(id) on delete set null,
+  service_history_id uuid references public.equipment_service_history(id) on delete set null,
   cost_amount numeric(12,2),
   provider_name text,
   notes text,
@@ -108,14 +84,10 @@ alter table if exists public.equipment_service_tasks
 
 alter table public.preventive_maintenance_plans enable row level security;
 alter table public.preventive_maintenance_events enable row level security;
-alter table public.equipment_maintenance_history enable row level security;
-
 revoke all on table public.preventive_maintenance_plans from public,anon,authenticated;
 revoke all on table public.preventive_maintenance_events from public,anon,authenticated;
-revoke all on table public.equipment_maintenance_history from public,anon,authenticated;
 grant select,insert,update,delete on table public.preventive_maintenance_plans to service_role;
 grant select,insert,update,delete on table public.preventive_maintenance_events to service_role;
-grant select,insert,update,delete on table public.equipment_maintenance_history to service_role;
 
 create or replace view public.v_equipment_maintenance_history
 with (security_invoker=true)
@@ -125,17 +97,17 @@ select
   h.equipment_item_id,
   e.equipment_code,
   e.equipment_name,
-  h.performed_at,
-  h.maintenance_type,
-  h.provider_name,
-  h.cost_amount,
+  h.serviced_at as performed_at,
+  h.service_type as maintenance_type,
+  h.vendor_name as provider_name,
+  h.cost as cost_amount,
   h.notes,
-  h.next_due_date,
-  h.performed_by_profile_id,
-  p.full_name as performed_by_name
-from public.equipment_maintenance_history h
+  e.next_service_due_date as next_due_date,
+  h.serviced_by_profile_id as performed_by_profile_id,
+  coalesce(h.serviced_by_name,p.full_name) as performed_by_name
+from public.equipment_service_history h
 join public.equipment_items e on e.id=h.equipment_item_id
-left join public.profiles p on p.id=h.performed_by_profile_id;
+left join public.profiles p on p.id=h.serviced_by_profile_id;
 
 create or replace view public.v_preventive_maintenance_workbench
 with (security_invoker=true)
@@ -225,9 +197,9 @@ insert into public.app_schema_versions(
   schema_version,schema_name,description,status,applied_at,applied_by,notes,migration_key,release_label
 ) values (
   222,'preventive_maintenance_engine',
-  'Build 334 preventive maintenance plans by date, hours, kilometres and seasonal milestones with due forecasting, service-task linkage and existing maintenance-history completion.',
+  'Build 334 preventive maintenance plans by date, hours, kilometres and seasonal milestones with due forecasting, service-task linkage and existing service-history completion.',
   'applied',now(),'schema222',
-  'Reuses equipment_items, equipment_maintenance_history and equipment_service_tasks. Does not replace inspection/lockout, fleet or equipment registry authorities.',
+  'Reuses equipment_items, equipment_service_history and equipment_service_tasks. The maintenance-history view is compatibility-only; inspection/lockout, fleet and registry authorities remain separate.',
   '222_preventive_maintenance_engine.sql','schema222'
 )
 on conflict(schema_version) do update set
