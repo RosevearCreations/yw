@@ -17,7 +17,7 @@ must(migration,[
   'Schema 222 — Build 334 Preventive Maintenance Engine',
   'public.preventive_maintenance_plans',
   'public.preventive_maintenance_events',
-  'public.equipment_maintenance_history',
+  'public.equipment_service_history',
   "'date','hours','kilometres','seasonal'",
   "'oil','filter','blade','sharpening','belt','lubrication','tires','battery','winterization','storage','preseason_setup','repair','inspection','service','other'",
   'v_preventive_maintenance_workbench',
@@ -36,7 +36,7 @@ must(manage,[
   "body.action === 'preventive_maintenance_plan_status'",
   'Preventive maintenance is not due yet.',
   "task_type:'preventive_maintenance'",
-  "from('equipment_maintenance_history').insert"
+  "from('equipment_service_history').insert"
 ],'Build 334 manage API');
 
 must(directory,[
