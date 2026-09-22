@@ -216,4 +216,11 @@
           <p>Due work can create one linked preventive-maintenance service task. Completion records the actual service in the existing service history, closes the linked task when appropriate, captures cost/provider/meter evidence, and advances the next date, meter or seasonal milestone.</p>
           <p><strong>Safety boundary:</strong> preventive-maintenance completion does not automatically clear a safety lockout, defect, failed inspection or return-to-service block. Those remain separate explicit safety controls.</p>
         </section>
+        <section class="help-section" id="fuel-consumables-materials-control">
+          <h2>Build 335 — Fuel, Consumables &amp; Materials Control</h2>
+          <p>Build 335 extends the existing <code>materials_catalog</code>, <code>material_receipts</code> and <code>material_issues</code> authorities with supplier, storage, stock, reorder, waste and usage-variance controls. Fleet gasoline/diesel evidence continues through <code>fleet_fuel_logs</code>.</p>
+          <p>Stock on hand is derived from opening quantity plus finalized material receipts plus explicit stock adjustments minus finalized material issues. Job use, internal use and waste are distinguished on issue lines so the same canonical material flow supports job costing, waste review and replenishment.</p>
+          <p>Operators can maintain preferred supplier and supplier SKU, record receipts, issue material to a work order, record waste, make reasoned stock adjustments and record a cycle count. The workbench shows current unit cost, stock value, reorder state and planned-versus-actual usage variance.</p>
+          <p><strong>Authority boundary:</strong> Build 335 does not create a second inventory authority. It reuses the existing material catalog/receipt/issue records and the existing fleet fuel log, while the new adjustment record is limited to auditable corrections and counts.</p>
+        </section>
 
