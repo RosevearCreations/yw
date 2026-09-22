@@ -74,7 +74,7 @@ must(ui,[
 must(hub,[
   'loadBuild336Workforce',
   '/js/admin-workforce-ui.js?v=2026-09-22b336',
-  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); }"
+  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); }"
 ],'Build 336 lazy loading');
 
 must(help,[
