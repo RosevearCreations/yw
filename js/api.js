@@ -819,6 +819,15 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
   }
 
   async function manageAdminEntity(payload = {}) {
+    const performanceEntity = String(payload?.entity || '').trim().toLowerCase().startsWith('performance_');
+    if (performanceEntity) {
+      return jsonFetch('performance-manage', {
+        method: 'POST',
+        body: payload,
+        requireAuth: true,
+        timeoutMs: 15000
+      });
+    }
     try {
       return await jsonFetch('admin-manage', {
         method: 'POST',

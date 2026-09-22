@@ -40,7 +40,7 @@ must(migration,[
 assert.ok(!/create\s+table\s+(?:if\s+not\s+exists\s+)?public\.(?:employee_time_entries|employee_time_entry_breaks|job_session_crew_hours|payroll_export_runs)\b/i.test(migration),'Build 337 must extend, not recreate, canonical time/payroll authorities.');
 
 must(directory,[
-  "['module_permissions','workforce','timekeeping'].includes(key)",
+  "['module_permissions','workforce','timekeeping','performance'].includes(key)",
   "scope === 'timekeeping'",
   'v_timekeeping_payroll_evidence',
   'v_timekeeping_correction_audit',
@@ -82,7 +82,7 @@ must(ui,[
 must(hub,[
   'loadBuild337Timekeeping',
   '/js/admin-timekeeping-ui.js?v=2026-09-22b337',
-  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); }"
+  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); }"
 ],'Build 337 lazy loading');
 
 must(help,[
@@ -91,7 +91,7 @@ must(help,[
   'correction audit',
   'Finance payroll-export'
 ],'Build 337 Help');
-must(roadmap,['#### **337 — Timekeeping, Attendance & Payroll Evidence** is implemented','#### 338 — Performance & Development'],'Build 337 roadmap');
+must(roadmap,['#### **337 — Timekeeping, Attendance & Payroll Evidence** is implemented','#### **338 — Performance & Development** is implemented'],'Build 337 roadmap');
 must(pkg,['test:timekeeping-attendance-payroll-evidence','test:browser:timekeeping-attendance-payroll-evidence'],'Build 337 package scripts');
 must(workflow,['npm run test:timekeeping-attendance-payroll-evidence','npm run test:browser:timekeeping-attendance-payroll-evidence'],'Build 337 CI wiring');
 
