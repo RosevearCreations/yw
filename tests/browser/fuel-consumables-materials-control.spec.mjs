@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const jobsSource=fs.readFileSync(path.join(process.cwd(),'js/jobs-ui.js'),'utf8');
+const materialsSource=fs.readFileSync(path.join(process.cwd(),'js/jobs-materials-control.js'),'utf8');
 
 function payload(){
   return {
@@ -45,6 +46,7 @@ async function mount(page){
       async manageJobsEntity(req){window.__calls.push(structuredClone(req)); return {ok:true,build:335,schema:223,record:{id:'ok-335'}};}
     };
   },payload());
+  await page.addScriptTag({content:materialsSource});
   await page.addScriptTag({content:jobsSource});
   await page.evaluate(async()=>{
     const ui=window.YWIJobsUI.create({api:window.__api,getAccessProfile:()=>({canManageJobs:true,canManageAdminDirectory:true}),getCurrentRole:()=> 'admin'});
