@@ -294,12 +294,27 @@
       refreshTimer = setTimeout(refreshNeedsAndActivity, 80);
     }
 
+    function loadBuild336Workforce() {
+      if (window.YWIWorkforceUI?.mount) {
+        window.YWIWorkforceUI.mount({ api:window.YWIAPI });
+        return;
+      }
+      if (document.querySelector('script[data-ywi-build336-workforce]')) return;
+      const script=document.createElement('script');
+      script.src='/js/admin-workforce-ui.js?v=2026-09-22b336';
+      script.dataset.ywiBuild336Workforce='1';
+      script.addEventListener('load',()=>window.YWIWorkforceUI?.mount?.({ api:window.YWIAPI }),{once:true});
+      script.addEventListener('error',()=>console.warn('Build 336 workforce UI failed to load.'),{once:true});
+      document.head.appendChild(script);
+    }
+
     function loadGroupOnce(key) {
       if (loadedGroups.has(key)) return;
       const group = currentGroup(key);
       if (!group) return;
       loadedGroups.add(key);
       if (group.route) return;
+      if (key === 'people') loadBuild336Workforce();
       const button = group.refresh ? document.getElementById(group.refresh) : null;
       if (button && !button.disabled) setTimeout(() => button.click(), 0);
     }
