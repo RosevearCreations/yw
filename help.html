@@ -225,3 +225,11 @@
           <p><strong>Authority boundary:</strong> Build 335 does not create a second inventory authority. It reuses the existing material catalog/receipt/issue records and the existing fleet fuel log, while the new adjustment record is limited to auditable corrections and counts.</p>
         </section>
 
+        <section class="help-section" id="employee-crew-management">
+          <h2>Build 336 — Employee &amp; Crew Management</h2>
+          <p>Build 336 extends the existing staff <code>profiles</code> and <code>crews</code>/<code>crew_members</code> authorities with practical workforce operations for employee status, role, supervisor, skills, availability, seasonal status and active/inactive dates. It does not create a second employee or crew directory.</p>
+          <p>The People &amp; Access workbench shows each employee’s current crew, operational skills, availability windows, training-readiness counts and internal equipment/task authorization state. Assigned training and internal authorization continue to come from the Build 330 Training &amp; Certification Matrix rather than being recreated here.</p>
+          <p><strong>Privacy-aware information:</strong> home address and emergency-contact information is available only inside the Admin-manage workforce scope. Operational workforce views deliberately omit those private fields.</p>
+          <p><strong>Authority boundary:</strong> a workforce skill or availability record does not grant equipment or legal authorization. Equipment/task authorization, external credentials and training evidence remain separate Build 330 controls.</p>
+        </section>
+
