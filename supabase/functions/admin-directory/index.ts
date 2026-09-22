@@ -38,7 +38,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
-  if (['module_permissions','workforce'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
+  if (['module_permissions','workforce','timekeeping'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
@@ -240,6 +240,30 @@ serve(async (req) => {
       workforce_private_contacts:privateContacts,
       workforce_training_readiness:trainingReadiness,
       privacy_boundary:'Home address and emergency-contact fields are returned only by this Admin-manage workforce scope. Operational workforce views omit them.'
+    }, { headers:corsHeaders });
+  }
+
+  if (scope === 'timekeeping') {
+    const [evidence,corrections,summary,attendanceReviewQueue] = await Promise.all([
+      safeList(supabase,'v_timekeeping_payroll_evidence','*','signed_in_at',1000,false),
+      safeList(supabase,'v_timekeeping_correction_audit','*','requested_at',1000,false),
+      safeList(supabase,'v_timekeeping_attendance_summary','*',undefined,5,true),
+      safeList(supabase,'v_employee_time_review_queue','*','signed_in_at',1000,false)
+    ]);
+    return Response.json({
+      ok:true,
+      scope:'timekeeping',
+      actor_role:actorRole,
+      actor_profile_id:actorId,
+      timekeeping_evidence:evidence,
+      timekeeping_corrections:corrections,
+      timekeeping_summary:summary,
+      attendance_review_queue:attendanceReviewQueue,
+      finance_boundary:{
+        payroll_export_authority:'payroll_export_runs',
+        payroll_provider_actions:'Finance module only'
+      },
+      authority_boundary:'Payroll provider export, delivery and close controls remain in Finance.'
     }, { headers:corsHeaders });
   }
 
