@@ -40,7 +40,7 @@ must(migration,[
 assert.ok(!/create\s+table\s+(?:if\s+not\s+exists\s+)?public\.(?:employee_time_entries|employee_time_entry_breaks|job_session_crew_hours|payroll_export_runs)\b/i.test(migration),'Build 337 must extend, not recreate, canonical time/payroll authorities.');
 
 must(directory,[
-  "['module_permissions','workforce','timekeeping'].includes(key)",
+  "['module_permissions','workforce','timekeeping','performance'].includes(key)",
   "scope === 'timekeeping'",
   'v_timekeeping_payroll_evidence',
   'v_timekeeping_correction_audit',
