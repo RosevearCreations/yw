@@ -198,13 +198,7 @@
             </div>
           </div>
           <div id="fuel_consumables_materials_control_v1" class="admin-panel-block" data-build="335" style="margin-top:16px;">
-            <div class="section-heading">
-              <div>
-                <span class="module-kicker">Build 335 · fuel / consumables / materials</span>
-                <h3 style="margin:4px 0 0;">Fuel, Consumables &amp; Materials Control</h3>
-                <p class="section-subtitle">Control canonical material stock, supplier/cost evidence, reorder levels, work-order use, waste and cycle-count variance. Fleet fuel remains in the existing fleet fuel log.</p>
-              </div>
-            </div>
+            <div class="section-heading"><div><span class="module-kicker">Build 335 · fuel / consumables / materials</span><h3 style="margin:4px 0 0;">Fuel, Consumables &amp; Materials Control</h3><p class="section-subtitle">Control canonical material stock, supplier/cost evidence, reorder levels, work-order use, waste and cycle-count variance. Fleet fuel remains in the existing fleet fuel log.</p></div></div>
             <div id="material_control_summary" class="notice">Loading material control...</div>
             <div class="grid" style="margin-top:12px;">
               <label>Material<select id="material_control_select"><option value="">New material</option></select></label>
@@ -226,24 +220,10 @@
               <label style="display:flex;align-items:center;gap:8px;">Track Stock<input id="material_control_tracked" type="checkbox" checked /></label>
             </div>
             <div class="hseops-inline-actions" style="margin-top:10px;">
-              <button id="material_control_save" class="primary" type="button">Save Material</button>
-              <button id="material_control_receipt" class="secondary" type="button">Record Receipt</button>
-              <button id="material_control_issue" class="secondary" type="button">Record Issue</button>
-              <button id="material_control_adjust" class="secondary" type="button">Record Adjustment</button>
-              <button id="material_control_cycle_count" class="secondary" type="button">Record Cycle Count</button>
+              <button id="material_control_save" class="primary" type="button">Save Material</button><button id="material_control_receipt" class="secondary" type="button">Record Receipt</button><button id="material_control_issue" class="secondary" type="button">Record Issue</button><button id="material_control_adjust" class="secondary" type="button">Record Adjustment</button><button id="material_control_cycle_count" class="secondary" type="button">Record Cycle Count</button>
             </div>
-            <div class="table-scroll" style="margin-top:12px;">
-              <table id="material_control_table">
-                <thead><tr><th>Material</th><th>Category</th><th>On Hand</th><th>Status</th><th>Supplier</th><th>Unit Cost</th><th>Job Use</th><th>Waste</th><th>Variance</th><th>Action</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
-            <div class="table-scroll" style="margin-top:12px;">
-              <table id="fuel_consumables_table">
-                <thead><tr><th>Fuel</th><th>Events</th><th>Litres</th><th>Total Cost</th><th>Avg/L</th><th>Last Fuel</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
+            <div class="table-scroll" style="margin-top:12px;"><table id="material_control_table"><thead><tr><th>Material</th><th>Category</th><th>On Hand</th><th>Status</th><th>Supplier</th><th>Unit Cost</th><th>Job Use</th><th>Waste</th><th>Variance</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+            <div class="table-scroll" style="margin-top:12px;"><table id="fuel_consumables_table"><thead><tr><th>Fuel</th><th>Events</th><th>Litres</th><th>Total Cost</th><th>Avg/L</th><th>Last Fuel</th></tr></thead><tbody></tbody></table></div>
           </div>
         `;
       }
@@ -2834,64 +2814,28 @@
     }
 
     function selectedMaterialRow() {
-      const e=els();
-      const id=String(e.materialControlSelect?.value || state.selectedMaterialId || '');
+      const e=els(); const id=String(e.materialControlSelect?.value || state.selectedMaterialId || '');
       return (state.materialStockControl || []).find((row)=>String(row.id || '')===id) || null;
     }
-
     function fillMaterialControlForm(row=null) {
-      const e=els();
-      const r=row || selectedMaterialRow();
-      if(!e.materialControlSelect) return;
-      if(!r){
-        state.selectedMaterialId=null;
-        e.materialControlSelect.value='';
-        if(e.materialControlSku) e.materialControlSku.value='';
-        if(e.materialControlName) e.materialControlName.value='';
-        if(e.materialControlCategory) e.materialControlCategory.value='';
-        if(e.materialControlUnit) e.materialControlUnit.value='';
-        if(e.materialControlVendor) e.materialControlVendor.value='';
-        if(e.materialControlSupplierSku) e.materialControlSupplierSku.value='';
-        if(e.materialControlStorage) e.materialControlStorage.value='';
-        if(e.materialControlUnitCost) e.materialControlUnitCost.value='';
-        if(e.materialControlOpening) e.materialControlOpening.value='0';
-        if(e.materialControlReorderPoint) e.materialControlReorderPoint.value='';
-        if(e.materialControlReorderQty) e.materialControlReorderQty.value='';
-        if(e.materialControlTarget) e.materialControlTarget.value='';
-        if(e.materialControlTracked) e.materialControlTracked.checked=true;
-        return;
-      }
-      state.selectedMaterialId=r.id;
-      e.materialControlSelect.value=String(r.id);
-      if(e.materialControlSku) e.materialControlSku.value=r.sku || '';
-      if(e.materialControlName) e.materialControlName.value=r.item_name || '';
-      if(e.materialControlCategory) e.materialControlCategory.value=r.material_category || '';
-      if(e.materialControlUnit) e.materialControlUnit.value=r.unit_id || '';
-      if(e.materialControlVendor) e.materialControlVendor.value=r.preferred_vendor_id || '';
-      if(e.materialControlSupplierSku) e.materialControlSupplierSku.value=r.supplier_sku || '';
-      if(e.materialControlStorage) e.materialControlStorage.value=r.storage_location || '';
-      if(e.materialControlUnitCost) e.materialControlUnitCost.value=r.current_unit_cost ?? r.default_unit_cost ?? '';
-      if(e.materialControlOpening) e.materialControlOpening.value=r.opening_quantity ?? 0;
-      if(e.materialControlReorderPoint) e.materialControlReorderPoint.value=r.reorder_point ?? '';
-      if(e.materialControlReorderQty) e.materialControlReorderQty.value=r.reorder_quantity ?? '';
-      if(e.materialControlTarget) e.materialControlTarget.value=r.target_stock_quantity ?? '';
-      if(e.materialControlTracked) e.materialControlTracked.checked=r.inventory_tracked !== false;
+      const e=els(), r=row || selectedMaterialRow(); if(!e.materialControlSelect) return;
+      if(!r){ state.selectedMaterialId=null; e.materialControlSelect.value=''; for(const el of [e.materialControlSku,e.materialControlName,e.materialControlCategory,e.materialControlSupplierSku,e.materialControlStorage,e.materialControlUnitCost,e.materialControlReorderPoint,e.materialControlReorderQty,e.materialControlTarget]) if(el) el.value=''; if(e.materialControlOpening)e.materialControlOpening.value='0'; if(e.materialControlUnit)e.materialControlUnit.value=''; if(e.materialControlVendor)e.materialControlVendor.value=''; if(e.materialControlTracked)e.materialControlTracked.checked=true; return; }
+      state.selectedMaterialId=r.id; e.materialControlSelect.value=String(r.id);
+      if(e.materialControlSku)e.materialControlSku.value=r.sku||''; if(e.materialControlName)e.materialControlName.value=r.item_name||''; if(e.materialControlCategory)e.materialControlCategory.value=r.material_category||'';
+      if(e.materialControlUnit)e.materialControlUnit.value=r.unit_id||''; if(e.materialControlVendor)e.materialControlVendor.value=r.preferred_vendor_id||''; if(e.materialControlSupplierSku)e.materialControlSupplierSku.value=r.supplier_sku||'';
+      if(e.materialControlStorage)e.materialControlStorage.value=r.storage_location||''; if(e.materialControlUnitCost)e.materialControlUnitCost.value=r.current_unit_cost??r.default_unit_cost??'';
+      if(e.materialControlOpening)e.materialControlOpening.value=r.opening_quantity??0; if(e.materialControlReorderPoint)e.materialControlReorderPoint.value=r.reorder_point??''; if(e.materialControlReorderQty)e.materialControlReorderQty.value=r.reorder_quantity??'';
+      if(e.materialControlTarget)e.materialControlTarget.value=r.target_stock_quantity??''; if(e.materialControlTracked)e.materialControlTracked.checked=r.inventory_tracked!==false;
     }
-
     function renderMaterialsControlWorkbench() {
-      const e=els();
-      if(!e.materialControlSelect) return;
-      const rows=state.materialStockControl || [];
-      const summary=state.materialControlSummary?.[0] || {};
-      const materialOptions=rows.map((row)=>`<option value="${escHtml(row.id)}">${escHtml(row.sku || '')} · ${escHtml(row.item_name || '')}</option>`).join('');
-      const current=String(state.selectedMaterialId || e.materialControlSelect.value || '');
-      e.materialControlSelect.innerHTML='<option value="">New material</option>'+materialOptions;
-      e.materialControlSelect.value=rows.some((r)=>String(r.id)===current) ? current : '';
-      if(e.materialControlUnit) e.materialControlUnit.innerHTML='<option value="">—</option>'+(state.materialUnits || []).map((u)=>`<option value="${escHtml(u.id)}">${escHtml(u.code || u.name || '')} · ${escHtml(u.name || '')}</option>`).join('');
-      if(e.materialControlVendor) e.materialControlVendor.innerHTML='<option value="">—</option>'+(state.materialVendors || []).map((v)=>`<option value="${escHtml(v.id)}">${escHtml(v.display_name || v.legal_name || v.vendor_code || '')}</option>`).join('');
-      if(e.materialControlWorkOrder) e.materialControlWorkOrder.innerHTML='<option value="">—</option>'+(state.workOrders || []).map((wo)=>`<option value="${escHtml(wo.id)}">${escHtml(wo.work_order_number || wo.id)} · ${escHtml(wo.status || '')}</option>`).join('');
-      if(e.materialControlSummary){
-        const value=summary.stock_value_total == null ? 'restricted' : '
+      const e=els(); if(!e.materialControlSelect) return; const rows=state.materialStockControl||[], s=state.materialControlSummary?.[0]||{};
+      const current=String(state.selectedMaterialId||e.materialControlSelect.value||'');
+      e.materialControlSelect.innerHTML='<option value="">New material</option>'+rows.map((r)=>`<option value="${escHtml(r.id)}">${escHtml(r.sku||'')} · ${escHtml(r.item_name||'')}</option>`).join('');
+      e.materialControlSelect.value=rows.some((r)=>String(r.id)===current)?current:'';
+      if(e.materialControlUnit)e.materialControlUnit.innerHTML='<option value="">—</option>'+(state.materialUnits||[]).map((u)=>`<option value="${escHtml(u.id)}">${escHtml(u.code||u.name||'')} · ${escHtml(u.name||'')}</option>`).join('');
+      if(e.materialControlVendor)e.materialControlVendor.innerHTML='<option value="">—</option>'+(state.materialVendors||[]).map((v)=>`<option value="${escHtml(v.id)}">${escHtml(v.display_name||v.legal_name||v.vendor_code||'')}</option>`).join('');
+      if(e.materialControlWorkOrder)e.materialControlWorkOrder.innerHTML='<option value="">—</option>'+(state.workOrders||[]).map((wo)=>`<option value="${escHtml(wo.id)}">${escHtml(wo.work_order_number||wo.id)} · ${escHtml(wo.status||'')}</option>`).join('');
+      if(e.materialControlSummary)setNotice(e.materialControlSummary,`${Number(s.active_material_count||0)} active material(s) · ${Number(s.reorder_required_count||0)} reorder · stock value ${s.stock_value_total==null?'restricted':'
       const e = els();
       if (!e.jobListBody) return;
       e.jobListBody.innerHTML = '';
@@ -4674,38 +4618,13 @@
         e.jobLoad.dataset.bound = '1';
         e.jobLoad.addEventListener('click', loadData);
       }
-      if (e.materialControlSelect && e.materialControlSelect.dataset.bound !== '1') {
-        e.materialControlSelect.dataset.bound='1';
-        e.materialControlSelect.addEventListener('change',()=>{
-          state.selectedMaterialId=e.materialControlSelect.value || null;
-          fillMaterialControlForm();
-        });
-      }
-      if (e.materialControlBody && e.materialControlBody.dataset.bound !== '1') {
-        e.materialControlBody.dataset.bound='1';
-        e.materialControlBody.addEventListener('click',(event)=>{
-          const btn=event.target.closest('[data-material-load]');
-          if(!btn) return;
-          state.selectedMaterialId=btn.getAttribute('data-material-load') || null;
-          renderMaterialsControlWorkbench();
-          fillMaterialControlForm();
-        });
-      }
-      if (e.materialControlSave && e.materialControlSave.dataset.bound !== '1') {
-        e.materialControlSave.dataset.bound='1'; e.materialControlSave.addEventListener('click',saveMaterialControl);
-      }
-      if (e.materialControlReceipt && e.materialControlReceipt.dataset.bound !== '1') {
-        e.materialControlReceipt.dataset.bound='1'; e.materialControlReceipt.addEventListener('click',recordMaterialReceipt);
-      }
-      if (e.materialControlIssue && e.materialControlIssue.dataset.bound !== '1') {
-        e.materialControlIssue.dataset.bound='1'; e.materialControlIssue.addEventListener('click',recordMaterialIssue);
-      }
-      if (e.materialControlAdjust && e.materialControlAdjust.dataset.bound !== '1') {
-        e.materialControlAdjust.dataset.bound='1'; e.materialControlAdjust.addEventListener('click',recordMaterialAdjustment);
-      }
-      if (e.materialControlCycleCount && e.materialControlCycleCount.dataset.bound !== '1') {
-        e.materialControlCycleCount.dataset.bound='1'; e.materialControlCycleCount.addEventListener('click',recordMaterialCycleCount);
-      }
+      if (e.materialControlSelect && e.materialControlSelect.dataset.bound !== '1') { e.materialControlSelect.dataset.bound='1'; e.materialControlSelect.addEventListener('change',()=>{state.selectedMaterialId=e.materialControlSelect.value||null;fillMaterialControlForm();}); }
+      if (e.materialControlBody && e.materialControlBody.dataset.bound !== '1') { e.materialControlBody.dataset.bound='1'; e.materialControlBody.addEventListener('click',(event)=>{const btn=event.target.closest('[data-material-load]');if(!btn)return;state.selectedMaterialId=btn.getAttribute('data-material-load')||null;renderMaterialsControlWorkbench();fillMaterialControlForm();}); }
+      if (e.materialControlSave && e.materialControlSave.dataset.bound !== '1') { e.materialControlSave.dataset.bound='1'; e.materialControlSave.addEventListener('click',saveMaterialControl); }
+      if (e.materialControlReceipt && e.materialControlReceipt.dataset.bound !== '1') { e.materialControlReceipt.dataset.bound='1'; e.materialControlReceipt.addEventListener('click',recordMaterialReceipt); }
+      if (e.materialControlIssue && e.materialControlIssue.dataset.bound !== '1') { e.materialControlIssue.dataset.bound='1'; e.materialControlIssue.addEventListener('click',recordMaterialIssue); }
+      if (e.materialControlAdjust && e.materialControlAdjust.dataset.bound !== '1') { e.materialControlAdjust.dataset.bound='1'; e.materialControlAdjust.addEventListener('click',recordMaterialAdjustment); }
+      if (e.materialControlCycleCount && e.materialControlCycleCount.dataset.bound !== '1') { e.materialControlCycleCount.dataset.bound='1'; e.materialControlCycleCount.addEventListener('click',recordMaterialCycleCount); }
       if (e.jobClear && e.jobClear.dataset.bound !== '1') {
         e.jobClear.dataset.bound = '1';
         e.jobClear.addEventListener('click', clearJobForm);
@@ -4889,12 +4808,8 @@
 
   window.YWIJobsUI = { create: createJobsUI };
 })();
-+Number(summary.stock_value_total || 0).toFixed(2);
-        setNotice(e.materialControlSummary,`${Number(summary.active_material_count || 0)} active material(s) · ${Number(summary.reorder_required_count || 0)} reorder · stock value ${value} · job use ${Number(summary.job_use_quantity_total || 0).toFixed(2)} · waste ${Number(summary.waste_quantity_total || 0).toFixed(2)} · variance ${Number(summary.usage_variance_quantity_total || 0).toFixed(2)}.`);
-      }
-      if(e.materialControlBody){
-        e.materialControlBody.innerHTML=rows.length ? rows.map((row)=>{
-          const unitCost=row.current_unit_cost == null ? 'restricted' : '
++Number(s.stock_value_total||0).toFixed(2)} · job use ${Number(s.job_use_quantity_total||0).toFixed(2)} · waste ${Number(s.waste_quantity_total||0).toFixed(2)} · variance ${Number(s.usage_variance_quantity_total||0).toFixed(2)}.`);
+      if(e.materialControlBody)e.materialControlBody.innerHTML=rows.length?rows.map((r)=>`<tr><td>${escHtml(r.sku||'')} · ${escHtml(r.item_name||'')}</td><td>${escHtml(r.material_category||'')}</td><td>${Number(r.stock_on_hand||0).toFixed(2)} ${escHtml(r.unit_code||'')}</td><td>${escHtml(String(r.stock_status||'').replaceAll('_',' '))}</td><td>${escHtml(r.preferred_vendor_name||r.last_vendor_name||'')}</td><td>${r.current_unit_cost==null?'restricted':'
       const e = els();
       if (!e.jobListBody) return;
       e.jobListBody.innerHTML = '';
@@ -6854,26 +6769,8 @@
 
   window.YWIJobsUI = { create: createJobsUI };
 })();
-+Number(row.current_unit_cost || 0).toFixed(2);
-          return `<tr>
-            <td>${escHtml(row.sku || '')} · ${escHtml(row.item_name || '')}</td>
-            <td>${escHtml(row.material_category || '')}</td>
-            <td>${Number(row.stock_on_hand || 0).toFixed(2)} ${escHtml(row.unit_code || '')}</td>
-            <td>${escHtml(String(row.stock_status || '').replaceAll('_',' '))}</td>
-            <td>${escHtml(row.preferred_vendor_name || row.last_vendor_name || '')}</td>
-            <td>${unitCost}</td>
-            <td>${Number(row.job_use_quantity || 0).toFixed(2)}</td>
-            <td>${Number(row.waste_quantity || 0).toFixed(2)}</td>
-            <td>${Number(row.usage_variance_quantity || 0).toFixed(2)}</td>
-            <td><button type="button" class="secondary" data-material-load="${escHtml(row.id)}">Load</button></td>
-          </tr>`;
-        }).join('') : '<tr><td colspan="10" class="muted">No controlled materials yet.</td></tr>';
-      }
-      if(e.fuelConsumablesBody){
-        const fuel=state.fuelConsumablesSummary || [];
-        e.fuelConsumablesBody.innerHTML=fuel.length ? fuel.map((row)=>`<tr>
-          <td>${escHtml(row.fuel_type || '')}</td><td>${Number(row.fuel_event_count || 0)}</td><td>${Number(row.quantity_litres || 0).toFixed(2)}</td>
-          <td>${row.total_cost == null ? 'restricted' : '
++Number(r.current_unit_cost||0).toFixed(2)}</td><td>${Number(r.job_use_quantity||0).toFixed(2)}</td><td>${Number(r.waste_quantity||0).toFixed(2)}</td><td>${Number(r.usage_variance_quantity||0).toFixed(2)}</td><td><button type="button" class="secondary" data-material-load="${escHtml(r.id)}">Load</button></td></tr>`).join(''):'<tr><td colspan="10" class="muted">No controlled materials yet.</td></tr>';
+      if(e.fuelConsumablesBody)e.fuelConsumablesBody.innerHTML=(state.fuelConsumablesSummary||[]).length?(state.fuelConsumablesSummary||[]).map((r)=>`<tr><td>${escHtml(r.fuel_type||'')}</td><td>${Number(r.fuel_event_count||0)}</td><td>${Number(r.quantity_litres||0).toFixed(2)}</td><td>${r.total_cost==null?'restricted':'
       const e = els();
       if (!e.jobListBody) return;
       e.jobListBody.innerHTML = '';
@@ -8833,8 +8730,7 @@
 
   window.YWIJobsUI = { create: createJobsUI };
 })();
-+Number(row.total_cost || 0).toFixed(2)}</td>
-          <td>${row.average_cost_per_litre == null ? 'restricted' : '
++Number(r.total_cost||0).toFixed(2)}</td><td>${r.average_cost_per_litre==null?'restricted':'
       const e = els();
       if (!e.jobListBody) return;
       e.jobListBody.innerHTML = '';
@@ -10794,71 +10690,14 @@
 
   window.YWIJobsUI = { create: createJobsUI };
 })();
-+Number(row.average_cost_per_litre || 0).toFixed(4)}</td>
-          <td>${escHtml(row.last_fueled_at || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No fleet fuel evidence yet.</td></tr>';
-      }
-      if(state.selectedMaterialId) fillMaterialControlForm(rows.find((r)=>String(r.id)===String(state.selectedMaterialId)) || null);
++Number(r.average_cost_per_litre||0).toFixed(4)}</td><td>${escHtml(r.last_fueled_at||'')}</td></tr>`).join(''):'<tr><td colspan="6" class="muted">No fleet fuel evidence yet.</td></tr>';
+      if(state.selectedMaterialId)fillMaterialControlForm(rows.find((r)=>String(r.id)===String(state.selectedMaterialId))||null);
     }
-
-    async function saveMaterialControl() {
-      const e=els();
-      const num=(v)=>v === '' || v == null ? null : Number(v);
-      const resp=await api.manageJobsEntity({
-        entity:'material',action:'material_catalog_upsert',material_id:state.selectedMaterialId || null,
-        sku:e.materialControlSku?.value?.trim?.() || null,item_name:e.materialControlName?.value?.trim?.() || '',
-        material_category:e.materialControlCategory?.value?.trim?.() || null,unit_id:e.materialControlUnit?.value || null,
-        preferred_vendor_id:e.materialControlVendor?.value || null,supplier_sku:e.materialControlSupplierSku?.value?.trim?.() || null,
-        storage_location:e.materialControlStorage?.value?.trim?.() || null,default_unit_cost:num(e.materialControlUnitCost?.value) ?? 0,
-        opening_quantity:num(e.materialControlOpening?.value) ?? 0,reorder_point:num(e.materialControlReorderPoint?.value),
-        reorder_quantity:num(e.materialControlReorderQty?.value),target_stock_quantity:num(e.materialControlTarget?.value),
-        inventory_tracked:e.materialControlTracked?.checked !== false
-      });
-      if(!resp?.ok) return setNotice(e.materialControlSummary,resp?.error || 'Material save failed.',true);
-      state.selectedMaterialId=resp.record?.id || null;
-      await loadData();
-    }
-
-    async function recordMaterialReceipt() {
-      const e=els(); const row=selectedMaterialRow();
-      if(!row) return setNotice(e.materialControlSummary,'Load a material before recording a receipt.',true);
-      const q=window.prompt('Material quantity received:','1'); if(q===null) return;
-      const cost=window.prompt('Receipt unit cost:',String(row.current_unit_cost ?? row.default_unit_cost ?? 0)); if(cost===null) return;
-      const resp=await api.manageJobsEntity({entity:'material',action:'material_stock_receipt',material_id:row.id,quantity:Number(q),unit_cost:Number(cost),vendor_id:e.materialControlVendor?.value || null,work_order_id:e.materialControlWorkOrder?.value || null});
-      if(!resp?.ok) return setNotice(e.materialControlSummary,resp?.error || 'Material receipt failed.',true);
-      await loadData();
-    }
-
-    async function recordMaterialIssue() {
-      const e=els(); const row=selectedMaterialRow();
-      if(!row) return setNotice(e.materialControlSummary,'Load a material before recording an issue.',true);
-      const q=window.prompt('Material quantity to issue:','1'); if(q===null) return;
-      const planned=window.prompt('Planned quantity for variance:',q); if(planned===null) return;
-      const usage=e.materialControlUsageType?.value || 'job_use';
-      const wasteReason=usage==='waste' ? (window.prompt('Waste reason:','') || '') : '';
-      const resp=await api.manageJobsEntity({entity:'material',action:'material_stock_issue',material_id:row.id,quantity:Number(q),planned_quantity:Number(planned),usage_type:usage,waste_reason:wasteReason || null,work_order_id:e.materialControlWorkOrder?.value || null});
-      if(!resp?.ok) return setNotice(e.materialControlSummary,resp?.error || 'Material issue failed.',true);
-      await loadData();
-    }
-
-    async function recordMaterialAdjustment() {
-      const e=els(); const row=selectedMaterialRow();
-      if(!row) return setNotice(e.materialControlSummary,'Load a material before recording an adjustment.',true);
-      const q=window.prompt('Stock quantity delta (+/-):','0'); if(q===null) return;
-      const reason=window.prompt('Stock adjustment reason:','') || '';
-      const resp=await api.manageJobsEntity({entity:'material',action:'material_stock_adjust',material_id:row.id,quantity_delta:Number(q),adjustment_type:e.materialControlAdjustmentType?.value || 'other',reason,work_order_id:e.materialControlWorkOrder?.value || null});
-      if(!resp?.ok) return setNotice(e.materialControlSummary,resp?.error || 'Stock adjustment failed.',true);
-      await loadData();
-    }
-
-    async function recordMaterialCycleCount() {
-      const e=els(); const row=selectedMaterialRow();
-      if(!row) return setNotice(e.materialControlSummary,'Load a material before recording a count.',true);
-      const q=window.prompt('Counted quantity:',String(row.stock_on_hand ?? 0)); if(q===null) return;
-      const reason=window.prompt('Cycle count reason:','Cycle count') || 'Cycle count';
-      const resp=await api.manageJobsEntity({entity:'material',action:'material_cycle_count',material_id:row.id,counted_quantity:Number(q),reason});
-      if(!resp?.ok) return setNotice(e.materialControlSummary,resp?.error || 'Cycle count failed.',true);
-      await loadData();
-    }
+    async function saveMaterialControl(){const e=els(),num=(v)=>v===''||v==null?null:Number(v);const resp=await api.manageJobsEntity({entity:'material',action:'material_catalog_upsert',material_id:state.selectedMaterialId||null,sku:e.materialControlSku?.value?.trim?.()||null,item_name:e.materialControlName?.value?.trim?.()||'',material_category:e.materialControlCategory?.value?.trim?.()||null,unit_id:e.materialControlUnit?.value||null,preferred_vendor_id:e.materialControlVendor?.value||null,supplier_sku:e.materialControlSupplierSku?.value?.trim?.()||null,storage_location:e.materialControlStorage?.value?.trim?.()||null,default_unit_cost:num(e.materialControlUnitCost?.value)??0,opening_quantity:num(e.materialControlOpening?.value)??0,reorder_point:num(e.materialControlReorderPoint?.value),reorder_quantity:num(e.materialControlReorderQty?.value),target_stock_quantity:num(e.materialControlTarget?.value),inventory_tracked:e.materialControlTracked?.checked!==false});if(!resp?.ok)return setNotice(e.materialControlSummary,resp?.error||'Material save failed.',true);state.selectedMaterialId=resp.record?.id||null;await loadData();}
+    async function recordMaterialReceipt(){const e=els(),r=selectedMaterialRow();if(!r)return setNotice(e.materialControlSummary,'Load a material before recording a receipt.',true);const q=window.prompt('Material quantity received:','1');if(q===null)return;const cost=window.prompt('Receipt unit cost:',String(r.current_unit_cost??r.default_unit_cost??0));if(cost===null)return;const resp=await api.manageJobsEntity({entity:'material',action:'material_stock_receipt',material_id:r.id,quantity:Number(q),unit_cost:Number(cost),vendor_id:e.materialControlVendor?.value||null,work_order_id:e.materialControlWorkOrder?.value||null});if(!resp?.ok)return setNotice(e.materialControlSummary,resp?.error||'Material receipt failed.',true);await loadData();}
+    async function recordMaterialIssue(){const e=els(),r=selectedMaterialRow();if(!r)return setNotice(e.materialControlSummary,'Load a material before recording an issue.',true);const q=window.prompt('Material quantity to issue:','1');if(q===null)return;const planned=window.prompt('Planned quantity for variance:',q);if(planned===null)return;const usage=e.materialControlUsageType?.value||'job_use';const wasteReason=usage==='waste'?(window.prompt('Waste reason:','')||''):'';const resp=await api.manageJobsEntity({entity:'material',action:'material_stock_issue',material_id:r.id,quantity:Number(q),planned_quantity:Number(planned),usage_type:usage,waste_reason:wasteReason||null,work_order_id:e.materialControlWorkOrder?.value||null});if(!resp?.ok)return setNotice(e.materialControlSummary,resp?.error||'Material issue failed.',true);await loadData();}
+    async function recordMaterialAdjustment(){const e=els(),r=selectedMaterialRow();if(!r)return setNotice(e.materialControlSummary,'Load a material before recording an adjustment.',true);const q=window.prompt('Stock quantity delta (+/-):','0');if(q===null)return;const reason=window.prompt('Stock adjustment reason:','')||'';const resp=await api.manageJobsEntity({entity:'material',action:'material_stock_adjust',material_id:r.id,quantity_delta:Number(q),adjustment_type:e.materialControlAdjustmentType?.value||'other',reason,work_order_id:e.materialControlWorkOrder?.value||null});if(!resp?.ok)return setNotice(e.materialControlSummary,resp?.error||'Stock adjustment failed.',true);await loadData();}
+    async function recordMaterialCycleCount(){const e=els(),r=selectedMaterialRow();if(!r)return setNotice(e.materialControlSummary,'Load a material before recording a count.',true);const q=window.prompt('Counted quantity:',String(r.stock_on_hand??0));if(q===null)return;const reason=window.prompt('Cycle count reason:','Cycle count')||'Cycle count';const resp=await api.manageJobsEntity({entity:'material',action:'material_cycle_count',material_id:r.id,counted_quantity:Number(q),reason});if(!resp?.ok)return setNotice(e.materialControlSummary,resp?.error||'Cycle count failed.',true);await loadData();}
 
     function renderJobs() {
       const e = els();
