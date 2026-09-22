@@ -100,7 +100,10 @@
       dailyInspectionSummary: [],
       fleetOperations: [],
       fleetOperationsSummary: [],
-      fleetTowingAssignments: []
+      fleetTowingAssignments: [],
+      preventiveMaintenanceWorkbench: [],
+      preventiveMaintenanceSummary: [],
+      selectedPreventiveMaintenancePlanId: null
     };
 
     function ensureLayout() {
@@ -390,6 +393,53 @@
 
             <div class="table-scroll" style="margin-top:12px;">
               <table id="eq_fleet_operations_table"><thead><tr><th>Asset</th><th>Class</th><th>Plate</th><th>Odometer</th><th>Readiness</th><th>Tires</th><th>Fuel Cost</th><th>Downtime</th></tr></thead><tbody></tbody></table>
+            </div>
+          </div>
+          <div id="equipment_preventive_maintenance_v1" class="admin-panel-block" data-build="334" style="margin-top:16px;">
+            <div class="section-heading">
+              <div>
+                <span class="module-kicker">Build 334 · preventive maintenance</span>
+                <h3 style="margin:4px 0 0;">Preventive Maintenance Engine</h3>
+                <p class="section-subtitle">Schedule equipment and fleet maintenance by calendar date, operating hours, kilometres or seasonal milestone. Completion writes to the existing service history and never automatically clears a safety lockout.</p>
+              </div>
+            </div>
+            <div id="eq_pm_summary" class="notice">Load an equipment item to manage preventive maintenance.</div>
+            <div class="grid" style="margin-top:12px;">
+              <label>Plan<select id="eq_pm_plan_select"><option value="">New plan</option></select></label>
+              <label>Plan Code<input id="eq_pm_plan_code" type="text" placeholder="OIL-50H" /></label>
+              <label>Plan Name<input id="eq_pm_plan_name" type="text" placeholder="Engine oil and filter" /></label>
+              <label>Maintenance Type<select id="eq_pm_maintenance_type">
+                <option value="oil">Oil</option><option value="filter">Filter</option><option value="blade">Blade</option><option value="sharpening">Sharpening</option>
+                <option value="belt">Belt</option><option value="lubrication">Lubrication</option><option value="tires">Tires</option><option value="battery">Battery</option>
+                <option value="winterization">Winterization</option><option value="storage">Storage</option><option value="preseason_setup">Preseason setup</option>
+                <option value="repair">Repair</option><option value="inspection">Inspection</option><option value="service">Service</option><option value="other">Other</option>
+              </select></label>
+              <label>Schedule Basis<select id="eq_pm_schedule_basis"><option value="date">Date</option><option value="hours">Hours</option><option value="kilometres">Kilometres</option><option value="seasonal">Seasonal milestone</option></select></label>
+              <label>Interval Days<input id="eq_pm_interval_days" type="number" min="1" step="1" placeholder="90" /></label>
+              <label>Interval Meter<input id="eq_pm_interval_meter" type="number" min="0" step="0.1" placeholder="50" /></label>
+              <label>Due Date<input id="eq_pm_due_date" type="date" /></label>
+              <label>Due Meter<input id="eq_pm_due_meter" type="number" min="0" step="0.1" /></label>
+              <label>Season Month<input id="eq_pm_season_month" type="number" min="1" max="12" step="1" placeholder="11" /></label>
+              <label>Season Day<input id="eq_pm_season_day" type="number" min="1" max="31" step="1" placeholder="1" /></label>
+              <label>Lead Days<input id="eq_pm_lead_days" type="number" min="0" max="365" step="1" value="14" /></label>
+              <label>Lead Meter<input id="eq_pm_lead_meter" type="number" min="0" step="0.1" value="10" /></label>
+              <label>Default Provider<input id="eq_pm_provider" type="text" placeholder="Shop / dealer / technician" /></label>
+              <label>Estimated Cost<input id="eq_pm_estimated_cost" type="number" min="0" step="0.01" /></label>
+              <label>Plan Status<select id="eq_pm_plan_status"><option value="active">Active</option><option value="paused">Paused</option><option value="retired">Retired</option></select></label>
+            </div>
+            <label style="display:block;margin-top:10px;">Instructions<textarea id="eq_pm_instructions" rows="2" placeholder="Oil grade, filter number, grease points, blade spec, tire rotation, winterization steps..."></textarea></label>
+            <div class="hseops-inline-actions" style="margin-top:10px;">
+              <button id="eq_pm_save_plan" class="primary" type="button">Save Maintenance Plan</button>
+              <button id="eq_pm_open_task" class="secondary" type="button">Open Due Service Task</button>
+              <button id="eq_pm_complete" class="secondary" type="button">Complete Maintenance</button>
+              <button id="eq_pm_apply_status" class="secondary" type="button">Apply Plan Status</button>
+            </div>
+            <p class="section-subtitle" style="margin-top:8px;">Due work may open a normal service task. Completing maintenance resolves that linked task and advances the next date/meter milestone, but lockout and return-to-service remain separate safety controls.</p>
+            <div class="table-scroll" style="margin-top:12px;">
+              <table id="eq_pm_table">
+                <thead><tr><th>Asset</th><th>Plan</th><th>Type</th><th>Basis</th><th>Next Due</th><th>Status</th><th>Service Task</th><th>Action</th></tr></thead>
+                <tbody></tbody>
+              </table>
             </div>
           </div>
           <label style="display:block;margin-top:12px;">Comments
@@ -1226,6 +1276,29 @@
         eqFleetAssignTow: $('#eq_fleet_assign_tow'),
         eqFleetTowingBody: $('#eq_fleet_towing_table tbody'),
         eqFleetOperationsBody: $('#eq_fleet_operations_table tbody'),
+        eqPmSummary: $('#eq_pm_summary'),
+        eqPmPlanSelect: $('#eq_pm_plan_select'),
+        eqPmPlanCode: $('#eq_pm_plan_code'),
+        eqPmPlanName: $('#eq_pm_plan_name'),
+        eqPmMaintenanceType: $('#eq_pm_maintenance_type'),
+        eqPmScheduleBasis: $('#eq_pm_schedule_basis'),
+        eqPmIntervalDays: $('#eq_pm_interval_days'),
+        eqPmIntervalMeter: $('#eq_pm_interval_meter'),
+        eqPmDueDate: $('#eq_pm_due_date'),
+        eqPmDueMeter: $('#eq_pm_due_meter'),
+        eqPmSeasonMonth: $('#eq_pm_season_month'),
+        eqPmSeasonDay: $('#eq_pm_season_day'),
+        eqPmLeadDays: $('#eq_pm_lead_days'),
+        eqPmLeadMeter: $('#eq_pm_lead_meter'),
+        eqPmProvider: $('#eq_pm_provider'),
+        eqPmEstimatedCost: $('#eq_pm_estimated_cost'),
+        eqPmPlanStatus: $('#eq_pm_plan_status'),
+        eqPmInstructions: $('#eq_pm_instructions'),
+        eqPmSavePlan: $('#eq_pm_save_plan'),
+        eqPmOpenTask: $('#eq_pm_open_task'),
+        eqPmComplete: $('#eq_pm_complete'),
+        eqPmApplyStatus: $('#eq_pm_apply_status'),
+        eqPmBody: $('#eq_pm_table tbody'),
         eqAccessNotice: $('#equipment_access_notice'),
         eqWorkerSignature: $('#eq_worker_signature'),
         eqSupervisorSignature: $('#eq_supervisor_signature'),
