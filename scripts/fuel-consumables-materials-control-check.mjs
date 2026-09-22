@@ -5,7 +5,8 @@ const read=(p)=>fs.readFileSync(p,'utf8');
 const migration=read('sql/223_fuel_consumables_materials_control.sql');
 const manage=read('supabase/functions/jobs-manage/index.ts');
 const directory=read('supabase/functions/jobs-directory/index.ts');
-const ui=read('js/jobs-ui.js');
+const jobsUi=read('js/jobs-ui.js');
+const ui=read('js/jobs-materials-control.js');
 const help=read('help.html');
 const roadmap=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 const pkg=read('package.json');
@@ -50,6 +51,9 @@ must(directory,[
   'material_control_summary:',
   'fuel_consumables_summary:'
 ],'Build 335 directory');
+
+must(jobsUi,['jobs-materials-control.js','YWIMaterialsControl'],'Build 335 lazy addon loader');
+assert.equal((jobsUi.match(/window\.YWIJobsUI/g) || []).length,1,'Jobs UI must contain exactly one YWIJobsUI definition.');
 
 must(ui,[
   'fuel_consumables_materials_control_v1',
