@@ -103,7 +103,13 @@
       fleetTowingAssignments: [],
       preventiveMaintenanceWorkbench: [],
       preventiveMaintenanceSummary: [],
-      selectedPreventiveMaintenancePlanId: null
+      selectedPreventiveMaintenancePlanId: null,
+      materialStockControl: [],
+      materialControlSummary: [],
+      fuelConsumablesSummary: [],
+      materialVendors: [],
+      materialUnits: [],
+      selectedMaterialId: null
     };
 
     function ensureLayout() {
@@ -187,6 +193,54 @@
                     <th>Action</th>
                   </tr>
                 </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="fuel_consumables_materials_control_v1" class="admin-panel-block" data-build="335" style="margin-top:16px;">
+            <div class="section-heading">
+              <div>
+                <span class="module-kicker">Build 335 · fuel / consumables / materials</span>
+                <h3 style="margin:4px 0 0;">Fuel, Consumables &amp; Materials Control</h3>
+                <p class="section-subtitle">Control canonical material stock, supplier/cost evidence, reorder levels, work-order use, waste and cycle-count variance. Fleet fuel remains in the existing fleet fuel log.</p>
+              </div>
+            </div>
+            <div id="material_control_summary" class="notice">Loading material control...</div>
+            <div class="grid" style="margin-top:12px;">
+              <label>Material<select id="material_control_select"><option value="">New material</option></select></label>
+              <label>SKU<input id="material_control_sku" type="text" placeholder="MULCH-BLK" /></label>
+              <label>Name<input id="material_control_name" type="text" placeholder="Black Mulch" /></label>
+              <label>Category<input id="material_control_category" type="text" placeholder="mulch / seed / fertilizer / fuel" /></label>
+              <label>Unit<select id="material_control_unit"><option value="">—</option></select></label>
+              <label>Preferred Supplier<select id="material_control_vendor"><option value="">—</option></select></label>
+              <label>Supplier SKU<input id="material_control_supplier_sku" type="text" /></label>
+              <label>Storage Location<input id="material_control_storage" type="text" placeholder="Bin / trailer / shop shelf" /></label>
+              <label>Unit Cost<input id="material_control_unit_cost" type="number" min="0" step="0.01" /></label>
+              <label>Opening Qty<input id="material_control_opening" type="number" min="0" step="0.01" /></label>
+              <label>Reorder Point<input id="material_control_reorder_point" type="number" min="0" step="0.01" /></label>
+              <label>Reorder Qty<input id="material_control_reorder_qty" type="number" min="0" step="0.01" /></label>
+              <label>Target Stock<input id="material_control_target" type="number" min="0" step="0.01" /></label>
+              <label>Usage Type<select id="material_control_usage_type"><option value="job_use">Job use</option><option value="waste">Waste</option><option value="internal_use">Internal use</option></select></label>
+              <label>Work Order<select id="material_control_work_order"><option value="">—</option></select></label>
+              <label>Adjustment Type<select id="material_control_adjustment_type"><option value="other">Other</option><option value="damage_loss">Damage / loss</option><option value="found">Found stock</option><option value="receipt_correction">Receipt correction</option><option value="issue_correction">Issue correction</option><option value="transfer">Transfer</option></select></label>
+              <label style="display:flex;align-items:center;gap:8px;">Track Stock<input id="material_control_tracked" type="checkbox" checked /></label>
+            </div>
+            <div class="hseops-inline-actions" style="margin-top:10px;">
+              <button id="material_control_save" class="primary" type="button">Save Material</button>
+              <button id="material_control_receipt" class="secondary" type="button">Record Receipt</button>
+              <button id="material_control_issue" class="secondary" type="button">Record Issue</button>
+              <button id="material_control_adjust" class="secondary" type="button">Record Adjustment</button>
+              <button id="material_control_cycle_count" class="secondary" type="button">Record Cycle Count</button>
+            </div>
+            <div class="table-scroll" style="margin-top:12px;">
+              <table id="material_control_table">
+                <thead><tr><th>Material</th><th>Category</th><th>On Hand</th><th>Status</th><th>Supplier</th><th>Unit Cost</th><th>Job Use</th><th>Waste</th><th>Variance</th><th>Action</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="table-scroll" style="margin-top:12px;">
+              <table id="fuel_consumables_table">
+                <thead><tr><th>Fuel</th><th>Events</th><th>Litres</th><th>Total Cost</th><th>Avg/L</th><th>Last Fuel</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -1112,6 +1166,31 @@
         jobAccessNotice: $('#job_access_notice'),
         jobSummary: $('#job_summary'),
         jobListBody: $('#job_list_table tbody'),
+        materialControlSummary: $('#material_control_summary'),
+        materialControlSelect: $('#material_control_select'),
+        materialControlSku: $('#material_control_sku'),
+        materialControlName: $('#material_control_name'),
+        materialControlCategory: $('#material_control_category'),
+        materialControlUnit: $('#material_control_unit'),
+        materialControlVendor: $('#material_control_vendor'),
+        materialControlSupplierSku: $('#material_control_supplier_sku'),
+        materialControlStorage: $('#material_control_storage'),
+        materialControlUnitCost: $('#material_control_unit_cost'),
+        materialControlOpening: $('#material_control_opening'),
+        materialControlReorderPoint: $('#material_control_reorder_point'),
+        materialControlReorderQty: $('#material_control_reorder_qty'),
+        materialControlTarget: $('#material_control_target'),
+        materialControlUsageType: $('#material_control_usage_type'),
+        materialControlWorkOrder: $('#material_control_work_order'),
+        materialControlAdjustmentType: $('#material_control_adjustment_type'),
+        materialControlTracked: $('#material_control_tracked'),
+        materialControlSave: $('#material_control_save'),
+        materialControlReceipt: $('#material_control_receipt'),
+        materialControlIssue: $('#material_control_issue'),
+        materialControlAdjust: $('#material_control_adjust'),
+        materialControlCycleCount: $('#material_control_cycle_count'),
+        materialControlBody: $('#material_control_table tbody'),
+        fuelConsumablesBody: $('#fuel_consumables_table tbody'),
         jobCreateEstimate: $('#job_create_estimate'),
         jobAddEstimateLine: $('#job_add_estimate_line'),
         jobRenderQuotePackage: $('#job_render_quote_package'),
