@@ -2253,6 +2253,9 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       const existing=await resolveProfileByIdOrEmail(supabase,profileId,null);
       if(!existing?.id) return Response.json({ok:false,error:'Workforce profile not found.'},{status:404,headers:corsHeaders});
       const normalizedRole=String(body.role ?? existing.role ?? 'employee').trim().toLowerCase() || 'employee';
+      if (normalizedRole === 'admin' && normalizeRole(existing.role) !== 'admin' && normalizeRole(actorProfile.role) !== 'admin') {
+        return Response.json({ok:false,error:'Only an admin can promote a workforce profile to admin.'},{status:403,headers:corsHeaders});
+      }
       const patch: Record<string,unknown>={
         role:normalizedRole,
         is_active:body.is_active === undefined ? existing.is_active : !!body.is_active,
