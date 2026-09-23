@@ -378,6 +378,20 @@
       document.head.appendChild(script);
     }
 
+    function loadBuild342WeatherWorkability() {
+      if (window.YWIWeatherWorkabilityUI?.mount) {
+        window.YWIWeatherWorkabilityUI.mount({ api:window.YWIAPI });
+        return;
+      }
+      if (document.querySelector('script[data-ywi-build342-workability]')) return;
+      const script=document.createElement('script');
+      script.src='/js/admin-weather-workability-ui.js?v=2026-09-23b342';
+      script.dataset.ywiBuild342Workability='1';
+      script.addEventListener('load',()=>window.YWIWeatherWorkabilityUI?.mount?.({ api:window.YWIAPI }),{once:true});
+      script.addEventListener('error',()=>console.warn('Build 342 weather/workability UI failed to load.'),{once:true});
+      document.head.appendChild(script);
+    }
+
     function loadGroupOnce(key) {
       if (loadedGroups.has(key)) return;
       const group = currentGroup(key);
@@ -385,7 +399,7 @@
       loadedGroups.add(key);
       if (group.route) return;
       if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); loadBuild339HiringOnboarding(); }
-      if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); }
+      if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); loadBuild342WeatherWorkability(); }
       const button = group.refresh ? document.getElementById(group.refresh) : null;
       if (button && !button.disabled) setTimeout(() => button.click(), 0);
     }
