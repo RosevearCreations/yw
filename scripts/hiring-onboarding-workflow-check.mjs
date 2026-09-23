@@ -72,7 +72,7 @@ must(roadmap,[
   '#### **339 — Hiring & Onboarding Workflow** is implemented',
   '### Four-season Ontario operating model',
   'winter snow clearing/removal',
-  '#### 340 — Customer & Property CRM'
+  '#### **340 — Customer & Property CRM** is implemented'
 ],'Build 339 roadmap');
 must(pkg,['test:hiring-onboarding-workflow','test:browser:hiring-onboarding-workflow'],'Build 339 package scripts');
 must(workflow,['npm run test:hiring-onboarding-workflow','npm run test:browser:hiring-onboarding-workflow'],'Build 339 CI wiring');

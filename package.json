@@ -157,7 +157,9 @@
     "test:performance-development": "node scripts/performance-development-check.mjs",
     "test:browser:performance-development": "playwright test --config=playwright.config.mjs tests/browser/performance-development.spec.mjs",
     "test:hiring-onboarding-workflow": "node scripts/hiring-onboarding-workflow-check.mjs",
-    "test:browser:hiring-onboarding-workflow": "playwright test --config=playwright.config.mjs tests/browser/hiring-onboarding-workflow.spec.mjs"
+    "test:browser:hiring-onboarding-workflow": "playwright test --config=playwright.config.mjs tests/browser/hiring-onboarding-workflow.spec.mjs",
+    "test:customer-property-crm": "node scripts/customer-property-crm-check.mjs",
+    "test:browser:customer-property-crm": "playwright test --config=playwright.config.mjs tests/browser/customer-property-crm.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
