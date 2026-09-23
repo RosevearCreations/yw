@@ -2757,6 +2757,90 @@ serve(async (req) => {
       return Response.json({ok:true,build:340,schema:228,record:data},{headers:corsHeaders});
     }
 
+
+    if (action === 'route_territory_save') {
+      requireRank(profile,45,action);
+      const name=clean(body.territory_name,220);
+      const season=clean(body.season_context||'four_season',30).toLowerCase();
+      const statusValue=clean(body.territory_status||'active',30).toLowerCase();
+      if(!name) throw new HttpError(400,'Territory name is required.');
+      if(!['spring_summer','fall','winter','four_season'].includes(season)) throw new HttpError(400,'Unsupported season context.');
+      if(!['active','inactive','archived'].includes(statusValue)) throw new HttpError(400,'Unsupported territory status.');
+      const payload:any={
+        id:isUuid(body.id)?body.id:null,territory_code:clean(body.territory_code,80)||null,territory_name:name,
+        service_area_id:isUuid(body.service_area_id)?body.service_area_id:null,season_context:season,territory_status:statusValue,
+        owner_profile_id:isUuid(body.owner_profile_id)?body.owner_profile_id:null,owner_crew_id:isUuid(body.owner_crew_id)?body.owner_crew_id:null,
+        centre_latitude:body.centre_latitude===''||body.centre_latitude==null?null:Number(body.centre_latitude),
+        centre_longitude:body.centre_longitude===''||body.centre_longitude==null?null:Number(body.centre_longitude),
+        radius_km:body.radius_km===''||body.radius_km==null?null:Number(body.radius_km),notes:clean(body.notes,3000)||null,
+        route_id:isUuid(body.route_id)?body.route_id:null,route_season_context:clean(body.route_season_context,30)||null,
+        route_default_crew_id:isUuid(body.route_default_crew_id)?body.route_default_crew_id:null,
+        route_capacity_minutes:body.route_capacity_minutes===''||body.route_capacity_minutes==null?null:Number(body.route_capacity_minutes),
+        route_service_priority:clean(body.route_service_priority,30)||null,storm_event_capable:body.storm_event_capable===true||String(body.storm_event_capable).toLowerCase()==='true',
+        default_equipment_requirements:clean(body.default_equipment_requirements,1500)||null,optimization_notes:clean(body.optimization_notes,2500)||null
+      };
+      for(const [k,v,min,max] of [['centre_latitude',payload.centre_latitude,-90,90],['centre_longitude',payload.centre_longitude,-180,180],['radius_km',payload.radius_km,0,500]] as any[]){
+        if(v!==null&&(!Number.isFinite(v)||v<min||v>max)) throw new HttpError(400,`${k} is out of range.`);
+      }
+      if(payload.route_capacity_minutes!==null&&(!Number.isFinite(payload.route_capacity_minutes)||payload.route_capacity_minutes<30||payload.route_capacity_minutes>1440)) throw new HttpError(400,'Route capacity must be between 30 and 1440 minutes.');
+      const {data,error}=await supabase.rpc('ywi_rpc_route_territory_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:body.id?'updated':'created',entity_type:'route_territory',entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{season_context:season,territory_status:statusValue,route_id:payload.route_id},response_payload:{territory_id:(data as any)?.id||null}});
+      return Response.json({ok:true,build:341,schema:229,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'route_territory_site_save') {
+      requireRank(profile,45,action);
+      const territoryId=clean(body.territory_id,80),siteId=clean(body.client_site_id,80);
+      const priority=clean(body.service_priority||'normal',30).toLowerCase();
+      if(!isUuid(territoryId)||!isUuid(siteId)) throw new HttpError(400,'Valid territory and property are required.');
+      if(!['low','normal','high','critical'].includes(priority)) throw new HttpError(400,'Unsupported service priority.');
+      const payload:any={territory_id:territoryId,client_site_id:siteId,service_priority:priority,
+        preferred_route_id:isUuid(body.preferred_route_id)?body.preferred_route_id:null,assignment_note:clean(body.assignment_note,2000)||null,
+        is_active:body.is_active!==false&&String(body.is_active).toLowerCase()!=='false'};
+      const {data,error}=await supabase.rpc('ywi_rpc_route_territory_site_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:'saved',entity_type:'route_territory_site',entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{territory_id:territoryId,client_site_id:siteId,service_priority:priority},response_payload:{assignment_id:(data as any)?.id||null}});
+      return Response.json({ok:true,build:341,schema:229,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'route_optimization_generate') {
+      requireRank(profile,45,action);
+      const routeId=clean(body.route_id,80),serviceDate=clean(body.service_date,20);
+      const season=clean(body.season_context,30).toLowerCase()||null;
+      const goal=clean(body.optimization_goal||'travel_efficiency',40).toLowerCase();
+      if(!isUuid(routeId)||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(serviceDate)) throw new HttpError(400,'Valid route and service date are required.');
+      if(season&&!['spring_summer','fall','winter','four_season'].includes(season)) throw new HttpError(400,'Unsupported season context.');
+      if(!['travel_efficiency','capacity_balance','time_windows','service_priority','storm_priority'].includes(goal)) throw new HttpError(400,'Unsupported optimization goal.');
+      const speed=body.assumed_average_speed_kph===''||body.assumed_average_speed_kph==null?35:Number(body.assumed_average_speed_kph);
+      if(!Number.isFinite(speed)||speed<5||speed>120) throw new HttpError(400,'Average speed must be between 5 and 120 km/h.');
+      const payload:any={route_id:routeId,service_date:serviceDate,season_context:season,optimization_goal:goal,
+        storm_event_active:body.storm_event_active===true||String(body.storm_event_active).toLowerCase()==='true',
+        storm_event_key:clean(body.storm_event_key,160)||null,assumed_average_speed_kph:speed};
+      const {data,error}=await supabase.rpc('ywi_rpc_route_optimization_generate',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const runId=clean((data as any)?.id,80);
+      const stops=runId?await safeSelect(supabase.from('v_route_optimization_stop_directory').select('*').eq('run_id',runId).order('proposed_order',{ascending:true}).limit(1000)):[];
+      await audit(supabase,{operation_action:action,operation_status:'generated',entity_type:'route_optimization_run',entity_id:runId,actor_profile_id:profile.id,
+        request_payload:{route_id:routeId,service_date:serviceDate,season_context:season,optimization_goal:goal,storm_event_active:payload.storm_event_active},response_payload:{run_id:runId,proposal_count:stops.length}});
+      return Response.json({ok:true,build:341,schema:229,record:data,proposals:stops,dispatch_authority:'unchanged_operator_control'},{headers:corsHeaders});
+    }
+
+    if (action === 'route_optimization_decision') {
+      requireRank(profile,45,action);
+      const id=clean(body.id,80),statusValue=clean(body.run_status||'reviewed',30).toLowerCase();
+      if(!isUuid(id)) throw new HttpError(400,'Valid optimization run id is required.');
+      if(!['reviewed','accepted','rejected'].includes(statusValue)) throw new HttpError(400,'Decision must be reviewed, accepted or rejected.');
+      const payload:any={id,run_status:statusValue,decision_note:clean(body.decision_note,3000)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_route_optimization_decision',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:statusValue,entity_type:'route_optimization_run',entity_id:id,actor_profile_id:profile.id,
+        request_payload:{run_status:statusValue},response_payload:{dispatch_mutated:false}});
+      return Response.json({ok:true,build:341,schema:229,record:data,dispatch_mutated:false},{headers:corsHeaders});
+    }
+
     if (action === 'property_site_save') {
       requireRank(profile,45,action);
       const id=isUuid(body.id) ? clean(body.id,80) : null;
