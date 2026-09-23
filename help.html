@@ -265,3 +265,11 @@
           <p>Property preferences continue to come from Property &amp; Site Intelligence. Notification consent remains with the existing customer-notification authority.</p>
           <p><strong>Commercial boundary:</strong> cross-service candidates are <strong>advisory only</strong>. Recording an opportunity does not automatically contact the customer, create an estimate, schedule work, invoice, post Finance entries or mutate a payment provider.</p>
         </section>
+
+        <section class="help-section" id="route-optimization-territory">
+          <h2>Build 341 — Route Optimization &amp; Territory Management</h2>
+          <p>Build 341 adds territory ownership and an <strong>advisory</strong> route-planning workbench around the existing route, route-stop, property, recurring-service and dispatch authorities. It considers service area, property proximity, crew capacity, estimated duration, equipment requirements, time windows, frequency, current route order and service priority.</p>
+          <p>YW’s four-season model applies directly: spring/summer mowing and landscaping, fall cleanup/leaf collection, and winter snow clearing/removal all use the same route-planning authority. Winter routes can be explicitly marked <strong>storm-event</strong> capable and a supervisor can generate a storm-priority proposal for a named event.</p>
+          <p>Territory assignments attach canonical customer properties to an operating territory and can carry route preference and service-priority context. Existing property coordinates and access constraints remain Property &amp; Site Intelligence truth.</p>
+          <p><strong>Dispatch authority:</strong> route optimization never silently schedules a crew or rewrites live dispatch. Accepting or rejecting a proposal records the operator decision only; <code>dispatch_schedule_items</code> remains authoritative for actual scheduling and dispatch.</p>
+        </section>
