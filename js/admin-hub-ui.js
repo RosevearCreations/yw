@@ -392,6 +392,10 @@
       document.head.appendChild(script);
     }
 
+    function loadBuild343LandscapeMaterialEstimator() {
+      window.YWILandscapeMaterialEstimatorUI?.mount?.({ api:window.YWIAPI });
+    }
+
     function loadGroupOnce(key) {
       if (loadedGroups.has(key)) return;
       const group = currentGroup(key);
