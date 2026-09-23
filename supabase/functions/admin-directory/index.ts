@@ -39,7 +39,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
-  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
+  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
 
@@ -433,6 +433,28 @@ serve(async (req) => {
       route_properties:sites,route_crews:crews,route_profiles:profiles,
       seasonal_boundary:'Four-season Ontario routing covers spring/summer mowing and landscaping, fall cleanup/leaf collection, and winter snow clearing/removal with explicit storm-event activation.',
       authority_boundary:'Optimization is advisory only. public.dispatch_schedule_items remains the scheduling/dispatch authority and public.routes/public.route_stops remain canonical route structure.'
+    }, { headers:corsHeaders });
+  }
+
+  if (scope === 'workability' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const [rules,queue,guidance,decisions,dispatch,properties,agreements,routes,hsePackets] = await Promise.all([
+      safeList(supabase,'v_workability_rule_directory','*','sort_order',500,true),
+      safeList(supabase,'v_weather_workability_queue','*','observed_at',1500,false),
+      safeList(supabase,'v_workability_observation_rule_guidance','*','rule_name',2500,true),
+      safeList(supabase,'v_workability_decision_directory','*','decision_at',1500,false),
+      safeList(supabase,'v_crew_dispatch_schedule','*','scheduled_start',1500,true),
+      safeList(supabase,'v_property_site_intelligence','*','site_name',1500,true),
+      safeList(supabase,'v_crm_service_plan_directory','*','updated_at',1500,false),
+      safeList(supabase,'v_route_planning_directory','*','route_name',1000,true),
+      safeList(supabase,'linked_hse_packets','id,packet_number,packet_status,weather_monitoring_required,weather_monitoring_completed,heat_monitoring_required,heat_monitoring_completed,work_order_id,dispatch_schedule_item_id,route_id,site_id','created_at',800,false)
+    ]);
+    return Response.json({
+      ok:true,scope:'workability',actor_role:actorRole,actor_profile_id:actorId,
+      workability_rules:rules,workability_queue:queue,workability_guidance:guidance,
+      workability_decisions:decisions,workability_dispatch:dispatch,workability_properties:properties,
+      workability_agreements:agreements,workability_routes:routes,workability_hse_packets:hsePackets,
+      seasonal_boundary:'Four-season Ontario workability covers mowing/landscaping, fall cleanup/leaf collection and winter snow clearing/removal, including snowfall, freezing rain/ice and cold exposure context.',
+      decision_boundary:'Guidance never makes an automatic safety decision. Supervisors record the decision; existing dispatch and recurring-service actions apply schedule changes; customer-notification readiness is evidence only.'
     }, { headers:corsHeaders });
   }
 

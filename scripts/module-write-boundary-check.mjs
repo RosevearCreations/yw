@@ -23,6 +23,7 @@ const incidentInvestigationMigrationPath = 'sql/217_incident_near_miss_investiga
 const trainingMatrixMigrationPath = 'sql/218_training_certification_matrix.sql';
 const customerPropertyCrmMigrationPath = 'sql/228_customer_property_crm.sql';
 const routeOptimizationMigrationPath = 'sql/229_route_optimization_territory_management.sql';
+const weatherWorkabilityMigrationPath = 'sql/230_weather_workability_controls.sql';
 const operations = read(operationsPath);
 const helper = read(helperPath);
 const migration = read(migrationPath);
@@ -36,15 +37,16 @@ const incidentInvestigationMigration = read(incidentInvestigationMigrationPath);
 const trainingMatrixMigration = read(trainingMatrixMigrationPath);
 const customerPropertyCrmMigration = read(customerPropertyCrmMigrationPath);
 const routeOptimizationMigration = read(routeOptimizationMigrationPath);
+const weatherWorkabilityMigration = read(weatherWorkabilityMigrationPath);
 const coreData = read('supabase/functions/core-data-read/index.ts');
 
 const handledActions = [...new Set([...operations.matchAll(/action\s*===\s*['"]([^'"]+)['"]/g)].map((m) => m[1]))].sort();
 const helperActions = [...new Set([...helper.matchAll(/^\s{2}([a-z0-9_]+):\s*contract\('([^']+)'/gmi)].map((m) => m[2]))].sort();
-const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}\n${hazardPlanMigration}\n${incidentInvestigationMigration}\n${trainingMatrixMigration}\n${customerPropertyCrmMigration}\n${routeOptimizationMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
+const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}\n${hazardPlanMigration}\n${incidentInvestigationMigration}\n${trainingMatrixMigration}\n${customerPropertyCrmMigration}\n${routeOptimizationMigration}\n${weatherWorkabilityMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
 
-add('schema229-exact-handler-count', handledActions.length === 66, `Handled operations actions: ${handledActions.length}.`);
-add('schema229-helper-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
-add('schema229-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
+add('schema230-exact-handler-count', handledActions.length === 70, `Handled operations actions: ${handledActions.length}.`);
+add('schema230-helper-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
+add('schema230-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
 
 add('schema164-no-permissive-module-fallback', !operations.includes('moduleRequirementForAction') && !operations.includes("return { moduleKey:'admin', minimum:'manage' };"), 'Legacy unknown-action -> Admin/manage fallback is removed.');
 add('schema164-boundary-resolved-before-authorization', operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') > -1 && operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') < operations.indexOf('hasModuleAccess(supabase, profile, boundary.ownerModule, boundary.minimum)'), 'Action contract resolves before permission evaluation.');
@@ -89,6 +91,16 @@ add('build341-route-optimization-actions-explicit',
   routeOptimizationMigration.includes("('route_optimization_generate','jobs','approve','write'") &&
   routeOptimizationMigration.includes("('route_optimization_decision','jobs','approve','write'"),
   'Build 341 territory and optimization actions are explicit Jobs-approve contracts in source and Schema 229.');
+add('build342-weather-workability-actions-explicit',
+  helper.includes("workability_rule_save: contract('workability_rule_save', 'jobs', 'approve', 'write'") &&
+  helper.includes("workability_observation_save: contract('workability_observation_save', 'jobs', 'approve', 'write'") &&
+  helper.includes("workability_decision_save: contract('workability_decision_save', 'jobs', 'approve', 'write'") &&
+  helper.includes("workability_notification_readiness_save: contract('workability_notification_readiness_save', 'jobs', 'approve', 'write'") &&
+  weatherWorkabilityMigration.includes("('workability_rule_save','jobs','approve','write'") &&
+  weatherWorkabilityMigration.includes("('workability_observation_save','jobs','approve','write'") &&
+  weatherWorkabilityMigration.includes("('workability_decision_save','jobs','approve','write'") &&
+  weatherWorkabilityMigration.includes("('workability_notification_readiness_save','jobs','approve','write'"),
+  'Build 342 weather/workability actions are explicit Jobs-approve contracts in source and Schema 230.');
 
 add('schema164-private-contract-registry', migration.includes('alter table public.app_module_write_contracts enable row level security;') && migration.includes('revoke all on table public.app_module_write_contracts from public, anon, authenticated;') && migration.includes('grant select on table public.app_module_write_contracts to service_role;'), 'Write-contract registry is a private service-role control plane.');
 add('schema164-db-security-assertions', migration.includes('ywi_module_write_boundary_security_assertions') && migration.includes("'operations_action_contract_count'") && migration.includes("'manual_deposit_mutation_disabled'") && migration.includes("'boundary_control_plane_private'"), 'Database assertions verify contract count, disabled payment mutation, and private control plane.');

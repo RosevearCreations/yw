@@ -273,3 +273,11 @@
           <p>Territory assignments attach canonical customer properties to an operating territory and can carry route preference and service-priority context. Existing property coordinates and access constraints remain Property &amp; Site Intelligence truth.</p>
           <p><strong>Dispatch authority:</strong> route optimization never silently schedules a crew or rewrites live dispatch. Accepting or rejecting a proposal records the operator decision only; <code>dispatch_schedule_items</code> remains authoritative for actual scheduling and dispatch.</p>
         </section>
+
+        <section class="help-section" id="weather-workability-controls">
+          <h2>Build 342 — Weather &amp; Workability Controls</h2>
+          <p>Build 342 adds four-season workability decision support for rain, <strong>saturated ground</strong>, heat, cold, high wind, lightning/storm, visibility, snowfall and <strong>freezing rain/ice</strong>. Guidance is service-specific for mowing/landscaping, fall cleanup/leaf collection, winter snow clearing/removal and general outdoor work.</p>
+          <p>Observations can link to the canonical property, work order, dispatch item, recurring service agreement, route and HSE packet. Existing HSE weather/heat evidence remains Safety authority; Build 342 does not replace those records.</p>
+          <p><strong>Supervisor decision:</strong> guidance never produces an automatic safety verdict. A supervisor records workable, caution, postpone, reschedule or blocked, plus the reason and any proposed new service window. The decision may synchronize the existing dispatch workability state, but it does not change schedule status or automatically create a recurring delay/makeup event.</p>
+          <p><strong>Customer communication:</strong> customer-notification readiness is recorded as evidence (not needed, not ready, ready or notified elsewhere). Build 342 does not send a notification; the existing notification workflow remains authoritative.</p>
+        </section>
