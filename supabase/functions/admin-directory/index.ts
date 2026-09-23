@@ -39,7 +39,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
-  if (['all','users','people','sites','assignments','notifications','operations','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
+  if (['all','users','people','sites','assignments','notifications','operations','crm','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
 
@@ -389,6 +389,30 @@ serve(async (req) => {
     return Response.json(reporting, { headers: corsHeaders });
   }
 
+
+  if (scope === 'crm' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const [customers,properties,leads,plans,history,interactions,followups,opportunities,renewals,candidates,profiles] = await Promise.all([
+      safeList(supabase,'v_crm_customer_directory','*','client_name',1000,true),
+      safeList(supabase,'v_crm_property_directory','*','site_name',1500,true),
+      safeList(supabase,'v_quote_contact_followup_queue','*','created_at',500,false),
+      safeList(supabase,'v_crm_service_plan_directory','*','updated_at',1500,false),
+      safeList(supabase,'v_crm_service_history','*','occurred_at',2500,false),
+      safeList(supabase,'v_crm_interaction_timeline','*','occurred_at',1500,false),
+      safeList(supabase,'v_crm_followup_queue','*','due_at',1500,true),
+      safeList(supabase,'v_crm_opportunity_directory','*','created_at',1500,false),
+      safeList(supabase,'v_crm_renewal_queue','*','end_date',1500,true),
+      safeList(supabase,'v_crm_cross_service_candidates','*','client_name',1500,true),
+      safeList(supabase,'profiles','id,full_name,email,role,is_active','full_name',500,true)
+    ]);
+    return Response.json({
+      ok:true,scope:'crm',actor_role:actorRole,actor_profile_id:actorId,
+      crm_customers:customers,crm_properties:properties,crm_leads:leads,crm_service_plans:plans,
+      crm_service_history:history,crm_interactions:interactions,crm_followups:followups,
+      crm_opportunities:opportunities,crm_renewals:renewals,crm_cross_service_candidates:candidates,crm_profiles:profiles,
+      seasonal_boundary:'YW is a four-season Ontario operation: spring/summer mowing and landscaping, fall cleanup and leaf collection, and winter snow clearing/removal remain one customer/property relationship history.',
+      authority_boundary:'Build 340 reuses canonical clients, client_sites, quote_contact_requests, recurring_service_agreements, estimates and work_orders.'
+    }, { headers:corsHeaders });
+  }
 
   // Narrow Admin panel fast paths. These avoid loading the full people/site/accounting directory
   // when the UI only needs one panel refresh on slower mobile connections.

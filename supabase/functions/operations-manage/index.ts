@@ -2654,6 +2654,109 @@ serve(async (req) => {
       return Response.json({ok:true,build:330,schema:218,record:data},{headers:corsHeaders});
     }
 
+
+    if (action === 'crm_client_save') {
+      requireRank(profile,45,action);
+      const id=isUuid(body.id)?clean(body.id,80):null;
+      const legalName=clean(body.legal_name,220);
+      const stage=clean(body.crm_lifecycle_stage||'customer',30).toLowerCase();
+      const preferred=clean(body.crm_preferred_contact_method,30).toLowerCase()||null;
+      if(!id&&!legalName) throw new HttpError(400,'Customer/legal name is required.');
+      if(!['lead','prospect','customer','inactive','former'].includes(stage)) throw new HttpError(400,'Unsupported CRM lifecycle stage.');
+      if(preferred&&!['email','phone','text','portal','in_person','other'].includes(preferred)) throw new HttpError(400,'Unsupported preferred contact method.');
+      const payload:any={id,lead_request_id:isUuid(body.lead_request_id)?clean(body.lead_request_id,80):null,
+        client_code:clean(body.client_code,80)||null,legal_name:legalName||null,display_name:clean(body.display_name,220)||null,
+        client_type:clean(body.client_type||'customer',60),billing_email:clean(body.billing_email,320)||null,phone:clean(body.phone,80)||null,
+        city:clean(body.city,120)||null,province:clean(body.province,80)||null,postal_code:clean(body.postal_code,30)||null,
+        notes:clean(body.notes,2500)||null,is_active:body.is_active!==false&&String(body.is_active).toLowerCase()!=='false',
+        crm_lifecycle_stage:stage,crm_lead_source:clean(body.crm_lead_source,160)||null,
+        crm_relationship_owner_profile_id:isUuid(body.crm_relationship_owner_profile_id)?clean(body.crm_relationship_owner_profile_id,80):null,
+        crm_preferred_contact_method:preferred,crm_preferred_contact_window:clean(body.crm_preferred_contact_window,300)||null,
+        crm_relationship_notes:clean(body.crm_relationship_notes,3000)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_crm_client_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const clientId=clean((data as any)?.id,80);
+      const rows=clientId?await safeSelect(supabase.from('v_crm_customer_directory').select('*').eq('client_id',clientId).limit(1)):[];
+      await audit(supabase,{operation_action:action,operation_status:id?'updated':'created',entity_type:'client',entity_id:clientId,actor_profile_id:profile.id,
+        request_payload:{crm_lifecycle_stage:stage,lead_request_id:payload.lead_request_id,preferred_contact_method:preferred},response_payload:{client_id:clientId}});
+      return Response.json({ok:true,build:340,schema:228,record:rows[0]||data},{headers:corsHeaders});
+    }
+
+    if (action === 'crm_interaction_save') {
+      requireRank(profile,45,action);
+      const clientId=clean(body.client_id,80),summary=clean(body.summary,4000);
+      const type=clean(body.interaction_type||'communication',40).toLowerCase();
+      const channel=clean(body.channel||'other',30).toLowerCase();
+      const direction=clean(body.direction||'internal',30).toLowerCase();
+      const statusValue=clean(body.interaction_status||'open',30).toLowerCase();
+      const complaint=clean(body.complaint_status,30).toLowerCase()||null;
+      const season=clean(body.season_context||'other',30).toLowerCase();
+      if(!isUuid(clientId)||!summary) throw new HttpError(400,'Valid customer and interaction summary are required.');
+      if(!['communication','complaint','service_review','renewal_discussion','opportunity_note'].includes(type)) throw new HttpError(400,'Unsupported interaction type.');
+      if(!['email','phone','text','in_person','portal','website','system','other'].includes(channel)) throw new HttpError(400,'Unsupported interaction channel.');
+      if(!['inbound','outbound','internal'].includes(direction)) throw new HttpError(400,'Unsupported interaction direction.');
+      if(!['open','resolved','closed','informational'].includes(statusValue)) throw new HttpError(400,'Unsupported interaction status.');
+      if(complaint&&!['open','investigating','resolved','closed'].includes(complaint)) throw new HttpError(400,'Unsupported complaint status.');
+      if(!['spring_summer','fall','winter','four_season','other'].includes(season)) throw new HttpError(400,'Unsupported season context.');
+      const payload:any={id:isUuid(body.id)?body.id:null,client_id:clientId,client_site_id:isUuid(body.client_site_id)?body.client_site_id:null,
+        quote_request_id:isUuid(body.quote_request_id)?body.quote_request_id:null,estimate_id:isUuid(body.estimate_id)?body.estimate_id:null,
+        work_order_id:isUuid(body.work_order_id)?body.work_order_id:null,recurring_service_agreement_id:isUuid(body.recurring_service_agreement_id)?body.recurring_service_agreement_id:null,
+        interaction_type:type,channel,direction,interaction_status:statusValue,complaint_status:complaint,subject:clean(body.subject,300)||null,
+        summary,outcome:clean(body.outcome,2500)||null,season_context:season,service_type:clean(body.service_type,220)||null,occurred_at:clean(body.occurred_at,80)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_crm_interaction_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:statusValue,entity_type:'crm_customer_interaction',entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{client_id:clientId,interaction_type:type,channel,direction,season_context:season,complaint_status:complaint},response_payload:{interaction_id:(data as any)?.id||null}});
+      return Response.json({ok:true,build:340,schema:228,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'crm_followup_save') {
+      requireRank(profile,45,action);
+      const clientId=clean(body.client_id,80),summary=clean(body.summary,3000),dueAt=clean(body.due_at,80);
+      const type=clean(body.followup_type||'general',40).toLowerCase();
+      const statusValue=clean(body.followup_status||'pending',30).toLowerCase();
+      const priority=clean(body.priority||'normal',20).toLowerCase();
+      const season=clean(body.season_context||'other',30).toLowerCase();
+      if(!isUuid(clientId)||!summary||!dueAt) throw new HttpError(400,'Customer, due date and summary are required.');
+      if(!['general','lead','complaint','renewal','service_review','upsell_cross_service'].includes(type)) throw new HttpError(400,'Unsupported follow-up type.');
+      if(!['pending','in_progress','deferred','completed','cancelled'].includes(statusValue)) throw new HttpError(400,'Unsupported follow-up status.');
+      if(!['low','normal','high','urgent'].includes(priority)) throw new HttpError(400,'Unsupported follow-up priority.');
+      if(!['spring_summer','fall','winter','four_season','other'].includes(season)) throw new HttpError(400,'Unsupported season context.');
+      const payload:any={id:isUuid(body.id)?body.id:null,client_id:clientId,client_site_id:isUuid(body.client_site_id)?body.client_site_id:null,
+        interaction_id:isUuid(body.interaction_id)?body.interaction_id:null,followup_type:type,followup_status:statusValue,priority,due_at:dueAt,
+        assigned_to_profile_id:isUuid(body.assigned_to_profile_id)?body.assigned_to_profile_id:null,season_context:season,
+        service_type:clean(body.service_type,220)||null,summary,resolution_note:clean(body.resolution_note,2500)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_crm_followup_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:statusValue,entity_type:'crm_followup',entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{client_id:clientId,followup_type:type,due_at:dueAt,priority,season_context:season},response_payload:{followup_id:(data as any)?.id||null}});
+      return Response.json({ok:true,build:340,schema:228,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'crm_opportunity_save') {
+      requireRank(profile,45,action);
+      const clientId=clean(body.client_id,80),target=clean(body.target_service_type,220);
+      const type=clean(body.opportunity_type||'new_service',40).toLowerCase();
+      const statusValue=clean(body.opportunity_status||'identified',30).toLowerCase();
+      const season=clean(body.season_context||'other',30).toLowerCase();
+      const value=body.estimated_value===''||body.estimated_value==null?null:Number(body.estimated_value);
+      if(!isUuid(clientId)||!target) throw new HttpError(400,'Customer and target service are required.');
+      if(!['new_service','upsell','cross_service','renewal','winback'].includes(type)) throw new HttpError(400,'Unsupported opportunity type.');
+      if(!['identified','contact_ready','quoted','on_hold','won','lost','dismissed'].includes(statusValue)) throw new HttpError(400,'Unsupported opportunity status.');
+      if(!['spring_summer','fall','winter','four_season','other'].includes(season)) throw new HttpError(400,'Unsupported season context.');
+      if(value!==null&&(!Number.isFinite(value)||value<0)) throw new HttpError(400,'Estimated value must be zero or greater.');
+      const payload:any={id:isUuid(body.id)?body.id:null,client_id:clientId,client_site_id:isUuid(body.client_site_id)?body.client_site_id:null,
+        source_interaction_id:isUuid(body.source_interaction_id)?body.source_interaction_id:null,estimate_id:isUuid(body.estimate_id)?body.estimate_id:null,
+        opportunity_type:type,opportunity_status:statusValue,source_service_type:clean(body.source_service_type,220)||null,target_service_type:target,
+        season_context:season,reason:clean(body.reason,2500)||null,next_action:clean(body.next_action,2500)||null,estimated_value:value,
+        assigned_to_profile_id:isUuid(body.assigned_to_profile_id)?body.assigned_to_profile_id:null,target_date:clean(body.target_date,20)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_crm_opportunity_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:statusValue,entity_type:'crm_opportunity',entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{client_id:clientId,opportunity_type:type,target_service_type:target,season_context:season},response_payload:{opportunity_id:(data as any)?.id||null}});
+      return Response.json({ok:true,build:340,schema:228,record:data},{headers:corsHeaders});
+    }
+
     if (action === 'property_site_save') {
       requireRank(profile,45,action);
       const id=isUuid(body.id) ? clean(body.id,80) : null;

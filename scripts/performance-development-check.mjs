@@ -82,7 +82,7 @@ must(help,[
   'coaching and recognition',
   'Safety incident and near-miss truth remains separate'
 ],'Build 338 Help');
-must(roadmap,['#### **338 — Performance & Development** is implemented','#### **339 — Hiring & Onboarding Workflow** is implemented','#### 340 — Customer & Property CRM'],'Build 338 roadmap');
+must(roadmap,['#### **338 — Performance & Development** is implemented','#### **339 — Hiring & Onboarding Workflow** is implemented','#### **340 — Customer & Property CRM** is implemented'],'Build 338 roadmap');
 must(pkg,['test:performance-development','test:browser:performance-development'],'Build 338 package scripts');
 must(workflow,['npm run test:performance-development','npm run test:browser:performance-development'],'Build 338 CI wiring');
 

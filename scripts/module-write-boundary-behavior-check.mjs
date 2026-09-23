@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 58, 'Exactly 58 operations actions must be contracted through Schema 218.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 58);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 62, 'Exactly 62 operations actions must be contracted through Schema 228.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 62);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
@@ -205,6 +205,27 @@ assert.equal(productionQuantity.minimum, 'create');
 assert.equal(productionQuantity.mode, 'write');
 assert.equal(productionQuantity.eventKey, 'jobs.production.quantity_saved');
 
+const crmClient = resolveModuleWriteBoundary('crm_client_save');
+assert.equal(crmClient.ownerModule, 'jobs');
+assert.equal(crmClient.minimum, 'approve');
+assert.equal(crmClient.mode, 'write');
+assert.equal(crmClient.eventKey, 'jobs.crm.customer_saved');
+
+const crmInteraction = resolveModuleWriteBoundary('crm_interaction_save');
+assert.equal(crmInteraction.ownerModule, 'jobs');
+assert.equal(crmInteraction.minimum, 'approve');
+assert.equal(crmInteraction.eventKey, 'jobs.crm.interaction_saved');
+
+const crmFollowup = resolveModuleWriteBoundary('crm_followup_save');
+assert.equal(crmFollowup.ownerModule, 'jobs');
+assert.equal(crmFollowup.minimum, 'approve');
+assert.equal(crmFollowup.eventKey, 'jobs.crm.followup_saved');
+
+const crmOpportunity = resolveModuleWriteBoundary('crm_opportunity_save');
+assert.equal(crmOpportunity.ownerModule, 'jobs');
+assert.equal(crmOpportunity.minimum, 'approve');
+assert.equal(crmOpportunity.eventKey, 'jobs.crm.opportunity_saved');
+
 const disabled = resolveModuleWriteBoundary('deposit_status_update');
 assert.equal(disabled.ownerModule, 'finance');
 assert.equal(disabled.minimum, 'manage');
@@ -242,7 +263,8 @@ for (const action of Array.from(MODULE_WRITE_ACTIONS)) {
   if (boundary.crossModule) assert.ok(boundary.eventKey, `Cross-module contract needs event key: ${action}`);
 }
 
-console.log('PASS boundary-exact-58-actions');
+console.log('PASS boundary-exact-62-actions');
+console.log('PASS boundary-build340-customer-property-crm');
 console.log('PASS boundary-build320-attention-management');
 console.log('PASS boundary-build322-recurring-service-management');
 console.log('PASS boundary-build323-property-site-management');
@@ -258,4 +280,4 @@ console.log('PASS boundary-disabled-payment-mutation');
 console.log('PASS boundary-unknown-action-fails-closed');
 console.log('PASS boundary-audit-metadata');
 console.log('PASS boundary-all-contracts-valid');
-console.log('\nSchema 218 module write-boundary behavior gate passed: 13/13 checks.');
+console.log('\nSchema 228 module write-boundary behavior gate passed: 14/14 checks.');

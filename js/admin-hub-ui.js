@@ -350,6 +350,20 @@
       document.head.appendChild(script);
     }
 
+    function loadBuild340CustomerPropertyCRM() {
+      if (window.YWICustomerPropertyCRMUI?.mount) {
+        window.YWICustomerPropertyCRMUI.mount({ api:window.YWIAPI });
+        return;
+      }
+      if (document.querySelector('script[data-ywi-build340-crm]')) return;
+      const script=document.createElement('script');
+      script.src='/js/admin-customer-property-crm-ui.js?v=2026-09-23b340';
+      script.dataset.ywiBuild340Crm='1';
+      script.addEventListener('load',()=>window.YWICustomerPropertyCRMUI?.mount?.({ api:window.YWIAPI }),{once:true});
+      script.addEventListener('error',()=>console.warn('Build 340 Customer & Property CRM UI failed to load.'),{once:true});
+      document.head.appendChild(script);
+    }
+
     function loadGroupOnce(key) {
       if (loadedGroups.has(key)) return;
       const group = currentGroup(key);
@@ -357,6 +371,7 @@
       loadedGroups.add(key);
       if (group.route) return;
       if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); loadBuild339HiringOnboarding(); }
+      if (key === 'operations') { loadBuild340CustomerPropertyCRM(); }
       const button = group.refresh ? document.getElementById(group.refresh) : null;
       if (button && !button.disabled) setTimeout(() => button.click(), 0);
     }
