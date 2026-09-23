@@ -155,7 +155,9 @@
     "test:timekeeping-attendance-payroll-evidence": "node scripts/timekeeping-attendance-payroll-evidence-check.mjs",
     "test:browser:timekeeping-attendance-payroll-evidence": "playwright test --config=playwright.config.mjs tests/browser/timekeeping-attendance-payroll-evidence.spec.mjs",
     "test:performance-development": "node scripts/performance-development-check.mjs",
-    "test:browser:performance-development": "playwright test --config=playwright.config.mjs tests/browser/performance-development.spec.mjs"
+    "test:browser:performance-development": "playwright test --config=playwright.config.mjs tests/browser/performance-development.spec.mjs",
+    "test:hiring-onboarding-workflow": "node scripts/hiring-onboarding-workflow-check.mjs",
+    "test:browser:hiring-onboarding-workflow": "playwright test --config=playwright.config.mjs tests/browser/hiring-onboarding-workflow.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
