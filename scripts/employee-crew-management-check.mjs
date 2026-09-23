@@ -40,7 +40,7 @@ const workforceView=migration.slice(migration.indexOf('create or replace view pu
 for(const sensitive of ['address_line1','address_line2','emergency_contact_name','emergency_contact_phone']) assert.ok(!workforceView.includes(sensitive),'Operational workforce view must omit '+sensitive);
 
 must(directory,[
-  "['module_permissions','workforce','timekeeping','performance'].includes(key)",
+  "['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)",
   "scope === 'workforce'",
   'v_workforce_employee_directory',
   'v_workforce_crew_directory',
@@ -74,7 +74,7 @@ must(ui,[
 must(hub,[
   'loadBuild336Workforce',
   '/js/admin-workforce-ui.js?v=2026-09-22b336',
-  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); }"
+  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); loadBuild339HiringOnboarding(); }"
 ],'Build 336 lazy loading');
 
 must(help,[

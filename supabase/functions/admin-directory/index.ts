@@ -38,7 +38,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
-  if (['module_permissions','workforce','timekeeping','performance'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
+  if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
@@ -240,6 +240,31 @@ serve(async (req) => {
       workforce_private_contacts:privateContacts,
       workforce_training_readiness:trainingReadiness,
       privacy_boundary:'Home address and emergency-contact fields are returned only by this Admin-manage workforce scope. Operational workforce views omit them.'
+    }, { headers:corsHeaders });
+  }
+
+  if (scope === 'onboarding') {
+    const [overview,items,events,profiles,crews,training] = await Promise.all([
+      safeList(supabase,'v_workforce_hiring_onboarding_overview','*','updated_at',1000,false),
+      safeList(supabase,'workforce_candidate_onboarding_items','*','updated_at',2500,false),
+      safeList(supabase,'workforce_candidate_stage_events','*','changed_at',2500,false),
+      safeList(supabase,'v_workforce_employee_directory','*','full_name',1000,true),
+      safeList(supabase,'v_workforce_crew_directory','*','crew_name',500,true),
+      safeList(supabase,'v_training_certification_matrix','profile_id,requirement_code,requirement_name,readiness_status,internal_authorization_required,internal_authorization_status,updated_at','updated_at',2500,false)
+    ]);
+    return Response.json({
+      ok:true,
+      scope:'onboarding',
+      actor_role:actorRole,
+      actor_profile_id:actorId,
+      onboarding_overview:overview,
+      onboarding_items:items,
+      onboarding_stage_events:events,
+      onboarding_profiles:profiles,
+      onboarding_crews:crews,
+      onboarding_training:training,
+      seasonal_boundary:'YW is a four-season Ontario operation: spring/summer mowing and landscaping, fall cleanup and leaf collection, and winter snow clearing/removal are first-class operating contexts.',
+      authority_boundary:'Hiring records link into canonical profiles, training/certification, internal equipment/task authorization and crew_members. This scope does not create duplicate employee, training, Safety or crew authority.'
     }, { headers:corsHeaders });
   }
 
