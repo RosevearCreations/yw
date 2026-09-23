@@ -2841,6 +2841,120 @@ serve(async (req) => {
       return Response.json({ok:true,build:341,schema:229,record:data,dispatch_mutated:false},{headers:corsHeaders});
     }
 
+
+    if (action === 'workability_rule_save') {
+      requireRank(profile,45,action);
+      const ruleCode=clean(body.rule_code,80).toUpperCase();
+      const ruleName=clean(body.rule_name,220);
+      const service=clean(body.service_context||'general_outdoor',40).toLowerCase();
+      const season=clean(body.season_context||'four_season',30).toLowerCase();
+      const condition=clean(body.condition_type,40).toLowerCase();
+      const level=clean(body.guidance_level||'review',30).toLowerCase();
+      const guidance=clean(body.operator_guidance,3000);
+      if(!ruleCode||!ruleName||!condition||!guidance) throw new HttpError(400,'Rule code, name, condition and operator guidance are required.');
+      if(!['mowing_landscaping','fall_cleanup','snow_clearing_removal','general_outdoor'].includes(service)) throw new HttpError(400,'Unsupported service context.');
+      if(!['spring_summer','fall','winter','four_season'].includes(season)) throw new HttpError(400,'Unsupported season context.');
+      if(!['rain','saturated_ground','heat','cold','high_wind','lightning_storm','visibility','snowfall','freezing_rain_ice'].includes(condition)) throw new HttpError(400,'Unsupported condition type.');
+      if(!['review','caution','restriction'].includes(level)) throw new HttpError(400,'Unsupported guidance level.');
+      const payload:any={id:isUuid(body.id)?body.id:null,rule_code:ruleCode,rule_name:ruleName,service_context:service,season_context:season,
+        condition_type:condition,guidance_level:level,threshold_summary:clean(body.threshold_summary,2000)||null,
+        operator_guidance:guidance,safety_note:clean(body.safety_note,2000)||null,
+        is_active:body.is_active!==false&&String(body.is_active).toLowerCase()!=='false',sort_order:Math.max(0,Math.min(10000,int(body.sort_order,100)))};
+      const {data,error}=await supabase.rpc('ywi_rpc_workability_rule_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:body.id?'updated':'created',entity_type:'workability_service_rule',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{rule_code:ruleCode,service_context:service,season_context:season,condition_type:condition,guidance_level:level},
+        response_payload:{rule_id:(data as any)?.id||null}});
+      return Response.json({ok:true,build:342,schema:230,record:data,decision_boundary:'guidance_only'},{headers:corsHeaders});
+    }
+
+    if (action === 'workability_observation_save') {
+      requireRank(profile,45,action);
+      const serviceDate=clean(body.service_date,20);
+      const source=clean(body.observation_source||'supervisor',40).toLowerCase();
+      const service=clean(body.service_context,40).toLowerCase();
+      const season=clean(body.season_context,30).toLowerCase();
+      const tags=arrayValue(body.condition_tags).map((v:any)=>clean(v,40).toLowerCase()).filter(Boolean);
+      const allowedTags=['rain','saturated_ground','heat','cold','high_wind','lightning_storm','visibility','snowfall','freezing_rain_ice'];
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(serviceDate)||!service||!season) throw new HttpError(400,'Valid service date, service context and season context are required.');
+      if(!['supervisor','crew','hse_review','forecast_review','customer_report','other'].includes(source)) throw new HttpError(400,'Unsupported observation source.');
+      if(!['mowing_landscaping','fall_cleanup','snow_clearing_removal','general_outdoor'].includes(service)) throw new HttpError(400,'Unsupported service context.');
+      if(!['spring_summer','fall','winter','four_season'].includes(season)) throw new HttpError(400,'Unsupported season context.');
+      if(tags.some((v:string)=>!allowedTags.includes(v))) throw new HttpError(400,'Unsupported workability condition tag.');
+      const numericOrNull=(value:any)=>value===''||value==null?null:Number(value);
+      const wind=numericOrNull(body.wind_kph), visibility=numericOrNull(body.visibility_km), snowfall=numericOrNull(body.snowfall_cm);
+      if(wind!==null&&(!Number.isFinite(wind)||wind<0||wind>300)) throw new HttpError(400,'Wind must be between 0 and 300 km/h.');
+      if(visibility!==null&&(!Number.isFinite(visibility)||visibility<0||visibility>100)) throw new HttpError(400,'Visibility must be between 0 and 100 km.');
+      if(snowfall!==null&&(!Number.isFinite(snowfall)||snowfall<0||snowfall>500)) throw new HttpError(400,'Snowfall must be between 0 and 500 cm.');
+      const rain=clean(body.rain_state||'none',30).toLowerCase(),ground=clean(body.ground_state||'unknown',30).toLowerCase();
+      const ice=clean(body.freezing_rain_ice_state||'none',30).toLowerCase(),storm=clean(body.lightning_storm_state||'none',30).toLowerCase();
+      if(!['none','light','moderate','heavy','recent'].includes(rain)) throw new HttpError(400,'Unsupported rain state.');
+      if(!['unknown','dry','damp','saturated','frozen','snow_covered','icy'].includes(ground)) throw new HttpError(400,'Unsupported ground state.');
+      if(!['none','possible','observed','treated'].includes(ice)) throw new HttpError(400,'Unsupported freezing-rain/ice state.');
+      if(!['none','watch','nearby','observed'].includes(storm)) throw new HttpError(400,'Unsupported lightning/storm state.');
+      const payload:any={id:isUuid(body.id)?body.id:null,service_date:serviceDate,observed_at:clean(body.observed_at,80)||null,observation_source:source,
+        client_site_id:isUuid(body.client_site_id)?body.client_site_id:null,work_order_id:isUuid(body.work_order_id)?body.work_order_id:null,
+        dispatch_schedule_item_id:isUuid(body.dispatch_schedule_item_id)?body.dispatch_schedule_item_id:null,
+        recurring_service_agreement_id:isUuid(body.recurring_service_agreement_id)?body.recurring_service_agreement_id:null,
+        route_id:isUuid(body.route_id)?body.route_id:null,linked_hse_packet_id:isUuid(body.linked_hse_packet_id)?body.linked_hse_packet_id:null,
+        service_context:service,season_context:season,weather_condition:clean(body.weather_condition,500)||null,
+        temperature_c:numericOrNull(body.temperature_c),humidex_c:numericOrNull(body.humidex_c),wind_kph:wind,visibility_km:visibility,
+        rain_state:rain,ground_state:ground,snowfall_cm:snowfall,freezing_rain_ice_state:ice,lightning_storm_state:storm,
+        condition_tags:tags,source_note:clean(body.source_note,1600)||null,observation_note:clean(body.observation_note,3000)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_workability_observation_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const id=clean((data as any)?.id,80);
+      const guidance=id?await safeSelect(supabase.from('v_workability_observation_rule_guidance').select('*').eq('observation_id',id).order('guidance_level',{ascending:false}).limit(100)):[];
+      await audit(supabase,{operation_action:action,operation_status:body.id?'updated':'recorded',entity_type:'workability_observation',
+        entity_id:id,actor_profile_id:profile.id,request_payload:{service_date:serviceDate,service_context:service,season_context:season,condition_tags:tags},
+        response_payload:{observation_id:id,guidance_count:guidance.length,automatic_decision:false}});
+      return Response.json({ok:true,build:342,schema:230,record:data,guidance,automatic_decision:false},{headers:corsHeaders});
+    }
+
+    if (action === 'workability_decision_save') {
+      requireRank(profile,45,action);
+      const observationId=clean(body.observation_id,80),state=clean(body.decision_state,30).toLowerCase(),reason=clean(body.decision_reason,3000);
+      const notify=clean(body.customer_notification_readiness||'not_ready',30).toLowerCase();
+      const proposedStart=clean(body.proposed_reschedule_start,80)||null,proposedEnd=clean(body.proposed_reschedule_end,80)||null;
+      if(!isUuid(observationId)||!state||!reason) throw new HttpError(400,'Observation, supervisor decision and reason are required.');
+      if(!['workable','caution','postpone','reschedule','blocked'].includes(state)) throw new HttpError(400,'Unsupported supervisor workability decision.');
+      if(!['not_needed','not_ready','ready','notified'].includes(notify)) throw new HttpError(400,'Unsupported customer-notification readiness.');
+      if(state==='reschedule'&&(!proposedStart||!proposedEnd||Number.isNaN(new Date(proposedStart).valueOf())||Number.isNaN(new Date(proposedEnd).valueOf())||new Date(proposedEnd)<=new Date(proposedStart))) {
+        throw new HttpError(400,'Reschedule decisions require a valid proposed new window.');
+      }
+      const payload:any={observation_id:observationId,decision_state:state,decision_reason:reason,
+        service_restriction_summary:clean(body.service_restriction_summary,2500)||null,
+        proposed_reschedule_start:proposedStart,proposed_reschedule_end:proposedEnd,
+        customer_notification_readiness:notify,customer_notification_note:clean(body.customer_notification_note,2000)||null,
+        weather_summary:clean(body.weather_summary,1000)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_workability_decision_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:state,entity_type:'workability_decision',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{observation_id:observationId,decision_state:state,customer_notification_readiness:notify,proposed_reschedule_start:proposedStart,proposed_reschedule_end:proposedEnd},
+        response_payload:{decision_id:(data as any)?.id||null,workability_state:(data as any)?.workability_state||null,dispatch_application_status:(data as any)?.dispatch_application_status||null,schedule_mutated:false,customer_notified:false}});
+      return Response.json({ok:true,build:342,schema:230,record:data,schedule_mutated:false,customer_notified:false,dispatch_action_required:['postpone','reschedule','blocked'].includes(state)},{headers:corsHeaders});
+    }
+
+    if (action === 'workability_notification_readiness_save') {
+      requireRank(profile,45,action);
+      const decisionId=clean(body.decision_id,80),state=clean(body.readiness_state,30).toLowerCase();
+      const channels=arrayValue(body.channel_options).map((v:any)=>clean(v,30).toLowerCase()).filter(Boolean);
+      const allowed=['email','phone','text','portal','in_person','other'];
+      if(!isUuid(decisionId)||!state) throw new HttpError(400,'Decision and readiness state are required.');
+      if(!['not_needed','not_ready','ready','notified'].includes(state)) throw new HttpError(400,'Unsupported customer-notification readiness.');
+      if(channels.some((v:string)=>!allowed.includes(v))) throw new HttpError(400,'Unsupported notification channel evidence.');
+      const payload:any={decision_id:decisionId,readiness_state:state,channel_options:channels,readiness_note:clean(body.readiness_note,2500)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_workability_notification_readiness_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:state,entity_type:'workability_notification_readiness',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{decision_id:decisionId,readiness_state:state,channel_options:channels},
+        response_payload:{readiness_event_id:(data as any)?.id||null,notification_sent_by_action:false}});
+      return Response.json({ok:true,build:342,schema:230,record:data,notification_sent_by_action:false},{headers:corsHeaders});
+    }
+
     if (action === 'property_site_save') {
       requireRank(profile,45,action);
       const id=isUuid(body.id) ? clean(body.id,80) : null;

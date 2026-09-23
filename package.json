@@ -161,7 +161,9 @@
     "test:customer-property-crm": "node scripts/customer-property-crm-check.mjs",
     "test:browser:customer-property-crm": "playwright test --config=playwright.config.mjs tests/browser/customer-property-crm.spec.mjs",
     "test:route-optimization-territory": "node scripts/route-optimization-territory-check.mjs",
-    "test:browser:route-optimization-territory": "playwright test --config=playwright.config.mjs tests/browser/route-optimization-territory.spec.mjs"
+    "test:browser:route-optimization-territory": "playwright test --config=playwright.config.mjs tests/browser/route-optimization-territory.spec.mjs",
+    "test:weather-workability": "node scripts/weather-workability-check.mjs",
+    "test:browser:weather-workability": "playwright test --config=playwright.config.mjs tests/browser/weather-workability.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
