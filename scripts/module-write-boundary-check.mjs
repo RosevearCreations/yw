@@ -21,6 +21,7 @@ const productionMigrationPath = 'sql/214_landscape_production_tracking.sql';
 const hazardPlanMigrationPath = 'sql/216_job_hazard_site_safety_plans.sql';
 const incidentInvestigationMigrationPath = 'sql/217_incident_near_miss_investigation.sql';
 const trainingMatrixMigrationPath = 'sql/218_training_certification_matrix.sql';
+const customerPropertyCrmMigrationPath = 'sql/228_customer_property_crm.sql';
 const operations = read(operationsPath);
 const helper = read(helperPath);
 const migration = read(migrationPath);
@@ -32,15 +33,16 @@ const productionMigration = read(productionMigrationPath);
 const hazardPlanMigration = read(hazardPlanMigrationPath);
 const incidentInvestigationMigration = read(incidentInvestigationMigrationPath);
 const trainingMatrixMigration = read(trainingMatrixMigrationPath);
+const customerPropertyCrmMigration = read(customerPropertyCrmMigrationPath);
 const coreData = read('supabase/functions/core-data-read/index.ts');
 
 const handledActions = [...new Set([...operations.matchAll(/action\s*===\s*['"]([^'"]+)['"]/g)].map((m) => m[1]))].sort();
 const helperActions = [...new Set([...helper.matchAll(/^\s{2}([a-z0-9_]+):\s*contract\('([^']+)'/gmi)].map((m) => m[2]))].sort();
-const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}\n${hazardPlanMigration}\n${incidentInvestigationMigration}\n${trainingMatrixMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
+const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}\n${hazardPlanMigration}\n${incidentInvestigationMigration}\n${trainingMatrixMigration}\n${customerPropertyCrmMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
 
-add('schema218-exact-handler-count', handledActions.length === 58, `Handled operations actions: ${handledActions.length}.`);
-add('schema218-helper-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
-add('schema218-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
+add('schema228-exact-handler-count', handledActions.length === 62, `Handled operations actions: ${handledActions.length}.`);
+add('schema228-helper-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
+add('schema228-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
 
 add('schema164-no-permissive-module-fallback', !operations.includes('moduleRequirementForAction') && !operations.includes("return { moduleKey:'admin', minimum:'manage' };"), 'Legacy unknown-action -> Admin/manage fallback is removed.');
 add('schema164-boundary-resolved-before-authorization', operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') > -1 && operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') < operations.indexOf('hasModuleAccess(supabase, profile, boundary.ownerModule, boundary.minimum)'), 'Action contract resolves before permission evaluation.');
@@ -65,6 +67,16 @@ add('build325-production-actions-explicit', helper.includes("landscape_productio
 add('build328-safety-plan-actions-explicit', helper.includes("job_hazard_template_save: contract('job_hazard_template_save', 'safety', 'approve', 'write'") && helper.includes("job_hazard_plan_save: contract('job_hazard_plan_save', 'safety', 'create', 'write'") && helper.includes("job_hazard_plan_review: contract('job_hazard_plan_review', 'safety', 'approve', 'write'") && hazardPlanMigration.includes("('job_hazard_template_save','safety','approve','write'") && hazardPlanMigration.includes("('job_hazard_plan_save','safety','create','write'") && hazardPlanMigration.includes("('job_hazard_plan_review','safety','approve','write'"), 'Build 328 template, field-plan and supervisor-review writes are explicit Safety contracts.');
 add('build329-incident-investigation-actions-explicit', helper.includes("incident_investigation_save: contract('incident_investigation_save', 'safety', 'approve', 'write'") && helper.includes("incident_investigation_review: contract('incident_investigation_review', 'safety', 'approve', 'write'") && helper.includes("incident_investigation_close: contract('incident_investigation_close', 'safety', 'approve', 'write'") && incidentInvestigationMigration.includes("('incident_investigation_save','safety','approve','write'") && incidentInvestigationMigration.includes("('incident_investigation_review','safety','approve','write'") && incidentInvestigationMigration.includes("('incident_investigation_close','safety','approve','write'"), 'Build 329 investigation save, supervisor review and evidence-gated close are explicit Safety contracts.');
 add('build330-training-matrix-actions-explicit', helper.includes("training_requirement_save: contract('training_requirement_save', 'safety', 'approve', 'write'") && helper.includes("training_assignment_save: contract('training_assignment_save', 'safety', 'approve', 'write'") && helper.includes("training_record_save: contract('training_record_save', 'safety', 'approve', 'write'") && helper.includes("training_internal_authorization_decision: contract('training_internal_authorization_decision', 'safety', 'approve', 'write'") && trainingMatrixMigration.includes("('training_requirement_save','safety','approve','write'") && trainingMatrixMigration.includes("('training_internal_authorization_decision','safety','approve','write'"), 'Build 330 requirement, assignment, training evidence and internal-authorization writes are explicit Safety contracts.');
+add('build340-crm-actions-explicit',
+  helper.includes("crm_client_save: contract('crm_client_save', 'jobs', 'approve', 'write'") &&
+  helper.includes("crm_interaction_save: contract('crm_interaction_save', 'jobs', 'approve', 'write'") &&
+  helper.includes("crm_followup_save: contract('crm_followup_save', 'jobs', 'approve', 'write'") &&
+  helper.includes("crm_opportunity_save: contract('crm_opportunity_save', 'jobs', 'approve', 'write'") &&
+  customerPropertyCrmMigration.includes("('crm_client_save','jobs','approve','write'") &&
+  customerPropertyCrmMigration.includes("('crm_interaction_save','jobs','approve','write'") &&
+  customerPropertyCrmMigration.includes("('crm_followup_save','jobs','approve','write'") &&
+  customerPropertyCrmMigration.includes("('crm_opportunity_save','jobs','approve','write'"),
+  'Build 340 customer/property CRM writes are explicit Jobs-approve contracts in source and Schema 228.');
 
 add('schema164-private-contract-registry', migration.includes('alter table public.app_module_write_contracts enable row level security;') && migration.includes('revoke all on table public.app_module_write_contracts from public, anon, authenticated;') && migration.includes('grant select on table public.app_module_write_contracts to service_role;'), 'Write-contract registry is a private service-role control plane.');
 add('schema164-db-security-assertions', migration.includes('ywi_module_write_boundary_security_assertions') && migration.includes("'operations_action_contract_count'") && migration.includes("'manual_deposit_mutation_disabled'") && migration.includes("'boundary_control_plane_private'"), 'Database assertions verify contract count, disabled payment mutation, and private control plane.');
