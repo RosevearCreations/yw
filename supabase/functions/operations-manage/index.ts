@@ -2955,6 +2955,66 @@ serve(async (req) => {
       return Response.json({ok:true,build:342,schema:230,record:data,notification_sent_by_action:false},{headers:corsHeaders});
     }
 
+    if (action === 'landscape_material_estimate_save') {
+      requireRank(profile,45,action);
+      const service=clean(body.service_context||'mowing_landscaping',40).toLowerCase();
+      const season=clean(body.season_context||'four_season',30).toLowerCase();
+      const type=clean(body.material_type,40).toLowerCase();
+      const materialLabel=clean(body.material_label,220);
+      const method=clean(body.calculation_method,40).toLowerCase();
+      const numericOrNull=(value:any)=>value===''||value==null?null:Number(value);
+      const conversion=numericOrNull(body.conversion_factor)??1;
+      const waste=numericOrNull(body.waste_factor_percent)??0;
+      if(!['mowing_landscaping','landscape_installation','fall_cleanup','snow_clearing_removal','general_outdoor'].includes(service)) throw new HttpError(400,'Unsupported material-estimator service context.');
+      if(!['spring_summer','fall','winter','four_season'].includes(season)) throw new HttpError(400,'Unsupported material-estimator season context.');
+      if(!['mulch','soil','sod','seed','fertilizer','gravel','stone','disposal','salt_deicer','traction_material','configurable'].includes(type)||!materialLabel) throw new HttpError(400,'Material type and label are required.');
+      if(!['area_depth','area','application_rate','volume','direct'].includes(method)) throw new HttpError(400,'Unsupported material-estimator calculation method.');
+      if(!Number.isFinite(conversion)||conversion<=0||!Number.isFinite(waste)||waste<0||waste>100) throw new HttpError(400,'Conversion and waste factors are invalid.');
+      const payload:any={
+        id:isUuid(body.id)?body.id:null,estimate_id:isUuid(body.estimate_id)?body.estimate_id:null,
+        work_order_id:isUuid(body.work_order_id)?body.work_order_id:null,client_site_id:isUuid(body.client_site_id)?body.client_site_id:null,
+        service_context:service,season_context:season,plan_status:clean(body.plan_status||'planned',30).toLowerCase(),
+        assumptions:clean(body.assumptions,3000)||null,estimator_note:clean(body.estimator_note,3000)||null,
+        line:{
+          id:isUuid(body.line_id)?body.line_id:null,material_id:isUuid(body.material_id)?body.material_id:null,
+          material_type:type,material_label:materialLabel,calculation_method:method,
+          area_m2:numericOrNull(body.area_m2),depth_m:numericOrNull(body.depth_m),volume_m3:numericOrNull(body.volume_m3),
+          application_rate:numericOrNull(body.application_rate),direct_quantity:numericOrNull(body.direct_quantity),
+          source_unit:clean(body.source_unit,40)||null,conversion_factor:conversion,planned_unit:clean(body.planned_unit,40),
+          waste_factor_percent:waste,unit_conversion_note:clean(body.unit_conversion_note,1000)||null,
+          assumptions:clean(body.line_assumptions,3000)||null,sort_order:Math.max(0,Math.min(10000,int(body.sort_order,100)))
+        }
+      };
+      if(!payload.line.planned_unit) throw new HttpError(400,'Planned unit is required.');
+      const {data,error}=await supabase.rpc('ywi_rpc_landscape_material_estimate_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const planId=clean((data as any)?.estimate?.id,80),lineId=clean((data as any)?.line?.id,80);
+      await audit(supabase,{operation_action:action,operation_status:body.id?'updated':'planned',entity_type:'landscape_material_estimate',
+        entity_id:planId,actor_profile_id:profile.id,
+        request_payload:{service_context:service,season_context:season,material_type:type,calculation_method:method,waste_factor_percent:waste},
+        response_payload:{plan_id:planId,line_id:lineId,inventory_mutated:false,job_mutated:false}});
+      return Response.json({ok:true,build:343,schema:231,record:data,inventory_mutated:false,job_mutated:false,authority_boundary:'planning_evidence_only'},{headers:corsHeaders});
+    }
+
+    if (action === 'landscape_material_actual_use_save') {
+      requireRank(profile,45,action);
+      const lineId=clean(body.material_estimate_line_id,80);
+      const actual=Number(body.actual_quantity),factor=body.conversion_factor_to_planned==null||body.conversion_factor_to_planned===''?1:Number(body.conversion_factor_to_planned);
+      const unit=clean(body.actual_unit,40);
+      if(!isUuid(lineId)||!Number.isFinite(actual)||actual<=0||!unit||!Number.isFinite(factor)||factor<=0) throw new HttpError(400,'Valid planned line, actual quantity/unit and conversion factor are required.');
+      const payload:any={material_estimate_line_id:lineId,actual_quantity:actual,actual_unit:unit,conversion_factor_to_planned:factor,
+        work_order_id:isUuid(body.work_order_id)?body.work_order_id:null,material_issue_id:isUuid(body.material_issue_id)?body.material_issue_id:null,
+        use_note:clean(body.use_note,3000)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_landscape_material_actual_use_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{operation_action:action,operation_status:'recorded',entity_type:'landscape_material_actual_use',
+        entity_id:clean((data as any)?.event?.id,80),actor_profile_id:profile.id,
+        request_payload:{material_estimate_line_id:lineId,actual_quantity:actual,actual_unit:unit,conversion_factor_to_planned:factor},
+        response_payload:{actual_event_id:(data as any)?.event?.id||null,inventory_mutated:false,job_mutated:false}});
+      return Response.json({ok:true,build:343,schema:231,record:data,inventory_mutated:false,job_mutated:false,authority_boundary:'actual_use_evidence_only_inventory_issue_separate'},{headers:corsHeaders});
+    }
+
+
     if (action === 'property_site_save') {
       requireRank(profile,45,action);
       const id=isUuid(body.id) ? clean(body.id,80) : null;

@@ -39,7 +39,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
-  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
+  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
 
@@ -455,6 +455,26 @@ serve(async (req) => {
       workability_agreements:agreements,workability_routes:routes,workability_hse_packets:hsePackets,
       seasonal_boundary:'Four-season Ontario workability covers mowing/landscaping, fall cleanup/leaf collection and winter snow clearing/removal, including snowfall, freezing rain/ice and cold exposure context.',
       decision_boundary:'Guidance never makes an automatic safety decision. Supervisors record the decision; existing dispatch and recurring-service actions apply schedule changes; customer-notification readiness is evidence only.'
+    }, { headers:corsHeaders });
+  }
+
+  if (scope === 'material_estimator' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const [plans,lines,actualUse,materials,properties,estimates,workOrders] = await Promise.all([
+      safeList(supabase,'v_landscape_material_estimate_directory','*','updated_at',1500,false),
+      safeList(supabase,'v_landscape_material_line_directory','*','updated_at',3000,false),
+      safeList(supabase,'v_landscape_material_actual_use_directory','*','recorded_at',3000,false),
+      safeList(supabase,'v_material_stock_control','*','item_name',1500,true),
+      safeList(supabase,'v_property_site_intelligence','*','site_name',1500,true),
+      safeList(supabase,'estimates','id,estimate_number,status,quote_title,client_site_id','updated_at',1500,false),
+      safeList(supabase,'work_orders','id,work_order_number,status,estimate_id,client_site_id,scheduled_start','updated_at',1500,false)
+    ]);
+    return Response.json({
+      ok:true,scope:'material_estimator',actor_role:actorRole,actor_profile_id:actorId,
+      material_estimator_plans:plans,material_estimator_lines:lines,material_estimator_actual_use:actualUse,
+      material_estimator_materials:materials,material_estimator_properties:properties,
+      material_estimator_estimates:estimates,material_estimator_work_orders:workOrders,
+      seasonal_boundary:'Four-season estimator coverage includes landscaping/fall work plus winter salt/de-icer and traction materials.',
+      authority_boundary:'Build 343 is planning/evidence only. Existing materials catalog/receipts/issues/adjustments, estimates, work orders and property records remain canonical inventory/commercial/site authority.'
     }, { headers:corsHeaders });
   }
 

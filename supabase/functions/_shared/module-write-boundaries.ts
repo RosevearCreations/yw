@@ -63,6 +63,8 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
   workability_observation_save: contract('workability_observation_save', 'jobs', 'approve', 'write', 'weather_workability', 'jobs.workability.observation_saved'),
   workability_decision_save: contract('workability_decision_save', 'jobs', 'approve', 'write', 'weather_workability', 'jobs.workability.decision_saved'),
   workability_notification_readiness_save: contract('workability_notification_readiness_save', 'jobs', 'approve', 'write', 'weather_workability', 'jobs.workability.notification_readiness_saved'),
+  landscape_material_estimate_save: contract('landscape_material_estimate_save', 'jobs', 'approve', 'write', 'landscape_material_estimator', 'jobs.material_estimator.plan_saved'),
+  landscape_material_actual_use_save: contract('landscape_material_actual_use_save', 'jobs', 'approve', 'write', 'landscape_material_estimator', 'jobs.material_estimator.actual_use_saved'),
   quote_owner_assign: contract('quote_owner_assign', 'jobs', 'approve', 'write', 'quote_operations', 'jobs.quote.owner_assigned'),
   quote_followup_event: contract('quote_followup_event', 'jobs', 'approve', 'write', 'quote_operations', 'jobs.quote.followup_recorded'),
   dispatch_schedule: contract('dispatch_schedule', 'jobs', 'approve', 'write', 'dispatch', 'jobs.job_scheduled', true),
