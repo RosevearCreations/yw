@@ -56,7 +56,8 @@ must(manage,[
 
 must(api,[
   "startsWith('performance_')",
-  "jsonFetch('performance-manage'"
+  "'performance-manage'",
+  "specializedFunction"
 ],'Performance API routing');
 
 must(ui,[
