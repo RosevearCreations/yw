@@ -281,3 +281,11 @@
           <p><strong>Supervisor decision:</strong> guidance never produces an automatic safety verdict. A supervisor records workable, caution, postpone, reschedule or blocked, plus the reason and any proposed new service window. The decision may synchronize the existing dispatch workability state, but it does not change schedule status or automatically create a recurring delay/makeup event.</p>
           <p><strong>Customer communication:</strong> customer-notification readiness is recorded as evidence (not needed, not ready, ready or notified elsewhere). Build 342 does not send a notification; the existing notification workflow remains authoritative.</p>
         </section>
+
+        <section class="help-section" id="landscape-material-estimator">
+          <h2>Build 343 — Landscape Material Estimator</h2>
+          <p>Build 343 calculates planned quantities for <strong>mulch, soil, sod, seed, fertilizer, gravel, stone and disposal</strong>, plus configurable materials and winter <strong>salt/de-icer</strong> or traction material. Calculations can use area × depth, area, volume, application rate or a direct quantity.</p>
+          <p>Every saved line records the service/season context, measurement assumptions, base unit, conversion factor, planned unit and waste factor. Common metric-to-yard/foot/litre conversions are suggested in the workbench, while the operator can record a supplier- or product-specific conversion when needed.</p>
+          <p><strong>Planned-vs-actual evidence:</strong> actual-use observations are converted into the planned unit and compared with the planned quantity so we can see over/under use without pretending unlike units can be summed together.</p>
+          <p><strong>Inventory authority:</strong> the estimator never creates a receipt, issue or stock adjustment and never changes estimate/work-order scope or billing. Canonical materials/inventory and commercial workflows remain separate deliberate actions.</p>
+        </section>

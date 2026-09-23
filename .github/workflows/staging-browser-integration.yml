@@ -131,6 +131,7 @@ jobs:
       - run: npm run test:customer-property-crm
       - run: npm run test:route-optimization-territory
       - run: npm run test:weather-workability
+      - run: npm run test:landscape-material-estimator
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -206,6 +207,7 @@ jobs:
       - run: npm run test:browser:customer-property-crm
       - run: npm run test:browser:route-optimization-territory
       - run: npm run test:browser:weather-workability
+      - run: npm run test:browser:landscape-material-estimator
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets

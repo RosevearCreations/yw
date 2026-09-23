@@ -163,7 +163,9 @@
     "test:route-optimization-territory": "node scripts/route-optimization-territory-check.mjs",
     "test:browser:route-optimization-territory": "playwright test --config=playwright.config.mjs tests/browser/route-optimization-territory.spec.mjs",
     "test:weather-workability": "node scripts/weather-workability-check.mjs",
-    "test:browser:weather-workability": "playwright test --config=playwright.config.mjs tests/browser/weather-workability.spec.mjs"
+    "test:browser:weather-workability": "playwright test --config=playwright.config.mjs tests/browser/weather-workability.spec.mjs",
+    "test:landscape-material-estimator": "node scripts/landscape-material-estimator-check.mjs",
+    "test:browser:landscape-material-estimator": "playwright test --config=playwright.config.mjs tests/browser/landscape-material-estimator.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

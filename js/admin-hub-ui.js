@@ -392,6 +392,10 @@
       document.head.appendChild(script);
     }
 
+    function loadBuild343LandscapeMaterialEstimator() {
+      window.YWILandscapeMaterialEstimatorUI?.mount?.({ api:window.YWIAPI });
+    }
+
     function loadGroupOnce(key) {
       if (loadedGroups.has(key)) return;
       const group = currentGroup(key);
@@ -399,7 +403,7 @@
       loadedGroups.add(key);
       if (group.route) return;
       if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); loadBuild339HiringOnboarding(); }
-      if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); loadBuild342WeatherWorkability(); }
+      if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); loadBuild342WeatherWorkability(); loadBuild343LandscapeMaterialEstimator(); }
       const button = group.refresh ? document.getElementById(group.refresh) : null;
       if (button && !button.disabled) setTimeout(() => button.click(), 0);
     }
