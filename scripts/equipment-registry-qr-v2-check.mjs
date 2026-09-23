@@ -114,7 +114,7 @@ must(help,[
   'reuses the existing exact identifier registry',
   'Build 331 does not create a second scanner, asset table, inspection engine or maintenance engine'
 ],'Build 331 Help');
-must(roadmap,['**331 — Equipment Registry & QR System v2** are implemented','332 — Daily Equipment Inspection & Lockout'],'Build 331 roadmap');
+must(roadmap,['#### 331 — Equipment Registry & QR System v2','**331 — Equipment Registry & QR System v2**','332 — Daily Equipment Inspection & Lockout'],'Build 331 roadmap');
 must(pkg,['test:equipment-registry-qr-v2','test:browser:equipment-registry-qr-v2'],'Build 331 package scripts');
 must(workflow,['npm run test:equipment-registry-qr-v2','npm run test:browser:equipment-registry-qr-v2'],'Build 331 CI wiring');
 

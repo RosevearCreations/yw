@@ -322,25 +322,29 @@ Track shift time, job/visit time, travel time, breaks, overtime, missed punches,
 
 Support role expectations, coaching, recognition, attendance patterns, training/development plans, documented reviews, improvement actions and follow-up dates while keeping Safety incident truth separate from performance-management outcomes. This release reuses canonical profiles, workforce skills, existing training/certification truth and existing timekeeping evidence; Safety incidents and near misses are not joined into performance-management outcomes.
 
-#### 339 — Hiring & Onboarding Workflow
+#### **339 — Hiring & Onboarding Workflow** is implemented
 
-Support Applicant → Interview → Offer → Hired → Documents → Orientation → Training → Equipment Authorization → Crew Assignment, including incomplete onboarding and pre-field readiness gates.
+Support Applicant → Interview → Offer → Hired → Documents → Orientation → Training → Equipment Authorization → Crew Assignment, including incomplete onboarding and pre-field readiness gates. Candidate records link into the canonical employee profile, training/certification, internal equipment/task authorization and crew-membership authorities instead of duplicating them. Season-aware onboarding explicitly supports spring/summer landscaping and mowing, fall cleanup and leaf collection, and winter snow clearing/removal.
+
+### Four-season Ontario operating model
+
+YW operates year-round in Ontario. All remaining autonomous releases must treat spring/summer landscaping and lawn mowing, fall cleanup/leaf collection, and winter snow clearing/removal as first-class operating modes where the feature is relevant. Winter service must not be modeled as an optional side path. Scheduling, CRM/service history, weather/workability, materials, quality evidence, saved views, staffing, equipment/fleet readiness, finance/management reporting and acceptance evidence should preserve service type and season context without creating duplicate authorities.
 
 #### 340 — Customer & Property CRM
 
-Unify leads, customers, multiple properties, estimates, active service plans, service history, communications, complaints, follow-ups, property preferences, renewals and appropriate upsell/cross-service opportunities.
+Unify leads, customers, multiple properties, estimates, active service plans, service history, communications, complaints, follow-ups, property preferences, renewals and appropriate upsell/cross-service opportunities. Preserve season/service context across mowing and landscaping, fall cleanup/leaf collection, and winter snow clearing/removal so a property can carry year-round service history without splitting the customer record.
 
 #### 341 — Route Optimization & Territory Management
 
-Support recurring-route planning by service area, property proximity, crew capacity, estimated duration, equipment needs, time windows, frequency, route order, travel efficiency and territory ownership. Optimization may suggest; operators retain dispatch authority.
+Support recurring-route planning by service area, property proximity, crew capacity, estimated duration, equipment needs, time windows, frequency, route order, travel efficiency and territory ownership across mowing/landscaping routes, fall-cleanup routes and winter snow routes. Winter routing must support storm-event activation and service-priority context while optimization remains advisory; operators retain dispatch authority.
 
 #### 342 — Weather & Workability Controls
 
-Add weather/workability decision support for rain delay, saturated ground, heat, cold, high wind, lightning/storm, visibility and service-type restrictions. Record supervisor decision, postponement/reschedule and customer-notification readiness rather than automatically making safety decisions.
+Add weather/workability decision support for rain delay, saturated ground, heat, cold, high wind, lightning/storm, visibility, snowfall, freezing rain/ice and service-type restrictions. Support mowing/landscaping, fall cleanup and winter snow-clearing/removal workability context. Record supervisor decision, postponement/reschedule and customer-notification readiness rather than automatically making safety decisions.
 
 #### 343 — Landscape Material Estimator
 
-Add area/volume/quantity calculators for mulch, soil, sod, seed, fertilizer, gravel, stone, disposal and configurable materials. Record assumptions, unit conversions, waste factor and planned-vs-actual use.
+Add area/volume/quantity calculators for mulch, soil, sod, seed, fertilizer, gravel, stone, disposal and configurable materials, plus winter consumables such as salt/de-icer and traction material where used. Record service/season context, assumptions, unit conversions, waste factor and planned-vs-actual use.
 
 #### 344 — Change Orders & Extras
 
@@ -348,11 +352,11 @@ Support field-discovered extra work using Crew identifies extra work → evidenc
 
 #### 345 — Quality Control & Customer Signoff
 
-Provide service-type completion templates, crew completion, supervisor QC where required, deficiencies, rework, before/after evidence, customer-safe completion summary, customer acknowledgement/signoff where appropriate and unresolved-issue tracking.
+Provide season- and service-type completion templates, crew completion, supervisor QC where required, deficiencies, rework, before/after evidence, customer-safe completion summary, customer acknowledgement/signoff where appropriate and unresolved-issue tracking. Include mowing/landscaping, fall cleanup and winter snow clearing/removal evidence patterns without creating separate QC systems.
 
 #### 346 — Seasonal Operations Centre
 
-Coordinate spring startup, summer maintenance, fall cleanup, winter shutdown and optional winter/snow operations with recurring-customer rollover, seasonal staffing, equipment conversion/service, material stock, route activation, seasonal checklists and outstanding work.
+Coordinate spring startup, summer mowing/landscaping maintenance, fall cleanup/leaf collection and full winter snow-clearing/removal operations with recurring-customer rollover, seasonal staffing, equipment conversion/service, salt/de-icer or traction-material stock, storm-route activation, seasonal checklists and outstanding work. Winter service is a core operating season, not optional.
 
 #### 347 — Universal Activity & Audit Timeline
 
@@ -364,11 +368,11 @@ Make field synchronization understandable. Where the record contract allows, sho
 
 #### 349 — Saved Views, Search & Command Centre
 
-Add permission-aware operational views such as My Crew Today, My Route, Jobs Behind Schedule, Equipment Locked Out, Maintenance Due, Safety Actions Due, Training Expiring, Completed Not Invoiced, Overdue Receivables, Finance Exceptions and Assigned to Me. Add global search/navigation across customers, properties, jobs, invoices/payments, employees, equipment and Admin workspaces.
+Add permission-aware operational views such as My Crew Today, My Route, Snow Route / Storm Event, Fall Cleanup Queue, Jobs Behind Schedule, Equipment Locked Out, Maintenance Due, Safety Actions Due, Training Expiring, Completed Not Invoiced, Overdue Receivables, Finance Exceptions and Assigned to Me. Add global search/navigation across customers, properties, jobs, invoices/payments, employees, equipment and Admin workspaces while retaining season/service context.
 
 #### 350 — Owner / Management Command Centre
 
-Create one practical business cockpit showing today's crews, scheduled/completed work, schedule risk, production/completion rate, revenue, job margin, labour utilization, recurring-route performance, Safety blockers, equipment downtime, training/workforce blockers, completed-not-invoiced work, receivables, cash/Finance readiness and operational needs attention. Deep-link to source workflows rather than becoming duplicate authority.
+Create one practical four-season business cockpit showing today's crews, scheduled/completed work, schedule risk, production/completion rate, revenue, job margin, labour utilization, recurring-route performance by service/season, storm-event and snow-route status in winter, fall-cleanup progress, Safety blockers, equipment downtime, training/workforce blockers, completed-not-invoiced work, receivables, cash/Finance readiness and operational needs attention. Deep-link to source workflows rather than becoming duplicate authority.
 
 ### Controlled acceptance campaigns
 
@@ -376,7 +380,7 @@ These items stay on the roadmap but are not ordinary autonomous feature releases
 
 #### 351 — Real Staging Acceptance Campaign
 
-Run only when a dedicated non-Production Supabase project/branch exists and is explicitly authorized. Require exact environment identity, project-ref guard, exact current-schema parity immediately before mutation, approved disposable automated cases, required human Operations/Jobs/Safety/Equipment scenarios, recorded evidence and deliberate finalization/signoff. Never substitute Production business/provider data.
+Run only when a dedicated non-Production Supabase project/branch exists and is explicitly authorized. Require exact environment identity, project-ref guard, exact current-schema parity immediately before mutation, approved disposable automated cases, required human Operations/Jobs/Safety/Equipment scenarios, and representative four-season cases for mowing/landscaping, fall cleanup and winter snow operations where those paths exist. Record evidence and require deliberate finalization/signoff. Never substitute Production business/provider data.
 
 #### 352 — Accounting Acceptance Campaign
 
@@ -386,7 +390,7 @@ After the landscaping Finance workflow is complete and no critical Finance block
 
 Only after internal accounting behavior is trustworthy, validate supported provider/payment paths including success, decline/failure, duplicate webhook/event, retry, idempotency, refund, partial refund and dispute/chargeback. Verify provider events link to the correct internal payment/accounting/job records and cannot double-settle, double-apply or double-post. Provider acceptance and Production provider enablement remain separate deliberate decisions.
 
-Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, and **331 — Equipment Registry & QR System v2** are implemented by the current release. The next planned autonomous item is **332 — Daily Equipment Inspection & Lockout**.
+Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, and **339 — Hiring & Onboarding Workflow** are implemented by the current release. The next planned autonomous item is **340 — Customer & Property CRM**. The four-season Ontario operating model above applies to release 340 and every later release where season or service type is relevant.
 
 ### Roadmap selection rules
 

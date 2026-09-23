@@ -336,13 +336,27 @@
       document.head.appendChild(script);
     }
 
+    function loadBuild339HiringOnboarding() {
+      if (window.YWIHiringOnboardingUI?.mount) {
+        window.YWIHiringOnboardingUI.mount({ api:window.YWIAPI });
+        return;
+      }
+      if (document.querySelector('script[data-ywi-build339-hiring]')) return;
+      const script=document.createElement('script');
+      script.src='/js/admin-hiring-onboarding-ui.js?v=2026-09-22b339';
+      script.dataset.ywiBuild339Hiring='1';
+      script.addEventListener('load',()=>window.YWIHiringOnboardingUI?.mount?.({ api:window.YWIAPI }),{once:true});
+      script.addEventListener('error',()=>console.warn('Build 339 hiring and onboarding UI failed to load.'),{once:true});
+      document.head.appendChild(script);
+    }
+
     function loadGroupOnce(key) {
       if (loadedGroups.has(key)) return;
       const group = currentGroup(key);
       if (!group) return;
       loadedGroups.add(key);
       if (group.route) return;
-      if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); }
+      if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); loadBuild339HiringOnboarding(); }
       const button = group.refresh ? document.getElementById(group.refresh) : null;
       if (button && !button.disabled) setTimeout(() => button.click(), 0);
     }

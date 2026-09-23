@@ -38,7 +38,7 @@ assert.ok(!/join\s+public\.[a-z0-9_]*(?:incident|near_miss)/i.test(migration),
   'Build 338 performance views must not join Safety incident or near-miss truth.');
 
 must(directory,[
-  "['module_permissions','workforce','timekeeping','performance'].includes(key)",
+  "['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)",
   "scope === 'performance'",
   'v_workforce_performance_development_overview',
   'v_workforce_attendance_patterns',
@@ -56,7 +56,8 @@ must(manage,[
 
 must(api,[
   "startsWith('performance_')",
-  "jsonFetch('performance-manage'"
+  "'performance-manage'",
+  "specializedFunction"
 ],'Performance API routing');
 
 must(ui,[
@@ -72,7 +73,7 @@ must(ui,[
 must(hub,[
   'loadBuild338PerformanceDevelopment',
   '/js/admin-performance-development-ui.js?v=2026-09-22b338',
-  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); }"
+  "if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); loadBuild339HiringOnboarding(); }"
 ],'Build 338 lazy loading');
 
 must(help,[
@@ -81,7 +82,7 @@ must(help,[
   'coaching and recognition',
   'Safety incident and near-miss truth remains separate'
 ],'Build 338 Help');
-must(roadmap,['#### **338 — Performance & Development** is implemented','#### 339 — Hiring & Onboarding Workflow'],'Build 338 roadmap');
+must(roadmap,['#### **338 — Performance & Development** is implemented','#### **339 — Hiring & Onboarding Workflow** is implemented','#### 340 — Customer & Property CRM'],'Build 338 roadmap');
 must(pkg,['test:performance-development','test:browser:performance-development'],'Build 338 package scripts');
 must(workflow,['npm run test:performance-development','npm run test:browser:performance-development'],'Build 338 CI wiring');
 
