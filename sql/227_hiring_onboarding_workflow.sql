@@ -5,6 +5,8 @@ begin;
 -- crew, training/certification and internal equipment/task authorization authorities.
 -- YW is a four-season Ontario operation: spring/summer landscaping and mowing,
 -- fall cleanup, and winter snow clearing/removal are explicit readiness contexts.
+-- Season checklist codes are SPRING_SUMMER_LANDSCAPING_ORIENTATION,
+-- FALL_CLEANUP_ORIENTATION and WINTER_SNOW_OPERATIONS_ORIENTATION.
 
 create table if not exists public.workforce_hiring_candidates (
   id uuid primary key default gen_random_uuid(),
