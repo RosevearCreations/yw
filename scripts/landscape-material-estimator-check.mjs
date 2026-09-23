@@ -9,6 +9,7 @@ const operations=read('supabase/functions/operations-manage/index.ts');
 const boundaries=read('supabase/functions/_shared/module-write-boundaries.ts');
 const ui=read('js/admin-landscape-material-estimator-ui.js');
 const hub=read('js/admin-hub-ui.js');
+const index=read('index.html');
 const help=read('help.html');
 const roadmap=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 const pkg=read('package.json');
@@ -78,11 +79,8 @@ must(ui,[
   'No inventory movement or job/estimate change was made.'
 ],'Estimator UI');
 
-must(hub,[
-  'loadBuild343LandscapeMaterialEstimator',
-  '/js/admin-landscape-material-estimator-ui.js?v=2026-09-23b343',
-  'loadBuild343LandscapeMaterialEstimator();'
-],'Estimator lazy load');
+must(hub,['loadBuild343LandscapeMaterialEstimator','loadBuild343LandscapeMaterialEstimator();'],'Estimator workspace mount');
+must(index,['/js/admin-landscape-material-estimator-ui.js?v=2026-09-23b343'],'Estimator UI preload');
 must(help,['Build 343 — Landscape Material Estimator','mulch','salt/de-icer','planned-vs-actual','inventory authority'],'Build 343 Help');
 must(roadmap,['#### **343 — Landscape Material Estimator** is implemented','#### 344 — Change Orders & Extras','next planned autonomous item is **344 — Change Orders & Extras**'],'Build 343 roadmap');
 must(pkg,['test:landscape-material-estimator','test:browser:landscape-material-estimator'],'Build 343 scripts');
