@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 62, 'Exactly 62 operations actions must be contracted through Schema 228.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 62);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 66, 'Exactly 66 operations actions must be contracted through Schema 229.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 66);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
@@ -226,6 +226,27 @@ assert.equal(crmOpportunity.ownerModule, 'jobs');
 assert.equal(crmOpportunity.minimum, 'approve');
 assert.equal(crmOpportunity.eventKey, 'jobs.crm.opportunity_saved');
 
+const routeTerritory = resolveModuleWriteBoundary('route_territory_save');
+assert.equal(routeTerritory.ownerModule, 'jobs');
+assert.equal(routeTerritory.minimum, 'approve');
+assert.equal(routeTerritory.mode, 'write');
+assert.equal(routeTerritory.eventKey, 'jobs.route.territory_saved');
+
+const routeSite = resolveModuleWriteBoundary('route_territory_site_save');
+assert.equal(routeSite.ownerModule, 'jobs');
+assert.equal(routeSite.minimum, 'approve');
+assert.equal(routeSite.eventKey, 'jobs.route.territory_site_saved');
+
+const routeGenerate = resolveModuleWriteBoundary('route_optimization_generate');
+assert.equal(routeGenerate.ownerModule, 'jobs');
+assert.equal(routeGenerate.minimum, 'approve');
+assert.equal(routeGenerate.eventKey, 'jobs.route.optimization_generated');
+
+const routeDecision = resolveModuleWriteBoundary('route_optimization_decision');
+assert.equal(routeDecision.ownerModule, 'jobs');
+assert.equal(routeDecision.minimum, 'approve');
+assert.equal(routeDecision.eventKey, 'jobs.route.optimization_decided');
+
 const disabled = resolveModuleWriteBoundary('deposit_status_update');
 assert.equal(disabled.ownerModule, 'finance');
 assert.equal(disabled.minimum, 'manage');
@@ -263,7 +284,8 @@ for (const action of Array.from(MODULE_WRITE_ACTIONS)) {
   if (boundary.crossModule) assert.ok(boundary.eventKey, `Cross-module contract needs event key: ${action}`);
 }
 
-console.log('PASS boundary-exact-62-actions');
+console.log('PASS boundary-exact-66-actions');
+console.log('PASS boundary-build341-route-optimization');
 console.log('PASS boundary-build340-customer-property-crm');
 console.log('PASS boundary-build320-attention-management');
 console.log('PASS boundary-build322-recurring-service-management');
@@ -280,4 +302,4 @@ console.log('PASS boundary-disabled-payment-mutation');
 console.log('PASS boundary-unknown-action-fails-closed');
 console.log('PASS boundary-audit-metadata');
 console.log('PASS boundary-all-contracts-valid');
-console.log('\nSchema 228 module write-boundary behavior gate passed: 14/14 checks.');
+console.log('\nSchema 229 module write-boundary behavior gate passed: 15/15 checks.');

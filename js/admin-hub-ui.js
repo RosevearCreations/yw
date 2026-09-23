@@ -364,6 +364,20 @@
       document.head.appendChild(script);
     }
 
+    function loadBuild341RouteOptimization() {
+      if (window.YWIRouteOptimizationUI?.mount) {
+        window.YWIRouteOptimizationUI.mount({ api:window.YWIAPI });
+        return;
+      }
+      if (document.querySelector('script[data-ywi-build341-routing]')) return;
+      const script=document.createElement('script');
+      script.src='/js/admin-route-optimization-ui.js?v=2026-09-23b341';
+      script.dataset.ywiBuild341Routing='1';
+      script.addEventListener('load',()=>window.YWIRouteOptimizationUI?.mount?.({ api:window.YWIAPI }),{once:true});
+      script.addEventListener('error',()=>console.warn('Build 341 route optimization UI failed to load.'),{once:true});
+      document.head.appendChild(script);
+    }
+
     function loadGroupOnce(key) {
       if (loadedGroups.has(key)) return;
       const group = currentGroup(key);
@@ -371,7 +385,7 @@
       loadedGroups.add(key);
       if (group.route) return;
       if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); loadBuild339HiringOnboarding(); }
-      if (key === 'operations') { loadBuild340CustomerPropertyCRM(); }
+      if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); }
       const button = group.refresh ? document.getElementById(group.refresh) : null;
       if (button && !button.disabled) setTimeout(() => button.click(), 0);
     }
