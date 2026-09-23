@@ -127,6 +127,7 @@ jobs:
       - run: npm run test:employee-crew-management
       - run: npm run test:timekeeping-attendance-payroll-evidence
       - run: npm run test:performance-development
+      - run: npm run test:hiring-onboarding-workflow
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -198,6 +199,7 @@ jobs:
       - run: npm run test:browser:employee-crew-management
       - run: npm run test:browser:timekeeping-attendance-payroll-evidence
       - run: npm run test:browser:performance-development
+      - run: npm run test:browser:hiring-onboarding-workflow
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
