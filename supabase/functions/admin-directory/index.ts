@@ -39,7 +39,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
-  if (['all','users','people','sites','assignments','notifications','operations','crm','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
+  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
 
@@ -411,6 +411,28 @@ serve(async (req) => {
       crm_opportunities:opportunities,crm_renewals:renewals,crm_cross_service_candidates:candidates,crm_profiles:profiles,
       seasonal_boundary:'YW is a four-season Ontario operation: spring/summer mowing and landscaping, fall cleanup and leaf collection, and winter snow clearing/removal remain one customer/property relationship history.',
       authority_boundary:'Build 340 reuses canonical clients, client_sites, quote_contact_requests, recurring_service_agreements, estimates and work_orders.'
+    }, { headers:corsHeaders });
+  }
+
+  if (scope === 'routing' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const [territories,territorySites,routes,runs,stops,areas,sites,crews,profiles] = await Promise.all([
+      safeList(supabase,'v_route_territory_directory','*','territory_name',500,true),
+      safeList(supabase,'v_route_territory_site_directory','*','territory_name',1500,true),
+      safeList(supabase,'v_route_planning_directory','*','route_name',1000,true),
+      safeList(supabase,'v_route_optimization_run_directory','*','created_at',1000,false),
+      safeList(supabase,'v_route_optimization_stop_directory','*','proposed_order',3000,true),
+      safeList(supabase,'service_areas','*','name',500,true),
+      safeList(supabase,'v_property_site_intelligence','*','site_name',1500,true),
+      safeList(supabase,'v_crew_directory','*','crew_name',500,true),
+      safeList(supabase,'profiles','id,full_name,email,role,is_active','full_name',500,true)
+    ]);
+    return Response.json({
+      ok:true,scope:'routing',actor_role:actorRole,actor_profile_id:actorId,
+      route_territories:territories,route_territory_sites:territorySites,route_planning:routes,
+      route_optimization_runs:runs,route_optimization_stops:stops,service_areas:areas,
+      route_properties:sites,route_crews:crews,route_profiles:profiles,
+      seasonal_boundary:'Four-season Ontario routing covers spring/summer mowing and landscaping, fall cleanup/leaf collection, and winter snow clearing/removal with explicit storm-event activation.',
+      authority_boundary:'Optimization is advisory only. public.dispatch_schedule_items remains the scheduling/dispatch authority and public.routes/public.route_stops remain canonical route structure.'
     }, { headers:corsHeaders });
   }
 

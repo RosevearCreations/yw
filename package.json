@@ -159,7 +159,9 @@
     "test:hiring-onboarding-workflow": "node scripts/hiring-onboarding-workflow-check.mjs",
     "test:browser:hiring-onboarding-workflow": "playwright test --config=playwright.config.mjs tests/browser/hiring-onboarding-workflow.spec.mjs",
     "test:customer-property-crm": "node scripts/customer-property-crm-check.mjs",
-    "test:browser:customer-property-crm": "playwright test --config=playwright.config.mjs tests/browser/customer-property-crm.spec.mjs"
+    "test:browser:customer-property-crm": "playwright test --config=playwright.config.mjs tests/browser/customer-property-crm.spec.mjs",
+    "test:route-optimization-territory": "node scripts/route-optimization-territory-check.mjs",
+    "test:browser:route-optimization-territory": "playwright test --config=playwright.config.mjs tests/browser/route-optimization-territory.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
