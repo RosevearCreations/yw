@@ -24,6 +24,7 @@ const trainingMatrixMigrationPath = 'sql/218_training_certification_matrix.sql';
 const customerPropertyCrmMigrationPath = 'sql/228_customer_property_crm.sql';
 const routeOptimizationMigrationPath = 'sql/229_route_optimization_territory_management.sql';
 const weatherWorkabilityMigrationPath = 'sql/230_weather_workability_controls.sql';
+const landscapeMaterialEstimatorMigrationPath = 'sql/231_landscape_material_estimator.sql';
 const operations = read(operationsPath);
 const helper = read(helperPath);
 const migration = read(migrationPath);
@@ -38,15 +39,16 @@ const trainingMatrixMigration = read(trainingMatrixMigrationPath);
 const customerPropertyCrmMigration = read(customerPropertyCrmMigrationPath);
 const routeOptimizationMigration = read(routeOptimizationMigrationPath);
 const weatherWorkabilityMigration = read(weatherWorkabilityMigrationPath);
+const landscapeMaterialEstimatorMigration = read(landscapeMaterialEstimatorMigrationPath);
 const coreData = read('supabase/functions/core-data-read/index.ts');
 
 const handledActions = [...new Set([...operations.matchAll(/action\s*===\s*['"]([^'"]+)['"]/g)].map((m) => m[1]))].sort();
 const helperActions = [...new Set([...helper.matchAll(/^\s{2}([a-z0-9_]+):\s*contract\('([^']+)'/gmi)].map((m) => m[2]))].sort();
-const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}\n${hazardPlanMigration}\n${incidentInvestigationMigration}\n${trainingMatrixMigration}\n${customerPropertyCrmMigration}\n${routeOptimizationMigration}\n${weatherWorkabilityMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
+const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}\n${hazardPlanMigration}\n${incidentInvestigationMigration}\n${trainingMatrixMigration}\n${customerPropertyCrmMigration}\n${routeOptimizationMigration}\n${weatherWorkabilityMigration}\n${landscapeMaterialEstimatorMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
 
-add('schema230-exact-handler-count', handledActions.length === 70, `Handled operations actions: ${handledActions.length}.`);
-add('schema230-helper-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
-add('schema230-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
+add('schema231-exact-handler-count', handledActions.length === 72, `Handled operations actions: ${handledActions.length}.`);
+add('schema231-helper-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
+add('schema231-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
 
 add('schema164-no-permissive-module-fallback', !operations.includes('moduleRequirementForAction') && !operations.includes("return { moduleKey:'admin', minimum:'manage' };"), 'Legacy unknown-action -> Admin/manage fallback is removed.');
 add('schema164-boundary-resolved-before-authorization', operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') > -1 && operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') < operations.indexOf('hasModuleAccess(supabase, profile, boundary.ownerModule, boundary.minimum)'), 'Action contract resolves before permission evaluation.');
@@ -102,6 +104,7 @@ add('build342-weather-workability-actions-explicit',
   weatherWorkabilityMigration.includes("('workability_notification_readiness_save','jobs','approve','write'"),
   'Build 342 weather/workability actions are explicit Jobs-approve contracts in source and Schema 230.');
 
+add('build343-landscape-material-estimator-actions-explicit', helper.includes("landscape_material_estimate_save: contract('landscape_material_estimate_save', 'jobs', 'approve', 'write'") && helper.includes("landscape_material_actual_use_save: contract('landscape_material_actual_use_save', 'jobs', 'approve', 'write'") && landscapeMaterialEstimatorMigration.includes("('landscape_material_estimate_save','jobs','approve','write'") && landscapeMaterialEstimatorMigration.includes("('landscape_material_actual_use_save','jobs','approve','write'"), 'Build 343 material planning and actual-use evidence writes are explicit Jobs-approve contracts in source and Schema 231.');
 add('schema164-private-contract-registry', migration.includes('alter table public.app_module_write_contracts enable row level security;') && migration.includes('revoke all on table public.app_module_write_contracts from public, anon, authenticated;') && migration.includes('grant select on table public.app_module_write_contracts to service_role;'), 'Write-contract registry is a private service-role control plane.');
 add('schema164-db-security-assertions', migration.includes('ywi_module_write_boundary_security_assertions') && migration.includes("'operations_action_contract_count'") && migration.includes("'manual_deposit_mutation_disabled'") && migration.includes("'boundary_control_plane_private'"), 'Database assertions verify contract count, disabled payment mutation, and private control plane.');
 add('schema164-readiness-drift-marker', migration.includes("'cross_module_write_boundaries'") && migration.includes("'schema164_cross_module_write_boundaries'") && migration.includes('164::int as expected_schema_version') && migration.includes("'2026-09-01f'"), 'I.T. readiness, scorecard and schema marker advance to 164.');
