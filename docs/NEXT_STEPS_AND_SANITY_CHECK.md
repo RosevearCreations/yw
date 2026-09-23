@@ -390,7 +390,7 @@ After the landscaping Finance workflow is complete and no critical Finance block
 
 Only after internal accounting behavior is trustworthy, validate supported provider/payment paths including success, decline/failure, duplicate webhook/event, retry, idempotency, refund, partial refund and dispute/chargeback. Verify provider events link to the correct internal payment/accounting/job records and cannot double-settle, double-apply or double-post. Provider acceptance and Production provider enablement remain separate deliberate decisions.
 
-Items **318 through 339** are implemented by the current release. The next planned autonomous item is **340 — Customer & Property CRM**. The four-season Ontario operating model above applies to Build 340 and every later release where season or service type is relevant.
+Items **318 through 339** are implemented by the current release. The next planned autonomous item is **340 — Customer & Property CRM**. The four-season Ontario operating model above applies to release 340 and every later release where season or service type is relevant.
 
 ### Roadmap selection rules
 
