@@ -51,6 +51,10 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
 
   equipment_scan_event: contract('equipment_scan_event', 'jobs', 'create', 'write', 'equipment_custody', 'jobs.equipment.scanned'),
   equipment_cost_recovery_decision: contract('equipment_cost_recovery_decision', 'jobs', 'approve', 'write', 'equipment_cost_recovery', 'jobs.equipment.cost_recovery_decided', true),
+  crm_client_save: contract('crm_client_save', 'jobs', 'approve', 'write', 'customer_property_crm', 'jobs.crm.customer_saved'),
+  crm_interaction_save: contract('crm_interaction_save', 'jobs', 'approve', 'write', 'customer_property_crm', 'jobs.crm.interaction_saved'),
+  crm_followup_save: contract('crm_followup_save', 'jobs', 'approve', 'write', 'customer_property_crm', 'jobs.crm.followup_saved'),
+  crm_opportunity_save: contract('crm_opportunity_save', 'jobs', 'approve', 'write', 'customer_property_crm', 'jobs.crm.opportunity_saved'),
   quote_owner_assign: contract('quote_owner_assign', 'jobs', 'approve', 'write', 'quote_operations', 'jobs.quote.owner_assigned'),
   quote_followup_event: contract('quote_followup_event', 'jobs', 'approve', 'write', 'quote_operations', 'jobs.quote.followup_recorded'),
   dispatch_schedule: contract('dispatch_schedule', 'jobs', 'approve', 'write', 'dispatch', 'jobs.job_scheduled', true),
