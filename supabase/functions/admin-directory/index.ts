@@ -499,8 +499,9 @@ serve(async (req) => {
 
 
   if (scope === 'quality_control' && roleRank(actorRole) >= roleRank('supervisor')) {
-    const [templates,runs,items,evidence,deficiencies,workOrders,proofs,sessions,closeouts] = await Promise.all([
+    const [templates,templateItems,runs,items,evidence,deficiencies,workOrders,proofs,sessions,closeouts] = await Promise.all([
       safeList(supabase,'v_quality_control_template_directory','*','template_name',500,true),
+      safeList(supabase,'quality_control_template_items','id,template_id,item_code,item_prompt,evidence_requirement,is_required,sort_order,is_active','sort_order',2500,true),
       safeList(supabase,'v_quality_control_run_directory','*','updated_at',1500,false),
       safeList(supabase,'v_quality_control_item_directory','*','sort_order',4000,true),
       safeList(supabase,'v_quality_control_evidence_directory','*','linked_at',4000,false),
@@ -512,7 +513,7 @@ serve(async (req) => {
     ]);
     return Response.json({
       ok:true,scope:'quality_control',actor_role:actorRole,actor_profile_id:actorId,
-      quality_control_templates:templates,quality_control_runs:runs,quality_control_items:items,
+      quality_control_templates:templates,quality_control_template_items:templateItems,quality_control_runs:runs,quality_control_items:items,
       quality_control_evidence:evidence,quality_control_deficiencies:deficiencies,
       quality_control_work_orders:workOrders,quality_control_execution_proofs:proofs,
       quality_control_sessions:sessions,quality_control_closeouts:closeouts,
