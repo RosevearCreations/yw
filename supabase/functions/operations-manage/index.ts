@@ -2355,6 +2355,136 @@ serve(async (req) => {
       return Response.json({ok:true,build:324,schema:213,record:data},{headers:corsHeaders});
     }
 
+
+    if (action === 'change_order_discovery_save') {
+      requireRank(profile,20,action);
+      const workOrderId=clean(body.work_order_id,80);
+      const summary=clean(body.field_discovery_summary,2600);
+      if(!isUuid(workOrderId)) throw new HttpError(400,'Valid work_order_id is required.');
+      if(!summary) throw new HttpError(400,'Describe the extra work discovered in the field.');
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,work_order_id:workOrderId,
+        field_discovery_summary:summary,scope_summary:clean(body.scope_summary,2600)||null,
+        reason:clean(body.reason,1800)||null,notes:clean(body.notes,2200)||null,
+        service_context:clean(body.service_context||'general_outdoor',60).toLowerCase(),
+        season_context:clean(body.season_context||'four_season',40).toLowerCase()
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_change_order_discovery_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const changeId=clean((data as any)?.id,80);
+      await audit(supabase,{
+        operation_action:action,operation_status:'field_discovered',entity_type:'change_order',entity_id:changeId,actor_profile_id:profile.id,
+        request_payload:{work_order_id:workOrderId,service_context:payload.service_context,season_context:payload.season_context},
+        response_payload:{change_order_number:(data as any)?.change_order_number||null,price_mutated:false,customer_billing_mutated:false}
+      });
+      return Response.json({ok:true,build:344,schema:232,record:data,price_mutated:false,work_order_budget_mutated:false,customer_billing_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'change_order_evidence_save') {
+      requireRank(profile,20,action);
+      const changeOrderId=clean(body.change_order_id,80);
+      const evidenceReference=clean(body.evidence_reference,1800);
+      if(!isUuid(changeOrderId)) throw new HttpError(400,'Valid change_order_id is required.');
+      if(!evidenceReference) throw new HttpError(400,'Evidence reference is required.');
+      const payload:any={
+        change_order_id:changeOrderId,evidence_type:clean(body.evidence_type||'note',40).toLowerCase(),
+        evidence_reference:evidenceReference,caption:clean(body.caption,1800)||null,
+        customer_safe:body.customer_safe===true,captured_at:clean(body.captured_at,80)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_change_order_evidence_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:'evidence_saved',entity_type:'change_order_evidence',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{change_order_id:changeOrderId,evidence_type:payload.evidence_type,customer_safe:payload.customer_safe},
+        response_payload:{price_mutated:false,customer_billing_mutated:false}
+      });
+      return Response.json({ok:true,build:344,schema:232,record:data,price_mutated:false,work_order_budget_mutated:false,customer_billing_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'change_order_review_price') {
+      requireRank(profile,45,action);
+      const changeOrderId=clean(body.change_order_id,80);
+      const decision=clean(body.decision,40).toLowerCase();
+      if(!isUuid(changeOrderId)) throw new HttpError(400,'Valid change_order_id is required.');
+      if(!['approve_for_pricing','changes_required','reject'].includes(decision)) throw new HttpError(400,'Unsupported change-order review decision.');
+      const payload:any={
+        change_order_id:changeOrderId,decision,
+        scope_summary:clean(body.scope_summary,2600)||null,reason:clean(body.reason,1800)||null,
+        review_note:clean(body.review_note,2200)||null,
+        estimated_cost_delta:body.estimated_cost_delta===''||body.estimated_cost_delta==null?0:Number(body.estimated_cost_delta),
+        estimated_charge_delta:body.estimated_charge_delta===''||body.estimated_charge_delta==null?0:Number(body.estimated_charge_delta)
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_change_order_review_price',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:decision,entity_type:'change_order',entity_id:changeOrderId,actor_profile_id:profile.id,
+        request_payload:{decision,estimated_cost_delta:payload.estimated_cost_delta,estimated_charge_delta:payload.estimated_charge_delta},
+        response_payload:{review_status:(data as any)?.review_status||null,customer_authorization_status:(data as any)?.customer_authorization_status||null}
+      });
+      return Response.json({ok:true,build:344,schema:232,record:data,work_order_budget_mutated:false,customer_billing_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'change_order_customer_authorization') {
+      requireRank(profile,45,action);
+      const changeOrderId=clean(body.change_order_id,80);
+      const decision=clean(body.decision,30).toLowerCase();
+      const reference=clean(body.customer_approval_reference,1200);
+      if(!isUuid(changeOrderId)) throw new HttpError(400,'Valid change_order_id is required.');
+      if(!['authorize','decline'].includes(decision)) throw new HttpError(400,'Authorization decision must be authorize or decline.');
+      if(decision==='authorize'&&!reference) throw new HttpError(400,'Customer authorization evidence/reference is required.');
+      const payload:any={
+        change_order_id:changeOrderId,decision,customer_approval_reference:reference||null,
+        customer_approved_by_name:clean(body.customer_approved_by_name,240)||null,
+        customer_approved_at:clean(body.customer_approved_at,80)||null,
+        customer_authorization_method:clean(body.customer_authorization_method||'other',30).toLowerCase()
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_change_order_customer_authorization',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:decision,entity_type:'change_order',entity_id:changeOrderId,actor_profile_id:profile.id,
+        request_payload:{decision,authorization_method:payload.customer_authorization_method,has_reference:Boolean(reference)},
+        response_payload:{status:(data as any)?.status||null,customer_authorization_status:(data as any)?.customer_authorization_status||null}
+      });
+      return Response.json({ok:true,build:344,schema:232,record:data,work_order_budget_mutated:false,customer_billing_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'change_order_apply') {
+      requireRank(profile,45,action);
+      const changeOrderId=clean(body.change_order_id,80);
+      if(!isUuid(changeOrderId)) throw new HttpError(400,'Valid change_order_id is required.');
+      const {data,error}=await supabase.rpc('ywi_rpc_change_order_apply',{p_change_order_id:changeOrderId,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:'applied',entity_type:'change_order',entity_id:changeOrderId,actor_profile_id:profile.id,
+        request_payload:{change_order_id:changeOrderId},
+        response_payload:{work_order_budget_mutated:true,invoice_created:false,finance_posted:false,idempotent:(data as any)?.idempotent===true}
+      });
+      return Response.json({ok:true,build:344,schema:232,...(data as any),invoice_created:false,finance_posted:false},{headers:corsHeaders});
+    }
+
+    if (action === 'change_order_invoice_evidence_save') {
+      requireRank(profile,45,action);
+      const changeOrderId=clean(body.change_order_id,80);
+      const evidenceReference=clean(body.invoice_evidence_reference,1800);
+      const evidenceStatus=clean(body.invoice_evidence_status||'ready',30).toLowerCase();
+      if(!isUuid(changeOrderId)) throw new HttpError(400,'Valid change_order_id is required.');
+      if(!evidenceReference) throw new HttpError(400,'Invoice evidence/reference is required.');
+      const payload:any={
+        change_order_id:changeOrderId,invoice_evidence_status:evidenceStatus,
+        invoice_evidence_reference:evidenceReference,
+        invoice_candidate_id:isUuid(body.invoice_candidate_id)?clean(body.invoice_candidate_id,80):null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_change_order_invoice_evidence_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:evidenceStatus,entity_type:'change_order',entity_id:changeOrderId,actor_profile_id:profile.id,
+        request_payload:{invoice_evidence_status:evidenceStatus,invoice_candidate_linked:Boolean(payload.invoice_candidate_id)},
+        response_payload:{invoice_created:false,finance_posted:false}
+      });
+      return Response.json({ok:true,build:344,schema:232,record:data,invoice_created:false,finance_posted:false,customer_billing_mutated:false},{headers:corsHeaders});
+    }
+
     if (action === 'job_hazard_template_save') {
       requireRank(profile,30,action);
       const templateCode=clean(body.template_code,80).toLowerCase().replace(/[^a-z0-9_]+/g,'_');
