@@ -289,3 +289,11 @@
           <p><strong>Planned-vs-actual evidence:</strong> actual-use observations are converted into the planned unit and compared with the planned quantity so we can see over/under use without pretending unlike units can be summed together.</p>
           <p><strong>Inventory authority:</strong> the estimator never creates a receipt, issue or stock adjustment and never changes estimate/work-order scope or billing. Canonical materials/inventory and commercial workflows remain separate deliberate actions.</p>
         </section>
+
+        <section class="help-section" id="change-orders-extras">
+          <h2>Build 344 — Change Orders &amp; Extras</h2>
+          <p>Build 344 controls field-discovered extra work from <strong>crew discovery → evidence/photos → office/supervisor review → price/scope → customer authorization → work-order scope/budget application → invoice evidence</strong>. The same workflow covers mowing/landscaping, landscape installation, fall cleanup/leaf collection and winter snow clearing/removal.</p>
+          <p><strong>No field-only price change:</strong> crew discovery and evidence actions record the condition but initialize no price and cannot change the work-order budget. Reviewed pricing requires supervisor/office authority and at least one evidence item.</p>
+          <p><strong>Customer authorization gate:</strong> an approved scope/price is not applied until explicit authorization evidence is recorded. Applying an authorized change order creates one linked canonical work-order line plus an immutable before/after budget record; repeating Apply is idempotent.</p>
+          <p><strong>Finance authority:</strong> invoice evidence can record readiness or link an existing Finance candidate, but Build 344 never creates an invoice candidate, AR invoice, payment or posting. Existing Finance closeout remains the only billing authority.</p>
+        </section>
