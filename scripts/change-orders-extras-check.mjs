@@ -39,7 +39,7 @@ const discovery=migration.slice(migration.indexOf('create or replace function pu
 assert.ok(!/update\s+public\.work_orders/i.test(discovery),'Crew discovery must not change work-order budget.');
 assert.ok(!/insert\s+into\s+public\.job_invoice_candidates/i.test(migration),'Build 344 must not create Finance invoice candidates.');
 assert.ok(!/insert\s+into\s+public\.ar_invoices/i.test(migration),'Build 344 must not create AR invoices.');
-must(migration,['customer_authorization_status<>''authorized''','change_order_work_order_line_uk',"'invoice_created',false","'finance_posted',false"],'Authorization/idempotency/Finance boundary');
+must(migration,["customer_authorization_status<>''authorized''",'change_order_work_order_line_uk',"'invoice_created',false","'finance_posted',false"],'Authorization/idempotency/Finance boundary');
 
 must(boundaries,[
  "change_order_discovery_save: contract('change_order_discovery_save', 'jobs', 'create', 'write', 'change_orders_extras'",
