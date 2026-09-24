@@ -37,9 +37,9 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
-  if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['crew','change_orders_extras'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
-  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','change_orders_extras','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
+  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
 
