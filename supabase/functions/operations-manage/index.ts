@@ -2632,6 +2632,152 @@ serve(async (req) => {
       },{headers:corsHeaders});
     }
 
+
+    if (action === 'seasonal_cycle_save') {
+      requireRank(profile,45,action);
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,
+        season_year:Number.isFinite(Number(body.season_year))?Number(body.season_year):null,
+        season_context:clean(body.season_context||'four_season',40).toLowerCase(),
+        cycle_name:clean(body.cycle_name,180)||null,
+        cycle_status:clean(body.cycle_status||'planning',30).toLowerCase(),
+        operating_priority:clean(body.operating_priority||'core',30).toLowerCase(),
+        start_date:clean(body.start_date,40)||null,end_date:clean(body.end_date,40)||null,
+        owner_profile_id:isUuid(body.owner_profile_id)?clean(body.owner_profile_id,80):null,
+        operations_note:clean(body.operations_note,3000)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_seasonal_cycle_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:clean((data as any)?.cycle_status,40)||'saved',
+        entity_type:'seasonal_operations_cycle',entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{season_year:payload.season_year,season_context:payload.season_context,cycle_status:payload.cycle_status},
+        response_payload:{winter_core:payload.season_context==='winter',canonical_sources_mutated:false}
+      });
+      return Response.json({ok:true,build:346,schema:234,record:data,winter_core:payload.season_context==='winter',canonical_sources_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'seasonal_checklist_save') {
+      requireRank(profile,45,action);
+      const cycleId=clean(body.cycle_id,80);
+      if(!isUuid(cycleId)) throw new HttpError(400,'Valid cycle_id is required.');
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,cycle_id:cycleId,
+        item_key:clean(body.item_key,120),category:clean(body.category||'operations',50).toLowerCase(),
+        item_label:clean(body.item_label,500),item_status:clean(body.item_status||'pending',30).toLowerCase(),
+        due_date:clean(body.due_date,40)||null,canonical_source:clean(body.canonical_source,120)||null,
+        canonical_entity_id:clean(body.canonical_entity_id,160)||null,item_note:clean(body.item_note,2200)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_seasonal_checklist_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:payload.item_status,entity_type:'seasonal_operations_checklist_item',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{cycle_id:cycleId,item_key:payload.item_key,category:payload.category},
+        response_payload:{canonical_sources_mutated:false}
+      });
+      return Response.json({ok:true,build:346,schema:234,record:data,canonical_sources_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'seasonal_readiness_save') {
+      requireRank(profile,45,action);
+      const cycleId=clean(body.cycle_id,80);
+      if(!isUuid(cycleId)) throw new HttpError(400,'Valid cycle_id is required.');
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,cycle_id:cycleId,
+        readiness_type:clean(body.readiness_type||'general',50).toLowerCase(),
+        readiness_status:clean(body.readiness_status||'pending',30).toLowerCase(),
+        recurring_service_agreement_id:isUuid(body.recurring_service_agreement_id)?clean(body.recurring_service_agreement_id,80):null,
+        profile_id:isUuid(body.profile_id)?clean(body.profile_id,80):null,
+        crew_id:isUuid(body.crew_id)?clean(body.crew_id,80):null,
+        equipment_item_id:body.equipment_item_id==null||body.equipment_item_id===''?null:String(body.equipment_item_id),
+        material_id:isUuid(body.material_id)?clean(body.material_id,80):null,
+        route_id:isUuid(body.route_id)?clean(body.route_id,80):null,
+        entity_label:clean(body.entity_label,300)||null,review_note:clean(body.review_note,2200)||null,
+        next_action:clean(body.next_action,2200)||null,target_date:clean(body.target_date,40)||null
+      };
+      const refs=[payload.recurring_service_agreement_id,payload.profile_id,payload.crew_id,payload.equipment_item_id,payload.material_id,payload.route_id].filter(Boolean);
+      if(refs.length>1) throw new HttpError(400,'Seasonal readiness may link one canonical entity at a time.');
+      const {data,error}=await supabase.rpc('ywi_rpc_seasonal_readiness_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:payload.readiness_status,entity_type:'seasonal_operations_readiness',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{cycle_id:cycleId,readiness_type:payload.readiness_type,entity_label:payload.entity_label},
+        response_payload:{canonical_sources_mutated:false}
+      });
+      return Response.json({ok:true,build:346,schema:234,record:data,canonical_sources_mutated:false,authority_boundary:'readiness evidence only'},{headers:corsHeaders});
+    }
+
+    if (action === 'seasonal_rollover_save') {
+      requireRank(profile,45,action);
+      const cycleId=clean(body.cycle_id,80);
+      const agreementId=clean(body.recurring_service_agreement_id,80);
+      if(!isUuid(cycleId)||!isUuid(agreementId)) throw new HttpError(400,'Valid cycle_id and recurring_service_agreement_id are required.');
+      const payload:any={
+        cycle_id:cycleId,recurring_service_agreement_id:agreementId,
+        rollover_state:clean(body.rollover_state||'review',40).toLowerCase(),
+        effective_start_date:clean(body.effective_start_date,40)||null,
+        decision_note:clean(body.decision_note,2200)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_seasonal_rollover_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:payload.rollover_state,entity_type:'seasonal_operations_rollover',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{cycle_id:cycleId,recurring_service_agreement_id:agreementId,rollover_state:payload.rollover_state},
+        response_payload:{canonical_agreement_mutated:false}
+      });
+      return Response.json({ok:true,build:346,schema:234,record:data,canonical_agreement_mutated:false,authority_boundary:'recurring_service_agreements remains canonical'},{headers:corsHeaders});
+    }
+
+    if (action === 'seasonal_storm_event_save') {
+      requireRank(profile,45,action);
+      const cycleId=clean(body.cycle_id,80);
+      if(!isUuid(cycleId)) throw new HttpError(400,'Valid winter cycle_id is required.');
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,cycle_id:cycleId,
+        storm_name:clean(body.storm_name,180),storm_status:clean(body.storm_status||'watch',30).toLowerCase(),
+        planned_start:clean(body.planned_start,80)||null,planned_end:clean(body.planned_end,80)||null,
+        workability_observation_id:isUuid(body.workability_observation_id)?clean(body.workability_observation_id,80):null,
+        activation_note:clean(body.activation_note,2200)||null,
+        owner_profile_id:isUuid(body.owner_profile_id)?clean(body.owner_profile_id,80):null
+      };
+      if(!payload.storm_name) throw new HttpError(400,'Storm event name is required.');
+      const {data,error}=await supabase.rpc('ywi_rpc_seasonal_storm_event_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:payload.storm_status,entity_type:'seasonal_storm_event',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{cycle_id:cycleId,storm_status:payload.storm_status,has_workability_observation:Boolean(payload.workability_observation_id)},
+        response_payload:{winter_core:true,weather_authority_mutated:false}
+      });
+      return Response.json({ok:true,build:346,schema:234,record:data,winter_core:true,weather_authority_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'seasonal_storm_route_activation_save') {
+      requireRank(profile,45,action);
+      const stormEventId=clean(body.storm_event_id,80);
+      const routeId=clean(body.route_id,80);
+      if(!isUuid(stormEventId)||!isUuid(routeId)) throw new HttpError(400,'Valid storm_event_id and route_id are required.');
+      const payload:any={
+        storm_event_id:stormEventId,route_id:routeId,
+        crew_id:isUuid(body.crew_id)?clean(body.crew_id,80):null,
+        activation_status:clean(body.activation_status||'staged',30).toLowerCase(),
+        service_priority:clean(body.service_priority||'high',30).toLowerCase(),
+        activation_note:clean(body.activation_note,2200)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_seasonal_storm_route_activation_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:payload.activation_status,entity_type:'seasonal_storm_route_activation',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{storm_event_id:stormEventId,route_id:routeId,activation_status:payload.activation_status},
+        response_payload:{canonical_route_mutated:false,storm_capability_required:true}
+      });
+      return Response.json({ok:true,build:346,schema:234,record:data,canonical_route_mutated:false,storm_capability_required:true},{headers:corsHeaders});
+    }
+
     if (action === 'job_hazard_template_save') {
       requireRank(profile,30,action);
       const templateCode=clean(body.template_code,80).toLowerCase().replace(/[^a-z0-9_]+/g,'_');
