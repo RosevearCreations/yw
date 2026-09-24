@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 72, 'Exactly 72 operations actions must be contracted through Schema 231.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 72);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 78, 'Exactly 78 operations actions must be contracted through Schema 232.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 78);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
@@ -317,7 +317,18 @@ for (const action of Array.from(MODULE_WRITE_ACTIONS)) {
   if (boundary.crossModule) assert.ok(boundary.eventKey, `Cross-module contract needs event key: ${action}`);
 }
 
-console.log('PASS boundary-exact-72-actions');
+const coDiscovery = resolveModuleWriteBoundary('change_order_discovery_save');
+const coEvidence = resolveModuleWriteBoundary('change_order_evidence_save');
+const coReview = resolveModuleWriteBoundary('change_order_review_price');
+const coAuth = resolveModuleWriteBoundary('change_order_customer_authorization');
+const coApply = resolveModuleWriteBoundary('change_order_apply');
+const coInvoice = resolveModuleWriteBoundary('change_order_invoice_evidence_save');
+assert.equal(coDiscovery.ownerModule, 'jobs'); assert.equal(coDiscovery.minimum, 'create');
+assert.equal(coEvidence.ownerModule, 'jobs'); assert.equal(coEvidence.minimum, 'create');
+for (const boundary of [coReview,coAuth,coApply,coInvoice]) { assert.equal(boundary.ownerModule,'jobs'); assert.equal(boundary.minimum,'approve'); }
+assert.equal(coApply.crossModule,true); assert.equal(coInvoice.crossModule,true);
+console.log('PASS boundary-build344-change-orders-extras');
+console.log('PASS boundary-exact-78-actions');
 console.log('PASS boundary-build343-landscape-material-estimator');
 console.log('PASS boundary-build342-weather-workability');
 console.log('PASS boundary-build341-route-optimization');
