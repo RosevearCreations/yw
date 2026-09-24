@@ -43,7 +43,7 @@ must(migration,[
   "execution_proof_id uuid not null references public.work_order_execution_proofs",
   "Customer-safe QC evidence must reference an approved customer-visible execution proof.",
   "Unresolved QC deficiencies must be closed before supervisor approval.",
-  "Customer signoff remains the existing portal authority."
+  "customer signoff remains the existing portal authority."
 ],'QC authority and gating');
 
 must(boundaries,[
