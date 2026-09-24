@@ -297,3 +297,11 @@
           <p><strong>Customer authorization gate:</strong> an approved scope/price is not applied until explicit authorization evidence is recorded. Applying an authorized change order creates one linked canonical work-order line plus an immutable before/after budget record; repeating Apply is idempotent.</p>
           <p><strong>Finance authority:</strong> invoice evidence can record readiness or link an existing Finance candidate, but Build 344 never creates an invoice candidate, AR invoice, payment or posting. Existing Finance closeout remains the only billing authority.</p>
         </section>
+
+        <section class="help-section" id="quality-control-customer-signoff">
+          <h2>Build 345 — Quality Control &amp; Customer Signoff</h2>
+          <p>Build 345 adds one shared four-season quality workflow for mowing/landscaping, landscape installation, fall cleanup/leaf collection and winter snow clearing/removal: <strong>crew completion → checklist → before/after/detail evidence → deficiencies/rework → supervisor QC where required → customer-safe completion summary</strong>.</p>
+          <p><strong>Evidence authority:</strong> QC links existing <code>work_order_execution_proofs</code>. It does not create a second photo/evidence store. Customer-safe QC evidence must already be an approved, customer-visible execution proof.</p>
+          <p><strong>Deficiency/rework gate:</strong> unresolved deficiencies and failed required checklist items prevent QC approval. Once QC has started for a work order, the existing closeout package is blocked until that QC record is ready.</p>
+          <p><strong>Customer signoff authority:</strong> staff do not impersonate the customer. Build 345 reads the canonical closeout/signoff state but cannot create customer signoff records. Customer acknowledgement or approval continues through the existing secure customer portal and <code>work_order_customer_closeout_signoffs</code>.</p>
+        </section>
