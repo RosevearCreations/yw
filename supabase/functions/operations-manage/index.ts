@@ -2485,6 +2485,153 @@ serve(async (req) => {
       return Response.json({ok:true,build:344,schema:232,record:data,invoice_created:false,finance_posted:false,customer_billing_mutated:false},{headers:corsHeaders});
     }
 
+
+    if (action === 'quality_control_template_save') {
+      requireRank(profile,45,action);
+      const templateName=clean(body.template_name,180);
+      if(!templateName) throw new HttpError(400,'Template name is required.');
+      const rawItems=Array.isArray(body.items)?body.items.slice(0,60):[];
+      const items=rawItems.map((item:any,index:number)=>({
+        item_code:clean(item?.item_code,100).toLowerCase().replace(/[^a-z0-9]+/g,'_'),
+        item_prompt:clean(item?.item_prompt,600),
+        evidence_requirement:clean(item?.evidence_requirement||'none',30).toLowerCase(),
+        is_required:item?.is_required!==false,
+        sort_order:Number.isFinite(Number(item?.sort_order))?Number(item.sort_order):(index+1)*10
+      })).filter((item:any)=>item.item_prompt);
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,
+        template_code:clean(body.template_code,100).toLowerCase().replace(/[^a-z0-9]+/g,'_')||null,
+        template_name:templateName,
+        service_context:clean(body.service_context||'general_outdoor',60).toLowerCase(),
+        season_context:clean(body.season_context||'four_season',40).toLowerCase(),
+        supervisor_qc_required:body.supervisor_qc_required!==false,
+        customer_signoff_mode:clean(body.customer_signoff_mode||'recommended',30).toLowerCase(),
+        notes:clean(body.notes,2200)||null,is_active:body.is_active!==false,items
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_quality_control_template_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:'saved',entity_type:'quality_control_template',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{template_name:payload.template_name,service_context:payload.service_context,season_context:payload.season_context,item_count:items.length},
+        response_payload:{customer_signoff_mutated:false}
+      });
+      return Response.json({ok:true,build:345,schema:233,record:data,customer_signoff_mutated:false,customer_signoff_authority:'existing_customer_portal'},{headers:corsHeaders});
+    }
+
+    if (action === 'quality_control_run_save') {
+      requireRank(profile,20,action);
+      const workOrderId=clean(body.work_order_id,80);
+      const templateId=clean(body.template_id,80);
+      if(!isUuid(workOrderId)||!isUuid(templateId)) throw new HttpError(400,'Valid work_order_id and template_id are required.');
+      const rawResults=Array.isArray(body.item_results)?body.item_results.slice(0,80):[];
+      const itemResults=rawResults.map((item:any)=>({
+        item_code:clean(item?.item_code,100).toLowerCase(),
+        result_status:clean(item?.result_status||'pending',30).toLowerCase(),
+        completion_note:clean(item?.completion_note,1200)||null
+      })).filter((item:any)=>item.item_code);
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,work_order_id:workOrderId,template_id:templateId,
+        job_session_id:isUuid(body.job_session_id)?clean(body.job_session_id,80):null,
+        crew_completion_summary:clean(body.crew_completion_summary,3000)||null,
+        customer_safe_summary:clean(body.customer_safe_summary,2200)||null,
+        item_results:itemResults
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_quality_control_run_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:clean((data as any)?.run_status,40)||'saved',entity_type:'work_order_quality_control_run',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{work_order_id:workOrderId,template_id:templateId,item_result_count:itemResults.length},
+        response_payload:{run_status:(data as any)?.run_status||null,customer_signoff_mutated:false}
+      });
+      return Response.json({ok:true,build:345,schema:233,record:data,customer_signoff_mutated:false,customer_signoff_authority:'existing_customer_portal'},{headers:corsHeaders});
+    }
+
+    if (action === 'quality_control_evidence_link') {
+      requireRank(profile,20,action);
+      const runId=clean(body.qc_run_id,80);
+      const proofId=clean(body.execution_proof_id,80);
+      if(!isUuid(runId)||!isUuid(proofId)) throw new HttpError(400,'Valid qc_run_id and execution_proof_id are required.');
+      const payload:any={
+        qc_run_id:runId,qc_item_id:isUuid(body.qc_item_id)?clean(body.qc_item_id,80):null,
+        execution_proof_id:proofId,evidence_role:clean(body.evidence_role||'after',30).toLowerCase(),
+        customer_safe:body.customer_safe===true,caption:clean(body.caption,1200)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_quality_control_evidence_link',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:'linked',entity_type:'work_order_quality_control_evidence',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{qc_run_id:runId,execution_proof_id:proofId,evidence_role:payload.evidence_role,customer_safe:payload.customer_safe},
+        response_payload:{canonical_execution_proof_reused:true,customer_signoff_mutated:false}
+      });
+      return Response.json({ok:true,build:345,schema:233,record:data,canonical_execution_proof_reused:true,customer_signoff_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'quality_control_deficiency_save') {
+      requireRank(profile,20,action);
+      const runId=clean(body.qc_run_id,80);
+      const summary=clean(body.deficiency_summary,2200);
+      if(!isUuid(runId)||!summary) throw new HttpError(400,'QC run and deficiency summary are required.');
+      const payload:any={
+        id:isUuid(body.id)?clean(body.id,80):null,qc_run_id:runId,
+        qc_item_id:isUuid(body.qc_item_id)?clean(body.qc_item_id,80):null,
+        deficiency_summary:summary,severity:clean(body.severity||'minor',30).toLowerCase(),
+        customer_safe_note:clean(body.customer_safe_note,1600)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_quality_control_deficiency_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:clean((data as any)?.deficiency_status,40)||'open',entity_type:'work_order_quality_control_deficiency',
+        entity_id:clean((data as any)?.id,80),actor_profile_id:profile.id,
+        request_payload:{qc_run_id:runId,severity:payload.severity},
+        response_payload:{closeout_blocked_until_resolved:true,customer_signoff_mutated:false}
+      });
+      return Response.json({ok:true,build:345,schema:233,record:data,closeout_blocked_until_resolved:true,customer_signoff_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'quality_control_rework_save') {
+      requireRank(profile,20,action);
+      const deficiencyId=clean(body.deficiency_id,80);
+      const eventNote=clean(body.event_note,2200);
+      if(!isUuid(deficiencyId)||!eventNote) throw new HttpError(400,'Deficiency and rework note are required.');
+      const payload:any={
+        deficiency_id:deficiencyId,event_type:clean(body.event_type||'progress',30).toLowerCase(),
+        event_note:eventNote,
+        resolution_execution_proof_id:isUuid(body.resolution_execution_proof_id)?clean(body.resolution_execution_proof_id,80):null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_quality_control_rework_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:payload.event_type,entity_type:'work_order_quality_control_deficiency',
+        entity_id:deficiencyId,actor_profile_id:profile.id,
+        request_payload:{event_type:payload.event_type,has_resolution_proof:Boolean(payload.resolution_execution_proof_id)},
+        response_payload:{deficiency_status:(data as any)?.deficiency_status||null,customer_signoff_mutated:false}
+      });
+      return Response.json({ok:true,build:345,schema:233,record:data,customer_signoff_mutated:false},{headers:corsHeaders});
+    }
+
+    if (action === 'quality_control_review') {
+      requireRank(profile,45,action);
+      const runId=clean(body.qc_run_id,80);
+      const decision=clean(body.decision,30).toLowerCase();
+      if(!isUuid(runId)||!['approve','require_rework'].includes(decision)) throw new HttpError(400,'Valid qc_run_id and review decision are required.');
+      const payload:any={qc_run_id:runId,decision,supervisor_review_note:clean(body.supervisor_review_note,2200)||null};
+      const {data,error}=await supabase.rpc('ywi_rpc_quality_control_review',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:decision,entity_type:'work_order_quality_control_run',
+        entity_id:runId,actor_profile_id:profile.id,request_payload:{decision},
+        response_payload:{run_status:(data as any)?.run_status||null,review_status:(data as any)?.review_status||null,customer_signoff_mutated:false}
+      });
+      return Response.json({
+        ok:true,build:345,schema:233,record:data,
+        closeout_ready:decision==='approve',customer_signoff_mutated:false,
+        customer_signoff_authority:'work_order_closeout_packages + existing customer portal'
+      },{headers:corsHeaders});
+    }
+
     if (action === 'job_hazard_template_save') {
       requireRank(profile,30,action);
       const templateCode=clean(body.template_code,80).toLowerCase().replace(/[^a-z0-9_]+/g,'_');

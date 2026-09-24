@@ -91,6 +91,12 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
   work_order_execution_proof_decision: contract('work_order_execution_proof_decision', 'jobs', 'approve', 'write', 'execution_proof', 'jobs.execution_proof.decided', true),
   work_order_closeout_submit: contract('work_order_closeout_submit', 'jobs', 'approve', 'write', 'closeout', 'jobs.closeout.submitted', true),
   work_order_closeout_decision: contract('work_order_closeout_decision', 'jobs', 'approve', 'write', 'closeout', 'jobs.closeout.decided', true),
+  quality_control_template_save: contract('quality_control_template_save', 'jobs', 'approve', 'write', 'quality_control', 'jobs.quality_control.template_saved'),
+  quality_control_run_save: contract('quality_control_run_save', 'jobs', 'create', 'write', 'quality_control', 'jobs.quality_control.run_saved'),
+  quality_control_evidence_link: contract('quality_control_evidence_link', 'jobs', 'create', 'write', 'quality_control', 'jobs.quality_control.evidence_linked'),
+  quality_control_deficiency_save: contract('quality_control_deficiency_save', 'jobs', 'create', 'write', 'quality_control', 'jobs.quality_control.deficiency_saved'),
+  quality_control_rework_save: contract('quality_control_rework_save', 'jobs', 'create', 'write', 'quality_control', 'jobs.quality_control.rework_saved'),
+  quality_control_review: contract('quality_control_review', 'jobs', 'approve', 'write', 'quality_control', 'jobs.quality_control.reviewed', true),
   customer_notification_retry: contract('customer_notification_retry', 'jobs', 'manage', 'write', 'customer_notifications', 'jobs.customer_notification.retried', true),
 
   visual_asset_register: contract('visual_asset_register', 'admin', 'manage', 'write', 'public_content', 'admin.visual_asset.registered'),
