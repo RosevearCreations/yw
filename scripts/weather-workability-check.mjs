@@ -14,10 +14,10 @@ must(directory,["scope === 'workability'",'v_workability_rule_directory','v_weat
 must(ui,['Build 342 — Weather & Workability Controls','Four-season Ontario model','winter snow clearing/removal',"scope:'workability'","action:'workability_observation_save'","action:'workability_decision_save'",'Schedule status and customer notification were not changed automatically.'],'Workability UI');
 must(hub,['loadBuild342WeatherWorkability','/js/admin-weather-workability-ui.js?v=2026-09-23b342',"loadBuild342WeatherWorkability();"],'Workability lazy load');
 must(help,['Build 342 — Weather &amp; Workability Controls','saturated ground','freezing rain/ice','supervisor','customer-notification readiness'],'Build 342 Help');
-must(roadmap,['#### **342 — Weather & Workability Controls** is implemented','#### **343 — Landscape Material Estimator** is implemented','#### **344 — Change Orders & Extras** is implemented','next planned autonomous item is **346 — Seasonal Operations Centre**'],'Build 342 roadmap');
+must(roadmap,['#### **342 — Weather & Workability Controls** is implemented','#### **343 — Landscape Material Estimator** is implemented','#### **344 — Change Orders & Extras** is implemented','next planned autonomous item is **347 — Universal Activity & Audit Timeline**'],'Build 342 roadmap');
 must(pkg,['test:weather-workability','test:browser:weather-workability'],'Build 342 scripts');
 must(workflow,['npm run test:weather-workability','npm run test:browser:weather-workability'],'Build 342 CI');
-must(behavior,['boundary-exact-84-actions','boundary-build342-weather-workability'],'Boundary behavior');
+must(behavior,['boundary-exact-90-actions','boundary-build342-weather-workability'],'Boundary behavior');
 const require=createRequire(import.meta.url),ts=require('typescript');
 for(const p of ['supabase/functions/operations-manage/index.ts','supabase/functions/admin-directory/index.ts','supabase/functions/_shared/module-write-boundaries.ts']){const o=ts.transpileModule(read(p),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext},reportDiagnostics:true,fileName:p});assert.equal((o.diagnostics||[]).filter(d=>d.category===ts.DiagnosticCategory.Error).length,0,p+' syntax errors');}
 console.log('Build 342 Weather & Workability Controls source gate GREEN');
