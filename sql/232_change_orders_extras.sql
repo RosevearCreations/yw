@@ -535,9 +535,10 @@ language sql stable security invoker set search_path=public as $$
     'Crew discovery initializes zero pricing and does not mutate the work-order budget.'
   union all
   select 'customer_authorization_before_apply',
-    case when position('customer_authorization_status<>''authorized''' in replace(lower(pg_get_functiondef('public.ywi_rpc_change_order_apply(uuid,uuid)'::regprocedure)),' ',''))>0
-      or position('customer_authorization_status<>'authorized'' in replace(lower(pg_get_functiondef('public.ywi_rpc_change_order_apply(uuid,uuid)'::regprocedure)),' ',''))>0
-    then 'passed' else 'passed' end,
+    case when position('v_change.customer_authorization_status<>''authorized''' in replace(lower(pg_get_functiondef('public.ywi_rpc_change_order_apply(uuid,uuid)'::regprocedure)),' ',''))>0
+      and position('v_change.review_status<>''approved_for_pricing''' in replace(lower(pg_get_functiondef('public.ywi_rpc_change_order_apply(uuid,uuid)'::regprocedure)),' ',''))>0
+      and position('v_change.status<>''approved''' in replace(lower(pg_get_functiondef('public.ywi_rpc_change_order_apply(uuid,uuid)'::regprocedure)),' ',''))>0
+    then 'passed' else 'failed' end,
     'Apply RPC requires reviewed pricing, approved status and explicit customer authorization before work-order mutation.'
   union all
   select 'application_idempotent',
