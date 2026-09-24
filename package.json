@@ -165,7 +165,9 @@
     "test:weather-workability": "node scripts/weather-workability-check.mjs",
     "test:browser:weather-workability": "playwright test --config=playwright.config.mjs tests/browser/weather-workability.spec.mjs",
     "test:landscape-material-estimator": "node scripts/landscape-material-estimator-check.mjs",
-    "test:browser:landscape-material-estimator": "playwright test --config=playwright.config.mjs tests/browser/landscape-material-estimator.spec.mjs"
+    "test:browser:landscape-material-estimator": "playwright test --config=playwright.config.mjs tests/browser/landscape-material-estimator.spec.mjs",
+    "test:change-orders-extras": "node scripts/change-orders-extras-check.mjs",
+    "test:browser:change-orders-extras": "playwright test --config=playwright.config.mjs tests/browser/change-orders-extras.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

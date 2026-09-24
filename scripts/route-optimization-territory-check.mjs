@@ -39,12 +39,12 @@ must(boundaries,[
 must(operations,["action === 'route_territory_save'","action === 'route_territory_site_save'","action === 'route_optimization_generate'","action === 'route_optimization_decision'","build:341,schema:229",'dispatch_mutated:false'],'Routing actions');
 must(directory,["scope === 'routing'",'v_route_territory_directory','v_route_planning_directory','v_route_optimization_run_directory','v_route_optimization_stop_directory','Optimization is advisory only'],'Routing read scope');
 must(ui,['Build 341 — Route Optimization & Territory Management','Four-season Ontario routing','winter snow clearing/removal',"scope:'routing'","action:'route_optimization_generate'","action:'route_optimization_decision'",'Dispatch was not changed'],'Routing UI');
-must(hub,['loadBuild341RouteOptimization','/js/admin-route-optimization-ui.js?v=2026-09-23b341',"if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); loadBuild342WeatherWorkability(); loadBuild343LandscapeMaterialEstimator(); }"],'Routing lazy load');
+must(hub,['loadBuild341RouteOptimization','/js/admin-route-optimization-ui.js?v=2026-09-23b341',"if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); loadBuild342WeatherWorkability(); loadBuild343LandscapeMaterialEstimator(); loadBuild344ChangeOrdersExtras(); }"],'Routing lazy load');
 must(help,['Build 341 — Route Optimization &amp; Territory Management','advisory','storm-event','dispatch authority'],'Build 341 help');
-must(roadmap,['#### **341 — Route Optimization & Territory Management** is implemented','#### **342 — Weather & Workability Controls** is implemented','#### **343 — Landscape Material Estimator** is implemented','next planned autonomous item is **344 — Change Orders & Extras**'],'Build 341 roadmap');
+must(roadmap,['#### **341 — Route Optimization & Territory Management** is implemented','#### **342 — Weather & Workability Controls** is implemented','#### **343 — Landscape Material Estimator** is implemented','next planned autonomous item is **345 — Quality Control & Customer Signoff**'],'Build 341 roadmap');
 must(pkg,['test:route-optimization-territory','test:browser:route-optimization-territory'],'Build 341 scripts');
 must(workflow,['npm run test:route-optimization-territory','npm run test:browser:route-optimization-territory'],'Build 341 CI');
-must(behavior,['boundary-exact-72-actions','boundary-build341-route-optimization'],'Boundary behavior');
+must(behavior,['boundary-exact-78-actions','boundary-build341-route-optimization'],'Boundary behavior');
 
 const require=createRequire(import.meta.url),ts=require('typescript');
 for(const p of ['supabase/functions/operations-manage/index.ts','supabase/functions/admin-directory/index.ts','supabase/functions/_shared/module-write-boundaries.ts']){
