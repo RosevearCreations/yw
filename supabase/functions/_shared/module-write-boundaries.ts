@@ -97,6 +97,12 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
   quality_control_deficiency_save: contract('quality_control_deficiency_save', 'jobs', 'create', 'write', 'quality_control', 'jobs.quality_control.deficiency_saved'),
   quality_control_rework_save: contract('quality_control_rework_save', 'jobs', 'create', 'write', 'quality_control', 'jobs.quality_control.rework_saved'),
   quality_control_review: contract('quality_control_review', 'jobs', 'approve', 'write', 'quality_control', 'jobs.quality_control.reviewed', true),
+  seasonal_cycle_save: contract('seasonal_cycle_save', 'jobs', 'approve', 'write', 'seasonal_operations', 'jobs.seasonal.cycle_saved', true),
+  seasonal_checklist_save: contract('seasonal_checklist_save', 'jobs', 'approve', 'write', 'seasonal_operations', 'jobs.seasonal.checklist_saved'),
+  seasonal_readiness_save: contract('seasonal_readiness_save', 'jobs', 'approve', 'write', 'seasonal_operations', 'jobs.seasonal.readiness_saved', true),
+  seasonal_rollover_save: contract('seasonal_rollover_save', 'jobs', 'approve', 'write', 'seasonal_operations', 'jobs.seasonal.rollover_saved', true),
+  seasonal_storm_event_save: contract('seasonal_storm_event_save', 'jobs', 'approve', 'write', 'seasonal_operations', 'jobs.seasonal.storm_saved', true),
+  seasonal_storm_route_activation_save: contract('seasonal_storm_route_activation_save', 'jobs', 'approve', 'write', 'seasonal_operations', 'jobs.seasonal.storm_route_saved', true),
   customer_notification_retry: contract('customer_notification_retry', 'jobs', 'manage', 'write', 'customer_notifications', 'jobs.customer_notification.retried', true),
 
   visual_asset_register: contract('visual_asset_register', 'admin', 'manage', 'write', 'public_content', 'admin.visual_asset.registered'),

@@ -37,7 +37,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
-  if (['crew','change_orders_extras','quality_control'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['crew','change_orders_extras','quality_control','seasonal_operations'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
@@ -519,6 +519,52 @@ serve(async (req) => {
       quality_control_sessions:sessions,quality_control_closeouts:closeouts,
       seasonal_boundary:'Four-season QC covers mowing/landscaping, landscape installation, fall cleanup/leaf collection and winter snow clearing/removal using one shared quality model.',
       authority_boundary:'Build 345 links canonical work_order_execution_proofs and reads canonical work_order_closeout_packages/customer signoff. Staff QC cannot create customer signoff; the existing customer portal remains authoritative.'
+    }, { headers:corsHeaders });
+  }
+
+
+  if (scope === 'seasonal_operations' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const [
+      cycles,templates,items,readiness,rollovers,storms,stormRoutes,outstanding,
+      recurringPrograms,crewSchedule,crews,maintenance,materialStock,routePlanning,workability,routes
+    ] = await Promise.all([
+      safeList(supabase,'v_seasonal_operations_cycle_directory','*','season_year',500,false),
+      safeList(supabase,'seasonal_operations_checklist_templates','*','sort_order',500,true),
+      safeList(supabase,'seasonal_operations_checklist_items','*','updated_at',3000,false),
+      safeList(supabase,'v_seasonal_operations_readiness_directory','*','reviewed_at',3000,false),
+      safeList(supabase,'v_seasonal_operations_rollover_directory','*','decided_at',3000,false),
+      safeList(supabase,'seasonal_storm_events','*','planned_start',1000,false),
+      safeList(supabase,'v_seasonal_storm_route_directory','*','updated_at',3000,false),
+      safeList(supabase,'v_seasonal_operations_outstanding_work','*','due_date',4000,true),
+      safeList(supabase,'v_recurring_service_program_directory','*','next_service_date',2500,true),
+      safeList(supabase,'v_crew_dispatch_schedule','*','scheduled_start',2500,true),
+      safeList(supabase,'v_workforce_crew_directory','*','crew_name',500,true),
+      safeList(supabase,'v_preventive_maintenance_workbench','*','due_date',2500,true),
+      safeList(supabase,'v_material_stock_control','*','item_name',2500,true),
+      safeList(supabase,'v_route_planning_directory','*','route_name',1000,true),
+      safeList(supabase,'v_weather_workability_queue','*','observed_at',2000,false),
+      safeList(supabase,'routes','id,route_code,name,season_context,default_crew_id,service_priority,storm_event_capable,is_active,default_equipment_requirements','name',1000,true)
+    ]);
+    return Response.json({
+      ok:true,scope:'seasonal_operations',actor_role:actorRole,actor_profile_id:actorId,
+      seasonal_operations_cycles:cycles,
+      seasonal_operations_checklist_templates:templates,
+      seasonal_operations_checklist_items:items,
+      seasonal_operations_readiness:readiness,
+      seasonal_operations_rollovers:rollovers,
+      seasonal_storm_events:storms,
+      seasonal_storm_routes:stormRoutes,
+      seasonal_operations_outstanding_work:outstanding,
+      canonical_recurring_programs:recurringPrograms,
+      canonical_crew_schedule:crewSchedule,
+      canonical_crews:crews,
+      canonical_preventive_maintenance:maintenance,
+      canonical_material_stock:materialStock,
+      canonical_route_planning:routePlanning,
+      canonical_workability:workability,
+      canonical_routes:routes,
+      winter_boundary:'Winter snow-clearing/removal is a core operating season. Storm activation is available only inside a winter cycle.',
+      authority_boundary:'Build 346 coordinates recurring-customer rollover, staffing, equipment, materials, routes and workability without replacing their canonical modules. Storm activation never makes a route storm-capable; route planning must do that first.'
     }, { headers:corsHeaders });
   }
 
