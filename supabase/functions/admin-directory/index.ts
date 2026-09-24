@@ -37,7 +37,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
-  if (['crew','change_orders_extras'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['crew','change_orders_extras','quality_control'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
@@ -494,6 +494,30 @@ serve(async (req) => {
       change_order_invoice_candidates:invoiceCandidates,
       seasonal_boundary:'Four-season change-order context covers mowing/landscaping, landscape installation, fall cleanup and winter snow clearing/removal.',
       authority_boundary:'Build 344 extends canonical change_orders/work_orders/work_order_lines. Crew discovery/evidence cannot price work; supervisor review and customer authorization gate one budget application; Finance invoice creation/posting remains separate.'
+    }, { headers:corsHeaders });
+  }
+
+
+  if (scope === 'quality_control' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const [templates,runs,items,evidence,deficiencies,workOrders,proofs,sessions,closeouts] = await Promise.all([
+      safeList(supabase,'v_quality_control_template_directory','*','template_name',500,true),
+      safeList(supabase,'v_quality_control_run_directory','*','updated_at',1500,false),
+      safeList(supabase,'v_quality_control_item_directory','*','sort_order',4000,true),
+      safeList(supabase,'v_quality_control_evidence_directory','*','linked_at',4000,false),
+      safeList(supabase,'v_quality_control_deficiency_directory','*','updated_at',3000,false),
+      safeList(supabase,'work_orders','id,work_order_number,status,work_type,client_id,client_site_id,scheduled_start,scheduled_end','updated_at',2000,false),
+      safeList(supabase,'work_order_execution_proofs','id,work_order_id,proof_type,proof_status,customer_visible,title,customer_summary,occurred_at','occurred_at',4000,false),
+      safeList(supabase,'job_sessions','id,work_order_id,session_date,session_status,completion_state,started_at,ended_at','session_date',2500,false),
+      safeList(supabase,'work_order_closeout_packages','id,work_order_id,closeout_status,customer_signoff_required,customer_signoff_status,customer_summary,signed_off_by_name,signed_off_at,invoice_readiness_status','updated_at',2000,false)
+    ]);
+    return Response.json({
+      ok:true,scope:'quality_control',actor_role:actorRole,actor_profile_id:actorId,
+      quality_control_templates:templates,quality_control_runs:runs,quality_control_items:items,
+      quality_control_evidence:evidence,quality_control_deficiencies:deficiencies,
+      quality_control_work_orders:workOrders,quality_control_execution_proofs:proofs,
+      quality_control_sessions:sessions,quality_control_closeouts:closeouts,
+      seasonal_boundary:'Four-season QC covers mowing/landscaping, landscape installation, fall cleanup/leaf collection and winter snow clearing/removal using one shared quality model.',
+      authority_boundary:'Build 345 links canonical work_order_execution_proofs and reads canonical work_order_closeout_packages/customer signoff. Staff QC cannot create customer signoff; the existing customer portal remains authoritative.'
     }, { headers:corsHeaders });
   }
 
