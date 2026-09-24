@@ -25,7 +25,7 @@ must(migration,[
   'create table if not exists public.seasonal_operations_rollover_decisions',
   'create table if not exists public.seasonal_storm_events',
   'create table if not exists public.seasonal_storm_route_activations',
-  'winter_snow','winter','salt, de-icer and traction-material stock',
+  'winter','salt, de-icer and traction-material stock',
   'create or replace view public.v_seasonal_operations_outstanding_work',
   'create or replace function public.ywi_rpc_seasonal_cycle_save',
   'create or replace function public.ywi_rpc_seasonal_storm_route_activation_save',
