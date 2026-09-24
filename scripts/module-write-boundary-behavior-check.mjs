@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 84, 'Exactly 84 operations actions must be contracted through Schema 233.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 84);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 90, 'Exactly 90 operations actions must be contracted through Schema 234.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 90);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
@@ -290,6 +290,18 @@ assert.equal(qcTemplate.ownerModule,'jobs'); assert.equal(qcTemplate.minimum,'ap
 for (const boundary of [qcRun,qcEvidence,qcDeficiency,qcRework]) { assert.equal(boundary.ownerModule,'jobs'); assert.equal(boundary.minimum,'create'); }
 assert.equal(qcReview.ownerModule,'jobs'); assert.equal(qcReview.minimum,'approve'); assert.equal(qcReview.crossModule,true);
 
+const seasonalCycle = resolveModuleWriteBoundary('seasonal_cycle_save');
+const seasonalChecklist = resolveModuleWriteBoundary('seasonal_checklist_save');
+const seasonalReadiness = resolveModuleWriteBoundary('seasonal_readiness_save');
+const seasonalRollover = resolveModuleWriteBoundary('seasonal_rollover_save');
+const seasonalStorm = resolveModuleWriteBoundary('seasonal_storm_event_save');
+const seasonalStormRoute = resolveModuleWriteBoundary('seasonal_storm_route_activation_save');
+for (const boundary of [seasonalCycle,seasonalChecklist,seasonalReadiness,seasonalRollover,seasonalStorm,seasonalStormRoute]) {
+  assert.equal(boundary.ownerModule,'jobs'); assert.equal(boundary.minimum,'approve'); assert.equal(boundary.mode,'write');
+}
+for (const boundary of [seasonalCycle,seasonalReadiness,seasonalRollover,seasonalStorm,seasonalStormRoute]) assert.equal(boundary.crossModule,true);
+assert.equal(seasonalChecklist.crossModule,false);
+
 const disabled = resolveModuleWriteBoundary('deposit_status_update');
 assert.equal(disabled.ownerModule, 'finance');
 assert.equal(disabled.minimum, 'manage');
@@ -337,8 +349,9 @@ assert.equal(coDiscovery.ownerModule, 'jobs'); assert.equal(coDiscovery.minimum,
 assert.equal(coEvidence.ownerModule, 'jobs'); assert.equal(coEvidence.minimum, 'create');
 for (const boundary of [coReview,coAuth,coApply,coInvoice]) { assert.equal(boundary.ownerModule,'jobs'); assert.equal(boundary.minimum,'approve'); }
 assert.equal(coApply.crossModule,true); assert.equal(coInvoice.crossModule,true);
+console.log('PASS boundary-build346-seasonal-operations-centre');
+console.log('PASS boundary-exact-90-actions');
 console.log('PASS boundary-build345-quality-control-customer-signoff');
-console.log('PASS boundary-exact-84-actions');
 console.log('PASS boundary-build344-change-orders-extras');
 console.log('PASS boundary-build343-landscape-material-estimator');
 console.log('PASS boundary-build342-weather-workability');
@@ -359,4 +372,4 @@ console.log('PASS boundary-disabled-payment-mutation');
 console.log('PASS boundary-unknown-action-fails-closed');
 console.log('PASS boundary-audit-metadata');
 console.log('PASS boundary-all-contracts-valid');
-console.log('\nSchema 233 module write-boundary behavior gate passed: 17/17 checks.');
+console.log('\nSchema 234 module write-boundary behavior gate passed: 18/18 checks.');
