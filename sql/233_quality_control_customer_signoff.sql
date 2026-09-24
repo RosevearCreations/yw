@@ -789,7 +789,7 @@ language sql stable security invoker set search_path=public as $$
   select 'canonical_signoff_authority_preserved',
     case when to_regclass('public.work_order_closeout_packages') is not null
       and to_regclass('public.work_order_customer_closeout_signoffs') is not null
-      and to_regprocedure('public.ywi_rpc_customer_sign_work_order_closeout(uuid,boolean,text,text,text,text,text)') is not null
+      and to_regprocedure('public.ywi_rpc_customer_sign_work_order_closeout(uuid,uuid,text,text,boolean,text,text,text)') is not null
     then 'passed' else 'failed' end,
     'Existing supervisor closeout and customer-portal signoff remain canonical.'
   union all
