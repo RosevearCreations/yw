@@ -39,7 +39,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
-  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
+  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','change_orders_extras','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
 
@@ -475,6 +475,25 @@ serve(async (req) => {
       material_estimator_estimates:estimates,material_estimator_work_orders:workOrders,
       seasonal_boundary:'Four-season estimator coverage includes landscaping/fall work plus winter salt/de-icer and traction materials.',
       authority_boundary:'Build 343 is planning/evidence only. Existing materials catalog/receipts/issues/adjustments, estimates, work orders and property records remain canonical inventory/commercial/site authority.'
+    }, { headers:corsHeaders });
+  }
+
+
+  if (scope === 'change_orders_extras' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const [changeOrders,evidence,applications,workOrders,invoiceCandidates] = await Promise.all([
+      safeList(supabase,'v_change_order_extras_directory','*','updated_at',1500,false),
+      safeList(supabase,'v_change_order_evidence_directory','*','captured_at',3000,false),
+      safeList(supabase,'v_change_order_budget_application_directory','*','applied_at',1500,false),
+      safeList(supabase,'work_orders','id,work_order_number,status,estimate_id,client_id,client_site_id,work_type,scheduled_start,total_cost,total_amount','updated_at',1500,false),
+      safeList(supabase,'job_invoice_candidates','id,candidate_number,candidate_status,work_order_id,estimate_id,total_amount,created_at','created_at',1500,false)
+    ]);
+    return Response.json({
+      ok:true,scope:'change_orders_extras',actor_role:actorRole,actor_profile_id:actorId,
+      change_order_extras:changeOrders,change_order_evidence:evidence,
+      change_order_budget_applications:applications,change_order_work_orders:workOrders,
+      change_order_invoice_candidates:invoiceCandidates,
+      seasonal_boundary:'Four-season change-order context covers mowing/landscaping, landscape installation, fall cleanup and winter snow clearing/removal.',
+      authority_boundary:'Build 344 extends canonical change_orders/work_orders/work_order_lines. Crew discovery/evidence cannot price work; supervisor review and customer authorization gate one budget application; Finance invoice creation/posting remains separate.'
     }, { headers:corsHeaders });
   }
 
