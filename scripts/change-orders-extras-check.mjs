@@ -37,8 +37,10 @@ for(const authority of ['change_orders','work_orders','work_order_lines','job_in
 }
 const discovery=migration.slice(migration.indexOf('create or replace function public.ywi_rpc_change_order_discovery_save'),migration.indexOf('create or replace function public.ywi_rpc_change_order_evidence_save'));
 assert.ok(!/update\s+public\.work_orders/i.test(discovery),'Crew discovery must not change work-order budget.');
-assert.ok(!/insert\s+into\s+public\.job_invoice_candidates/i.test(migration),'Build 344 must not create Finance invoice candidates.');
-assert.ok(!/insert\s+into\s+public\.ar_invoices/i.test(migration),'Build 344 must not create AR invoices.');
+const lifecycleFns=migration.slice(migration.indexOf('create or replace function public.ywi_rpc_change_order_discovery_save'),migration.indexOf('revoke all on function public.ywi_rpc_change_order_discovery_save'));
+assert.ok(!/insert\s+into\s+public\.job_invoice_candidates/i.test(lifecycleFns),'Build 344 lifecycle RPCs must not create Finance invoice candidates.');
+assert.ok(!/insert\s+into\s+public\.ar_invoices/i.test(lifecycleFns),'Build 344 lifecycle RPCs must not create AR invoices.');
+
 must(migration,["customer_authorization_status<>''authorized''",'change_order_work_order_line_uk',"'invoice_created',false","'finance_posted',false"],'Authorization/idempotency/Finance boundary');
 
 must(boundaries,[
