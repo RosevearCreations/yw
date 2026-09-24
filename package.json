@@ -167,7 +167,9 @@
     "test:landscape-material-estimator": "node scripts/landscape-material-estimator-check.mjs",
     "test:browser:landscape-material-estimator": "playwright test --config=playwright.config.mjs tests/browser/landscape-material-estimator.spec.mjs",
     "test:change-orders-extras": "node scripts/change-orders-extras-check.mjs",
-    "test:browser:change-orders-extras": "playwright test --config=playwright.config.mjs tests/browser/change-orders-extras.spec.mjs"
+    "test:browser:change-orders-extras": "playwright test --config=playwright.config.mjs tests/browser/change-orders-extras.spec.mjs",
+    "test:quality-control-customer-signoff": "node scripts/quality-control-customer-signoff-check.mjs",
+    "test:browser:quality-control-customer-signoff": "playwright test --config=playwright.config.mjs tests/browser/quality-control-customer-signoff.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

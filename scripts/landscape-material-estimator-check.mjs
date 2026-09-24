@@ -82,10 +82,10 @@ must(ui,[
 must(hub,['loadBuild343LandscapeMaterialEstimator','loadBuild343LandscapeMaterialEstimator();'],'Estimator workspace mount');
 must(index,['/js/admin-landscape-material-estimator-ui.js?v=2026-09-23b343'],'Estimator UI preload');
 must(help,['Build 343 — Landscape Material Estimator','mulch','salt/de-icer','Planned-vs-actual','Inventory authority'],'Build 343 Help');
-must(roadmap,['#### **343 — Landscape Material Estimator** is implemented','#### **344 — Change Orders & Extras** is implemented','next planned autonomous item is **345 — Quality Control & Customer Signoff**'],'Build 343 roadmap');
+must(roadmap,['#### **343 — Landscape Material Estimator** is implemented','#### **344 — Change Orders & Extras** is implemented','next planned autonomous item is **346 — Seasonal Operations Centre**'],'Build 343 roadmap');
 must(pkg,['test:landscape-material-estimator','test:browser:landscape-material-estimator'],'Build 343 scripts');
 must(workflow,['npm run test:landscape-material-estimator','npm run test:browser:landscape-material-estimator'],'Build 343 CI');
-must(behavior,['boundary-exact-78-actions','boundary-build343-landscape-material-estimator'],'Boundary behavior');
+must(behavior,['boundary-exact-84-actions','boundary-build343-landscape-material-estimator'],'Boundary behavior');
 
 const require=createRequire(import.meta.url),ts=require('typescript');
 for(const p of ['supabase/functions/operations-manage/index.ts','supabase/functions/admin-directory/index.ts','supabase/functions/_shared/module-write-boundaries.ts']){
