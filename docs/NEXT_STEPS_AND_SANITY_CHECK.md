@@ -366,9 +366,13 @@ Create one permission-aware chronological history across Customer, Property, Est
 
 Field synchronization now keeps conflict work visible on the current device, compares the retained local payload with a server snapshot when the record contract supplies one, and exposes explicit Keep Mine, Keep Server, Merge, Retry or Discard recovery choices. Merge requires deliberate operator-edited JSON; no automatic merge or silent overwrite is allowed. Newly queued action conflicts are bound to the signed-in profile for recovery display, while normal server validation remains authoritative.
 
-#### 349 — Saved Views, Search & Command Centre
+#### **349 — Saved Views, Search & Command Centre** is implemented
 
-Add permission-aware operational views such as My Crew Today, My Route, Snow Route / Storm Event, Fall Cleanup Queue, Jobs Behind Schedule, Equipment Locked Out, Maintenance Due, Safety Actions Due, Training Expiring, Completed Not Invoiced, Overdue Receivables, Finance Exceptions and Assigned to Me. Add global search/navigation across customers, properties, jobs, invoices/payments, employees, equipment and Admin workspaces while retaining season/service context.
+Build 349 adds a permission-aware, read-only command-centre index across customers, properties, jobs, employees, equipment, routes, crew/dispatch context, seasonal work, storm events, maintenance, Safety actions, training/certification, receivables/payments and Finance exceptions. Built-in operational views cover My Crew Today, My Route, Snow Route / Storm Event, Fall Cleanup Queue, Jobs Behind Schedule, Equipment Locked Out, Maintenance Due, Safety Actions Due, Training Expiring, Completed Not Invoiced, Overdue Receivables, Finance Exceptions and Assigned to Me.
+
+Saved views are browser-local preferences scoped to the signed-in profile. They preserve search, domain, season, service context and the selected operational view, but they never become business authority and never mutate jobs, routing, equipment, Safety, Finance, invoicing or source records. Global result navigation deep-links to the existing authoritative module/workspace. Spring/summer, fall, winter and four-season context remain explicit.
+
+The next planned autonomous item is **350 — Owner / Management Command Centre**.
 
 #### 350 — Owner / Management Command Centre
 
