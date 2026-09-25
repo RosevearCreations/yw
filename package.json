@@ -177,7 +177,9 @@
     "test:offline-conflict-recovery": "node scripts/offline-conflict-recovery-check.mjs",
     "test:browser:offline-conflict-recovery": "playwright test --config=playwright.config.mjs tests/browser/offline-conflict-recovery.spec.mjs",
     "test:saved-views-search-command": "node scripts/saved-views-search-command-check.mjs",
-    "test:browser:saved-views-search-command": "playwright test --config=playwright.config.mjs tests/browser/saved-views-search-command.spec.mjs"
+    "test:browser:saved-views-search-command": "playwright test --config=playwright.config.mjs tests/browser/saved-views-search-command.spec.mjs",
+    "test:owner-management-command": "node scripts/owner-management-command-check.mjs",
+    "test:browser:owner-management-command": "playwright test --config=playwright.config.mjs tests/browser/owner-management-command.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
