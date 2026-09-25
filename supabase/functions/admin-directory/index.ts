@@ -38,6 +38,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew','change_orders_extras','quality_control','seasonal_operations'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','saved_views_search','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
@@ -230,6 +231,52 @@ serve(async (req) => {
       module_role_defaults:roleDefaults,
       module_permission_overrides:overrides,
       module_permission_audit:audit
+    }, { headers:corsHeaders });
+  }
+
+  if (scope === 'owner_management_command') {
+    const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
+      hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
+      hasModuleAccess(supabase, actorProfile, 'finance', 'view'),
+      hasModuleAccess(supabase, actorProfile, 'safety', 'view'),
+      hasModuleAccess(supabase, actorProfile, 'admin', 'manage')
+    ]);
+    const [
+      jobs,dispatch,production,profitability,timekeeping,recurring,recurringVisits,storms,stormRoutes,seasonalWork,
+      safety,equipment,maintenance,trainingSummary,workforceSummary,receivables,bank,financeExceptions,closeDashboard,workability
+    ] = await Promise.all([
+      canJobsView ? safeList(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_landscape_production_session_directory','*','session_date',500,false) : Promise.resolve([]),
+      canFinanceView ? safeList(supabase,'v_job_profitability_variance_directory','*','group_type',1500,true) : Promise.resolve([]),
+      canAdminManage ? safeList(supabase,'v_timekeeping_attendance_summary') : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_recurring_service_program_directory','*','next_service_date',500,true) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_recurring_service_visit_schedule','*','service_date',1000,true) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'seasonal_storm_events','*','planned_start',250,false) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_seasonal_storm_route_directory','*','updated_at',500,false) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_seasonal_operations_outstanding_work','*','due_date',750,true) : Promise.resolve([]),
+      canSafetyView ? safeList(supabase,'v_supervisor_safety_queue','*','sort_at',500,false) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_equipment_registry_v2','*','equipment_code',500,true) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_preventive_maintenance_workbench','*','due_date',500,true) : Promise.resolve([]),
+      canSafetyView ? safeList(supabase,'v_training_certification_matrix_summary') : Promise.resolve([]),
+      canAdminManage ? safeList(supabase,'v_workforce_summary') : Promise.resolve([]),
+      canFinanceView ? safeList(supabase,'v_ar_invoice_aging_detail','*','due_date',500,true) : Promise.resolve([]),
+      canFinanceView ? safeList(supabase,'v_bank_reconciliation_summary','*','period_end',120,false) : Promise.resolve([]),
+      canFinanceView ? safeList(supabase,'v_accounting_reconciliation_manual_review_queue','*','review_priority',500,true) : Promise.resolve([]),
+      canFinanceView ? safeList(supabase,'v_accounting_close_dashboard') : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_weather_workability_queue','*','observed_at',500,false) : Promise.resolve([])
+    ]);
+    return Response.json({
+      ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
+      owner_jobs:jobs,owner_dispatch:dispatch,owner_production:production,owner_profitability:profitability,
+      owner_timekeeping_summary:timekeeping,owner_recurring:recurring,owner_recurring_visits:recurringVisits,
+      owner_storms:storms,owner_storm_routes:stormRoutes,owner_seasonal_work:seasonalWork,owner_safety:safety,
+      owner_equipment:equipment,owner_maintenance:maintenance,owner_training_summary:trainingSummary,
+      owner_workforce_summary:workforceSummary,owner_receivables:receivables,owner_bank:bank,
+      owner_finance_exceptions:financeExceptions,owner_close_dashboard:closeDashboard,owner_workability:workability,
+      source_visibility:{jobs:canJobsView,finance:canFinanceView,safety:canSafetyView,admin:canAdminManage},
+      seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
+      authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
     }, { headers:corsHeaders });
   }
 

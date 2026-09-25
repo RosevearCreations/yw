@@ -374,9 +374,13 @@ Saved views are browser-local preferences scoped to the signed-in profile. They 
 
 The next planned autonomous item is **350 — Owner / Management Command Centre**.
 
-#### 350 — Owner / Management Command Centre
+#### **350 — Owner / Management Command Centre** is implemented
 
-Create one practical four-season business cockpit showing today's crews, scheduled/completed work, schedule risk, production/completion rate, revenue, job margin, labour utilization, recurring-route performance by service/season, storm-event and snow-route status in winter, fall-cleanup progress, Safety blockers, equipment downtime, training/workforce blockers, completed-not-invoiced work, receivables, cash/Finance readiness and operational needs attention. Deep-link to source workflows rather than becoming duplicate authority.
+This release adds one permission-aware, read-only four-season business cockpit for management. It summarizes today's crews and work, schedule/workability risk, production completion, revenue and gross margin, recorded labour utilization, recurring-route performance, winter storm/snow-route status, fall-cleanup progress, Safety blockers, equipment/maintenance downtime, training/workforce blockers, completed-not-invoiced work, receivables, latest reconciled cash/bank position, Finance readiness and current needs attention.
+
+Every metric is derived from existing canonical source workflows and is hidden or marked unavailable when its module is not visible. Deep links open Jobs, Finance or the appropriate Admin workspace; the cockpit cannot dispatch, change routes, approve Safety, unlock equipment, edit training, invoice work, collect payment, post accounting or close periods.
+
+The ordinary autonomous feature queue is complete at this point. The remaining roadmap items are controlled acceptance campaigns with explicit environment/evidence prerequisites and are not ordinary autonomous releases.
 
 ### Controlled acceptance campaigns
 

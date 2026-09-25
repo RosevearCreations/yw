@@ -412,6 +412,11 @@
       window.YWISavedViewsSearchCommandUI?.mount?.({ api:window.YWIAPI });
     }
 
+    function loadBuild350OwnerManagement() {
+      if (!can('manage')) return;
+      window.YWIOwnerManagementCommandUI?.mount?.({ api:window.YWIAPI });
+    }
+
     function loadBuild346SeasonalOperations() {
       window.YWISeasonalOperationsUI?.mount?.({ api:window.YWIAPI });
     }
@@ -423,7 +428,7 @@
       loadedGroups.add(key);
       if (group.route) return;
       if (key === 'people') { loadBuild336Workforce(); loadBuild337Timekeeping(); loadBuild338PerformanceDevelopment(); loadBuild339HiringOnboarding(); }
-      if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); loadBuild342WeatherWorkability(); loadBuild343LandscapeMaterialEstimator(); loadBuild344ChangeOrdersExtras(); loadBuild345QualityControl(); loadBuild346SeasonalOperations(); loadBuild347UniversalActivityTimeline(); loadBuild349SavedViewsSearch(); }
+      if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); loadBuild342WeatherWorkability(); loadBuild343LandscapeMaterialEstimator(); loadBuild344ChangeOrdersExtras(); loadBuild345QualityControl(); loadBuild346SeasonalOperations(); loadBuild347UniversalActivityTimeline(); loadBuild349SavedViewsSearch(); loadBuild350OwnerManagement(); }
       const button = group.refresh ? document.getElementById(group.refresh) : null;
       if (button && !button.disabled) setTimeout(() => button.click(), 0);
     }
