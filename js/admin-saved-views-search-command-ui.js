@@ -17,6 +17,15 @@
     {key:'finance_exceptions',label:'Finance Exceptions',hint:'Manual-review reconciliation/payment exceptions.'},
     {key:'assigned_to_me',label:'Assigned to Me',hint:'Visible records that reference my profile.'}
   ]);
+  const WORKSPACES=Object.freeze([
+    {title:'People & Access',group:'people',module:'admin',minimum:'manage'},
+    {title:'Business & Operations',group:'operations',module:'admin',minimum:'view'},
+    {title:'Safety & Evidence',group:'safety',module:'safety',minimum:'view'},
+    {title:'Finance & Accounting',group:'accounting',module:'finance',minimum:'view'},
+    {title:'Diagnostics & Integrations',group:'messaging',module:'admin',minimum:'view'},
+    {title:'Audit & Security',group:'readiness',module:'admin',minimum:'manage'},
+    {title:'I.T. & System',group:'it',module:'admin',minimum:'manage'}
+  ]);
   const SOURCE_DEFS=Object.freeze([
     ['command_customers','customer','Customers',['client_name','legal_name','display_name','full_name'],['client_id','id']],
     ['command_properties','property','Properties',['site_name','service_address','property_name'],['client_site_id','site_id','id']],
@@ -37,6 +46,7 @@
   const esc=(v)=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const $=(id)=>document.getElementById(id);
   const auth=()=>window.YWI_AUTH?.getState?.()||{};
+  const allowed=(module,minimum='view')=>{const sec=window.YWISecurity;if(!sec?.canViewModule)return true;return sec.canViewModule(module,auth().role||'employee',minimum)===true};
   const ownerKey=()=>String(auth().profile?.id||auth().profile_id||auth().user?.id||auth().session?.user?.id||'anonymous');
   const storageKey=()=>STORAGE_PREFIX+ownerKey();
   const first=(row,keys)=>{for(const k of keys){const v=row?.[k];if(v!==undefined&&v!==null&&String(v).trim())return String(v)}return''};
@@ -87,6 +97,10 @@
           records.push({domain,label,title,id:first(row,idKeys),row,text:valuesText(row)});
         }
       }
+      for(const w of WORKSPACES){
+        if(!allowed(w.module,w.minimum))continue;
+        records.push({domain:'workspace',label:'Admin Workspaces',title:w.title,id:w.group,row:{group:w.group,title:w.title},text:(w.title+' '+w.group+' admin workspace').toLowerCase()});
+      }
       state.records=records;
     }
     function assigned(rec){
@@ -122,7 +136,8 @@
         return matchesBuiltIn(rec,state.activeView);
       }).slice(0,120);
     }
-    function openDomain(domain){
+    function openDomain(domain,group=''){
+      if(domain==='workspace'){window.YWIRouter?.showSection?.('admin');setTimeout(()=>window.YWIAdminHub?.open?.(group||'home'),0);return}
       const map={job:'jobs',equipment:'jobs',maintenance:'jobs',route:'jobs',schedule:'jobs',seasonal:'jobs',storm:'jobs',invoice:'finance',payment:'finance',finance_exception:'finance',safety:'admin',training:'admin',employee:'admin',customer:'admin',property:'admin'};
       const target=map[domain]||'admin';window.YWIRouter?.showSection?.(target);
       if(target==='admin'){const group=['customer','property','job','equipment','maintenance','route','schedule','seasonal','storm'].includes(domain)?'operations':(['employee'].includes(domain)?'people':(['safety','training'].includes(domain)?'safety':'home'));setTimeout(()=>window.YWIAdminHub?.open?.(group),0)}
@@ -136,7 +151,7 @@
       const domains=[...new Map(state.records.map(r=>[r.domain,r.label])).entries()].sort((a,b)=>a[1].localeCompare(b[1]));
       const select=$('command349Domain'),current=select.value;select.innerHTML='<option value="">All visible domains</option>'+domains.map(([k,l])=>'<option value="'+esc(k)+'">'+esc(l)+'</option>').join('');if(domains.some(([k])=>k===current))select.value=current;
       $('command349Context').textContent=(active?active.label:'Global search')+' · '+rows.length+' shown / '+state.records.length+' visible records';
-      $('command349Results').innerHTML=rows.length?rows.map(rec=>'<article class="notice command349-result" data-command349-domain="'+esc(rec.domain)+'"><span><strong>'+esc(rec.title)+'</strong> · '+esc(rec.label)+'<br><small>'+esc(rec.id||'No reference')+'</small></span><button class="secondary" type="button" data-command349-open="'+esc(rec.domain)+'">Open workspace</button></article>').join(''):'<p class="muted">No visible records match this search/view and permission set.</p>';
+      $('command349Results').innerHTML=rows.length?rows.map(rec=>'<article class="notice command349-result" data-command349-domain="'+esc(rec.domain)+'"><span><strong>'+esc(rec.title)+'</strong> · '+esc(rec.label)+'<br><small>'+esc(rec.id||'No reference')+'</small></span><button class="secondary" type="button" data-command349-open="'+esc(rec.domain)+'" data-command349-group="'+esc(rec.row?.group||'')+'">Open workspace</button></article>').join(''):'<p class="muted">No visible records match this search/view and permission set.</p>';
       renderSaved();
     }
     async function refresh(){
@@ -146,7 +161,7 @@
     function applySaved(v){state.activeView=v.activeView||'';$('command349Query').value=v.query||'';$('command349Domain').value=v.domain||'';$('command349Season').value=v.season||'';$('command349Service').value=v.service||'';render()}
     el.addEventListener('click',e=>{
       const view=e.target.closest('[data-command349-view]');if(view){state.activeView=view.getAttribute('data-command349-view')||'';render();return}
-      const open=e.target.closest('[data-command349-open]');if(open){openDomain(open.getAttribute('data-command349-open'));return}
+      const open=e.target.closest('[data-command349-open]');if(open){openDomain(open.getAttribute('data-command349-open'),open.getAttribute('data-command349-group')||'');return}
       const saved=e.target.closest('[data-command349-saved]');if(saved){applySaved(state.saved[Number(saved.getAttribute('data-command349-saved'))]||{});return}
       const del=e.target.closest('[data-command349-delete]');if(del){state.saved.splice(Number(del.getAttribute('data-command349-delete')),1);saveSaved(state.saved);renderSaved()}
     });
