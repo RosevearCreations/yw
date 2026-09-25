@@ -233,7 +233,7 @@ serve(async (req) => {
     }, { headers:corsHeaders });
   }
 
-  if (scope === 'saved_views_search' && roleRank(actorRole) >= roleRank('supervisor')) {
+  if (scope === 'saved_views_search') {
     const [canAdminManage,canJobsView,canFinanceView,canSafetyView] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'admin', 'manage'),
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
