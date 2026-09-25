@@ -50,7 +50,7 @@ must(ui,[
 ],'CRM UI');
 must(hub,['loadBuild340CustomerPropertyCRM','/js/admin-customer-property-crm-ui.js?v=2026-09-23b340',"if (key === 'operations') { loadBuild340CustomerPropertyCRM(); loadBuild341RouteOptimization(); loadBuild342WeatherWorkability(); loadBuild343LandscapeMaterialEstimator(); loadBuild344ChangeOrdersExtras(); loadBuild345QualityControl(); loadBuild346SeasonalOperations(); loadBuild347UniversalActivityTimeline(); }"],'CRM lazy loading');
 must(help,['Build 340 — Customer &amp; Property CRM','canonical customer','snow clearing/removal','advisory only'],'Build 340 Help');
-must(roadmap,['#### **340 — Customer & Property CRM** is implemented','#### **341 — Route Optimization & Territory Management** is implemented','#### **342 — Weather & Workability Controls** is implemented','#### **343 — Landscape Material Estimator** is implemented','next planned autonomous item is **349 — Saved Views, Search & Command Centre**'],'Build 340 roadmap');
+must(roadmap,['#### **340 — Customer & Property CRM** is implemented','#### **341 — Route Optimization & Territory Management** is implemented','#### **342 — Weather & Workability Controls** is implemented','#### **343 — Landscape Material Estimator** is implemented','next planned autonomous item is **350 — Owner / Management Command Centre**'],'Build 340 roadmap');
 must(pkg,['test:customer-property-crm','test:browser:customer-property-crm'],'Build 340 package scripts');
 must(workflow,['npm run test:customer-property-crm','npm run test:browser:customer-property-crm'],'Build 340 CI wiring');
 must(behavior,['boundary-exact-90-actions','boundary-build340-customer-property-crm'],'Boundary behavior advancement');
