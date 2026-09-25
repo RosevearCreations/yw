@@ -129,6 +129,84 @@
     return chunks.join(' • ');
   }
 
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+  }
+
+  function prettyPayload(value) {
+    try { return JSON.stringify(value ?? {}, null, 2); } catch { return String(value ?? ''); }
+  }
+
+  function recoveryItems() {
+    try { return outbox()?.getRecoveryItems?.() || []; } catch { return []; }
+  }
+
+  function renderConflictRecovery(host) {
+    host?.querySelector?.('#offlineConflictRecovery348')?.remove?.();
+    const items = recoveryItems();
+    if (!host || !items.length) return;
+
+    const section = document.createElement('div');
+    section.id = 'offlineConflictRecovery348';
+    section.className = 'offline-conflict-recovery';
+    section.setAttribute('aria-label', 'Offline and conflict recovery');
+    section.innerHTML = `
+      <div class="offline-recovery-head">
+        <div><strong>Build 348 — Offline &amp; Conflict Recovery</strong><p>Compare what is still on this device with the server snapshot when the record contract supplied one. Nothing is overwritten automatically.</p></div>
+        <span class="field-sync-state">${items.length} review</span>
+      </div>
+      <div class="offline-recovery-list">
+        ${items.map((item) => {
+          const comparison = outbox()?.getRecoveryComparison?.(item) || { local_payload:item?.payload || {}, server_payload:item?.server_payload || null, server_snapshot_available:Boolean(item?.server_payload), merge_available:Boolean(item?.server_payload) };
+          const local = escapeHtml(prettyPayload(comparison.local_payload));
+          const server = comparison.server_snapshot_available ? escapeHtml(prettyPayload(comparison.server_payload)) : 'Not supplied by this record contract.';
+          return `<article class="offline-recovery-card" data-recovery-id="${escapeHtml(item.id)}">
+            <div class="offline-recovery-card-head"><strong>${escapeHtml(comparison.label || item.label || item.action_type || 'Queued action')}</strong><small>${escapeHtml(item.scope || 'general')} · ${escapeHtml(item.action_type || 'unknown')}</small></div>
+            ${comparison.error ? `<p class="offline-recovery-error">${escapeHtml(comparison.error)}</p>` : ''}
+            <div class="offline-recovery-compare">
+              <div><span>Mine — retained locally</span><pre>${local}</pre></div>
+              <div><span>Server — authoritative snapshot</span><pre>${server}</pre></div>
+            </div>
+            <p class="field-sync-note">Keep Mine, Merge and Retry return the local item to its normal replay path; server conflict checks still apply. Keep Server or Discard removes the queued local mutation only after this explicit choice.</p>
+            <div class="offline-recovery-actions">
+              <button type="button" class="secondary" data-recovery-action="keep_mine">Keep Mine</button>
+              <button type="button" class="secondary" data-recovery-action="keep_server">Keep Server</button>
+              <button type="button" class="secondary" data-recovery-action="merge" ${comparison.merge_available ? '' : 'disabled title="No server snapshot is available for a deliberate merge."'}>Merge</button>
+              <button type="button" class="secondary" data-recovery-action="retry">Retry</button>
+              <button type="button" class="secondary" data-recovery-action="discard">Discard</button>
+            </div>
+          </article>`;
+        }).join('')}
+      </div>`;
+
+    section.addEventListener('click', (event) => {
+      const button = event.target?.closest?.('[data-recovery-action]');
+      if (!button) return;
+      const card = button.closest('[data-recovery-id]');
+      const id = card?.dataset?.recoveryId || '';
+      const action = button.dataset.recoveryAction || '';
+      if (!id || !action) return;
+      try {
+        if ((action === 'keep_server' || action === 'discard') && !window.confirm(`Confirm ${action === 'keep_server' ? 'Keep Server' : 'Discard'}? The queued local mutation will be removed from the active outbox.`)) return;
+        if (action === 'merge') {
+          const comparison = outbox()?.getRecoveryComparison?.(id);
+          const draft = window.prompt('Edit the merged JSON deliberately. Automatic merge is disabled.', prettyPayload(comparison?.local_payload || {}));
+          if (draft === null) return;
+          let merged;
+          try { merged = JSON.parse(draft); } catch { throw new Error('Merged value must be valid JSON.'); }
+          outbox()?.applyRecoveryAction?.(id, 'merge', { merged_payload: merged, note:'Manual merge prepared from Build 348 recovery.' });
+        } else {
+          outbox()?.applyRecoveryAction?.(id, action, { note:`Build 348 explicit ${action} decision.` });
+        }
+        render();
+      } catch (error) {
+        window.alert(error?.message || 'Conflict recovery action failed.');
+      }
+    });
+
+    host.appendChild(section);
+  }
+
   function ensureReliabilityStyles() {
     if (document.getElementById('fieldUxReliabilityStyles')) return;
     const style = document.createElement('style');
@@ -140,6 +218,7 @@
       .field-sync-health[data-sync-state="current"] .field-sync-state{border-color:rgba(52,211,153,.35);color:#d7ffe9}.field-sync-health[data-sync-state="pending"] .field-sync-state{border-color:rgba(251,191,36,.38);color:#fff3c4}.field-sync-health[data-sync-state="conflict"] .field-sync-state,.field-sync-health[data-sync-state="offline"] .field-sync-state{border-color:rgba(248,113,113,.4);color:#ffd4d4}
       .field-sync-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.field-sync-metric{min-width:0;padding:9px 10px;border-radius:11px;background:rgba(148,163,184,.07)}.field-sync-metric span{display:block;font-size:.75rem;color:var(--text-faint,#94a3b8)}.field-sync-metric strong{display:block;margin-top:2px;font-size:1.05rem}
       .field-sync-note{margin:10px 0 0;color:var(--text-soft,#cbd5e1);line-height:1.45}.field-sync-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+      .offline-conflict-recovery{margin-top:14px;padding-top:14px;border-top:1px solid rgba(148,163,184,.22)}.offline-recovery-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.offline-recovery-head p{margin:5px 0 0;color:var(--text-soft,#cbd5e1);line-height:1.45}.offline-recovery-list{display:grid;gap:10px;margin-top:10px}.offline-recovery-card{padding:12px;border:1px solid rgba(251,191,36,.28);border-radius:12px;background:rgba(15,23,42,.52)}.offline-recovery-card-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.offline-recovery-card-head small{color:var(--text-faint,#94a3b8)}.offline-recovery-error{margin:8px 0;color:#ffd4d4}.offline-recovery-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.offline-recovery-compare>div{min-width:0}.offline-recovery-compare span{display:block;font-size:.78rem;font-weight:700;margin-bottom:4px}.offline-recovery-compare pre{margin:0;max-height:220px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:9px;border-radius:9px;background:rgba(2,6,23,.55);font-size:.75rem}.offline-recovery-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.offline-recovery-actions button{min-height:42px}
       .mobile-crew-v2{margin:0 0 16px;padding:14px;border:1px solid rgba(148,163,184,.22);border-radius:16px;background:rgba(15,23,42,.78)}
       .mobile-crew-v2-head{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}.mobile-crew-v2-head h2{margin:0;font-size:1.15rem}.mobile-crew-v2-head p{margin:4px 0 0;color:var(--text-soft,#cbd5e1)}
       .mobile-crew-v2-tabs,.mobile-crew-v2-actions{display:flex;gap:8px;flex-wrap:wrap}.mobile-crew-v2-tabs{margin:12px 0}.mobile-crew-v2-tabs button[aria-selected="true"]{outline:2px solid currentColor}
@@ -149,7 +228,7 @@
       .mobile-crew-v2-notes{margin:8px 0;padding:9px;border-radius:10px;background:rgba(148,163,184,.07)}.mobile-crew-v2-notes strong{display:block;margin-bottom:3px}
       .mobile-crew-v2-actions button{min-height:42px}.mobile-crew-v2-empty{padding:12px;border-radius:12px;background:rgba(148,163,184,.06);color:var(--text-soft,#cbd5e1)}
       .jobs-desktop-workbench{display:none}.jobs-sync-health{margin:12px 0}.job-workbench-result{align-self:end;min-height:42px;display:flex;align-items:center;color:var(--text-soft,#cbd5e1)}
-      @media(max-width:520px){.field-sync-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.field-sync-actions>*{flex:1 1 145px}}
+      @media(max-width:520px){.field-sync-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.field-sync-actions>*{flex:1 1 145px}.offline-recovery-compare{grid-template-columns:1fr}.offline-recovery-actions button{flex:1 1 120px}}
       @media(min-width:900px){.jobs-desktop-workbench{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(170px,.7fr) auto auto;gap:10px;align-items:end;padding:12px;margin:10px 0 12px;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(15,23,42,.48)}.jobs-desktop-workbench label{min-width:0}.jobs-desktop-workbench button{min-height:44px}}
     `;
     document.head.appendChild(style);
@@ -191,8 +270,17 @@
         <button type="button" class="secondary" data-field-sync-action="jobs">Open Jobs</button>
       </div>`;
     panel.querySelector('[data-field-sync-action="draft"]')?.addEventListener('click', () => router()?.showSection?.(firstDraftRoute().replace(/^#/, '')));
-    panel.querySelector('[data-field-sync-action="review"]')?.addEventListener('click', () => router()?.showSection?.(canView('admin') ? 'admin' : 'today'));
+    panel.querySelector('[data-field-sync-action="review"]')?.addEventListener('click', () => {
+      const recovery = document.getElementById('offlineConflictRecovery348');
+      if (recovery) {
+        recovery.scrollIntoView?.({ block:'start', behavior:'smooth' });
+        recovery.querySelector('button:not([disabled])')?.focus?.();
+      } else {
+        router()?.showSection?.(canView('admin') ? 'admin' : 'today');
+      }
+    });
     panel.querySelector('[data-field-sync-action="jobs"]')?.addEventListener('click', () => router()?.showSection?.('jobs'));
+    renderConflictRecovery(panel);
   }
 
   function baseCards() {
@@ -615,6 +703,7 @@
     document.addEventListener('ywi:mobile-badges-updated', render);
     document.addEventListener('ywi:mobile-drafts-updated', render);
     document.addEventListener('ywi:outbox-changed', render);
+    document.addEventListener('ywi:conflict-recovery', render);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
     window.setInterval(render, 30000);
     render();
@@ -622,7 +711,7 @@
 
   window.YWIMobileToday = {
     bind, render, countOutboxItems, countActionItems, countConflictItems, countDraftForms,
-    syncSnapshot, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp
+    syncSnapshot, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery
   };
   document.addEventListener('DOMContentLoaded', bind);
 })();
