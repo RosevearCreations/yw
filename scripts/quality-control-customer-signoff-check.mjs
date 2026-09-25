@@ -78,7 +78,7 @@ must(ui,[
 must(hub,['loadBuild345QualityControl','loadBuild345QualityControl();'],'Build 345 mount');
 must(index,['/js/admin-quality-control-ui.js?v=2026-09-24b345'],'Build 345 preload');
 must(help,['Build 345 — Quality Control &amp; Customer Signoff','Evidence authority','Deficiency/rework gate','Customer signoff authority'],'Build 345 help');
-must(roadmap,['#### **345 — Quality Control & Customer Signoff** is implemented','#### **346 — Seasonal Operations Centre** is implemented','next planned autonomous item is **349 — Saved Views, Search & Command Centre**'],'Build 345 roadmap');
+must(roadmap,['#### **345 — Quality Control & Customer Signoff** is implemented','#### **346 — Seasonal Operations Centre** is implemented','next planned autonomous item is **350 — Owner / Management Command Centre**'],'Build 345 roadmap');
 must(pkg,['test:quality-control-customer-signoff','test:browser:quality-control-customer-signoff'],'Build 345 scripts');
 must(workflow,['npm run test:quality-control-customer-signoff','npm run test:browser:quality-control-customer-signoff'],'Build 345 CI');
 must(behavior,['boundary-exact-90-actions','boundary-build345-quality-control-customer-signoff'],'Build 345 boundary behavior');

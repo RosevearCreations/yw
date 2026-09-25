@@ -62,7 +62,7 @@ must(ui,['Build 344 — Change Orders &amp; Extras','Crew field discovery','Evid
 must(hub,['loadBuild344ChangeOrdersExtras','loadBuild344ChangeOrdersExtras();'],'Build 344 mount');
 must(index,['/js/admin-change-orders-extras-ui.js?v=2026-09-23b344'],'Build 344 preload');
 must(help,['Build 344 — Change Orders &amp; Extras','No field-only price change','Customer authorization gate','Finance authority'],'Build 344 help');
-must(roadmap,['#### **344 — Change Orders & Extras** is implemented','#### **345 — Quality Control & Customer Signoff** is implemented','next planned autonomous item is **349 — Saved Views, Search & Command Centre**'],'Build 344 roadmap');
+must(roadmap,['#### **344 — Change Orders & Extras** is implemented','#### **345 — Quality Control & Customer Signoff** is implemented','next planned autonomous item is **350 — Owner / Management Command Centre**'],'Build 344 roadmap');
 must(pkg,['test:change-orders-extras','test:browser:change-orders-extras'],'Build 344 scripts');
 must(workflow,['npm run test:change-orders-extras','npm run test:browser:change-orders-extras'],'Build 344 CI');
 must(behavior,['boundary-exact-90-actions','boundary-build344-change-orders-extras'],'Build 344 boundary behavior');
