@@ -39,7 +39,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew','change_orders_extras','quality_control','seasonal_operations'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
-  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
+  if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','saved_views_search','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
 }
 
@@ -230,6 +230,49 @@ serve(async (req) => {
       module_role_defaults:roleDefaults,
       module_permission_overrides:overrides,
       module_permission_audit:audit
+    }, { headers:corsHeaders });
+  }
+
+  if (scope === 'saved_views_search' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const [canAdminManage,canJobsView,canFinanceView,canSafetyView] = await Promise.all([
+      hasModuleAccess(supabase, actorProfile, 'admin', 'manage'),
+      hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
+      hasModuleAccess(supabase, actorProfile, 'finance', 'view'),
+      hasModuleAccess(supabase, actorProfile, 'safety', 'view')
+    ]);
+    const [
+      customers,properties,jobs,employees,equipment,routes,schedule,seasonalWork,storms,
+      maintenance,safetyActions,training,receivables,payments,financeExceptions
+    ] = await Promise.all([
+      safeList(supabase,'v_crm_customer_directory','*','client_name',300,true),
+      safeList(supabase,'v_crm_property_directory','*','site_name',300,true),
+      canJobsView ? safeList(supabase,'v_jobs_directory','*','updated_at',300,false) : Promise.resolve([]),
+      canAdminManage ? safeList(supabase,'v_workforce_employee_directory','*','full_name',300,true) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_equipment_registry_v2','*','equipment_code',300,true) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_route_planning_directory','*','route_name',300,true) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_crew_dispatch_schedule','*','scheduled_start',300,true) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_seasonal_operations_outstanding_work','*','due_date',300,true) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'seasonal_storm_events','*','planned_start',200,false) : Promise.resolve([]),
+      canJobsView ? safeList(supabase,'v_preventive_maintenance_workbench','*','due_date',300,true) : Promise.resolve([]),
+      canSafetyView ? safeList(supabase,'v_supervisor_safety_queue','*','sort_at',300,false) : Promise.resolve([]),
+      canSafetyView ? safeList(supabase,'v_training_certification_matrix','*','expires_at',300,true) : Promise.resolve([]),
+      canFinanceView ? safeList(supabase,'v_ar_invoice_aging_detail','*','due_date',300,true) : Promise.resolve([]),
+      canFinanceView ? safeList(supabase,'v_accounting_payment_application_dashboard','*',undefined,300,true) : Promise.resolve([]),
+      canFinanceView ? safeList(supabase,'v_accounting_reconciliation_manual_review_queue','*','review_priority',300,true) : Promise.resolve([])
+    ]);
+    return Response.json({
+      ok:true,scope:'saved_views_search',actor_role:actorRole,actor_profile_id:actorId,
+      command_customers:customers,command_properties:properties,command_jobs:jobs,command_employees:employees,
+      command_equipment:equipment,command_routes:routes,command_schedule:schedule,command_seasonal_work:seasonalWork,
+      command_storms:storms,command_maintenance:maintenance,command_safety:safetyActions,command_training:training,
+      command_receivables:receivables,command_payments:payments,command_finance_exceptions:financeExceptions,
+      source_visibility:{
+        customer:true,property:true,job:canJobsView,employee:canAdminManage,equipment:canJobsView,route:canJobsView,
+        schedule:canJobsView,seasonal:canJobsView,storm:canJobsView,maintenance:canJobsView,safety:canSafetyView,
+        training:canSafetyView,invoice:canFinanceView,payment:canFinanceView,finance_exception:canFinanceView
+      },
+      seasonal_boundary:'Spring/summer, fall, winter and four-season service contexts remain explicit search/filter dimensions.',
+      authority_boundary:'This scope is read-only and permission-aware. Saving a view is a browser preference and does not mutate operational, Safety or Finance authority.'
     }, { headers:corsHeaders });
   }
 
