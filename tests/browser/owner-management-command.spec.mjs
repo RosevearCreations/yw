@@ -14,7 +14,7 @@ async function boot(page){
  owner_equipment:[{id:'e1',equipment_code:'TRK-1',is_locked_out:true}],owner_maintenance:[{id:'m1',due_status:'overdue'}],
  owner_training_summary:[{attention_count:1,internal_authorization_pending_count:0}],owner_workforce_summary:[{training_attention_count:1,authorization_attention_count:0,availability_attention_count:0}],
  owner_receivables:[{id:'i1',invoice_number:'INV-1',balance_due:300,days_past_due:20}],owner_bank:[{period_end:'2026-09-24',bank_balance:5000}],
- owner_finance_exceptions:[{reconciliation_item_id:'x1'}],owner_close_dashboard:[{open_bank_reconciliation_count:1,open_tax_filing_count:0,open_payroll_remittance_count:0}],owner_workability:[]})}}});
+ owner_finance_exceptions:[{reconciliation_item_id:'x1'}],owner_close_dashboard:[{open_bank_reconciliation_count:1,open_tax_filing_count:0,open_payroll_remittance_count:0}],owner_workability:[]})};});
  await page.addScriptTag({content:source});await page.evaluate(()=>window.YWIOwnerManagementCommandUI.mount({api:window.YWIAPI}));await expect(page.locator('#ownerCommand350')).toBeVisible();
 }
 test('owner cockpit shows four-season management evidence and deep links',async({page})=>{await boot(page);
