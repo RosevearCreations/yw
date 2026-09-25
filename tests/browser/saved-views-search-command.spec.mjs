@@ -12,6 +12,16 @@ async function boot(page) {
   await page.setContent('<!doctype html><html><body><section id="admin"></section></body></html>');
 
   await page.evaluate(() => {
+    const store = new Map();
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: (key) => store.has(String(key)) ? store.get(String(key)) : null,
+        setItem: (key, value) => { store.set(String(key), String(value)); },
+        removeItem: (key) => { store.delete(String(key)); },
+        clear: () => { store.clear(); }
+      }
+    });
     window.YWI_AUTH = {
       getState: () => ({
         role: 'admin',
