@@ -82,7 +82,7 @@ must(ui,[
 must(hub,['loadBuild343LandscapeMaterialEstimator','loadBuild343LandscapeMaterialEstimator();'],'Estimator workspace mount');
 must(index,['/js/admin-landscape-material-estimator-ui.js?v=2026-09-23b343'],'Estimator UI preload');
 must(help,['Build 343 — Landscape Material Estimator','mulch','salt/de-icer','Planned-vs-actual','Inventory authority'],'Build 343 Help');
-must(roadmap,['#### **343 — Landscape Material Estimator** is implemented','#### **344 — Change Orders & Extras** is implemented','next planned autonomous item is **349 — Saved Views, Search & Command Centre**'],'Build 343 roadmap');
+must(roadmap,['#### **343 — Landscape Material Estimator** is implemented','#### **344 — Change Orders & Extras** is implemented','next planned autonomous item is **350 — Owner / Management Command Centre**'],'Build 343 roadmap');
 must(pkg,['test:landscape-material-estimator','test:browser:landscape-material-estimator'],'Build 343 scripts');
 must(workflow,['npm run test:landscape-material-estimator','npm run test:browser:landscape-material-estimator'],'Build 343 CI');
 must(behavior,['boundary-exact-90-actions','boundary-build343-landscape-material-estimator'],'Boundary behavior');
