@@ -57,6 +57,14 @@
           <p><strong>Evidence, not authority:</strong> each row exposes the actor, timestamp, source module, normalized activity kind, entity reference and durable evidence reference. Raw request/response payloads are intentionally excluded, and the source workflow remains the authority for every underlying record.</p>
         </section>
 
+        <section class="help-section" id="offline-conflict-recovery">
+          <h2>Build 348 — Offline &amp; Conflict Recovery</h2>
+          <p>Build 348 keeps unsent field actions visible on the current device and adds an explicit recovery workspace when a queued replay reports a conflict. Local work is retained instead of being silently replaced.</p>
+          <p><strong>Compare before deciding:</strong> the recovery card shows the retained local payload and, when the record contract supplied it, the current server snapshot. If the server did not return a safe snapshot, the interface says so rather than inventing one.</p>
+          <p><strong>Explicit recovery only:</strong> Keep Mine, Keep Server, Merge, Retry and Discard are operator choices. Merge requires manually reviewed JSON and automatic merge is disabled. Keep Mine, Merge and Retry return the item to its normal replay path; they do not bypass server validation or overwrite newer authoritative data.</p>
+          <p><strong>Profile isolation:</strong> newly queued action conflicts are tagged to the signed-in profile for recovery display. Legacy unowned queue entries are not surfaced as another profile's conflict.</p>
+        </section>
+
       </main>
 </body>
 </html
