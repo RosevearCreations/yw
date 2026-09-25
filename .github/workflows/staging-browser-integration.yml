@@ -135,6 +135,7 @@ jobs:
       - run: npm run test:change-orders-extras
       - run: npm run test:quality-control-customer-signoff
       - run: npm run test:seasonal-operations-centre
+      - run: npm run test:universal-activity-audit-timeline
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -214,6 +215,7 @@ jobs:
       - run: npm run test:browser:change-orders-extras
       - run: npm run test:browser:quality-control-customer-signoff
       - run: npm run test:browser:seasonal-operations-centre
+      - run: npm run test:browser:universal-activity-audit-timeline
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
