@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';
+const read=p=>fs.readFileSync(p,'utf8');
+const directory=read('supabase/functions/admin-directory/index.ts'),ui=read('js/admin-saved-views-search-command-ui.js'),hub=read('js/admin-hub-ui.js'),index=read('index.html'),help=read('help.html'),roadmap=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md'),pkg=read('package.json'),workflow=read('.github/workflows/staging-browser-integration.yml');
+const must=(s,a,l)=>a.forEach(x=>assert.ok(s.includes(x),l+': missing '+x));
+must(directory,["'saved_views_search'","v_crm_customer_directory","v_crm_property_directory","v_jobs_directory","v_workforce_employee_directory","v_equipment_registry_v2","v_route_planning_directory","v_crew_dispatch_schedule","v_preventive_maintenance_workbench","v_supervisor_safety_queue","v_training_certification_matrix","v_ar_invoice_aging_detail","v_accounting_payment_application_dashboard","v_accounting_reconciliation_manual_review_queue","source_visibility"],'Build 349 directory');
+must(ui,['My Crew Today','My Route','Snow Route / Storm Event','Fall Cleanup Queue','Jobs Behind Schedule','Equipment Locked Out','Maintenance Due','Safety Actions Due','Training Expiring','Completed Not Invoiced','Overdue Receivables','Finance Exceptions','Assigned to Me','STORAGE_PREFIX','ownerKey','spring_summer','winter','saved_views_search','Authority boundary','Open workspace'],'Build 349 UI');
+must(hub,['loadBuild349SavedViewsSearch','loadBuild349SavedViewsSearch();'],'Build 349 hub');
+must(index,['/js/admin-saved-views-search-command-ui.js?v=2026-09-25b349'],'Build 349 preload');
+must(help,['Build 349 — Saved Views, Search &amp; Command Centre','browser-local','permission-aware'],'Build 349 help');
+must(roadmap,['#### **349 — Saved Views, Search & Command Centre** is implemented','next planned autonomous item is **350 — Owner / Management Command Centre**'],'Build 349 roadmap');
+must(pkg,['test:saved-views-search-command','test:browser:saved-views-search-command'],'Build 349 package');
+must(workflow,['npm run test:saved-views-search-command','npm run test:browser:saved-views-search-command'],'Build 349 CI');
+console.log('Build 349 Saved Views, Search & Command Centre source checks passed.');
