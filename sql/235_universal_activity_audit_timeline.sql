@@ -79,4 +79,7 @@ grant select on table public.v_universal_activity_audit_timeline to service_role
 comment on view public.v_universal_activity_audit_timeline is
   'Build 347 read-only permission-filterable activity evidence. Raw request/response payloads remain private and source modules remain authoritative.';
 
+-- Staging/runtime authority uses the highest numbered repository migration as its exact schema marker.
+select 235 as expected_schema_version;
+
 commit;
