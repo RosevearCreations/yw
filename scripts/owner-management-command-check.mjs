@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';
+const read=p=>fs.readFileSync(p,'utf8');
+const directory=read('supabase/functions/admin-directory/index.ts'),ui=read('js/admin-owner-management-command-ui.js'),hub=read('js/admin-hub-ui.js'),index=read('index.html'),help=read('help.html'),roadmap=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md'),pkg=read('package.json'),workflow=read('.github/workflows/staging-browser-integration.yml');
+const must=(s,a,l)=>a.forEach(x=>assert.ok(s.includes(x),l+': missing '+x));
+must(directory,["'owner_management_command'","v_jobs_directory","v_crew_dispatch_schedule","v_landscape_production_session_directory","v_job_profitability_variance_directory","v_timekeeping_attendance_summary","v_recurring_service_program_directory","v_recurring_service_visit_schedule","seasonal_storm_events","v_seasonal_storm_route_directory","v_seasonal_operations_outstanding_work","v_supervisor_safety_queue","v_equipment_registry_v2","v_preventive_maintenance_workbench","v_training_certification_matrix_summary","v_workforce_summary","v_ar_invoice_aging_detail","v_bank_reconciliation_summary","v_accounting_reconciliation_manual_review_queue","v_accounting_close_dashboard","source_visibility"],'Build 350 directory');
+must(ui,['Owner / Management Command Centre','Four-season Ontario model','Crews today','Completion today','Schedule risk','Gross margin','Labour utilization','Recurring completion','Winter storms','Fall cleanup progress','Safety blockers','Completed not invoiced','Overdue receivables','Finance readiness','Authority boundary',"scope:'owner_management_command'"],'Build 350 UI');
+must(hub,['loadBuild350OwnerManagement','loadBuild350OwnerManagement();'],'Build 350 hub');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-25b350'],'Build 350 preload');
+must(help,['Build 350 — Owner / Management Command Centre','read-only management cockpit','Four-season management context'],'Build 350 help');
+must(roadmap,['#### **350 — Owner / Management Command Centre** is implemented','Controlled acceptance campaigns'],'Build 350 roadmap');
+must(pkg,['test:owner-management-command','test:browser:owner-management-command'],'Build 350 package');
+must(workflow,['npm run test:owner-management-command','npm run test:browser:owner-management-command'],'Build 350 CI');
+console.log('Build 350 Owner / Management Command Centre source checks passed.');

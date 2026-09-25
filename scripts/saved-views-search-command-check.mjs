@@ -7,7 +7,7 @@ must(ui,['My Crew Today','My Route','Snow Route / Storm Event','Fall Cleanup Que
 must(hub,['loadBuild349SavedViewsSearch','loadBuild349SavedViewsSearch();'],'Build 349 hub');
 must(index,['/js/admin-saved-views-search-command-ui.js?v=2026-09-25b349'],'Build 349 preload');
 must(help,['Build 349 — Saved Views, Search &amp; Command Centre','browser-local','permission-aware'],'Build 349 help');
-must(roadmap,['#### **349 — Saved Views, Search & Command Centre** is implemented','next planned autonomous item is **350 — Owner / Management Command Centre**'],'Build 349 roadmap');
+must(roadmap,['#### **349 — Saved Views, Search & Command Centre** is implemented','#### **350 — Owner / Management Command Centre** is implemented'],'Build 349 roadmap');
 must(pkg,['test:saved-views-search-command','test:browser:saved-views-search-command'],'Build 349 package');
 must(workflow,['npm run test:saved-views-search-command','npm run test:browser:saved-views-search-command'],'Build 349 CI');
 console.log('Build 349 Saved Views, Search & Command Centre source checks passed.');
