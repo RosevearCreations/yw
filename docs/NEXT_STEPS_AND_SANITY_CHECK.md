@@ -368,7 +368,7 @@ Field synchronization now keeps conflict work visible on the current device, com
 
 #### **349 — Saved Views, Search & Command Centre** is implemented
 
-Build 349 adds a permission-aware, read-only command-centre index across customers, properties, jobs, employees, equipment, routes, crew/dispatch context, seasonal work, storm events, maintenance, Safety actions, training/certification, receivables/payments and Finance exceptions. Built-in operational views cover My Crew Today, My Route, Snow Route / Storm Event, Fall Cleanup Queue, Jobs Behind Schedule, Equipment Locked Out, Maintenance Due, Safety Actions Due, Training Expiring, Completed Not Invoiced, Overdue Receivables, Finance Exceptions and Assigned to Me.
+This release adds a permission-aware, read-only command-centre index across customers, properties, jobs, employees, equipment, routes, crew/dispatch context, seasonal work, storm events, maintenance, Safety actions, training/certification, receivables/payments and Finance exceptions. Built-in operational views cover My Crew Today, My Route, Snow Route / Storm Event, Fall Cleanup Queue, Jobs Behind Schedule, Equipment Locked Out, Maintenance Due, Safety Actions Due, Training Expiring, Completed Not Invoiced, Overdue Receivables, Finance Exceptions and Assigned to Me.
 
 Saved views are browser-local preferences scoped to the signed-in profile. They preserve search, domain, season, service context and the selected operational view, but they never become business authority and never mutate jobs, routing, equipment, Safety, Finance, invoicing or source records. Global result navigation deep-links to the existing authoritative module/workspace. Spring/summer, fall, winter and four-season context remain explicit.
 
