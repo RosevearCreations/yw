@@ -31,7 +31,7 @@
     ['command_properties','property','Properties',['site_name','service_address','property_name'],['client_site_id','site_id','id']],
     ['command_jobs','job','Jobs',['job_code','job_name','name'],['job_id','id']],
     ['command_employees','employee','Employees',['full_name','display_name','email'],['profile_id','id']],
-    ['command_equipment','equipment','Equipment',['equipment_code','equipment_name','name'],['equipment_item_id','id']],
+    ['command_equipment','equipment','Equipment',['equipment_name','equipment_code','name'],['equipment_item_id','id']],
     ['command_routes','route','Routes',['route_name','route_code','name'],['route_id','id']],
     ['command_schedule','schedule','Crew / Dispatch',['job_name','route_name','site_name','crew_name'],['dispatch_schedule_item_id','id']],
     ['command_seasonal_work','seasonal','Seasonal Work',['work_label','service_name','site_name','title'],['id','work_id']],
