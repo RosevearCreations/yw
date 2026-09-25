@@ -1,0 +1,18 @@
+import {test,expect} from '@playwright/test';import fs from 'node:fs';import path from 'node:path';
+const source=fs.readFileSync(path.join(process.cwd(),'js/admin-saved-views-search-command-ui.js'),'utf8');
+async function boot(page){
+ await page.setViewportSize({width:390,height:844});
+ await page.setContent('<!doctype html><html><body><section id="admin"></section></body></html>');
+ await page.evaluate(()=>{window.YWI_AUTH={getState:()=>({profile:{id:'me-349',full_name:'Ree Operator'}})};window.YWIRouter={showSection:(x)=>window.__route=x};window.YWIAdminHub={open:(x)=>window.__group=x};window.YWIAPI={loadAdminDirectory:async()=>({ok:true,source_visibility:{customer:true,property:true,job:true,employee:true,equipment:true,route:true,schedule:true,seasonal:true,storm:true,maintenance:true,safety:true,training:true,invoice:true,payment:true,finance_exception:true},command_customers:[{client_id:'c1',client_name:'Acme Gardens'}],command_properties:[{client_site_id:'p1',site_name:'Acme North',service_address:'1 Snow Rd'}],command_jobs:[{id:'j1',job_code:'JOB-349',job_name:'Late mowing',status:'scheduled',due_date:'2020-01-01'}],command_employees:[{id:'me-349',full_name:'Ree Operator'}],command_equipment:[{id:'e1',equipment_code:'MOW-349',equipment_name:'Zero Turn',is_locked_out:true}],command_routes:[{id:'r1',route_name:'Snow Route A',season_context:'winter',storm_event_capable:true}],command_schedule:[],command_seasonal_work:[{id:'f1',service_name:'Fall leaf cleanup',season_context:'fall'}],command_storms:[],command_maintenance:[{id:'m1',equipment_name:'Zero Turn',due_status:'overdue'}],command_safety:[{id:'s1',action_title:'PPE review',status:'open'}],command_training:[{id:'t1',full_name:'Worker One',requirement_name:'WHMIS',readiness_status:'expiring',expires_at:'2026-10-01'}],command_receivables:[{id:'i1',invoice_number:'INV-349',customer_name:'Acme Gardens',balance_due:125,due_date:'2020-01-01'}],command_payments:[],command_finance_exceptions:[{id:'x1',exception_type:'manual_review',description:'Bank match'}]})}};});
+ await page.addScriptTag({content:source});await page.evaluate(()=>window.YWISavedViewsSearchCommandUI.mount({api:window.YWIAPI}));
+ await expect(page.locator('#savedSearch349')).toBeVisible();
+}
+test('global search, saved views, seasonal queues and mobile fit',async({page})=>{await boot(page);
+ await page.locator('#command349Query').fill('Acme Gardens');await expect(page.locator('#command349Results')).toContainText('Acme Gardens');
+ await page.locator('[data-command349-view="equipment_locked"]').click();await page.locator('#command349Query').fill('');await expect(page.locator('#command349Results')).toContainText('Zero Turn');
+ await page.locator('#command349SaveName').fill('Locked equipment');await page.locator('#command349Save').click();
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ywi_saved_command_views_v1:me-349')||'[]'));expect(saved[0].name).toBe('Locked equipment');
+ await page.locator('[data-command349-view="snow_route"]').click();await expect(page.locator('#command349Results')).toContainText('Snow Route A');
+ const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth);expect(overflow).toBeFalsy();
+ const h=await page.locator('[data-command349-view="snow_route"]').evaluate(el=>el.getBoundingClientRect().height);expect(h).toBeGreaterThanOrEqual(40);
+});
