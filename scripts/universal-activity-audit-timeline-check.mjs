@@ -14,7 +14,7 @@ assert.ok(!/manageOperations|manageAdminEntity/.test(ui),'Build 347 browser work
 must(hub,['loadBuild347UniversalActivityTimeline','loadBuild347UniversalActivityTimeline();'],'Build 347 hub');
 must(index,['/js/admin-universal-activity-audit-timeline-ui.js?v=2026-09-25b347'],'Build 347 preload');
 must(help,['Build 347 — Universal Activity &amp; Audit Timeline','Permission-aware:','Evidence, not authority:'],'Build 347 help');
-must(roadmap,['#### **347 — Universal Activity & Audit Timeline** is implemented','#### 348 — Offline & Conflict Recovery','next planned autonomous item is **348 — Offline & Conflict Recovery**'],'Build 347 roadmap');
+must(roadmap,['#### **347 — Universal Activity & Audit Timeline** is implemented','#### **348 — Offline & Conflict Recovery** is implemented','next planned autonomous item is **349 — Saved Views, Search & Command Centre**'],'Build 347 roadmap');
 must(pkg,['test:universal-activity-audit-timeline','test:browser:universal-activity-audit-timeline'],'Build 347 scripts');
 must(workflow,['npm run test:universal-activity-audit-timeline','npm run test:browser:universal-activity-audit-timeline'],'Build 347 CI');
 const require=createRequire(import.meta.url),ts=require('typescript'),parsed=ts.createSourceFile('admin-directory.ts',directory,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
