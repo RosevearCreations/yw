@@ -171,7 +171,9 @@
     "test:quality-control-customer-signoff": "node scripts/quality-control-customer-signoff-check.mjs",
     "test:browser:quality-control-customer-signoff": "playwright test --config=playwright.config.mjs tests/browser/quality-control-customer-signoff.spec.mjs",
     "test:seasonal-operations-centre": "node scripts/seasonal-operations-centre-check.mjs",
-    "test:browser:seasonal-operations-centre": "playwright test --config=playwright.config.mjs tests/browser/seasonal-operations-centre.spec.mjs"
+    "test:browser:seasonal-operations-centre": "playwright test --config=playwright.config.mjs tests/browser/seasonal-operations-centre.spec.mjs",
+    "test:universal-activity-audit-timeline": "node scripts/universal-activity-audit-timeline-check.mjs",
+    "test:browser:universal-activity-audit-timeline": "playwright test --config=playwright.config.mjs tests/browser/universal-activity-audit-timeline.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

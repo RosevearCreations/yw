@@ -191,6 +191,27 @@ serve(async (req) => {
     }, { status:403, headers:corsHeaders });
   }
 
+  if (scope === 'activity_timeline') {
+    const [timeline, canSafety, canFinance, canJobs, canAdmin] = await Promise.all([
+      safeList(supabase, 'v_universal_activity_audit_timeline', '*', 'occurred_at', limit, false),
+      hasModuleAccess(supabase, actorProfile, 'safety', 'view'),
+      hasModuleAccess(supabase, actorProfile, 'finance', 'view'),
+      hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
+      hasModuleAccess(supabase, actorProfile, 'admin', 'view'),
+    ]);
+    const sourceVisibility: Record<string, boolean> = { safety:canSafety, finance:canFinance, jobs:canJobs, admin:canAdmin };
+    if (!Object.values(sourceVisibility).some(Boolean)) {
+      return Response.json({ ok:false, error:'At least one module view permission is required for the activity timeline.' }, { status:403, headers:corsHeaders });
+    }
+    const visibleTimeline = (timeline || []).filter((row:any) => sourceVisibility[String(row?.source_module || 'admin')] === true);
+    return Response.json({
+      ok:true, scope:'activity_timeline', actor_role:actorRole,
+      activity_timeline:visibleTimeline,
+      source_visibility:sourceVisibility,
+      authority_boundary:'Read-only evidence timeline. Source modules remain authoritative; raw request and response payloads are intentionally not exposed.'
+    }, { headers:corsHeaders });
+  }
+
   if (scope === 'module_permissions') {
     if (normalizeRole(actorRole) !== 'admin') {
       return Response.json({ ok:false, error:'Admin role is required to manage module permissions.' }, { status:403, headers:corsHeaders });
