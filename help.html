@@ -49,7 +49,15 @@
     </section>
     <div class="help-callout"><strong>Release safety:</strong> Production promotion remains deliberate. Finance execution, provider mutation, Auth setting mutation, staging acceptance mutation, human acceptance, content publication, external search submission, and external-provider acceptance must never be inferred from a green source test alone.</div>
     <footer class="help-footer">This help page is maintained with the active application and intentionally excluded from public search indexing. It remains crawlable so search engines can see its noindex directive.</footer>
-  </main>
+  
+        <section class="help-section" id="universal-activity-audit-timeline">
+          <h2>Build 347 — Universal Activity &amp; Audit Timeline</h2>
+          <p>Build 347 provides one chronological, read-only evidence history across Customer, Property, Estimate, Job/Visit, Employee, Equipment/Fleet, Safety and Invoice/Payment activity.</p>
+          <p><strong>Permission-aware:</strong> the server filters rows by the signed-in profile's effective Safety, Finance, Jobs and Admin module view access before the browser receives them. A hidden module cannot leak its timeline rows through this workspace.</p>
+          <p><strong>Evidence, not authority:</strong> each row exposes the actor, timestamp, source module, normalized activity kind, entity reference and durable evidence reference. Raw request/response payloads are intentionally excluded, and the source workflow remains the authority for every underlying record.</p>
+        </section>
+
+      </main>
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">
