@@ -46,7 +46,7 @@ assert.ok(!outbox.includes("action === 'merge' ? { ..."), 'Build 348 must not us
 must(operations,["action === 'offline_conflict_card' || action === 'offline_conflict_resolve'","mobile_offline_conflict_cards","retry_sync","keep_local","reload_server","discard_local"],'Existing server conflict-card authority');
 must(index,['/js/mobile-today.js?v=2026-09-25b348','/js/outbox.js?v=2026-09-25b348'],'Build 348 cache bust');
 must(help,['Build 348 — Offline &amp; Conflict Recovery','Compare before deciding:','Explicit recovery only:','Profile isolation:'],'Build 348 help');
-must(roadmap,['#### **348 — Offline & Conflict Recovery** is implemented','next planned autonomous item is **349 — Saved Views, Search & Command Centre**'],'Build 348 roadmap');
+must(roadmap,['#### **348 — Offline & Conflict Recovery** is implemented','next planned autonomous item is **350 — Owner / Management Command Centre**'],'Build 348 roadmap');
 must(pkg,['test:offline-conflict-recovery','test:browser:offline-conflict-recovery'],'Build 348 scripts');
 must(workflow,['npm run test:offline-conflict-recovery','npm run test:browser:offline-conflict-recovery'],'Build 348 CI');
 

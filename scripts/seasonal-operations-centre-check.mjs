@@ -82,7 +82,7 @@ must(ui,[
 must(hub,['loadBuild346SeasonalOperations','loadBuild346SeasonalOperations();'],'Build 346 mount');
 must(index,['/js/admin-seasonal-operations-ui.js?v=2026-09-24b346'],'Build 346 preload');
 must(help,['Build 346 — Seasonal Operations Centre','Winter is core operations','Salt/de-icer/traction stock','Canonical authority'],'Build 346 help');
-must(roadmap,['#### **346 — Seasonal Operations Centre** is implemented','#### **347 — Universal Activity & Audit Timeline** is implemented','next planned autonomous item is **349 — Saved Views, Search & Command Centre**'],'Build 346 roadmap');
+must(roadmap,['#### **346 — Seasonal Operations Centre** is implemented','#### **347 — Universal Activity & Audit Timeline** is implemented','next planned autonomous item is **350 — Owner / Management Command Centre**'],'Build 346 roadmap');
 must(pkg,['test:seasonal-operations-centre','test:browser:seasonal-operations-centre'],'Build 346 scripts');
 must(workflow,['npm run test:seasonal-operations-centre','npm run test:browser:seasonal-operations-centre'],'Build 346 CI');
 must(behavior,['boundary-exact-90-actions','boundary-build346-seasonal-operations-centre'],'Build 346 boundary behavior');
