@@ -149,7 +149,7 @@ The last queue item must write at least ten further bounded autonomous items bef
 
 Ordinary roadmap work is non-interactive. Do not require the user to create a staging environment, provide provider credentials, execute manual acceptance scenarios, approve synthetic cases, send real messages, run real payments/refunds/disputes, enable Production provider rails, or manually sign off routine releases. If an external dependency is unavailable, keep external/provider mutation disabled and complete the safest repository-owned scope using existing operational evidence, deterministic source checks, synthetic fixtures and browser acceptance.
 
-When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. After Build 351, that item is 352 — Autonomous Exception Triage & Next-Safe-Action. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. After item 351, that item is 352 — Autonomous Exception Triage & Next-Safe-Action. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 
 For every ordinary release, use this sequence:
 
