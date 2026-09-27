@@ -92,6 +92,14 @@
           <p><strong>Authority remains read-only:</strong> freshness/confidence metadata describes evidence quality only. It does not dispatch crews, alter routes, resolve Safety, unlock equipment, change workforce records, post Finance, invoice work, collect payment or enable any provider.</p>
         </section>
 
+        <section class="help-section" id="autonomous-exception-triage-next-safe-action">
+          <h2>Build 352 — Autonomous Exception Triage &amp; Next-Safe-Action</h2>
+          <p>Build 352 strengthens <strong>Operations Needs Attention</strong> with deterministic source-key deduplication, explainable priority, age/due state, ownership state, source authority and a suggested next-safe-action for every visible exception.</p>
+          <p><strong>Priority is explainable:</strong> the queue combines the source severity with age/due evidence and an unassigned-owner signal into a deterministic triage score. The card shows why the item is ranked where it is instead of presenting an unexplained badge.</p>
+          <p><strong>One source exception, one queue item:</strong> duplicate candidates with the same canonical source key are collapsed deterministically. The queue reports how many duplicate candidates were collapsed and keeps the strongest/earliest authoritative candidate.</p>
+          <p><strong>Next-safe-action is advisory:</strong> suggestions navigate to or prepare review in the authoritative Jobs, Safety, Equipment, Timekeeping or Finance workflow. They never auto-dispatch, auto-resolve Safety, unlock equipment, alter Finance, send a customer message, collect payment or mutate a provider.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">
