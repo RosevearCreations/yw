@@ -388,7 +388,7 @@ The Owner / Management Command Centre now carries repository-owned evidence qual
 
 Metric-level confidence combines only the authoritative sources required for that metric. Hidden sources, failed queries and no-row source responses no longer become authoritative-looking zero facts; the UI shows unavailable or no source evidence. Stale timestamps, missing timestamps and possible query-cap coverage remain visible and reduce confidence without mutating the underlying Jobs, Safety, Equipment, Workforce or Finance authority.
 
-The next planned autonomous item is **352 — Autonomous Exception Triage & Next-Safe-Action**.
+Item **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented below; the next planned autonomous item is **353 — Four-Season Capacity & Workability Forecast**.
 
 #### **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented
 
