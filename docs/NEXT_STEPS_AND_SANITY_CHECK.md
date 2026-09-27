@@ -236,7 +236,7 @@ Finance posting, provider/payment mutation and Production provider enablement re
 
 ### Future autonomous queue
 
-The following sequence supersedes the older generic post-317 roadmap. Items 318–350 are the core autonomous landscaping operating-system program. Items 351–353 are controlled acceptance campaigns and retain external/human prerequisites.
+The following sequence supersedes the older generic post-317 roadmap. Items 318–350 established the core landscaping operating-system program. Items 351–362 extend it with bounded autonomous improvement releases that must be implementable and verifiable without user interaction, external provider enablement, real-payment execution or human acceptance campaigns.
 
 #### 318 — Job Cost & Profitability Closeout
 
@@ -372,7 +372,7 @@ This release adds a permission-aware, read-only command-centre index across cust
 
 Saved views are browser-local preferences scoped to the signed-in profile. They preserve search, domain, season, service context and the selected operational view, but they never become business authority and never mutate jobs, routing, equipment, Safety, Finance, invoicing or source records. Global result navigation deep-links to the existing authoritative module/workspace. Spring/summer, fall, winter and four-season context remain explicit.
 
-The next planned autonomous item is **350 — Owner / Management Command Centre**.
+Item **350 — Owner / Management Command Centre** is implemented. The next planned autonomous item is **351 — Management Metric Freshness & Confidence**.
 
 #### **350 — Owner / Management Command Centre** is implemented
 
@@ -380,30 +380,62 @@ This release adds one permission-aware, read-only four-season business cockpit f
 
 Every metric is derived from existing canonical source workflows and is hidden or marked unavailable when its module is not visible. Deep links open Jobs, Finance or the appropriate Admin workspace; the cockpit cannot dispatch, change routes, approve Safety, unlock equipment, edit training, invoice work, collect payment, post accounting or close periods.
 
-The ordinary autonomous feature queue is complete at this point. The remaining roadmap items are controlled acceptance campaigns with explicit environment/evidence prerequisites and are not ordinary autonomous releases.
+The autonomous queue continues below. Every item is intentionally designed so an AI system can implement, test, promote and verify it without asking the user to perform acceptance steps, provide provider credentials, execute real payments, or manually sign off. Where an external dependency is unavailable, the release must remain on repository-owned evidence, synthetic/browser fixtures, existing stored operational data and clearly labelled readiness/advisory behavior rather than blocking on human interaction.
 
-### Controlled acceptance campaigns
+#### 351 — Management Metric Freshness & Confidence
 
-These items stay on the roadmap but are not ordinary autonomous feature releases.
+Add freshness, source coverage and confidence metadata to the Owner / Management Command Centre and other high-value summaries. Show last authoritative update, stale/missing state, source module, coverage gaps and why a metric is unavailable. Never invent a value to fill a card. Add source/browser acceptance proving stale and permission-hidden data are explicit and non-misleading.
 
-#### 351 — Real Staging Acceptance Campaign
+#### 352 — Autonomous Exception Triage & Next-Safe-Action
 
-Run only when a dedicated non-Production Supabase project/branch exists and is explicitly authorized. Require exact environment identity, project-ref guard, exact current-schema parity immediately before mutation, approved disposable automated cases, required human Operations/Jobs/Safety/Equipment scenarios, and representative four-season cases for mowing/landscaping, fall cleanup and winter snow operations where those paths exist. Record evidence and require deliberate finalization/signoff. Never substitute Production business/provider data.
+Improve Operations Needs Attention with deterministic deduplication, explainable priority, age, ownership, source authority and a suggested next-safe-action for each exception. Suggestions are advisory navigation or preparation only; they must not auto-dispatch, auto-resolve Safety, unlock equipment, alter Finance, send messages, or mutate provider state.
 
-#### 352 — Accounting Acceptance Campaign
+#### 353 — Four-Season Capacity & Workability Forecast
 
-After the landscaping Finance workflow is complete and no critical Finance blockers remain, run controlled test transactions through estimates/jobs, job cost, bank import, reconciliation, payment application, account mapping, posting preview, exception handling, period close and accountant export. Verify idempotency, locked-period behavior, reopen audit, job-profitability linkage and expected outputs. Passing acceptance does not automatically enable Production posting.
+Create a seven- and fourteen-day capacity/readiness view from existing schedules, crews, recurring visits, equipment availability, stored workability observations/rules and seasonal operations evidence. Keep spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm work distinct. Forecasts are descriptive/advisory and must not depend on a new external weather provider or mutate dispatch automatically.
 
-#### 353 — Payment & Provider Acceptance
+#### 354 — Route & Crew Efficiency Evidence
 
-Only after internal accounting behavior is trustworthy, validate supported provider/payment paths including success, decline/failure, duplicate webhook/event, retry, idempotency, refund, partial refund and dispute/chargeback. Verify provider events link to the correct internal payment/accounting/job records and cannot double-settle, double-apply or double-post. Provider acceptance and Production provider enablement remain separate deliberate decisions.
+Compare planned versus actual service duration, travel allowance, route order, crew hours, return visits, delay/workability effects and repeated route friction. Surface clustering and capacity opportunities as advisory evidence while preserving the existing routing and dispatch authorities. No automatic route rewrite or employee performance inference.
 
-Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, and **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, and **348 — Offline & Conflict Recovery** are implemented by the current release. The next planned autonomous item is **349 — Saved Views, Search & Command Centre**. The four-season Ontario operating model above applies to release 348 and every later release where season or service type is relevant.
+#### 355 — Recurring Service Renewal & Retention Workbench
+
+Identify recurring agreements approaching seasonal end, repeated skips/delays, customer holds, unresolved service issues, low-margin recurring work and renewal/price-review candidates. Keep customer communication and pricing changes deliberate; the workbench may prepare context and navigation but must not auto-renew, auto-price or auto-message.
+
+#### 356 — Estimate-to-Cash Leakage & Margin Recovery
+
+Trace accepted estimates through scheduling, production, approved extras/change orders, completion, invoice readiness, invoicing, payment application and collection. Flag accepted-not-scheduled, completed-not-invoiced, approved-extra-not-billed, invoiced-not-collected and material margin leakage with source links. This release is analytical and must not post accounting or charge customers.
+
+#### 357 — Labour, Equipment & Fleet Utilization Decision Support
+
+Combine paid-time evidence, production labour, crew assignment, equipment use, lockout/downtime, preventive maintenance and fleet availability into management utilization evidence. Show idle/downtime causes and replacement/maintenance signals without turning Safety events into performance judgments or exposing private employee information beyond existing permissions.
+
+#### 358 — Materials, Consumables & Seasonal Stock Readiness
+
+Forecast material and consumable demand from scheduled/recurring work and compare it with inventory/on-hand evidence. Include mowing/landscaping consumables, fall cleanup supplies and winter salt/de-icer/traction stock where applicable. Surface reorder risk and shortage windows without auto-purchasing or creating vendor commitments.
+
+#### 359 — Customer Communication Readiness & Queue Quality
+
+Create a permission-aware readiness queue for weather/workability changes, reschedules, ETA changes, completion follow-up, recurring-service notices, overdue customer follow-up and invoice-reminder candidates. Improve duplicate suppression, source linkage and message context. Do not send automatically; provider/send execution remains separate authority.
+
+#### 360 — Data Quality, Duplicate & Orphan Reconciliation Workbench
+
+Detect duplicate customers/properties, orphaned references, stale crew/equipment assignments, invalid cross-module links, conflicting seasonal/service tags and broken canonical references. Provide evidence-backed reconciliation suggestions and safe navigation. Never perform destructive merge/delete automatically and preserve audit/source identity.
+
+#### 361 — Mobile, Offline & Read-Budget Reliability Optimization
+
+Measure high-cost read paths, repeated fan-out, mobile payload size, offline replay behavior, cache opportunities and conflict-recovery friction across field/admin surfaces. Reduce unnecessary reads and improve batching/caching without weakening permission checks, release evidence, offline data safety or exact-source verification. Add regression budgets for the optimized paths.
+
+#### 362 — Production Learning & Autonomous Roadmap Renewal
+
+Review the outcomes and evidence from items 351–361, identify remaining operational friction, reliability gaps, seasonal gaps and economic opportunities, then write the next bounded autonomous roadmap sequence before this item is promoted. The renewed queue must contain at least ten implementable releases, preserve the non-interactive rule above, and avoid reintroducing human/provider acceptance as the next ordinary build.
+
+Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, and **350 — Owner / Management Command Centre** are implemented by the current release. The next planned autonomous item is **351 — Management Metric Freshness & Confidence**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
 
 ### Roadmap selection rules
 
 When the next YW technical item is requested, prefer the earliest still-valid roadmap item whose prerequisites are satisfied. A newly discovered release, security or data-integrity defect may take priority when it materially affects safe operation or release truth. Small adjacent fixes may be grouped when they share one authority/test surface, but unrelated business areas should remain separate.
 
-After the first four roadmap items are complete, do not default to CI-only micro-releases merely to raise the release number. Prefer Finance completion, accounting usability, profitability and operator value unless a new release-safety defect is proven. Accounting/provider/staging acceptance remains blocked until its real prerequisites and external/human evidence exist.
+For items 351 and later, do not default to CI-only micro-releases merely to raise the release number. Prefer measurable operator, seasonal, economic, data-quality or reliability value unless a new release-safety defect is proven. Do not turn external staging, accounting-provider or payment-provider acceptance into a blocking ordinary build. When those external prerequisites are unavailable, keep provider/payment mutation disabled and continue with the next safe repository-owned autonomous release.
 
 The target is not the highest possible release number. The target is a landscaping and yard-maintenance operating system that releases with trustworthy exact-source evidence, keeps Safety, Jobs, Equipment, Employment and Finance connected, shows real crew/job profitability, reduces repetitive office and field work, remains usable on phones and during poor connectivity, preserves audit and regulatory/accounting boundaries, and eventually closes staging/accounting/provider acceptance with genuine evidence rather than source-only confidence.

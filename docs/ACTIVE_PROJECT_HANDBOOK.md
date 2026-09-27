@@ -126,6 +126,59 @@ Recording release-source evidence is not deployment or Production promotion. A v
 
 Production promotion is deliberate/manual. Source work must not enable Finance execution, provider mutation, mutate external Auth controls, publish unapproved content, submit search URLs externally, run staging acceptance against Production, or close human/external acceptance rails unless that specific change is separately authorized and evidenced.
 
+
+## Cross-AI autonomous handoff
+
+When another AI system takes over YW, treat this handbook and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` as the durable project authority. Resolve the live `dev` and `main` heads from GitHub at task start rather than trusting copied commit identifiers.
+
+The current autonomous queue begins with:
+
+- **351 — Management Metric Freshness & Confidence**
+- **352 — Autonomous Exception Triage & Next-Safe-Action**
+- **353 — Four-Season Capacity & Workability Forecast**
+- **354 — Route & Crew Efficiency Evidence**
+- **355 — Recurring Service Renewal & Retention Workbench**
+- **356 — Estimate-to-Cash Leakage & Margin Recovery**
+- **357 — Labour, Equipment & Fleet Utilization Decision Support**
+- **358 — Materials, Consumables & Seasonal Stock Readiness**
+- **359 — Customer Communication Readiness & Queue Quality**
+- **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**
+- **361 — Mobile, Offline & Read-Budget Reliability Optimization**
+- **362 — Production Learning & Autonomous Roadmap Renewal**
+
+The last queue item must write at least ten further bounded autonomous items before promotion so the queue does not run out.
+
+Ordinary roadmap work is non-interactive. Do not require the user to create a staging environment, provide provider credentials, execute manual acceptance scenarios, approve synthetic cases, send real messages, run real payments/refunds/disputes, enable Production provider rails, or manually sign off routine releases. If an external dependency is unavailable, keep external/provider mutation disabled and complete the safest repository-owned scope using existing operational evidence, deterministic source checks, synthetic fixtures and browser acceptance.
+
+When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+
+For every ordinary release, use this sequence:
+
+1. Verify current `dev` / `main` parity or understand an explicit promotion hold.
+2. Inspect existing schema, functions, authority boundaries and tests before adding a parallel source of truth.
+3. Branch from the accepted Development/Production baseline.
+4. Implement one bounded operator/economic/reliability/seasonal improvement.
+5. Add or update source acceptance and rendered/browser acceptance where behavior changes.
+6. Update Help and roadmap authority in the same source release.
+7. Open the feature PR into `dev` and follow the exact feature source through the canonical checks.
+8. Repair failures without weakening branch protection, release evidence, security, permission or browser gates.
+9. Merge the GREEN feature PR to `dev`.
+10. Confirm the exact Development source is GREEN and preview deployment succeeds.
+11. Open `dev` → protected `main` with no extra code changes.
+12. Merge only after required Production PR checks pass.
+13. Verify the exact resulting `main` merge source through source checks, repository enforcement, release-source evidence and release-truth summary.
+14. Verify Vercel Production success on that exact Production source.
+15. Verify authorized release-evidence recording, repository-policy evidence recording and post-promotion Development reconciliation.
+16. Confirm final `dev` and `main` are identical before declaring the release GREEN.
+
+Do not call a release GREEN because only Vercel succeeded. Exact-source GitHub evidence, browser acceptance, policy evidence and final branch reconciliation are part of release completion.
+
+Keep the four-season Ontario model explicit: spring/summer landscaping and lawn work, fall cleanup/leaf collection, winter snow/storm/ice operations, and general four-season business functions. Do not claim a service is workable when source rules/evidence say conditions are unsuitable.
+
+Preserve authority boundaries: Safety stays Safety authority; routing/dispatch stays Jobs authority; equipment lockout/return-to-service stays controlled; employee/private workforce information stays permission-scoped; Finance posting/payment/provider execution stays Finance/provider authority; read-only management/search/advisory layers must not silently become write authority. Do not infer employee performance from Safety incidents.
+
+Do not modify Rosie Dazzlers or Devil n Dove while executing YW work unless the user explicitly switches projects.
+
 ## Hygiene rules
 
 Keep only active files in the working tree. Temporary workflows, test-write files, backup/log files, retired Markdown, archive directories and generated schema snapshots are prohibited. Historical comments inside migrations are audit evidence and are not rewritten merely to remove old wording.
