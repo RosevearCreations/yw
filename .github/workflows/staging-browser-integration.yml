@@ -140,6 +140,7 @@ jobs:
       - run: npm run test:saved-views-search-command
       - run: npm run test:owner-management-command
       - run: npm run test:management-metric-freshness-confidence
+      - run: npm run test:autonomous-exception-triage-next-safe-action
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -224,6 +225,7 @@ jobs:
       - run: npm run test:browser:saved-views-search-command
       - run: npm run test:browser:owner-management-command
       - run: npm run test:browser:management-metric-freshness-confidence
+      - run: npm run test:browser:autonomous-exception-triage-next-safe-action
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
