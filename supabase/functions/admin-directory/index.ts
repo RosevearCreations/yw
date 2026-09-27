@@ -56,6 +56,99 @@ async function safeList(supabase: any, table: string, columns = '*', orderColumn
   }
 }
 
+type SourceReadEvidence = {
+  rows:any[];
+  query_ok:boolean;
+  retrieved_at:string;
+  row_count:number;
+  limit:number;
+};
+
+async function safeListEvidence(supabase: any, table: string, columns = '*', orderColumn?: string, limit = 200, ascending = true): Promise<SourceReadEvidence> {
+  const retrieved_at = new Date().toISOString();
+  try {
+    let q = supabase.from(table).select(columns).limit(limit);
+    if (orderColumn) q = q.order(orderColumn, { ascending });
+    const { data, error } = await q;
+    if (error) return { rows:[], query_ok:false, retrieved_at, row_count:0, limit };
+    const rows = data || [];
+    return { rows, query_ok:true, retrieved_at, row_count:rows.length, limit };
+  } catch {
+    return { rows:[], query_ok:false, retrieved_at, row_count:0, limit };
+  }
+}
+
+function latestAuthoritativeUpdate(rows:any[]) {
+  const fields = ['updated_at','checked_at','observed_at','recorded_at','changed_at','verified_at','captured_at','created_at'];
+  let best = 0;
+  let value:string|null = null;
+  for (const row of rows || []) {
+    for (const field of fields) {
+      const raw = row?.[field];
+      if (!raw) continue;
+      const ms = Date.parse(String(raw));
+      if (Number.isFinite(ms) && ms > best) { best = ms; value = new Date(ms).toISOString(); }
+    }
+  }
+  return value;
+}
+
+function buildManagementSourceFreshness(
+  read:SourceReadEvidence,
+  config:{ key:string; module:string; view:string; visible:boolean; stale_after_hours:number }
+) {
+  const base:any = {
+    source_key:config.key,
+    source_module:config.module,
+    source_view:config.view,
+    retrieved_at:read.retrieved_at,
+    row_count:read.row_count,
+    query_limit:read.limit,
+    last_authoritative_update:null,
+    stale_after_hours:config.stale_after_hours,
+    coverage_state:'unknown',
+    freshness_state:'unknown',
+    confidence:'unavailable',
+    coverage_gap:false,
+    reason:''
+  };
+  if (!config.visible) return { ...base, coverage_state:'hidden', freshness_state:'hidden', reason:'Source module is not visible to this profile.' };
+  if (!read.query_ok) return { ...base, coverage_state:'query_failed', freshness_state:'source_error', reason:'Authoritative source query did not complete.' };
+  if (!read.row_count) return { ...base, coverage_state:'no_rows', freshness_state:'missing', confidence:'low', reason:'No authoritative source rows were returned; zero is not inferred.' };
+  const latest = latestAuthoritativeUpdate(read.rows);
+  const capped = read.row_count >= read.limit;
+  if (!latest) return {
+    ...base,last_authoritative_update:null,coverage_state:capped?'possibly_capped':'within_query_limit',
+    coverage_gap:capped,freshness_state:'timestamp_unavailable',confidence:'medium',
+    reason:capped?'Rows were returned at the query limit, but no authoritative freshness timestamp is exposed.':'Rows were returned, but no authoritative freshness timestamp is exposed.'
+  };
+  const ageHours = Math.max(0,(Date.now()-Date.parse(latest))/3600000);
+  const stale = ageHours > config.stale_after_hours;
+  return {
+    ...base,last_authoritative_update:latest,age_hours:Number(ageHours.toFixed(1)),
+    coverage_state:capped?'possibly_capped':'within_query_limit',coverage_gap:capped,
+    freshness_state:stale?'stale':'current',
+    confidence:(stale||capped)?'medium':'high',
+    reason:stale
+      ? `Latest authoritative update is older than the ${config.stale_after_hours}h freshness window.`
+      : capped
+        ? 'Source is current but the returned rows reached the query limit; coverage may be partial.'
+        : 'Source is current and within the configured query limit.'
+  };
+}
+
+function buildManagementMetricConfidence(sourceFreshness:Record<string,any>, sourceKeys:string[]) {
+  const sources = sourceKeys.map((key)=>sourceFreshness[key]).filter(Boolean);
+  const blocking = sources.find((s)=>['hidden','source_error'].includes(String(s?.freshness_state||'')));
+  const missing = sources.find((s)=>String(s?.freshness_state||'')==='missing');
+  const uncertain = sources.find((s)=>['stale','timestamp_unavailable'].includes(String(s?.freshness_state||'')) || s?.coverage_gap===true);
+  const latest = sources.map((s)=>s?.last_authoritative_update).filter(Boolean).sort().at(-1) || null;
+  if (blocking) return { source_keys:sourceKeys, state:'unavailable', confidence:'unavailable', last_authoritative_update:latest, reason:blocking.reason };
+  if (missing) return { source_keys:sourceKeys, state:'missing', confidence:'low', last_authoritative_update:latest, reason:missing.reason };
+  if (uncertain) return { source_keys:sourceKeys, state:String(uncertain.freshness_state||'uncertain'), confidence:'medium', last_authoritative_update:latest, reason:uncertain.reason };
+  return { source_keys:sourceKeys, state:'current', confidence:'high', last_authoritative_update:latest, reason:'All required authoritative sources are current and within their configured query limits.' };
+}
+
 async function safeListWhere(supabase: any, table: string, columns = '*', filters: Array<[string, any]> = [], orderColumn?: string, limit = 200, ascending = true) {
   try {
     let q = supabase.from(table).select(columns).limit(limit);
@@ -242,32 +335,80 @@ serve(async (req) => {
       hasModuleAccess(supabase, actorProfile, 'admin', 'manage')
     ]);
     const [
-      jobs,dispatch,production,profitability,timekeeping,recurring,recurringVisits,storms,stormRoutes,seasonalWork,
-      safety,equipment,maintenance,trainingSummary,workforceSummary,receivables,bank,financeExceptions,closeDashboard,workability
+      jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
+      safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead
     ] = await Promise.all([
-      canJobsView ? safeList(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'v_landscape_production_session_directory','*','session_date',500,false) : Promise.resolve([]),
-      canFinanceView ? safeList(supabase,'v_job_profitability_variance_directory','*','group_type',1500,true) : Promise.resolve([]),
-      canAdminManage ? safeList(supabase,'v_timekeeping_attendance_summary') : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'v_recurring_service_program_directory','*','next_service_date',500,true) : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'v_recurring_service_visit_schedule','*','service_date',1000,true) : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'seasonal_storm_events','*','planned_start',250,false) : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'v_seasonal_storm_route_directory','*','updated_at',500,false) : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'v_seasonal_operations_outstanding_work','*','due_date',750,true) : Promise.resolve([]),
-      canSafetyView ? safeList(supabase,'v_supervisor_safety_queue','*','sort_at',500,false) : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'v_equipment_registry_v2','*','equipment_code',500,true) : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'v_preventive_maintenance_workbench','*','due_date',500,true) : Promise.resolve([]),
-      canSafetyView ? safeList(supabase,'v_training_certification_matrix_summary') : Promise.resolve([]),
-      canAdminManage ? safeList(supabase,'v_workforce_summary') : Promise.resolve([]),
-      canFinanceView ? safeList(supabase,'v_ar_invoice_aging_detail','*','due_date',500,true) : Promise.resolve([]),
-      canFinanceView ? safeList(supabase,'v_bank_reconciliation_summary','*','period_end',120,false) : Promise.resolve([]),
-      canFinanceView ? safeList(supabase,'v_accounting_reconciliation_manual_review_queue','*','review_priority',500,true) : Promise.resolve([]),
-      canFinanceView ? safeList(supabase,'v_accounting_close_dashboard') : Promise.resolve([]),
-      canJobsView ? safeList(supabase,'v_weather_workability_queue','*','observed_at',500,false) : Promise.resolve([])
+      canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canJobsView ? safeListEvidence(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canJobsView ? safeListEvidence(supabase,'v_landscape_production_session_directory','*','session_date',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canFinanceView ? safeListEvidence(supabase,'v_job_profitability_variance_directory','*','group_type',1500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      canAdminManage ? safeListEvidence(supabase,'v_timekeeping_attendance_summary','*',undefined,200,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:200}),
+      canJobsView ? safeListEvidence(supabase,'v_recurring_service_program_directory','*','next_service_date',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canJobsView ? safeListEvidence(supabase,'v_recurring_service_visit_schedule','*','service_date',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
+      canJobsView ? safeListEvidence(supabase,'seasonal_storm_events','*','planned_start',250,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:250}),
+      canJobsView ? safeListEvidence(supabase,'v_seasonal_storm_route_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canJobsView ? safeListEvidence(supabase,'v_seasonal_operations_outstanding_work','*','due_date',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
+      canSafetyView ? safeListEvidence(supabase,'v_supervisor_safety_queue','*','sort_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canJobsView ? safeListEvidence(supabase,'v_equipment_registry_v2','*','equipment_code',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canJobsView ? safeListEvidence(supabase,'v_preventive_maintenance_workbench','*','due_date',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canSafetyView ? safeListEvidence(supabase,'v_training_certification_matrix_summary','*',undefined,200,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:200}),
+      canAdminManage ? safeListEvidence(supabase,'v_workforce_summary','*',undefined,200,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:200}),
+      canFinanceView ? safeListEvidence(supabase,'v_ar_invoice_aging_detail','*','due_date',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canFinanceView ? safeListEvidence(supabase,'v_bank_reconciliation_summary','*','period_end',120,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:120}),
+      canFinanceView ? safeListEvidence(supabase,'v_accounting_reconciliation_manual_review_queue','*','review_priority',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canFinanceView ? safeListEvidence(supabase,'v_accounting_close_dashboard','*',undefined,200,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:200}),
+      canJobsView ? safeListEvidence(supabase,'v_weather_workability_queue','*','observed_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500})
     ]);
+    const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
+      timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,storms=stormsRead.rows,
+      stormRoutes=stormRoutesRead.rows,seasonalWork=seasonalWorkRead.rows,safety=safetyRead.rows,equipment=equipmentRead.rows,
+      maintenance=maintenanceRead.rows,trainingSummary=trainingSummaryRead.rows,workforceSummary=workforceSummaryRead.rows,
+      receivables=receivablesRead.rows,bank=bankRead.rows,financeExceptions=financeExceptionsRead.rows,
+      closeDashboard=closeDashboardRead.rows,workability=workabilityRead.rows;
+    const sourceFreshness:Record<string,any> = {};
+    const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
+      sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
+    };
+    addFresh(jobsRead,'jobs','jobs','v_jobs_directory',canJobsView,72);
+    addFresh(dispatchRead,'dispatch','jobs','v_crew_dispatch_schedule',canJobsView,72);
+    addFresh(productionRead,'production','jobs','v_landscape_production_session_directory',canJobsView,72);
+    addFresh(profitabilityRead,'profitability','finance','v_job_profitability_variance_directory',canFinanceView,168);
+    addFresh(timekeepingRead,'timekeeping','admin','v_timekeeping_attendance_summary',canAdminManage,168);
+    addFresh(recurringRead,'recurring','jobs','v_recurring_service_program_directory',canJobsView,168);
+    addFresh(recurringVisitsRead,'recurring_visits','jobs','v_recurring_service_visit_schedule',canJobsView,72);
+    addFresh(stormsRead,'storms','jobs','seasonal_storm_events',canJobsView,72);
+    addFresh(stormRoutesRead,'storm_routes','jobs','v_seasonal_storm_route_directory',canJobsView,72);
+    addFresh(seasonalWorkRead,'seasonal_work','jobs','v_seasonal_operations_outstanding_work',canJobsView,168);
+    addFresh(safetyRead,'safety','safety','v_supervisor_safety_queue',canSafetyView,72);
+    addFresh(equipmentRead,'equipment','jobs','v_equipment_registry_v2',canJobsView,168);
+    addFresh(maintenanceRead,'maintenance','jobs','v_preventive_maintenance_workbench',canJobsView,168);
+    addFresh(trainingSummaryRead,'training','safety','v_training_certification_matrix_summary',canSafetyView,336);
+    addFresh(workforceSummaryRead,'workforce','admin','v_workforce_summary',canAdminManage,336);
+    addFresh(receivablesRead,'receivables','finance','v_ar_invoice_aging_detail',canFinanceView,168);
+    addFresh(bankRead,'bank','finance','v_bank_reconciliation_summary',canFinanceView,336);
+    addFresh(financeExceptionsRead,'finance_exceptions','finance','v_accounting_reconciliation_manual_review_queue',canFinanceView,168);
+    addFresh(closeDashboardRead,'close_dashboard','finance','v_accounting_close_dashboard',canFinanceView,168);
+    addFresh(workabilityRead,'workability','jobs','v_weather_workability_queue',canJobsView,72);
+    const metricConfidence = {
+      crews_today:buildManagementMetricConfidence(sourceFreshness,['dispatch']),
+      completion_today:buildManagementMetricConfidence(sourceFreshness,['dispatch','production']),
+      schedule_risk:buildManagementMetricConfidence(sourceFreshness,['dispatch','workability']),
+      revenue:buildManagementMetricConfidence(sourceFreshness,['profitability']),
+      gross_margin:buildManagementMetricConfidence(sourceFreshness,['profitability']),
+      labour_utilization:buildManagementMetricConfidence(sourceFreshness,['production','timekeeping']),
+      receivables:buildManagementMetricConfidence(sourceFreshness,['receivables']),
+      cash_bank:buildManagementMetricConfidence(sourceFreshness,['bank']),
+      recurring_completion:buildManagementMetricConfidence(sourceFreshness,['recurring_visits']),
+      winter_operations:buildManagementMetricConfidence(sourceFreshness,['storms','storm_routes']),
+      fall_cleanup:buildManagementMetricConfidence(sourceFreshness,['seasonal_work','recurring_visits']),
+      safety_blockers:buildManagementMetricConfidence(sourceFreshness,['safety']),
+      equipment_blockers:buildManagementMetricConfidence(sourceFreshness,['equipment','maintenance']),
+      workforce_blockers:buildManagementMetricConfidence(sourceFreshness,['training','workforce']),
+      finance_readiness:buildManagementMetricConfidence(sourceFreshness,['finance_exceptions','close_dashboard'])
+    };
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
+      evidence_generated_at:new Date().toISOString(),
       owner_jobs:jobs,owner_dispatch:dispatch,owner_production:production,owner_profitability:profitability,
       owner_timekeeping_summary:timekeeping,owner_recurring:recurring,owner_recurring_visits:recurringVisits,
       owner_storms:storms,owner_storm_routes:stormRoutes,owner_seasonal_work:seasonalWork,owner_safety:safety,
@@ -275,6 +416,9 @@ serve(async (req) => {
       owner_workforce_summary:workforceSummary,owner_receivables:receivables,owner_bank:bank,
       owner_finance_exceptions:financeExceptions,owner_close_dashboard:closeDashboard,owner_workability:workability,
       source_visibility:{jobs:canJobsView,finance:canFinanceView,safety:canSafetyView,admin:canAdminManage},
+      source_freshness:sourceFreshness,
+      management_metric_confidence:metricConfidence,
+      freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
     }, { headers:corsHeaders });
