@@ -29,8 +29,8 @@ must(ui,[
 
 must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-27b351'],'Build 351 asset version');
 must(help,['Build 351 — Management Metric Freshness &amp; Confidence','Missing is not zero','Stale and partial evidence stays visible','Authority remains read-only'],'Build 351 help');
-must(roadmap,['#### **351 — Management Metric Freshness & Confidence** is implemented','The next planned autonomous item is **352 — Autonomous Exception Triage & Next-Safe-Action**.'],'Build 351 roadmap');
-must(handbook,['**351 — Management Metric Freshness & Confidence** is implemented','- **352 — Autonomous Exception Triage & Next-Safe-Action**'],'Build 351 handoff');
+must(roadmap,['#### **351 — Management Metric Freshness & Confidence** is implemented','#### **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented','The next planned autonomous item is **353 — Four-Season Capacity & Workability Forecast**.'],'Build 351 roadmap');
+must(handbook,['**351 — Management Metric Freshness & Confidence**','**352 — Autonomous Exception Triage & Next-Safe-Action**','- **353 — Four-Season Capacity & Workability Forecast**'],'Build 351 handoff');
 must(pkg,['test:management-metric-freshness-confidence','test:browser:management-metric-freshness-confidence'],'Build 351 package');
 must(workflow,['npm run test:management-metric-freshness-confidence','npm run test:browser:management-metric-freshness-confidence'],'Build 351 CI');
 
