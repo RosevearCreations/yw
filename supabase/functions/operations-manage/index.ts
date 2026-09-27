@@ -1106,15 +1106,82 @@ function reconciliationExceptionView(row: any, profileMap: Map<string, any>) {
 
 
 const ATTENTION_PRIORITY_RANK: Record<string, number> = { critical:0, high:10, medium:20, low:30, info:40 };
+const ATTENTION_PRIORITY_WEIGHT: Record<string, number> = { critical:500, high:400, medium:300, low:200, info:100 };
 function attentionPriority(value: unknown, fallback = 'medium') {
   const cleanValue = clean(value, 40).toLowerCase();
   return Object.prototype.hasOwnProperty.call(ATTENTION_PRIORITY_RANK, cleanValue) ? cleanValue : fallback;
+}
+function attentionDateState(value: unknown, now = Date.now()) {
+  if (!value) return { due_state:'undated', age_days:0, due_in_days:null };
+  const due = new Date(String(value)).valueOf();
+  if (!Number.isFinite(due)) return { due_state:'undated', age_days:0, due_in_days:null };
+  const deltaDays = Math.floor((due - now) / 86400000);
+  if (deltaDays < 0) return { due_state:'overdue', age_days:Math.abs(deltaDays), due_in_days:deltaDays };
+  if (deltaDays === 0) return { due_state:'due_today', age_days:0, due_in_days:0 };
+  return { due_state:'upcoming', age_days:0, due_in_days:deltaDays };
+}
+function attentionAuthority(sourceModule: string, sourceType: string) {
+  const map:Record<string,{read_authority:string;mutation_authority:string}> = {
+    'jobs:job_schedule':{read_authority:'v_jobs_directory',mutation_authority:'Jobs scheduling / dispatch authority'},
+    'jobs:completed_not_invoiced':{read_authority:'v_jobs_directory',mutation_authority:'Jobs completion and Finance invoice-readiness authorities'},
+    'jobs:customer_followup':{read_authority:'v_quote_contact_followup_queue',mutation_authority:'Jobs quote/contact follow-up authority'},
+    'jobs:equipment_defect':{read_authority:'v_equipment_scan_resolution_queue',mutation_authority:'Equipment inspection / lockout authority'},
+    'jobs:maintenance_overdue':{read_authority:'v_equipment_service_task_directory',mutation_authority:'Preventive maintenance authority'},
+    'admin:timesheet_issue':{read_authority:'v_employee_time_review_queue',mutation_authority:'Timekeeping / attendance review authority'},
+    'finance:overdue_receivable':{read_authority:'v_ar_invoice_aging_detail',mutation_authority:'Finance receivables authority'},
+    'finance:reconciliation_exception':{read_authority:'v_accounting_reconciliation_manual_review_queue',mutation_authority:'Finance reconciliation authority'}
+  };
+  if (sourceModule === 'safety') return { read_authority:'v_supervisor_safety_queue', mutation_authority:'Safety corrective-action authority' };
+  return map[`${sourceModule}:${sourceType}`] || { read_authority:sourceModule, mutation_authority:`${sourceModule} source workflow` };
+}
+function attentionNextSafeAction(sourceModule: string, sourceType: string, routeHint: string) {
+  const key=`${sourceModule}:${sourceType}`;
+  const map:Record<string,{label:string;instruction:string}> = {
+    'jobs:job_schedule':{label:'Review schedule / assignment',instruction:'Open Jobs and review timing, crew assignment and workability before making any dispatch change.'},
+    'jobs:completed_not_invoiced':{label:'Review invoice readiness',instruction:'Open Jobs to confirm closeout evidence, then use Finance only if the record is genuinely invoice-ready.'},
+    'jobs:customer_followup':{label:'Review customer follow-up',instruction:'Open the Jobs follow-up workflow and prepare the next contact. No message is sent automatically.'},
+    'jobs:equipment_defect':{label:'Review equipment defect',instruction:'Open Equipment and review the inspection / lockout record. This triage layer cannot unlock equipment.'},
+    'jobs:maintenance_overdue':{label:'Review maintenance task',instruction:'Open Maintenance and review the overdue service task before scheduling or returning equipment to service.'},
+    'admin:timesheet_issue':{label:'Review time entry',instruction:'Open Admin timekeeping review and inspect the source entry before any payroll or attendance correction.'},
+    'finance:overdue_receivable':{label:'Review receivable',instruction:'Open Finance receivables and review the invoice/customer context. This triage layer cannot collect or apply payment.'},
+    'finance:reconciliation_exception':{label:'Review reconciliation exception',instruction:'Open Finance reconciliation and inspect the exception evidence. No match, posting or provider mutation is automatic.'}
+  };
+  if (sourceModule === 'safety') return {
+    kind:'navigate',label:'Review Safety action',route_hint:routeHint||'toolbox',
+    instruction:'Open Safety and review the corrective action in its source authority. This triage layer cannot resolve or close Safety work.',
+    authority_boundary:'Advisory navigation only; Safety resolution remains in Safety authority.'
+  };
+  const next=map[key] || {label:`Review ${sourceModule} source`,instruction:`Open the ${sourceModule} source workflow and review the authoritative record before taking action.`};
+  return {
+    kind:'navigate',label:next.label,route_hint:routeHint||sourceModule,instruction:next.instruction,
+    authority_boundary:'Advisory navigation/preparation only; no source business record or provider state is changed.'
+  };
+}
+function explainAttention(item:any, now=Date.now()) {
+  const date=attentionDateState(item?.due_at, now);
+  const ownerState=clean(item?.owner,180) && clean(item?.owner,180).toLowerCase()!=='unassigned' ? 'assigned' : 'unassigned';
+  const base=ATTENTION_PRIORITY_WEIGHT[item?.priority] ?? 0;
+  const ageBonus=Math.min(Number(date.age_days||0),90)*2;
+  const ownerBonus=ownerState==='unassigned' ? 25 : 0;
+  const triageScore=base+ageBonus+ownerBonus;
+  const parts=[`${String(item?.priority||'medium').toUpperCase()} source severity`];
+  if(date.due_state==='overdue') parts.push(`${date.age_days} day(s) past due`);
+  else if(date.due_state==='due_today') parts.push('due today');
+  else if(date.due_state==='upcoming') parts.push(`due in ${date.due_in_days} day(s)`);
+  else parts.push('no source due date');
+  if(ownerState==='unassigned') parts.push('owner unassigned');
+  return {
+    ...date,owner_state:ownerState,triage_score:triageScore,
+    priority_reason:parts.join(' · ')
+  };
 }
 function attentionItem(input: Record<string, unknown>) {
   const sourceModule = clean(input.source_module, 20).toLowerCase();
   const sourceType = clean(input.source_type, 80).toLowerCase();
   const sourceId = clean(input.source_id, 160);
-  return {
+  const routeHint=clean(input.route_hint,60)||sourceModule;
+  const authority=attentionAuthority(sourceModule,sourceType);
+  const item:any = {
     source_key: `${sourceModule}:${sourceType}:${sourceId}`,
     source_module: sourceModule,
     source_type: sourceType,
@@ -1124,11 +1191,41 @@ function attentionItem(input: Record<string, unknown>) {
     priority: attentionPriority(input.priority, 'medium'),
     owner: clean(input.owner, 180) || 'Unassigned',
     due_at: input.due_at || null,
-    route_hint: clean(input.route_hint, 60) || sourceModule,
+    route_hint: routeHint,
     state_status: 'open',
     deferred_until: null,
-    state_note: null
+    state_note: null,
+    source_authority:{
+      module:sourceModule,
+      record_type:sourceType,
+      read_authority:authority.read_authority,
+      mutation_authority:authority.mutation_authority
+    },
+    next_safe_action:attentionNextSafeAction(sourceModule,sourceType,routeHint),
+    duplicate_count:1
   };
+  return {...item,...explainAttention(item)};
+}
+function strongerAttentionItem(a:any,b:any) {
+  const aRank=ATTENTION_PRIORITY_RANK[a?.priority] ?? 99;
+  const bRank=ATTENTION_PRIORITY_RANK[b?.priority] ?? 99;
+  if(aRank!==bRank) return aRank<bRank ? a : b;
+  const aDue=new Date(a?.due_at||'2999-12-31').valueOf();
+  const bDue=new Date(b?.due_at||'2999-12-31').valueOf();
+  if(aDue!==bDue) return aDue<bDue ? a : b;
+  return String(a?.title||'').localeCompare(String(b?.title||''))<=0 ? a : b;
+}
+function deduplicateAttentionItems(items:any[]) {
+  const byKey=new Map<string,any>();
+  for(const item of items) {
+    const key=String(item?.source_key||'');
+    if(!key) continue;
+    const prior=byKey.get(key);
+    if(!prior){byKey.set(key,item);continue;}
+    const chosen=strongerAttentionItem(prior,item);
+    byKey.set(key,{...chosen,duplicate_count:Number(prior?.duplicate_count||1)+Number(item?.duplicate_count||1)});
+  }
+  return [...byKey.values()];
 }
 function buildOperationsAttentionQueue(input: Record<string, any[]>) {
   const now = Date.now();
@@ -1225,23 +1322,26 @@ function buildOperationsAttentionQueue(input: Record<string, any[]>) {
     }));
   }
 
+  const dedupedItems=deduplicateAttentionItems(items);
   const states = new Map((input.states || []).map((row:any)=>[String(row.source_key),row]));
   const active:any[] = [];
-  for (const item of items) {
+  for (const item of dedupedItems) {
     const state:any = states.get(item.source_key);
     if (state?.state_status === 'resolved') continue;
     if (state?.state_status === 'deferred' && state?.deferred_until && new Date(state.deferred_until).valueOf() > now) continue;
+    const enriched={...item,...explainAttention(item,now)};
     active.push({
-      ...item,
+      ...enriched,
       state_status:state?.state_status === 'deferred' ? 'open' : (state?.state_status || 'open'),
       deferred_until:state?.deferred_until || null,
       state_note:state?.state_note || null
     });
   }
   active.sort((a,b)=>
-    (ATTENTION_PRIORITY_RANK[a.priority] ?? 99) - (ATTENTION_PRIORITY_RANK[b.priority] ?? 99)
+    Number(b.triage_score||0)-Number(a.triage_score||0)
+    || (ATTENTION_PRIORITY_RANK[a.priority] ?? 99) - (ATTENTION_PRIORITY_RANK[b.priority] ?? 99)
     || new Date(a.due_at || '2999-12-31').valueOf() - new Date(b.due_at || '2999-12-31').valueOf()
-    || String(a.title).localeCompare(String(b.title))
+    || String(a.source_key).localeCompare(String(b.source_key))
   );
   const resolved=(input.states || [])
     .filter((row:any)=>row?.state_status === 'resolved')
@@ -1254,7 +1354,11 @@ function buildOperationsAttentionQueue(input: Record<string, any[]>) {
       resolved_at:row.resolved_at, route_hint:row.source_module
     }));
   const deferredCount=(input.states || []).filter((row:any)=>row?.state_status==='deferred' && row?.deferred_until && new Date(row.deferred_until).valueOf()>now).length;
-  return { active:active.slice(0,120), resolved, deferred_count:deferredCount, total_active:active.length };
+  const collapsedCount=items.length-dedupedItems.length;
+  return {
+    active:active.slice(0,120), resolved, deferred_count:deferredCount, total_active:active.length,
+    candidate_count:items.length, deduplicated_candidate_count:dedupedItems.length, duplicates_collapsed:collapsedCount
+  };
 }
 
 async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false, bankReviewImportId = '') {
@@ -1379,7 +1483,7 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
   return {
     operations_attention: operationsAttention.active,
     operations_attention_resolved: operationsAttention.resolved,
-    operations_attention_meta: { build:320, schema:209, total_active:operationsAttention.total_active, deferred_count:operationsAttention.deferred_count, permission_filtered:true },
+    operations_attention_meta: { build:352, foundation_build:320, schema_neutral:true, source_schema:209, total_active:operationsAttention.total_active, deferred_count:operationsAttention.deferred_count, candidate_count:operationsAttention.candidate_count, deduplicated_candidate_count:operationsAttention.deduplicated_candidate_count, duplicates_collapsed:operationsAttention.duplicates_collapsed, deterministic_triage:true, advisory_next_safe_action:true, permission_filtered:true },
     crew_dispatch_schedule: dispatchSchedule,
     crew_dispatch_crews: dispatchCrews,
     crew_dispatch_equipment: dispatchEquipment,

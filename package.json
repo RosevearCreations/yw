@@ -181,7 +181,9 @@
     "test:owner-management-command": "node scripts/owner-management-command-check.mjs",
     "test:browser:owner-management-command": "playwright test --config=playwright.config.mjs tests/browser/owner-management-command.spec.mjs",
     "test:management-metric-freshness-confidence": "node scripts/management-metric-freshness-confidence-check.mjs",
-    "test:browser:management-metric-freshness-confidence": "playwright test --config=playwright.config.mjs tests/browser/management-metric-freshness-confidence.spec.mjs"
+    "test:browser:management-metric-freshness-confidence": "playwright test --config=playwright.config.mjs tests/browser/management-metric-freshness-confidence.spec.mjs",
+    "test:autonomous-exception-triage-next-safe-action": "node scripts/autonomous-exception-triage-next-safe-action-check.mjs",
+    "test:browser:autonomous-exception-triage-next-safe-action": "playwright test --config=playwright.config.mjs tests/browser/autonomous-exception-triage-next-safe-action.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
