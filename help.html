@@ -84,6 +84,14 @@
           <p><strong>Source authority remains unchanged:</strong> management cards and Needs Attention links navigate to the authoritative Jobs, Finance or Admin workflow. This cockpit cannot dispatch crews, rewrite routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close an accounting period.</p>
         </section>
 
+        <section class="help-section" id="management-metric-freshness-confidence">
+          <h2>Build 351 — Management Metric Freshness &amp; Confidence</h2>
+          <p>Build 351 adds <strong>freshness, source coverage and confidence evidence</strong> to the Owner / Management Command Centre. Each authoritative source reports its module/view, query success, returned row count, query-limit coverage, latest authoritative update when exposed, configured freshness window, freshness state and confidence.</p>
+          <p><strong>Missing is not zero:</strong> a hidden source, failed authoritative query or source with no returned rows is shown as unavailable or missing evidence. The management cards do not convert those states into authoritative-looking zero revenue, zero work, zero receivables or other business facts.</p>
+          <p><strong>Stale and partial evidence stays visible:</strong> stale source timestamps and possible query-cap coverage gaps reduce confidence and explain why a metric should be interpreted cautiously. A source that exposes rows but no authoritative freshness timestamp is labelled timestamp unavailable rather than silently treated as current.</p>
+          <p><strong>Authority remains read-only:</strong> freshness/confidence metadata describes evidence quality only. It does not dispatch crews, alter routes, resolve Safety, unlock equipment, change workforce records, post Finance, invoice work, collect payment or enable any provider.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">

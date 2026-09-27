@@ -179,7 +179,9 @@
     "test:saved-views-search-command": "node scripts/saved-views-search-command-check.mjs",
     "test:browser:saved-views-search-command": "playwright test --config=playwright.config.mjs tests/browser/saved-views-search-command.spec.mjs",
     "test:owner-management-command": "node scripts/owner-management-command-check.mjs",
-    "test:browser:owner-management-command": "playwright test --config=playwright.config.mjs tests/browser/owner-management-command.spec.mjs"
+    "test:browser:owner-management-command": "playwright test --config=playwright.config.mjs tests/browser/owner-management-command.spec.mjs",
+    "test:management-metric-freshness-confidence": "node scripts/management-metric-freshness-confidence-check.mjs",
+    "test:browser:management-metric-freshness-confidence": "playwright test --config=playwright.config.mjs tests/browser/management-metric-freshness-confidence.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

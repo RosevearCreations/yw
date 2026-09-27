@@ -131,9 +131,8 @@ Production promotion is deliberate/manual. Source work must not enable Finance e
 
 When another AI system takes over YW, treat this handbook and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` as the durable project authority. Resolve the live `dev` and `main` heads from GitHub at task start rather than trusting copied commit identifiers.
 
-The current autonomous queue begins with:
+**351 — Management Metric Freshness & Confidence** is implemented. The current autonomous queue continues with:
 
-- **351 — Management Metric Freshness & Confidence**
 - **352 — Autonomous Exception Triage & Next-Safe-Action**
 - **353 — Four-Season Capacity & Workability Forecast**
 - **354 — Route & Crew Efficiency Evidence**
@@ -150,7 +149,7 @@ The last queue item must write at least ten further bounded autonomous items bef
 
 Ordinary roadmap work is non-interactive. Do not require the user to create a staging environment, provide provider credentials, execute manual acceptance scenarios, approve synthetic cases, send real messages, run real payments/refunds/disputes, enable Production provider rails, or manually sign off routine releases. If an external dependency is unavailable, keep external/provider mutation disabled and complete the safest repository-owned scope using existing operational evidence, deterministic source checks, synthetic fixtures and browser acceptance.
 
-When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. After item 351, that item is 352 — Autonomous Exception Triage & Next-Safe-Action. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 
 For every ordinary release, use this sequence:
 
