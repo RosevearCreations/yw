@@ -1,4 +1,4 @@
-/* Build 350 — Owner / Management Command Centre */
+/* Builds 350–351 — Owner / Management Command Centre + Metric Freshness & Confidence */
 'use strict';
 (function(){
   const $=id=>document.getElementById(id);
@@ -17,12 +17,13 @@
     let el=$('ownerCommand350');if(el)return el;
     el=document.createElement('details');el.id='ownerCommand350';el.className='admin-hub-detail';el.dataset.adminHubTitle='Owner / Management Command Centre';el.dataset.adminHubGroups='operations';el.open=true;
     el.innerHTML=[
-      '<summary><span>Owner / Management Command Centre</span><small>Build 350 · four-season business cockpit</small></summary>',
+      '<summary><span>Owner / Management Command Centre</span><small>Build 350–351 · four-season business cockpit + evidence confidence</small></summary>',
       '<div class="admin-panel-block" data-build="350">',
       '<div class="section-heading"><div><span class="module-kicker">Build 350 · Management</span><h3>Owner / Management Command Centre</h3><p class="section-subtitle">One read-only view of today, production, profitability, workforce, seasonal execution, Safety, equipment and Finance readiness.</p></div><button id="owner350Refresh" class="secondary" type="button">Refresh</button></div>',
       '<div class="notice"><strong>Authority boundary:</strong> this cockpit summarizes existing source workflows only. It cannot dispatch crews, alter routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close accounting periods.</div>',
       '<div class="notice" style="margin-top:8px;"><strong>Four-season Ontario model:</strong> spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class operating contexts. Missing module access is shown as unavailable rather than inferred.</div>',
       '<div id="owner350Status" class="notice" style="margin-top:10px;"></div>',
+      '<section class="admin-panel-block owner351-evidence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management metric freshness &amp; confidence</h4><p class="section-subtitle">Build 351 · authoritative source age, coverage, visibility and confidence. Missing evidence is never converted into a zero-valued business fact.</p></div></div><div id="owner351Freshness"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -39,7 +40,7 @@
       '</div>'
     ].join('');
     admin.appendChild(el);
-    if(!$('owner350Style')){const st=document.createElement('style');st.id='owner350Style';st.textContent='.owner350-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.owner350-kpi{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.46)}.owner350-kpi span{display:block;font-size:.76rem;color:#c4d1e2}.owner350-kpi strong{display:block;font-size:1.15rem;margin-top:4px}.owner350-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.owner350-list{display:grid;gap:7px}.owner350-row{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.45)}.owner350-row small{display:block;color:#c4d1e2;margin-top:2px}@media(max-width:700px){.owner350-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.owner350-head button{width:100%;min-height:44px}}';document.head.appendChild(st)}
+    if(!$('owner350Style')){const st=document.createElement('style');st.id='owner350Style';st.textContent='.owner350-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.owner350-kpi{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.46)}.owner350-kpi span{display:block;font-size:.76rem;color:#c4d1e2}.owner350-kpi strong{display:block;font-size:1.15rem;margin-top:4px}.owner350-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.owner350-list{display:grid;gap:7px}.owner350-row{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.45)}.owner350-row small{display:block;color:#c4d1e2;margin-top:2px}.owner351-meta{display:block;margin-top:5px;font-size:.72rem;color:#aebed2}.owner351-source{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.36);border:1px solid rgba(148,163,184,.16)}.owner351-source strong{display:block}.owner351-source small{display:block;color:#c4d1e2;margin-top:2px}.owner351-state{font-weight:700;letter-spacing:.02em}.owner351-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-bottom:10px}@media(max-width:700px){.owner350-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.owner350-head button{width:100%;min-height:44px}}';document.head.appendChild(st)}
     return el;
   }
   function mount(config={}){
@@ -48,7 +49,30 @@
     const state={data:{}};
     const note=(s,bad=false)=>{const n=$('owner350Status');if(n){n.textContent=s;n.classList.toggle('error',bad)}};
     const allowed=k=>state.data?.source_visibility?.[k]!==false;
-    const card=(label,value,detail='')=>'<div class="owner350-kpi"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong>'+(detail?'<small>'+esc(detail)+'</small>':'')+'</div>';
+    const metricMeta=k=>state.data?.management_metric_confidence?.[k]||null;
+    const sourceMeta=k=>state.data?.source_freshness?.[k]||null;
+    const when=v=>{if(!v)return'No authoritative timestamp';const d=new Date(v);return Number.isNaN(d.getTime())?'No authoritative timestamp':d.toLocaleString()};
+    const metricValue=(key,value)=>{const m=metricMeta(key);if(!m)return value;if(m.state==='unavailable')return'Unavailable';if(m.state==='missing')return'No source evidence';return value};
+    const metricDetail=(key,detail)=>{const m=metricMeta(key);if(!m)return detail;if(['unavailable','missing'].includes(String(m.state||'')))return m.reason||'Authoritative source evidence is unavailable.';return detail};
+    const metricEvidence=(key)=>{const m=metricMeta(key);if(!m)return'';return '<small class="owner351-meta">Evidence: '+esc(String(m.state||'unknown').toUpperCase())+' · confidence '+esc(String(m.confidence||'unknown').toUpperCase())+' · updated '+esc(when(m.last_authoritative_update))+'</small>'};
+    const card=(label,value,detail='',metricKey='')=>'<div class="owner350-kpi"><span>'+esc(label)+'</span><strong>'+esc(metricKey?metricValue(metricKey,value):value)+'</strong>'+(detail||metricKey?'<small>'+esc(metricKey?metricDetail(metricKey,detail):detail)+'</small>':'')+(metricKey?metricEvidence(metricKey):'')+'</div>';
+    function renderFreshness(){
+      const host=$('owner351Freshness');if(!host)return;
+      const entries=Object.values(state.data?.source_freshness||{});
+      if(!entries.length){host.innerHTML='<p class="muted">Freshness evidence is unavailable from this response.</p>';return}
+      const visible=entries.filter(s=>s?.freshness_state!=='hidden'),current=visible.filter(s=>s?.freshness_state==='current'),stale=visible.filter(s=>s?.freshness_state==='stale');
+      const gaps=visible.filter(s=>s?.coverage_gap===true||['source_error','missing','timestamp_unavailable'].includes(String(s?.freshness_state||'')));
+      const summary='<div class="owner351-summary">'+[
+        card('Visible sources',visible.length+' / '+entries.length,'permission-aware coverage'),
+        card('Current sources',current.length,'within configured freshness window'),
+        card('Stale sources',stale.length,'requires cautious interpretation'),
+        card('Coverage gaps',gaps.length,'missing/error/timestamp/cap signals')
+      ].join('')+'</div>';
+      const priority=['jobs','dispatch','production','profitability','timekeeping','workability','receivables','bank','safety','equipment','maintenance','recurring_visits','storms','storm_routes'];
+      const ordered=[...priority.map(k=>sourceMeta(k)).filter(Boolean),...entries.filter(s=>!priority.includes(s?.source_key))];
+      const rows='<div class="owner350-list">'+ordered.map(s=>'<div class="owner351-source"><strong>'+esc(s.source_module||'source')+' · '+esc(s.source_view||s.source_key||'unknown')+'</strong><small><span class="owner351-state">'+esc(String(s.freshness_state||'unknown').toUpperCase())+'</span> · confidence '+esc(String(s.confidence||'unknown').toUpperCase())+' · '+esc(String(s.row_count??0))+' row(s) · updated '+esc(when(s.last_authoritative_update))+'</small><small>'+esc(s.reason||'No freshness explanation supplied.')+'</small></div>').join('')+'</div>';
+      host.innerHTML=summary+'<details><summary>Authoritative source details</summary>'+rows+'</details>';
+    }
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -94,41 +118,42 @@
     }
     function render(){
       const m=metrics();
+      renderFreshness();
       $('owner350Kpis').innerHTML=[
-        card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',m.scheduledToday+' scheduled'),
-        card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',m.completedToday+' completed'),
-        card('Schedule risk',allowed('jobs')?m.scheduleRisk:'Unavailable','late/workability signals'),
-        card('Revenue',allowed('finance')?money(m.revenue):'Unavailable','loaded job evidence'),
-        card('Gross margin',allowed('finance')?pct(m.margin):'Unavailable',allowed('finance')?money(m.gross):'Finance hidden'),
-        card('Labour utilization',allowed('admin')?pct(m.labourUtil):'Unavailable','14d production / paid time'),
-        card('Receivables',allowed('finance')?money(m.arOpen):'Unavailable',allowed('finance')?money(m.arOverdue)+' overdue':'Finance hidden'),
-        card('Cash / bank',allowed('finance')?money(m.cash):'Unavailable','latest reconciliation')
+        card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
+        card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
+        card('Schedule risk',allowed('jobs')?m.scheduleRisk:'Unavailable',allowed('jobs')?'late/workability signals':'Jobs module unavailable.','schedule_risk'),
+        card('Revenue',allowed('finance')?money(m.revenue):'Unavailable',allowed('finance')?'loaded job evidence':'Finance module unavailable.','revenue'),
+        card('Gross margin',allowed('finance')?pct(m.margin):'Unavailable',allowed('finance')?money(m.gross):'Finance module unavailable.','gross_margin'),
+        card('Labour utilization',allowed('admin')?pct(m.labourUtil):'Unavailable',allowed('admin')?'14d production / paid time':'Admin evidence unavailable.','labour_utilization'),
+        card('Receivables',allowed('finance')?money(m.arOpen):'Unavailable',allowed('finance')?money(m.arOverdue)+' overdue':'Finance module unavailable.','receivables'),
+        card('Cash / bank',allowed('finance')?money(m.cash):'Unavailable',allowed('finance')?'latest reconciliation':'Finance module unavailable.','cash_bank')
       ].join('');
       $('owner350Today').innerHTML=rowsHtml(m.todayDispatch.slice(0,8).map(r=>({title:(r.crew_name||r.route_name||r.job_code||'Scheduled work')+' · '+(r.site_name||r.job_name||''),detail:(r.scheduled_start||'')+' · '+(r.schedule_status||r.status||'scheduled')})),allowed('jobs')?'No work is scheduled in the loaded today window.':'Jobs module unavailable.');
       $('owner350Production').innerHTML=allowed('jobs')?[
         card('Production labour, 14d',m.prodLabour.toFixed(1)+' h'),
         card('Paid time, 14d',m.recentPaidHours.toFixed(1)+' h'),
-        card('Recorded utilization',pct(m.labourUtil),'production labour / paid hours'),
+        card('Recorded utilization',pct(m.labourUtil),'production labour / paid hours','labour_utilization'),
         card('Completed not invoiced',m.completedNotInvoiced)
       ].join(''):'<p class="muted">Jobs/Admin evidence unavailable.</p>';
       $('owner350Finance').innerHTML=allowed('finance')?[
-        card('Revenue',money(m.revenue)),card('Cost',money(m.cost)),card('Gross profit',money(m.gross)),card('Margin',pct(m.margin)),
-        card('Open receivables',money(m.arOpen)),card('Overdue receivables',money(m.arOverdue)),card('Cash / bank',money(m.cash)),
-        card('Finance readiness',m.financeReady?'READY':'ATTENTION',m.finEx.length+' reconciliation exception(s)')
+        card('Revenue',money(m.revenue),'','revenue'),card('Cost',money(m.cost),'','gross_margin'),card('Gross profit',money(m.gross),'','gross_margin'),card('Margin',pct(m.margin),'','gross_margin'),
+        card('Open receivables',money(m.arOpen),'','receivables'),card('Overdue receivables',money(m.arOverdue),'','receivables'),card('Cash / bank',money(m.cash),'','cash_bank'),
+        card('Finance readiness',m.financeReady?'READY':'ATTENTION',m.finEx.length+' reconciliation exception(s)','finance_readiness')
       ].join(''):'<p class="muted">Finance module is not visible to this profile.</p>';
       const routeGroups={};for(const v of m.visits){const key=(v.service_name||v.service_program_type||'Other')+' · '+(v.season_context||v.season||'season n/a');routeGroups[key]=routeGroups[key]||{total:0,done:0};routeGroups[key].total++;if(done(v.visit_status||v.latest_event_type))routeGroups[key].done++}
       const routeRows=Object.entries(routeGroups).slice(0,6).map(([k,v])=>({title:k,detail:v.done+' / '+v.total+' completed'}));
       $('owner350Seasonal').innerHTML=(allowed('jobs')?[
-        card('Recurring completion',pct(m.recurringRate),m.doneVisits+' / '+m.dueVisits.length+' due visits'),
-        card('Winter storms',m.winterActive,m.winterRoutes+' storm route(s)'),
-        card('Fall cleanup progress',pct(m.fallRate),m.fallDone+' / '+m.fallRows.length+' loaded items')
+        card('Recurring completion',pct(m.recurringRate),m.doneVisits+' / '+m.dueVisits.length+' due visits','recurring_completion'),
+        card('Winter storms',m.winterActive,m.winterRoutes+' storm route(s)','winter_operations'),
+        card('Fall cleanup progress',pct(m.fallRate),m.fallDone+' / '+m.fallRows.length+' loaded items','fall_cleanup')
       ].join('')+rowsHtml(routeRows,'No recurring route records loaded.'):'<p class="muted">Jobs/seasonal evidence unavailable.</p>');
       $('owner350Blockers').innerHTML=[
-        card('Safety blockers',allowed('safety')?m.safetyBlock:'Unavailable'),
-        card('Equipment locked out',allowed('jobs')?m.locked:'Unavailable'),
-        card('Maintenance due',allowed('jobs')?m.maintBlock:'Unavailable'),
-        card('Training blockers',allowed('safety')?m.trainingBlock:'Unavailable'),
-        card('Workforce blockers',allowed('admin')?m.workforceBlock:'Unavailable')
+        card('Safety blockers',allowed('safety')?m.safetyBlock:'Unavailable','','safety_blockers'),
+        card('Equipment locked out',allowed('jobs')?m.locked:'Unavailable','','equipment_blockers'),
+        card('Maintenance due',allowed('jobs')?m.maintBlock:'Unavailable','','equipment_blockers'),
+        card('Training blockers',allowed('safety')?m.trainingBlock:'Unavailable','','workforce_blockers'),
+        card('Workforce blockers',allowed('admin')?m.workforceBlock:'Unavailable','','workforce_blockers')
       ].join('');
       const attention=[
         m.scheduleRisk?{title:'Schedule risk',detail:m.scheduleRisk+' late/workability signal(s)'}:null,
@@ -146,8 +171,8 @@
       window.YWIRouter?.showSection?.('admin');setTimeout(()=>window.YWIAdminHub?.open?.(target==='safety'?'safety':'operations'),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 350 management cockpit refreshed. Source records were not changed.')}
-      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false}};render();note('Unable to load Build 350 management cockpit: '+(e?.message||e),true)}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 351 freshness/confidence evidence refreshed. Source records were not changed.')}
+      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{}};render();note('Unable to load Build 351 management freshness/confidence evidence: '+(e?.message||e),true)}
     }
     el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open]');if(b)openSource(b.getAttribute('data-owner350-open'))});
     $('owner350Refresh').onclick=load;load();
