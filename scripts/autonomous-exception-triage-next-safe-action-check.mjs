@@ -36,7 +36,7 @@ assert.equal(pkg.scripts['test:autonomous-exception-triage-next-safe-action'],'n
 assert.equal(pkg.scripts['test:browser:autonomous-exception-triage-next-safe-action'],'playwright test --config=playwright.config.mjs tests/browser/autonomous-exception-triage-next-safe-action.spec.mjs');
 must(workflow,['npm run test:autonomous-exception-triage-next-safe-action','npm run test:browser:autonomous-exception-triage-next-safe-action'],'Build 352 CI');
 must(help,['Build 352 — Autonomous Exception Triage &amp; Next-Safe-Action','One source exception, one queue item','Next-safe-action is advisory'],'Build 352 help');
-must(roadmap,['#### **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented','#### **353 — Four-Season Capacity & Workability Forecast** is implemented','The next planned autonomous item is **354 — Route & Crew Efficiency Evidence**.'],'Build 352 roadmap');
-must(handbook,['**352 — Autonomous Exception Triage & Next-Safe-Action**','**353 — Four-Season Capacity & Workability Forecast**','- **354 — Route & Crew Efficiency Evidence**'],'Build 352 handoff');
+must(roadmap,['#### **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented','#### **353 — Four-Season Capacity & Workability Forecast** is implemented','#### **354 — Route & Crew Efficiency Evidence** is implemented','The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.'],'Build 352 roadmap');
+must(handbook,['**352 — Autonomous Exception Triage & Next-Safe-Action**','**353 — Four-Season Capacity & Workability Forecast**','**354 — Route & Crew Efficiency Evidence** is implemented','- **355 — Recurring Service Renewal & Retention Workbench**'],'Build 352 handoff');
 
 console.log('Build 352 Autonomous Exception Triage & Next-Safe-Action source gate GREEN');
