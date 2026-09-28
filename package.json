@@ -183,7 +183,9 @@
     "test:management-metric-freshness-confidence": "node scripts/management-metric-freshness-confidence-check.mjs",
     "test:browser:management-metric-freshness-confidence": "playwright test --config=playwright.config.mjs tests/browser/management-metric-freshness-confidence.spec.mjs",
     "test:autonomous-exception-triage-next-safe-action": "node scripts/autonomous-exception-triage-next-safe-action-check.mjs",
-    "test:browser:autonomous-exception-triage-next-safe-action": "playwright test --config=playwright.config.mjs tests/browser/autonomous-exception-triage-next-safe-action.spec.mjs"
+    "test:browser:autonomous-exception-triage-next-safe-action": "playwright test --config=playwright.config.mjs tests/browser/autonomous-exception-triage-next-safe-action.spec.mjs",
+    "test:four-season-capacity-workability-forecast": "node scripts/four-season-capacity-workability-forecast-check.mjs",
+    "test:browser:four-season-capacity-workability-forecast": "playwright test --config=playwright.config.mjs tests/browser/four-season-capacity-workability-forecast.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

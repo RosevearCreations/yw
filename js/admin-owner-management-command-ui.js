@@ -1,4 +1,4 @@
-/* Builds 350–351 — Owner / Management Command Centre + Metric Freshness & Confidence */
+/* Builds 350–353 — Owner / Management Command Centre + evidence confidence + four-season capacity forecast */
 'use strict';
 (function(){
   const $=id=>document.getElementById(id);
@@ -17,13 +17,14 @@
     let el=$('ownerCommand350');if(el)return el;
     el=document.createElement('details');el.id='ownerCommand350';el.className='admin-hub-detail';el.dataset.adminHubTitle='Owner / Management Command Centre';el.dataset.adminHubGroups='operations';el.open=true;
     el.innerHTML=[
-      '<summary><span>Owner / Management Command Centre</span><small>Build 350–351 · four-season business cockpit + evidence confidence</small></summary>',
+      '<summary><span>Owner / Management Command Centre</span><small>Build 350–353 · four-season cockpit + evidence confidence + capacity forecast</small></summary>',
       '<div class="admin-panel-block" data-build="350">',
       '<div class="section-heading"><div><span class="module-kicker">Build 350 · Management</span><h3>Owner / Management Command Centre</h3><p class="section-subtitle">One read-only view of today, production, profitability, workforce, seasonal execution, Safety, equipment and Finance readiness.</p></div><button id="owner350Refresh" class="secondary" type="button">Refresh</button></div>',
       '<div class="notice"><strong>Authority boundary:</strong> this cockpit summarizes existing source workflows only. It cannot dispatch crews, alter routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close accounting periods.</div>',
       '<div class="notice" style="margin-top:8px;"><strong>Four-season Ontario model:</strong> spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class operating contexts. Missing module access is shown as unavailable rather than inferred.</div>',
       '<div id="owner350Status" class="notice" style="margin-top:10px;"></div>',
       '<section class="admin-panel-block owner351-evidence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management metric freshness &amp; confidence</h4><p class="section-subtitle">Build 351 · authoritative source age, coverage, visibility and confidence. Missing evidence is never converted into a zero-valued business fact.</p></div></div><div id="owner351Freshness"></div></section>',
+      '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -40,7 +41,7 @@
       '</div>'
     ].join('');
     admin.appendChild(el);
-    if(!$('owner350Style')){const st=document.createElement('style');st.id='owner350Style';st.textContent='.owner350-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.owner350-kpi{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.46)}.owner350-kpi span{display:block;font-size:.76rem;color:#c4d1e2}.owner350-kpi strong{display:block;font-size:1.15rem;margin-top:4px}.owner350-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.owner350-list{display:grid;gap:7px}.owner350-row{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.45)}.owner350-row small{display:block;color:#c4d1e2;margin-top:2px}.owner351-meta{display:block;margin-top:5px;font-size:.72rem;color:#aebed2}.owner351-source{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.36);border:1px solid rgba(148,163,184,.16)}.owner351-source strong{display:block}.owner351-source small{display:block;color:#c4d1e2;margin-top:2px}.owner351-state{font-weight:700;letter-spacing:.02em}.owner351-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-bottom:10px}@media(max-width:700px){.owner350-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.owner350-head button{width:100%;min-height:44px}}';document.head.appendChild(st)}
+    if(!$('owner350Style')){const st=document.createElement('style');st.id='owner350Style';st.textContent='.owner350-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.owner350-kpi{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.46)}.owner350-kpi span{display:block;font-size:.76rem;color:#c4d1e2}.owner350-kpi strong{display:block;font-size:1.15rem;margin-top:4px}.owner350-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.owner350-list{display:grid;gap:7px}.owner350-row{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.45)}.owner350-row small{display:block;color:#c4d1e2;margin-top:2px}.owner351-meta{display:block;margin-top:5px;font-size:.72rem;color:#aebed2}.owner351-source{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.36);border:1px solid rgba(148,163,184,.16)}.owner351-source strong{display:block}.owner351-source small{display:block;color:#c4d1e2;margin-top:2px}.owner351-state{font-weight:700;letter-spacing:.02em}.owner351-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-bottom:10px}.owner353-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.owner353-day{padding:10px;border:1px solid rgba(148,163,184,.22);border-radius:10px;background:rgba(15,23,42,.4)}.owner353-day strong,.owner353-day small{display:block}.owner353-day small{color:#c4d1e2;margin-top:3px}.owner353-season{font-size:.72rem;color:#aebed2;margin-top:5px}@media(max-width:700px){.owner350-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.owner350-head button{width:100%;min-height:44px}}';document.head.appendChild(st)}
     return el;
   }
   function mount(config={}){
@@ -72,6 +73,27 @@
       const ordered=[...priority.map(k=>sourceMeta(k)).filter(Boolean),...entries.filter(s=>!priority.includes(s?.source_key))];
       const rows='<div class="owner350-list">'+ordered.map(s=>'<div class="owner351-source"><strong>'+esc(s.source_module||'source')+' · '+esc(s.source_view||s.source_key||'unknown')+'</strong><small><span class="owner351-state">'+esc(String(s.freshness_state||'unknown').toUpperCase())+'</span> · confidence '+esc(String(s.confidence||'unknown').toUpperCase())+' · '+esc(String(s.row_count??0))+' row(s) · updated '+esc(when(s.last_authoritative_update))+'</small><small>'+esc(s.reason||'No freshness explanation supplied.')+'</small></div>').join('')+'</div>';
       host.innerHTML=summary+'<details><summary>Authoritative source details</summary>'+rows+'</details>';
+    }
+    function renderCapacityForecast(){
+      const host=$('owner353Forecast');if(!host)return;
+      const f=state.data?.four_season_capacity_forecast;
+      const meta=metricMeta('capacity_forecast');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Jobs/operations evidence is unavailable to this profile.</p>';return}
+      if(!f||!Array.isArray(f.days)){host.innerHTML='<p class="muted">Capacity forecast evidence is unavailable from this response.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){
+        host.innerHTML='<p class="muted">'+esc(meta.reason||'Required forecast source evidence is unavailable.')+'</p>';return
+      }
+      const w7=f.windows?.seven_day||{},w14=f.windows?.fourteen_day||{};
+      const minToHours=v=>(num(v)/60).toFixed(1)+' h';
+      const summary='<div class="owner351-summary">'+[
+        card('7-day planned',w7.planned_items??0,minToHours(w7.recorded_demand_minutes)+' recorded demand','capacity_forecast'),
+        card('7-day constrained',num(w7.blocked_days)+num(w7.attention_days),num(w7.blocked_days)+' blocked · '+num(w7.attention_days)+' attention'),
+        card('14-day planned',w14.planned_items??0,minToHours(w14.recorded_demand_minutes)+' recorded demand','capacity_forecast'),
+        card('14-day constrained',num(w14.blocked_days)+num(w14.attention_days),num(w14.blocked_days)+' blocked · '+num(w14.attention_days)+' attention')
+      ].join('')+'</div>';
+      const seasonLabel=s=>'Spring/summer '+num(s?.spring_summer)+' · Fall '+num(s?.fall)+' · Winter '+num(s?.winter)+' · Four-season '+num(s?.four_season);
+      const days='<div class="owner353-days">'+f.days.map(d=>'<div class="owner353-day" data-owner353-state="'+esc(d.readiness_state||'unknown')+'"><strong>'+esc(d.date)+' · '+esc(String(d.readiness_state||'unknown').toUpperCase())+'</strong><small>'+esc(num(d.total_planned_items)+' planned · '+minToHours(d.recorded_demand_minutes)+' recorded · '+num(d.scheduled_crew_count)+' / '+num(d.active_crew_count)+' active crews scheduled')+'</small><small>'+esc(num(d.ready_equipment_count)+' / '+num(d.required_equipment_count)+' assigned equipment ready · '+num(d.equipment_attention_count)+' assigned equipment attention · fleet '+num(d.fleet_ready_equipment_count)+' ready · '+num(d.workability_blocked_count)+' blocked / '+num(d.workability_review_count)+' workability review')+'</small><small>'+esc(d.readiness_reason||'No readiness explanation supplied.')+'</small><div class="owner353-season">'+esc(seasonLabel(d.season_load))+'</div></div>').join('')+'</div>';
+      host.innerHTML=summary+'<p class="muted">'+esc(f.capacity_method||'')+'</p>'+days+'<details style="margin-top:8px;"><summary>Forecast authority &amp; weather boundary</summary><p class="muted">'+esc(f.weather_boundary||'')+'</p><p class="muted">'+esc(f.authority_boundary||'')+'</p></details>';
     }
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
@@ -119,6 +141,7 @@
     function render(){
       const m=metrics();
       renderFreshness();
+      renderCapacityForecast();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
@@ -171,8 +194,8 @@
       window.YWIRouter?.showSection?.('admin');setTimeout(()=>window.YWIAdminHub?.open?.(target==='safety'?'safety':'operations'),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 351 freshness/confidence evidence refreshed. Source records were not changed.')}
-      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{}};render();note('Unable to load Build 351 management freshness/confidence evidence: '+(e?.message||e),true)}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 353 four-season capacity/workability forecast refreshed. Source records were not changed.')}
+      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null};render();note('Unable to load Build 353 capacity/workability forecast evidence: '+(e?.message||e),true)}
     }
     el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open]');if(b)openSource(b.getAttribute('data-owner350-open'))});
     $('owner350Refresh').onclick=load;load();
