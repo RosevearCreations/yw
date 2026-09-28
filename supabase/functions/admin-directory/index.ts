@@ -254,7 +254,7 @@ function buildFourSeasonCapacityForecast(input:{
     return {days:windowDays,planned_items:planned,recorded_demand_minutes:demand,blocked_days:blocked,attention_days:attention,review_days:review,ready_days:windowDays-blocked-attention-review,peak_date:peak?.date||null,peak_recorded_demand_minutes:Number(peak?.recorded_demand_minutes||0)};
   };
   return {
-    generated_at:new Date().toISOString(),timezone:'America/Toronto',days,
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk,days,
     windows:{seven_day:summarize(7),fourteen_day:summarize(14)},
     capacity_method:'Evidence-only forecast: planned work, assigned crews, recorded durations, equipment readiness, stored workability evidence and seasonal operations. No jobs-per-crew target or external weather forecast is assumed.',
     weather_boundary:'Uses stored YW workability observations/rules and seasonal evidence only; no external weather provider is queried.',
@@ -757,7 +757,7 @@ function buildRecurringRenewalRetentionWorkbench(input:{
 
 function buildEstimateToCashLeakageWorkbench(input:{
   workflows:any[];dispatch:any[];production:any[];changeOrders:any[];receivables:any[];paymentApplications:any[];
-  profitability:any[];jobs:any[];jobsVisible:boolean;financeVisible:boolean;
+  profitability:any[];jobs:any[];jobsVisible:boolean;financeVisible:boolean;sourceQueriesOk:boolean;
 }) {
   const activeDispatchByWorkOrder=new Map<string,any[]>();
   for(const row of input.dispatch||[]){
@@ -1039,7 +1039,8 @@ function buildEstimateToCashLeakageWorkbench(input:{
     });
     const estimateToCashLeakageWorkbench=buildEstimateToCashLeakageWorkbench({
       workflows:estimateWorkflow,dispatch,production,changeOrders,receivables,paymentApplications,
-      profitability,jobs,jobsVisible:canJobsView,financeVisible:canFinanceView
+      profitability,jobs,jobsVisible:canJobsView,financeVisible:canFinanceView,
+      sourceQueriesOk:[estimateWorkflowRead,dispatchRead,productionRead,changeOrdersRead,receivablesRead,paymentApplicationsRead,profitabilityRead].every((r)=>r.query_ok!==false)
     });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
