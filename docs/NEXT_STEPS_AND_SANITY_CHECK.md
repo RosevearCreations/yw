@@ -410,7 +410,7 @@ The next planned autonomous item is **355 — Recurring Service Renewal & Retent
 
 The Owner / Management Command Centre now carries a 90-day read-only comparison of dispatch planning and recorded execution. It links planned service duration and travel allowance with production duration, crew hours, return visits, delay/workability effects and the route order implied by recorded production start times. Missing execution evidence remains missing rather than becoming a zero-value fact.
 
-Route-day evidence uses existing configured `daily_capacity_minutes` only when that route has one. Same-day city overlap across existing routes is surfaced as a clustering review candidate, and repeated friction means the same route has one or more recorded friction signals on at least two loaded service dates. These are advisory observations only: Build 354 does not rewrite route membership or stop order, mutate dispatch, invent missing capacity, or score/rank/infer individual employee performance.
+Route-day evidence uses existing configured `daily_capacity_minutes` only when that route has one. Same-day city overlap across existing routes is surfaced as a clustering review candidate, and repeated friction means the same route has one or more recorded friction signals on at least two loaded service dates. These are advisory observations only: this release does not rewrite route membership or stop order, mutate dispatch, invent missing capacity, or score/rank/infer individual employee performance.
 
 Planned travel allowance and linked crew travel minutes are intentionally shown as different measures. Crew-time travel is not treated as vehicle elapsed travel, so the release does not fabricate a direct travel variance.
 
