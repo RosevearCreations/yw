@@ -23,14 +23,14 @@ must(directory,[
 ],'Build 351 server evidence');
 
 must(ui,[
-  'Build 350–353','Management metric freshness &amp; confidence','owner351Freshness','renderFreshness','metricMeta','sourceMeta','metricValue','metricEvidence',
-  'No source evidence','Evidence: ','Coverage gaps','Authoritative source details','Build 353 four-season capacity/workability forecast refreshed'
+  'Build 350–354','Management metric freshness &amp; confidence','owner351Freshness','renderFreshness','metricMeta','sourceMeta','metricValue','metricEvidence',
+  'No source evidence','Evidence: ','Coverage gaps','Authoritative source details','Build 354 route and crew efficiency evidence refreshed'
 ],'Build 351 management UI');
 
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-28b353'],'Build 351 asset version');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-28b354'],'Build 351 asset version');
 must(help,['Build 351 — Management Metric Freshness &amp; Confidence','Missing is not zero','Stale and partial evidence stays visible','Authority remains read-only'],'Build 351 help');
-must(roadmap,['#### **351 — Management Metric Freshness & Confidence** is implemented','#### **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented','#### **353 — Four-Season Capacity & Workability Forecast** is implemented','The next planned autonomous item is **354 — Route & Crew Efficiency Evidence**.'],'Build 351 roadmap');
-must(handbook,['**351 — Management Metric Freshness & Confidence**','**352 — Autonomous Exception Triage & Next-Safe-Action**','**353 — Four-Season Capacity & Workability Forecast**','- **354 — Route & Crew Efficiency Evidence**'],'Build 351 handoff');
+must(roadmap,['#### **351 — Management Metric Freshness & Confidence** is implemented','#### **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented','#### **353 — Four-Season Capacity & Workability Forecast** is implemented','#### **354 — Route & Crew Efficiency Evidence** is implemented','The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.'],'Build 351 roadmap');
+must(handbook,['**351 — Management Metric Freshness & Confidence**','**352 — Autonomous Exception Triage & Next-Safe-Action**','**353 — Four-Season Capacity & Workability Forecast**','**354 — Route & Crew Efficiency Evidence** is implemented','- **355 — Recurring Service Renewal & Retention Workbench**'],'Build 351 handoff');
 must(pkg,['test:management-metric-freshness-confidence','test:browser:management-metric-freshness-confidence'],'Build 351 package');
 must(workflow,['npm run test:management-metric-freshness-confidence','npm run test:browser:management-metric-freshness-confidence'],'Build 351 CI');
 

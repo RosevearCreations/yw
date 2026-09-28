@@ -440,6 +440,206 @@ serve(async (req) => {
     }, { headers:corsHeaders });
   }
 
+function buildRouteCrewEfficiencyEvidence(input:{
+  dispatch:any[];production:any[];timekeeping:any[];workability:any[];routes:any[];
+}) {
+  const today=ontarioDateKey(new Date())!;
+  const cutoff=addCalendarDays(today,-90);
+  const routeById=new Map<string,any>();
+  for(const row of input.routes||[]) if(row?.route_id) routeById.set(String(row.route_id),row);
+
+  const productionByDispatch=new Map<string,any[]>();
+  for(const row of input.production||[]){
+    const id=row?.dispatch_schedule_item_id;
+    if(!id) continue;
+    const key=String(id),list=productionByDispatch.get(key)||[];
+    list.push(row);productionByDispatch.set(key,list);
+  }
+
+  const timeBySession=new Map<string,any[]>();
+  for(const row of input.timekeeping||[]){
+    const id=row?.job_session_id;
+    if(!id) continue;
+    const key=String(id),list=timeBySession.get(key)||[];
+    list.push(row);timeBySession.set(key,list);
+  }
+
+  const workabilityByDispatch=new Map<string,any[]>();
+  for(const row of input.workability||[]){
+    const id=row?.dispatch_schedule_item_id;
+    if(!id) continue;
+    const key=String(id),list=workabilityByDispatch.get(key)||[];
+    list.push(row);workabilityByDispatch.set(key,list);
+  }
+
+  const evidenceRows=(input.dispatch||[])
+    .filter((row)=>{
+      const date=ontarioDateKey(row?.scheduled_start||row?.service_date);
+      return !!date && date>=cutoff && date<=today && !['cancelled','superseded'].includes(String(row?.schedule_status||'').toLowerCase());
+    })
+    .map((row)=>{
+      const dispatchId=String(row?.id||'');
+      const sessions=productionByDispatch.get(dispatchId)||[];
+      const sessionIds=new Set(sessions.map((s)=>s?.job_session_id).filter(Boolean).map(String));
+      const timeEntries=[...sessionIds].flatMap((id)=>timeBySession.get(id)||[]);
+      const workability=workabilityByDispatch.get(dispatchId)||[];
+      const plannedEstimated=Math.max(0,Number(row?.estimated_duration_minutes||0));
+      const scheduledWindow=minutesBetween(row?.scheduled_start,row?.scheduled_end);
+      const plannedService=plannedEstimated||scheduledWindow||null;
+      const actualDurations=sessions.map((s)=>Number(s?.duration_minutes)).filter((n)=>Number.isFinite(n)&&n>=0);
+      const actualService=actualDurations.length ? actualDurations.reduce((sum,n)=>sum+n,0) : null;
+      const actualCrewHours=sessions.reduce((sum,s)=>sum+Math.max(0,Number(s?.total_labour_hours||0)),0);
+      const travelEntries=timeEntries.map((t)=>Number(t?.travel_minutes)).filter((n)=>Number.isFinite(n)&&n>=0);
+      const crewTravelMinutes=travelEntries.length ? travelEntries.reduce((sum,n)=>sum+n,0) : null;
+      const delayMinutes=sessions.reduce((sum,s)=>sum+Math.max(0,Number(s?.delay_minutes||0)),0);
+      const returnVisit=sessions.some((s)=>s?.return_visit_required===true || String(s?.completion_state||'').toLowerCase()==='return_required');
+      const workabilityEffects=workability.filter((w)=>{
+        const state=String(w?.decision_workability_state||w?.workability_state||w?.dispatch_workability_state||'').toLowerCase();
+        const queue=String(w?.workability_queue_status||'').toLowerCase();
+        return ['blocked','postpone','reschedule','caution','delayed','stopped'].includes(state) || ['decision_required','notification_review','operator_dispatch_required'].includes(queue);
+      });
+      const productionWorkability=sessions.filter((s)=>['blocked','delayed','stopped','caution'].includes(String(s?.workability_status||'').toLowerCase()));
+      const actualStarts=sessions.map((s)=>s?.started_at).filter(Boolean).map((v)=>new Date(String(v))).filter((d)=>Number.isFinite(d.valueOf())).sort((a,b)=>a.valueOf()-b.valueOf());
+      const actualStartAt=actualStarts[0]?.toISOString()||null;
+      const durationVariance=(plannedService!=null&&actualService!=null)?actualService-plannedService:null;
+      const frictionReasons:string[]=[];
+      if(durationVariance!=null&&durationVariance>0) frictionReasons.push('service duration over planned evidence');
+      if(delayMinutes>0) frictionReasons.push('recorded delay');
+      if(returnVisit) frictionReasons.push('return visit required');
+      if(workabilityEffects.length||productionWorkability.length) frictionReasons.push('workability effect');
+      return {
+        dispatch_id:row?.id||null,work_order_id:row?.work_order_id||null,job_id:row?.job_id||null,
+        service_date:ontarioDateKey(row?.scheduled_start||row?.service_date),
+        route_id:row?.route_id||null,route_name:row?.route_name||routeById.get(String(row?.route_id||''))?.route_name||null,
+        route_order:Number.isFinite(Number(row?.route_order))&&Number(row.route_order)>0?Number(row.route_order):null,
+        actual_route_order:null,
+        crew_id:row?.crew_id||null,crew_name:row?.crew_name||null,
+        site_name:row?.site_name||null,site_city:row?.site_city||null,season_context:forecastSeason(row),
+        planned_service_minutes:plannedService,planned_duration_source:plannedEstimated?'estimated_duration_minutes':scheduledWindow?'scheduled_window':'missing',
+        actual_service_minutes:actualService,service_duration_variance_minutes:durationVariance,
+        planned_travel_allowance_minutes:Math.max(0,Number(row?.travel_allowance_minutes||0)),
+        recorded_crew_travel_minutes:crewTravelMinutes,
+        travel_evidence_state:crewTravelMinutes==null?'not_recorded_for_linked_sessions':'recorded_crew_time_not_vehicle_elapsed_time',
+        actual_crew_hours:Number(actualCrewHours.toFixed(2)),
+        production_session_count:sessions.length,delay_minutes:delayMinutes,return_visit_required:returnVisit,
+        workability_effect_count:workabilityEffects.length+productionWorkability.length,
+        actual_start_at:actualStartAt,friction_reasons:frictionReasons,friction_signal_count:frictionReasons.length
+      };
+    });
+
+  const routeDayGroups=new Map<string,any[]>();
+  for(const row of evidenceRows){
+    if(!row.route_id||!row.service_date) continue;
+    const key=String(row.route_id)+'|'+row.service_date,list=routeDayGroups.get(key)||[];
+    list.push(row);routeDayGroups.set(key,list);
+  }
+  for(const rows of routeDayGroups.values()){
+    const actual=[...rows].filter((r)=>r.actual_start_at).sort((a,b)=>String(a.actual_start_at).localeCompare(String(b.actual_start_at))||String(a.dispatch_id).localeCompare(String(b.dispatch_id)));
+    actual.forEach((row,index)=>{
+      row.actual_route_order=index+1;
+      if(row.route_order!=null&&row.route_order!==row.actual_route_order){
+        row.friction_reasons=[...row.friction_reasons,'route order differed from recorded production sequence'];
+        row.friction_signal_count=row.friction_reasons.length;
+      }
+    });
+  }
+
+  const routeDays=[...routeDayGroups.entries()].map(([key,rows])=>{
+    const [routeId,date]=key.split('|');
+    const route=routeById.get(routeId)||{};
+    const plannedService=rows.reduce((sum,r)=>sum+Math.max(0,Number(r.planned_service_minutes||0)),0);
+    const plannedTravel=rows.reduce((sum,r)=>sum+Math.max(0,Number(r.planned_travel_allowance_minutes||0)),0);
+    const plannedDemand=plannedService+plannedTravel;
+    const configuredCapacity=Math.max(0,Number(route?.daily_capacity_minutes||0));
+    const capacityHeadroom=configuredCapacity>0?Math.max(0,configuredCapacity-plannedDemand):null;
+    const overCapacity=configuredCapacity>0?Math.max(0,plannedDemand-configuredCapacity):null;
+    return {
+      route_id:routeId,route_name:rows[0]?.route_name||route?.route_name||'Unnamed route',service_date:date,
+      season_context:route?.season_context||rows[0]?.season_context||'four_season',
+      planned_item_count:rows.length,planned_service_minutes:plannedService,planned_travel_allowance_minutes:plannedTravel,
+      planned_demand_minutes:plannedDemand,configured_daily_capacity_minutes:configuredCapacity||null,
+      configured_capacity_headroom_minutes:capacityHeadroom,over_configured_capacity_minutes:overCapacity,
+      actual_service_minutes:rows.some((r)=>r.actual_service_minutes!=null)?rows.reduce((sum,r)=>sum+Math.max(0,Number(r.actual_service_minutes||0)),0):null,
+      actual_crew_hours:Number(rows.reduce((sum,r)=>sum+Math.max(0,Number(r.actual_crew_hours||0)),0).toFixed(2)),
+      delay_minutes:rows.reduce((sum,r)=>sum+Math.max(0,Number(r.delay_minutes||0)),0),
+      return_visit_count:rows.filter((r)=>r.return_visit_required).length,
+      route_order_deviation_count:rows.filter((r)=>r.route_order!=null&&r.actual_route_order!=null&&r.route_order!==r.actual_route_order).length,
+      workability_effect_count:rows.reduce((sum,r)=>sum+Number(r.workability_effect_count||0),0),
+      friction_item_count:rows.filter((r)=>Number(r.friction_signal_count||0)>0).length
+    };
+  });
+
+  const routeSummaryMap=new Map<string,any>();
+  for(const day of routeDays){
+    const key=String(day.route_id),s=routeSummaryMap.get(key)||{
+      route_id:day.route_id,route_name:day.route_name,service_days:0,friction_service_dates:new Set<string>(),
+      planned_demand_minutes:0,actual_service_minutes:0,actual_service_evidence_days:0,delay_minutes:0,return_visit_count:0,
+      route_order_deviation_count:0,workability_effect_count:0,configured_capacity_headroom_minutes:0,capacity_evidence_days:0
+    };
+    s.service_days++;
+    s.planned_demand_minutes+=Number(day.planned_demand_minutes||0);
+    if(day.actual_service_minutes!=null){s.actual_service_minutes+=Number(day.actual_service_minutes||0);s.actual_service_evidence_days++}
+    s.delay_minutes+=Number(day.delay_minutes||0);s.return_visit_count+=Number(day.return_visit_count||0);
+    s.route_order_deviation_count+=Number(day.route_order_deviation_count||0);s.workability_effect_count+=Number(day.workability_effect_count||0);
+    if(day.configured_capacity_headroom_minutes!=null){s.configured_capacity_headroom_minutes+=Number(day.configured_capacity_headroom_minutes||0);s.capacity_evidence_days++}
+    if(Number(day.friction_item_count||0)>0) s.friction_service_dates.add(String(day.service_date));
+    routeSummaryMap.set(key,s);
+  }
+  const routeSummaries=[...routeSummaryMap.values()].map((s)=>({
+    ...s,
+    friction_service_date_count:s.friction_service_dates.size,
+    repeated_friction:s.friction_service_dates.size>=2,
+    friction_service_dates:[...s.friction_service_dates].sort(),
+    configured_capacity_headroom_minutes:s.capacity_evidence_days?Number(s.configured_capacity_headroom_minutes):null
+  })).map(({friction_service_dates,...s})=>({...s,friction_service_dates})).sort((a,b)=>b.friction_service_date_count-a.friction_service_date_count||String(a.route_name).localeCompare(String(b.route_name)));
+
+  const cityGroups=new Map<string,any[]>();
+  for(const row of evidenceRows){
+    const city=String(row.site_city||'').trim();
+    if(!city||!row.service_date||!row.route_id) continue;
+    const key=row.service_date+'|'+city.toLowerCase(),list=cityGroups.get(key)||[];
+    list.push(row);cityGroups.set(key,list);
+  }
+  const clusteringOpportunities=[...cityGroups.entries()].map(([key,rows])=>{
+    const routeIds=[...new Set(rows.map((r)=>String(r.route_id)).filter(Boolean))];
+    if(routeIds.length<2||rows.length<2) return null;
+    const routeNames=[...new Set(rows.map((r)=>String(r.route_name||'Unnamed route')))].sort();
+    return {
+      service_date:key.split('|')[0],city:rows[0].site_city,planned_item_count:rows.length,route_count:routeIds.length,route_names:routeNames,
+      advisory_reason:'Multiple planned stops in the same city are split across routes; review clustering only if service windows, equipment and dispatch authority allow it.'
+    };
+  }).filter(Boolean).sort((a:any,b:any)=>Number(b.planned_item_count)-Number(a.planned_item_count)||String(a.city).localeCompare(String(b.city)));
+
+  const repeatedRouteFriction=routeSummaries.filter((r)=>r.repeated_friction).slice(0,20);
+  const matched=evidenceRows.filter((r)=>r.actual_service_minutes!=null).length;
+  const travelCoverage=evidenceRows.filter((r)=>r.recorded_crew_travel_minutes!=null).length;
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',lookback_days:90,
+    summary:{
+      planned_items:evidenceRows.length,items_with_actual_service_evidence:matched,
+      service_duration_overrun_items:evidenceRows.filter((r)=>Number(r.service_duration_variance_minutes||0)>0).length,
+      route_order_deviation_items:evidenceRows.filter((r)=>r.route_order!=null&&r.actual_route_order!=null&&r.route_order!==r.actual_route_order).length,
+      return_visit_items:evidenceRows.filter((r)=>r.return_visit_required).length,
+      recorded_delay_minutes:evidenceRows.reduce((sum,r)=>sum+Number(r.delay_minutes||0),0),
+      workability_effect_items:evidenceRows.filter((r)=>Number(r.workability_effect_count||0)>0).length,
+      recorded_crew_travel_coverage_items:travelCoverage,
+      repeated_route_friction_count:repeatedRouteFriction.length,
+      clustering_opportunity_count:clusteringOpportunities.length,
+      route_days_with_configured_capacity_headroom:routeDays.filter((r)=>Number(r.configured_capacity_headroom_minutes||0)>0).length
+    },
+    route_days:routeDays.sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date))||String(a.route_name).localeCompare(String(b.route_name))).slice(0,60),
+    route_summaries:routeSummaries.slice(0,30),
+    repeated_route_friction:repeatedRouteFriction,
+    clustering_opportunities:clusteringOpportunities.slice(0,20),
+    item_evidence:evidenceRows.sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date))||Number(a.route_order||999)-Number(b.route_order||999)).slice(0,100),
+    comparison_boundary:'Service-duration variance uses recorded planned duration versus recorded production duration. Planned travel allowance is shown beside linked crew travel minutes, but no direct travel variance is inferred because crew-time travel is not the same measure as vehicle elapsed travel.',
+    clustering_boundary:'Clustering is advisory evidence only. It identifies same-day city overlap across existing routes and never rewrites route membership or stop order.',
+    performance_boundary:'Crew and route evidence is operational context only. It does not score, rank or infer individual employee performance.',
+    authority_boundary:'Read-only evidence. Routing and dispatch remain the existing operator authorities; Build 354 does not mutate schedules, routes, workability decisions or source records.'
+  };
+}
+
+
   if (scope === 'owner_management_command') {
     const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
@@ -449,7 +649,8 @@ serve(async (req) => {
     ]);
     const [
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
-      safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead
+      safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
+      routesRead,timekeepingDetailRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -471,14 +672,16 @@ serve(async (req) => {
       canFinanceView ? safeListEvidence(supabase,'v_bank_reconciliation_summary','*','period_end',120,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:120}),
       canFinanceView ? safeListEvidence(supabase,'v_accounting_reconciliation_manual_review_queue','*','review_priority',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canFinanceView ? safeListEvidence(supabase,'v_accounting_close_dashboard','*',undefined,200,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:200}),
-      canJobsView ? safeListEvidence(supabase,'v_weather_workability_queue','*','observed_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500})
+      canJobsView ? safeListEvidence(supabase,'v_weather_workability_queue','*','observed_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canJobsView ? safeListEvidence(supabase,'v_route_planning_directory','*','route_code',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canAdminManage ? safeListEvidence(supabase,'v_timekeeping_payroll_evidence','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500})
     ]);
     const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
       timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,crews=crewsRead.rows,storms=stormsRead.rows,
       stormRoutes=stormRoutesRead.rows,seasonalWork=seasonalWorkRead.rows,safety=safetyRead.rows,equipment=equipmentRead.rows,
       maintenance=maintenanceRead.rows,trainingSummary=trainingSummaryRead.rows,workforceSummary=workforceSummaryRead.rows,
       receivables=receivablesRead.rows,bank=bankRead.rows,financeExceptions=financeExceptionsRead.rows,
-      closeDashboard=closeDashboardRead.rows,workability=workabilityRead.rows;
+      closeDashboard=closeDashboardRead.rows,workability=workabilityRead.rows,routes=routesRead.rows,timekeepingDetail=timekeepingDetailRead.rows;
     const sourceFreshness:Record<string,any> = {};
     const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
       sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
@@ -504,6 +707,8 @@ serve(async (req) => {
     addFresh(financeExceptionsRead,'finance_exceptions','finance','v_accounting_reconciliation_manual_review_queue',canFinanceView,168);
     addFresh(closeDashboardRead,'close_dashboard','finance','v_accounting_close_dashboard',canFinanceView,168);
     addFresh(workabilityRead,'workability','jobs','v_weather_workability_queue',canJobsView,72);
+    addFresh(routesRead,'routes','jobs','v_route_planning_directory',canJobsView,168);
+    addFresh(timekeepingDetailRead,'timekeeping_detail','admin','v_timekeeping_payroll_evidence',canAdminManage,168);
     const metricConfidence = {
       crews_today:buildManagementMetricConfidence(sourceFreshness,['dispatch']),
       completion_today:buildManagementMetricConfidence(sourceFreshness,['dispatch','production']),
@@ -520,10 +725,14 @@ serve(async (req) => {
       equipment_blockers:buildManagementMetricConfidence(sourceFreshness,['equipment','maintenance']),
       workforce_blockers:buildManagementMetricConfidence(sourceFreshness,['training','workforce']),
       finance_readiness:buildManagementMetricConfidence(sourceFreshness,['finance_exceptions','close_dashboard']),
-      capacity_forecast:buildManagementMetricConfidence(sourceFreshness,['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work'])
+      capacity_forecast:buildManagementMetricConfidence(sourceFreshness,['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work']),
+      route_efficiency:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','routes','workability'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
+    });
+    const routeCrewEfficiencyEvidence=buildRouteCrewEfficiencyEvidence({
+      dispatch,production,timekeeping:timekeepingDetail,workability,routes
     });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
@@ -538,6 +747,7 @@ serve(async (req) => {
       source_freshness:sourceFreshness,
       management_metric_confidence:metricConfidence,
       four_season_capacity_forecast:fourSeasonCapacityForecast,
+      route_crew_efficiency_evidence:routeCrewEfficiencyEvidence,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'

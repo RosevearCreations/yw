@@ -185,7 +185,9 @@
     "test:autonomous-exception-triage-next-safe-action": "node scripts/autonomous-exception-triage-next-safe-action-check.mjs",
     "test:browser:autonomous-exception-triage-next-safe-action": "playwright test --config=playwright.config.mjs tests/browser/autonomous-exception-triage-next-safe-action.spec.mjs",
     "test:four-season-capacity-workability-forecast": "node scripts/four-season-capacity-workability-forecast-check.mjs",
-    "test:browser:four-season-capacity-workability-forecast": "playwright test --config=playwright.config.mjs tests/browser/four-season-capacity-workability-forecast.spec.mjs"
+    "test:browser:four-season-capacity-workability-forecast": "playwright test --config=playwright.config.mjs tests/browser/four-season-capacity-workability-forecast.spec.mjs",
+    "test:route-crew-efficiency-evidence": "node scripts/route-crew-efficiency-evidence-check.mjs",
+    "test:browser:route-crew-efficiency-evidence": "playwright test --config=playwright.config.mjs tests/browser/route-crew-efficiency-evidence.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

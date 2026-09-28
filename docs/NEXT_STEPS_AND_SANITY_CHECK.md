@@ -372,7 +372,7 @@ This release adds a permission-aware, read-only command-centre index across cust
 
 Saved views are browser-local preferences scoped to the signed-in profile. They preserve search, domain, season, service context and the selected operational view, but they never become business authority and never mutate jobs, routing, equipment, Safety, Finance, invoicing or source records. Global result navigation deep-links to the existing authoritative module/workspace. Spring/summer, fall, winter and four-season context remain explicit.
 
-Items **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, and **353 — Four-Season Capacity & Workability Forecast** are implemented. The next planned autonomous item is **354 — Route & Crew Efficiency Evidence**.
+Items **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, and **354 — Route & Crew Efficiency Evidence** are implemented. The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.
 
 #### **350 — Owner / Management Command Centre** is implemented
 
@@ -396,7 +396,7 @@ Operations Needs Attention now collapses duplicate candidates by canonical sourc
 
 The score uses the existing source severity as the dominant signal, then bounded overdue age and an explicit unassigned-owner signal. Stable source-key ordering breaks any remaining ties. Suggested actions only navigate to or prepare review in the authoritative source workflow; they do not auto-dispatch, auto-resolve Safety, unlock equipment, change Finance, send customer messages, collect payment or mutate provider state.
 
-The next planned autonomous item is **354 — Route & Crew Efficiency Evidence**.
+The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.
 
 #### **353 — Four-Season Capacity & Workability Forecast** is implemented
 
@@ -404,11 +404,17 @@ The Owner / Management Command Centre now provides seven- and fourteen-day advis
 
 Recorded demand uses only source durations and travel allowances that already exist; the release does not invent jobs-per-crew targets, productivity assumptions or missing durations. Workability is based only on YW-stored evidence and does not add an external weather provider. The forecast remains read-only and cannot dispatch crews, rewrite routes, change workability decisions, unlock equipment, send messages or mutate provider state.
 
-The next planned autonomous item is **354 — Route & Crew Efficiency Evidence**.
+The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.
 
-#### 354 — Route & Crew Efficiency Evidence
+#### **354 — Route & Crew Efficiency Evidence** is implemented
 
-Compare planned versus actual service duration, travel allowance, route order, crew hours, return visits, delay/workability effects and repeated route friction. Surface clustering and capacity opportunities as advisory evidence while preserving the existing routing and dispatch authorities. No automatic route rewrite or employee performance inference.
+The Owner / Management Command Centre now carries a 90-day read-only comparison of dispatch planning and recorded execution. It links planned service duration and travel allowance with production duration, crew hours, return visits, delay/workability effects and the route order implied by recorded production start times. Missing execution evidence remains missing rather than becoming a zero-value fact.
+
+Route-day evidence uses existing configured `daily_capacity_minutes` only when that route has one. Same-day city overlap across existing routes is surfaced as a clustering review candidate, and repeated friction means the same route has one or more recorded friction signals on at least two loaded service dates. These are advisory observations only: this release does not rewrite route membership or stop order, mutate dispatch, invent missing capacity, or score/rank/infer individual employee performance.
+
+Planned travel allowance and linked crew travel minutes are intentionally shown as different measures. Crew-time travel is not treated as vehicle elapsed travel, so the release does not fabricate a direct travel variance.
+
+The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.
 
 #### 355 — Recurring Service Renewal & Retention Workbench
 
@@ -442,7 +448,7 @@ Measure high-cost read paths, repeated fan-out, mobile payload size, offline rep
 
 Review the outcomes and evidence from items 351–361, identify remaining operational friction, reliability gaps, seasonal gaps and economic opportunities, then write the next bounded autonomous roadmap sequence before this item is promoted. The renewed queue must contain at least ten implementable releases, preserve the non-interactive rule above, and avoid reintroducing human/provider acceptance as the next ordinary build.
 
-Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, and **352 — Autonomous Exception Triage & Next-Safe-Action** are implemented by the current release. The next planned autonomous item is **354 — Route & Crew Efficiency Evidence**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
+Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, and **354 — Route & Crew Efficiency Evidence** are implemented by the current release. The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
 
 ### Roadmap selection rules
 
