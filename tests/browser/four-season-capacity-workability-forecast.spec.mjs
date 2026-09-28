@@ -9,7 +9,7 @@ function day(date,state,season,extra={}){
     date,horizon_day:1,readiness_state:state,readiness_reason:state==='blocked'?'1 workability restriction/block signal(s)':'No loaded blocker signal for this date',
     dispatch_count:1,recurring_visit_count:1,total_planned_items:2,recorded_demand_minutes:240,
     active_crew_count:3,scheduled_crew_count:2,unassigned_dispatch_count:0,unresolved_dispatch_conflict_count:0,
-    ready_equipment_count:5,equipment_attention_count:0,workability_blocked_count:state==='blocked'?1:0,workability_review_count:0,
+    required_equipment_count:2,ready_equipment_count:2,equipment_attention_count:0,fleet_ready_equipment_count:5,fleet_equipment_attention_count:1,workability_blocked_count:state==='blocked'?1:0,workability_review_count:0,
     storm_event_count:season==='winter'?1:0,storm_route_count:season==='winter'?1:0,seasonal_due_count:0,
     season_load:{spring_summer:season==='spring_summer'?2:0,fall:season==='fall'?2:0,winter:season==='winter'?2:0,four_season:season==='four_season'?2:0},
     ...extra
