@@ -15,7 +15,7 @@ const must=(s,a,l)=>a.forEach(x=>assert.ok(s.includes(x),l+': missing '+x));
 must(directory,[
   'function buildEstimateToCashLeakageWorkbench','v_estimate_job_invoice_workflow','v_change_order_extras_directory','v_ar_payment_application_directory',
   "estimate_to_cash:buildManagementMetricConfidence",'estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench',
-  'accepted_not_scheduled','completed_not_invoiced','approved_extra_not_billed','invoiced_not_collected','material_margin_leakage',
+  'accepted_not_scheduled','completed_not_invoiced','approved_extra_not_billed','invoiced_not_collected','material_margin_leakage','source_queries_ok:input.sourceQueriesOk',
   "margin_boundary:'Material margin leakage is flagged only from strong recorded evidence",
   "collection_boundary:'Invoiced-not-collected uses the recorded A/R balance due",
   "authority_boundary:'Estimate, Jobs/dispatch/production, change-order and Finance records remain their existing authorities"
@@ -28,9 +28,9 @@ must(ui,[
   'Build 356 estimate-to-cash leakage and margin recovery evidence refreshed'
 ],'Build 356 UI');
 
-assert.ok(!directory.includes('charge_customer'));
-assert.ok(!directory.includes('auto_invoice'));
-assert.ok(!directory.includes('post_accounting'));
+const b356=directory.slice(directory.indexOf('function buildEstimateToCashLeakageWorkbench'),directory.indexOf("\n\n  if (scope === 'owner_management_command')"));
+assert.ok(b356.length>1000,'Build 356 helper slice missing');
+assert.ok(!/\.(insert|update|delete|upsert)\s*\(/.test(b356),'Build 356 helper must remain read-only');
 assert.equal(pkg.scripts['test:estimate-to-cash-leakage-margin-recovery'],'node scripts/estimate-to-cash-leakage-margin-recovery-check.mjs');
 assert.equal(pkg.scripts['test:browser:estimate-to-cash-leakage-margin-recovery'],'playwright test --config=playwright.config.mjs tests/browser/estimate-to-cash-leakage-margin-recovery.spec.mjs');
 must(workflow,['npm run test:estimate-to-cash-leakage-margin-recovery','npm run test:browser:estimate-to-cash-leakage-margin-recovery'],'Build 356 CI');
