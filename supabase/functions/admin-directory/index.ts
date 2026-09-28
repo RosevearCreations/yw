@@ -202,6 +202,11 @@ function buildFourSeasonCapacityForecast(input:{
       return (start&&start<=date)&&(!end||end>=date) && !['completed','cancelled','closed'].includes(String(row?.activation_status||row?.route_status||'').toLowerCase());
     });
     const seasonalDue=(input.seasonalWork||[]).filter((row)=>String(row?.due_date||'').slice(0,10)===date);
+    const activeCrews=crews.filter((row)=>{
+      const start=String(row?.active_from||'').slice(0,10),end=String(row?.active_until||'').slice(0,10);
+      const seasonal=String(row?.seasonal_status||'').toLowerCase();
+      return (!start||start<=date)&&(!end||end>=date)&&!['inactive','unavailable','ended'].includes(seasonal);
+    });
     const scheduledCrewIds=new Set(dispatch.map((row)=>row?.crew_id).filter(Boolean).map(String));
     const unassignedDispatch=dispatch.filter((row)=>!row?.crew_id);
     const dispatchMinutes=dispatch.reduce((sum,row)=>sum+Math.max(0,Number(row?.estimated_duration_minutes||0)||minutesBetween(row?.scheduled_start,row?.scheduled_end))+Math.max(0,Number(row?.travel_allowance_minutes||0)),0);
@@ -223,7 +228,7 @@ function buildFourSeasonCapacityForecast(input:{
       date,horizon_day:offset+1,readiness_state:readiness,readiness_reason:reasons.join(' · '),
       dispatch_count:dispatch.length,recurring_visit_count:visits.length,total_planned_items:dispatch.length+visits.length,
       recorded_demand_minutes:dispatchMinutes+recurringMinutes,
-      active_crew_count:crews.length,scheduled_crew_count:scheduledCrewIds.size,unassigned_dispatch_count:unassignedDispatch.length,
+      active_crew_count:activeCrews.length,scheduled_crew_count:scheduledCrewIds.size,unassigned_dispatch_count:unassignedDispatch.length,
       unresolved_dispatch_conflict_count:conflicts.length,ready_equipment_count:readyEquipment.length,equipment_attention_count:equipmentAttention.length,
       workability_blocked_count:blocked.length,workability_review_count:review.length,storm_event_count:storms.length,storm_route_count:stormRoutes.length,
       seasonal_due_count:seasonalDue.length,season_load:seasons
