@@ -208,6 +208,15 @@ function buildFourSeasonCapacityForecast(input:{
       return (!start||start<=date)&&(!end||end>=date)&&!['inactive','unavailable','ended'].includes(seasonal);
     });
     const scheduledCrewIds=new Set(dispatch.map((row)=>row?.crew_id).filter(Boolean).map(String));
+    const requiredEquipmentIds=new Set<string>();
+    for(const row of dispatch){
+      for(const value of [row?.assigned_truck_equipment_item_id,row?.assigned_trailer_equipment_item_id]) if(value!=null&&String(value)) requiredEquipmentIds.add(String(value));
+      const extra=Array.isArray(row?.assigned_equipment_item_ids) ? row.assigned_equipment_item_ids : [];
+      for(const value of extra) if(value!=null&&String(value)) requiredEquipmentIds.add(String(value));
+    }
+    const requiredEquipment=(input.equipment||[]).filter((row)=>requiredEquipmentIds.has(String(row?.id)));
+    const requiredEquipmentAttention=requiredEquipment.filter((row)=>String(row?.registry_readiness_status||'ready').toLowerCase()!=='ready' || row?.is_locked_out===true);
+    const requiredEquipmentReady=requiredEquipment.filter((row)=>String(row?.registry_readiness_status||'ready').toLowerCase()==='ready' && row?.is_locked_out!==true);
     const unassignedDispatch=dispatch.filter((row)=>!row?.crew_id);
     const dispatchMinutes=dispatch.reduce((sum,row)=>sum+Math.max(0,Number(row?.estimated_duration_minutes||0)||minutesBetween(row?.scheduled_start,row?.scheduled_end))+Math.max(0,Number(row?.travel_allowance_minutes||0)),0);
     const recurringMinutes=visits.reduce((sum,row)=>sum+Math.max(0,Number(row?.visit_estimated_minutes||0))+Math.max(0,Number(row?.default_travel_allowance_minutes||0)),0);
@@ -216,20 +225,20 @@ function buildFourSeasonCapacityForecast(input:{
     const review=workability.filter((row)=>!blocked.includes(row) && (['caution','delayed','review'].includes(String(row?.decision_workability_state||row?.workability_state||'').toLowerCase()) || ['decision_required','notification_review','operator_dispatch_required'].includes(String(row?.workability_queue_status||'').toLowerCase())));
     const seasons={spring_summer:0,fall:0,winter:0,four_season:0};
     for(const row of [...dispatch,...visits,...seasonalDue,...storms,...stormRoutes]) seasons[forecastSeason(row)]++;
-    const readiness=blocked.length?'blocked':conflicts.length||unassignedDispatch.length||equipmentAttention.length?'attention':review.length?'review':'ready';
+    const readiness=blocked.length?'blocked':conflicts.length||unassignedDispatch.length||requiredEquipmentAttention.length?'attention':review.length?'review':'ready';
     const reasons:string[]=[];
     if(blocked.length) reasons.push(`${blocked.length} workability restriction/block signal(s)`);
     if(review.length) reasons.push(`${review.length} workability review signal(s)`);
     if(conflicts.length) reasons.push(`${conflicts.length} unresolved dispatch conflict(s)`);
     if(unassignedDispatch.length) reasons.push(`${unassignedDispatch.length} unassigned dispatch item(s)`);
-    if(equipmentAttention.length) reasons.push(`${equipmentAttention.length} equipment readiness attention item(s)`);
+    if(requiredEquipmentAttention.length) reasons.push(`${requiredEquipmentAttention.length} assigned equipment readiness attention item(s)`);
     if(!reasons.length) reasons.push('No loaded blocker signal for this date');
     days.push({
       date,horizon_day:offset+1,readiness_state:readiness,readiness_reason:reasons.join(' · '),
       dispatch_count:dispatch.length,recurring_visit_count:visits.length,total_planned_items:dispatch.length+visits.length,
       recorded_demand_minutes:dispatchMinutes+recurringMinutes,
       active_crew_count:activeCrews.length,scheduled_crew_count:scheduledCrewIds.size,unassigned_dispatch_count:unassignedDispatch.length,
-      unresolved_dispatch_conflict_count:conflicts.length,ready_equipment_count:readyEquipment.length,equipment_attention_count:equipmentAttention.length,
+      unresolved_dispatch_conflict_count:conflicts.length,required_equipment_count:requiredEquipment.length,ready_equipment_count:requiredEquipmentReady.length,equipment_attention_count:requiredEquipmentAttention.length,fleet_ready_equipment_count:readyEquipment.length,fleet_equipment_attention_count:equipmentAttention.length,
       workability_blocked_count:blocked.length,workability_review_count:review.length,storm_event_count:storms.length,storm_route_count:stormRoutes.length,
       seasonal_due_count:seasonalDue.length,season_load:seasons
     });
