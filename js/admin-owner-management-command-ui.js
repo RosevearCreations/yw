@@ -1,4 +1,4 @@
-/* Builds 350–355 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention */
+/* Builds 350–356 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention + estimate-to-cash */
 'use strict';
 (function(){
   const $=id=>document.getElementById(id);
@@ -17,7 +17,7 @@
     let el=$('ownerCommand350');if(el)return el;
     el=document.createElement('details');el.id='ownerCommand350';el.className='admin-hub-detail';el.dataset.adminHubTitle='Owner / Management Command Centre';el.dataset.adminHubGroups='operations';el.open=true;
     el.innerHTML=[
-      '<summary><span>Owner / Management Command Centre</span><small>Build 350–355 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention</small></summary>',
+      '<summary><span>Owner / Management Command Centre</span><small>Build 350–356 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention + estimate-to-cash</small></summary>',
       '<div class="admin-panel-block" data-build="350">',
       '<div class="section-heading"><div><span class="module-kicker">Build 350 · Management</span><h3>Owner / Management Command Centre</h3><p class="section-subtitle">One read-only view of today, production, profitability, workforce, seasonal execution, Safety, equipment and Finance readiness.</p></div><button id="owner350Refresh" class="secondary" type="button">Refresh</button></div>',
       '<div class="notice"><strong>Authority boundary:</strong> this cockpit summarizes existing source workflows only. It cannot dispatch crews, alter routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close accounting periods.</div>',
@@ -27,6 +27,7 @@
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
       '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
       '<section class="admin-panel-block owner355-retention" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring service renewal &amp; retention workbench</h4><p class="section-subtitle">Build 355 · renewal windows, holds, repeated skips/delays, unresolved service issues, seasonal rollover and price-review evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only:</strong> this workbench prepares context. It does not renew an agreement, change pricing, send a customer message or create a customer commitment.</div><div id="owner355Retention"></div></section>',
+      '<section class="admin-panel-block owner356-cash" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate-to-cash leakage &amp; margin recovery</h4><p class="section-subtitle">Build 356 · accepted estimate → scheduling → production → approved extras → invoice readiness → invoicing → payment application → collection.</p></div><button class="secondary" data-owner350-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Analytical only:</strong> this workbench does not create invoices, post accounting, apply payments, send collection messages or charge customers.</div><div id="owner356EstimateCash"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -164,6 +165,43 @@
         '<details style="margin-top:10px;" open><summary>Renewal &amp; retention attention queue</summary><div class="owner350-list">'+(queue||'<p class="muted">No recurring agreement is in the loaded renewal/retention attention queue.</p>')+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Decision boundaries</summary><p class="muted">'+esc(w.margin_boundary||'')+'</p><p class="muted">'+esc(w.retention_boundary||'')+'</p><p class="muted">'+esc(w.communication_boundary||'')+'</p><p class="muted">'+esc(w.pricing_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
+
+    function renderEstimateToCash(){
+      const host=$('owner356EstimateCash');if(!host)return;
+      const w=state.data?.estimate_to_cash_leakage_workbench;
+      const meta=metricMeta('estimate_to_cash');
+      if(!allowed('jobs')||!allowed('finance')){host.innerHTML='<p class="muted">Estimate-to-cash evidence requires both Jobs and Finance visibility for this profile.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Estimate-to-cash evidence is unavailable from this response.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required estimate-to-cash evidence is unavailable.')+'</p>';return}
+      const s=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Accepted lifecycles',num(s.accepted_estimate_lifecycles),'accepted estimate chains loaded','estimate_to_cash'),
+        card('Accepted not scheduled',num(s.accepted_not_scheduled),'no active dispatch evidence','estimate_to_cash'),
+        card('Completed not invoiced',num(s.completed_not_invoiced),'completion/accounting-ready without A/R invoice','estimate_to_cash'),
+        card('Approved extras not billed',num(s.approved_extra_not_billed),'authorized/applied scope without linked invoice evidence','estimate_to_cash'),
+        card('Invoiced not collected',num(s.invoiced_not_collected),'A/R balance remains due','estimate_to_cash'),
+        card('Margin leakage',num(s.material_margin_leakage),'loss or simultaneous adverse revenue/cost variance','estimate_to_cash')
+      ].join('')+'</div>';
+      const queue=(w.attention_queue||[]).slice(0,20).map(r=>{
+        const amount=r.amount==null?'':' · '+money(r.amount);
+        const label=String(r.signal_type||'review').replaceAll('_',' ');
+        return '<div class="owner350-row"><strong>'+esc(label.toUpperCase()+' · '+(r.source_reference||'Source record'))+'</strong><small>'+esc((r.client_name||'Client unavailable')+(r.site_name?' · '+r.site_name:'')+amount)+'</small><small>'+esc(r.detail||'')+'</small><small>'+esc(r.suggested_next_action||'Review source evidence')+'</small><button class="secondary" style="margin-top:6px;" data-owner350-open="'+esc(r.navigation_target||r.source_module||'finance')+'">Open '+esc((r.navigation_target||r.source_module||'finance')==='jobs'?'Jobs':'Finance')+'</button></div>';
+      }).join('');
+      const lifecycle=(w.lifecycles||[]).slice(0,16).map(r=>{
+        const flags=[
+          r.accepted_not_scheduled?'accepted not scheduled':'',
+          r.completed_not_invoiced?'completed not invoiced':'',
+          r.approved_extra_not_billed_count?num(r.approved_extra_not_billed_count)+' extra(s) not billed':'',
+          r.invoiced_not_collected?'invoice balance '+money(r.invoice_balance_due):'',
+          r.material_margin_leakage?'margin leakage':''
+        ].filter(Boolean).join(' · ');
+        return '<div class="owner350-row"><strong>'+esc((r.estimate_number||'Estimate')+' → '+(r.work_order_number||'No work order')+' → '+(r.invoice_number||'No invoice'))+'</strong><small>'+esc((r.client_name||'Client unavailable')+' · '+(r.site_name||'Site unavailable'))+'</small><small>'+esc(flags||'No leakage signal in loaded evidence')+'</small></div>';
+      }).join('');
+      host.innerHTML=summary+
+        '<details style="margin-top:10px;" open><summary>Leakage &amp; recovery queue</summary><div class="owner350-list">'+(queue||'<p class="muted">No estimate-to-cash leakage signal is visible in the loaded evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Accepted estimate lifecycle traces</summary><div class="owner350-list">'+(lifecycle||'<p class="muted">No accepted estimate lifecycle is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Evidence boundaries</summary><p class="muted">'+esc(w.margin_boundary||'')+'</p><p class="muted">'+esc(w.scheduling_boundary||'')+'</p><p class="muted">'+esc(w.billing_boundary||'')+'</p><p class="muted">'+esc(w.collection_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -213,6 +251,7 @@
       renderCapacityForecast();
       renderRouteCrewEfficiency();
       renderRecurringRetention();
+      renderEstimateToCash();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
@@ -265,8 +304,8 @@
       window.YWIRouter?.showSection?.('admin');setTimeout(()=>window.YWIAdminHub?.open?.(target==='safety'?'safety':'operations'),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 355 recurring renewal and retention evidence refreshed. Source records were not changed.')}
-      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null};render();note('Unable to load Build 355 recurring renewal and retention evidence: '+(e?.message||e),true)}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 356 estimate-to-cash leakage and margin recovery evidence refreshed. Source records were not changed.')}
+      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null};render();note('Unable to load Build 356 estimate-to-cash leakage and margin recovery evidence: '+(e?.message||e),true)}
     }
     el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open]');if(b)openSource(b.getAttribute('data-owner350-open'))});
     $('owner350Refresh').onclick=load;load();
