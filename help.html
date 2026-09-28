@@ -108,6 +108,15 @@
           <p><strong>No new weather provider and no automatic mutation:</strong> workability comes only from YW's stored observations/rules and seasonal evidence. The forecast does not query an external weather provider, dispatch crews, rewrite routes, change workability decisions, unlock equipment, send messages or mutate provider state.</p>
         </section>
 
+        <section class="help-section" id="route-crew-efficiency-evidence">
+          <h2>Build 354 — Route &amp; Crew Efficiency Evidence</h2>
+          <p>Build 354 adds a <strong>90-day read-only route and crew evidence view</strong> to the Owner / Management Command Centre. It compares recorded route planning with recorded production, timekeeping and workability evidence without creating a new scheduling or workforce authority.</p>
+          <p><strong>Planned versus recorded service evidence:</strong> the view compares each dispatch item's recorded planned service duration with linked production duration when available, and shows route order against the sequence supported by recorded production start times. Missing actual evidence stays missing rather than becoming zero.</p>
+          <p><strong>Travel evidence is not over-interpreted:</strong> planned travel allowance is shown beside linked crew travel minutes when timekeeping evidence exists. Crew-time travel is not treated as vehicle elapsed travel, so Build 354 does not fabricate a direct travel variance.</p>
+          <p><strong>Clustering and capacity are advisory:</strong> same-day city overlap across existing routes and configured route-capacity headroom are surfaced for review. The system does not move stops, rewrite route order, change dispatch or assume missing capacity.</p>
+          <p><strong>No employee performance inference:</strong> route and crew evidence may show recorded crew hours, delays, return visits, workability effects and repeated route friction, but it does not score, rank or infer individual employee performance.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">
