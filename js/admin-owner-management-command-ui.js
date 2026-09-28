@@ -17,7 +17,7 @@
     let el=$('ownerCommand350');if(el)return el;
     el=document.createElement('details');el.id='ownerCommand350';el.className='admin-hub-detail';el.dataset.adminHubTitle='Owner / Management Command Centre';el.dataset.adminHubGroups='operations';el.open=true;
     el.innerHTML=[
-      '<summary><span>Owner / Management Command Centre</span><small>Build 350–353 · four-season cockpit + evidence confidence + capacity forecast</small></summary>',
+      '<summary><span>Owner / Management Command Centre</span><small>Build 350–354 · four-season cockpit + evidence confidence + capacity + route/crew efficiency</small></summary>',
       '<div class="admin-panel-block" data-build="350">',
       '<div class="section-heading"><div><span class="module-kicker">Build 350 · Management</span><h3>Owner / Management Command Centre</h3><p class="section-subtitle">One read-only view of today, production, profitability, workforce, seasonal execution, Safety, equipment and Finance readiness.</p></div><button id="owner350Refresh" class="secondary" type="button">Refresh</button></div>',
       '<div class="notice"><strong>Authority boundary:</strong> this cockpit summarizes existing source workflows only. It cannot dispatch crews, alter routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close accounting periods.</div>',
@@ -25,6 +25,7 @@
       '<div id="owner350Status" class="notice" style="margin-top:10px;"></div>',
       '<section class="admin-panel-block owner351-evidence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management metric freshness &amp; confidence</h4><p class="section-subtitle">Build 351 · authoritative source age, coverage, visibility and confidence. Missing evidence is never converted into a zero-valued business fact.</p></div></div><div id="owner351Freshness"></div></section>',
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
+      '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -95,6 +96,41 @@
       const days='<div class="owner353-days">'+f.days.map(d=>'<div class="owner353-day" data-owner353-state="'+esc(d.readiness_state||'unknown')+'"><strong>'+esc(d.date)+' · '+esc(String(d.readiness_state||'unknown').toUpperCase())+'</strong><small>'+esc(num(d.total_planned_items)+' planned · '+minToHours(d.recorded_demand_minutes)+' recorded · '+num(d.scheduled_crew_count)+' / '+num(d.active_crew_count)+' active crews scheduled')+'</small><small>'+esc(num(d.ready_equipment_count)+' / '+num(d.required_equipment_count)+' assigned equipment ready · '+num(d.equipment_attention_count)+' assigned equipment attention · fleet '+num(d.fleet_ready_equipment_count)+' ready · '+num(d.workability_blocked_count)+' blocked / '+num(d.workability_review_count)+' workability review')+'</small><small>'+esc(d.readiness_reason||'No readiness explanation supplied.')+'</small><div class="owner353-season">'+esc(seasonLabel(d.season_load))+'</div></div>').join('')+'</div>';
       host.innerHTML=summary+'<p class="muted">'+esc(f.capacity_method||'')+'</p>'+days+'<details style="margin-top:8px;"><summary>Forecast authority &amp; weather boundary</summary><p class="muted">'+esc(f.weather_boundary||'')+'</p><p class="muted">'+esc(f.authority_boundary||'')+'</p></details>';
     }
+
+    function renderRouteCrewEfficiency(){
+      const host=$('owner354Efficiency');if(!host)return;
+      const e=state.data?.route_crew_efficiency_evidence;
+      const meta=metricMeta('route_efficiency');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Jobs/operations evidence is unavailable to this profile.</p>';return}
+      if(!e||!e.summary){host.innerHTML='<p class="muted">Route and crew efficiency evidence is unavailable from this response.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){
+        host.innerHTML='<p class="muted">'+esc(meta.reason||'Required route-efficiency source evidence is unavailable.')+'</p>';return
+      }
+      const s=e.summary||{};
+      const minToHours=v=>(num(v)/60).toFixed(1)+' h';
+      const summary='<div class="owner351-summary">'+[
+        card('Actual service coverage',num(s.items_with_actual_service_evidence),num(s.planned_items)+' planned item(s)','route_efficiency'),
+        card('Duration overruns',num(s.service_duration_overrun_items),'recorded actual > recorded plan','route_efficiency'),
+        card('Route-order differences',num(s.route_order_deviation_items),'planned order vs recorded start sequence','route_efficiency'),
+        card('Return visits',num(s.return_visit_items),minToHours(s.recorded_delay_minutes)+' recorded delay','route_efficiency'),
+        card('Repeated route friction',num(s.repeated_route_friction_count),'2+ service dates with evidence signals','route_efficiency'),
+        card('Cluster candidates',num(s.clustering_opportunity_count),'same-day city overlap across routes','route_efficiency'),
+        card('Capacity-headroom days',num(s.route_days_with_configured_capacity_headroom),'uses configured route capacity only','route_efficiency'),
+        card('Crew travel evidence',num(s.recorded_crew_travel_coverage_items),'linked timekeeping coverage','route_efficiency')
+      ].join('')+'</div>';
+      const routeDays=(e.route_days||[]).slice(0,12).map(r=>{
+        const actual=r.actual_service_minutes==null?'actual service n/a':num(r.actual_service_minutes)+' actual service min';
+        const cap=r.configured_daily_capacity_minutes==null?'configured capacity n/a':num(r.configured_capacity_headroom_minutes)+' min configured headroom';
+        return '<div class="owner350-row"><strong>'+esc((r.route_name||'Unnamed route')+' · '+(r.service_date||''))+'</strong><small>'+esc(num(r.planned_item_count)+' item(s) · '+num(r.planned_service_minutes)+' planned service min · '+num(r.planned_travel_allowance_minutes)+' planned travel min · '+actual)+'</small><small>'+esc(num(r.actual_crew_hours).toFixed(2)+' crew h · '+num(r.delay_minutes)+' delay min · '+num(r.return_visit_count)+' return visit(s) · '+num(r.route_order_deviation_count)+' order difference(s) · '+cap)+'</small></div>';
+      }).join('');
+      const friction=(e.repeated_route_friction||[]).slice(0,8).map(r=>'<div class="owner350-row"><strong>'+esc(r.route_name||'Unnamed route')+'</strong><small>'+esc(num(r.friction_service_date_count)+' service date(s) with friction evidence · '+num(r.delay_minutes)+' delay min · '+num(r.return_visit_count)+' return visit(s) · '+num(r.route_order_deviation_count)+' order difference(s) · '+num(r.workability_effect_count)+' workability effect(s)')+'</small></div>').join('');
+      const clusters=(e.clustering_opportunities||[]).slice(0,8).map(r=>'<div class="owner350-row"><strong>'+esc((r.service_date||'')+' · '+(r.city||'City unavailable'))+'</strong><small>'+esc(num(r.planned_item_count)+' planned item(s) across '+num(r.route_count)+' route(s) · '+(r.route_names||[]).join(', '))+'</small><small>'+esc(r.advisory_reason||'')+'</small></div>').join('');
+      host.innerHTML=summary+
+        '<details style="margin-top:10px;" open><summary>Recent route-day evidence</summary><div class="owner350-list">'+(routeDays||'<p class="muted">No route-day evidence is loaded in the 90-day window.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Repeated route friction</summary><div class="owner350-list">'+(friction||'<p class="muted">No route has friction evidence on two or more loaded service dates.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Clustering opportunities</summary><div class="owner350-list">'+(clusters||'<p class="muted">No same-day city overlap across routes is visible in the loaded evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Evidence boundaries</summary><p class="muted">'+esc(e.comparison_boundary||'')+'</p><p class="muted">'+esc(e.clustering_boundary||'')+'</p><p class="muted">'+esc(e.performance_boundary||'')+'</p><p class="muted">'+esc(e.authority_boundary||'')+'</p></details>';
+    }
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -142,6 +178,7 @@
       const m=metrics();
       renderFreshness();
       renderCapacityForecast();
+      renderRouteCrewEfficiency();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
@@ -194,8 +231,8 @@
       window.YWIRouter?.showSection?.('admin');setTimeout(()=>window.YWIAdminHub?.open?.(target==='safety'?'safety':'operations'),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 353 four-season capacity/workability forecast refreshed. Source records were not changed.')}
-      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null};render();note('Unable to load Build 353 capacity/workability forecast evidence: '+(e?.message||e),true)}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 354 route and crew efficiency evidence refreshed. Source records were not changed.')}
+      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null};render();note('Unable to load Build 354 route and crew efficiency evidence: '+(e?.message||e),true)}
     }
     el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open]');if(b)openSource(b.getAttribute('data-owner350-open'))});
     $('owner350Refresh').onclick=load;load();
