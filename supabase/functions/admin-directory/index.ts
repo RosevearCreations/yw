@@ -640,6 +640,121 @@ function buildRouteCrewEfficiencyEvidence(input:{
 }
 
 
+function buildRecurringRenewalRetentionWorkbench(input:{
+  programs:any[];events:any[];renewals:any[];interactions:any[];profitability:any[];rollovers:any[];financeVisible:boolean;
+}) {
+  const today=ontarioDateKey(new Date())!;
+  const eventCutoff=addCalendarDays(today,-180);
+  const renewalByAgreement=new Map((input.renewals||[]).map((r)=>[String(r?.agreement_id||r?.id||''),r]));
+  const profitByAgreement=new Map((input.profitability||[]).map((r)=>[String(r?.id||r?.agreement_id||''),r]));
+  const eventMap=new Map<string,any[]>();
+  for(const row of input.events||[]){
+    const id=String(row?.agreement_id||''); if(!id) continue;
+    const date=String(row?.original_service_date||row?.effective_service_date||row?.created_at||'').slice(0,10);
+    if(date&&date<eventCutoff) continue;
+    const list=eventMap.get(id)||[]; list.push(row); eventMap.set(id,list);
+  }
+  const interactionMap=new Map<string,any[]>();
+  for(const row of input.interactions||[]){
+    const id=String(row?.recurring_service_agreement_id||''); if(!id) continue;
+    const list=interactionMap.get(id)||[]; list.push(row); interactionMap.set(id,list);
+  }
+  const rolloverMap=new Map<string,any[]>();
+  for(const row of input.rollovers||[]){
+    const id=String(row?.recurring_service_agreement_id||''); if(!id) continue;
+    const list=rolloverMap.get(id)||[]; list.push(row); rolloverMap.set(id,list);
+  }
+  const rows=(input.programs||[]).map((p)=>{
+    const id=String(p?.id||p?.agreement_id||'');
+    const renewal=renewalByAgreement.get(id)||{};
+    const events=eventMap.get(id)||[];
+    const interactions=interactionMap.get(id)||[];
+    const rollovers=rolloverMap.get(id)||[];
+    const skipCount=events.filter((e)=>['skip','cancel_visit'].includes(String(e?.event_type||'').toLowerCase())).length;
+    const delayCount=events.filter((e)=>String(e?.event_type||'').toLowerCase()==='weather_delay').length;
+    const repeatedServiceFriction=(skipCount+delayCount)>=2;
+    const openIssues=interactions.filter((i)=>{
+      const status=String(i?.interaction_status||'').toLowerCase();
+      const complaint=String(i?.complaint_status||'').toLowerCase();
+      const type=String(i?.interaction_type||'').toLowerCase();
+      return ['open','investigating'].includes(complaint) || (['complaint','service_review'].includes(type) && status==='open');
+    });
+    const agreementStatus=String(p?.agreement_status||'').toLowerCase();
+    const holdUntil=String(p?.customer_hold_until||'').slice(0,10);
+    const onHold=agreementStatus==='paused' || (!!p?.customer_hold_reason && (!holdUntil||holdUntil>=today));
+    const endDate=String(p?.end_date||'').slice(0,10);
+    let renewalStatus=String(renewal?.renewal_status||'');
+    if(!renewalStatus){
+      if(p?.open_end_date||!endDate) renewalStatus='open_ended';
+      else if(endDate<today) renewalStatus='overdue';
+      else if(endDate<=addCalendarDays(today,30)) renewalStatus='due_30_days';
+      else if(endDate<=addCalendarDays(today,90)) renewalStatus='due_90_days';
+      else renewalStatus='future';
+    }
+    const rolloverOpen=rollovers.filter((r)=>['review','hold','renewal_contact_needed'].includes(String(r?.rollover_state||'').toLowerCase()));
+    const profit=input.financeVisible ? profitByAgreement.get(id)||null : null;
+    const actualProfit=profit==null?null:Number(profit?.actual_profit_rollup_total);
+    const actualMargin=profit==null?null:Number(profit?.actual_margin_percent);
+    const plannedCost=Number(p?.visit_cost_total);
+    const plannedCharge=Number(p?.visit_charge_total);
+    const lossMaking=profit!=null && Number.isFinite(actualProfit) && actualProfit<0;
+    const nonPositivePlannedContribution=Number.isFinite(plannedCost)&&Number.isFinite(plannedCharge)&&plannedCharge>0&&plannedCharge<=plannedCost;
+    const reasons:string[]=[];
+    if(['overdue','due_30_days','due_90_days'].includes(renewalStatus)) reasons.push('renewal window '+renewalStatus.replaceAll('_',' '));
+    if(onHold) reasons.push('customer/service hold');
+    if(repeatedServiceFriction) reasons.push(skipCount+' skip/cancel + '+delayCount+' delay event(s) in 180d');
+    if(openIssues.length) reasons.push(openIssues.length+' unresolved CRM service/complaint issue(s)');
+    if(rolloverOpen.length) reasons.push(rolloverOpen.length+' seasonal rollover review item(s)');
+    if(lossMaking) reasons.push('recorded agreement profit is negative');
+    if(nonPositivePlannedContribution) reasons.push('planned visit charge does not exceed planned visit cost');
+    const renewalCandidate=['overdue','due_30_days','due_90_days'].includes(renewalStatus)||rolloverOpen.some((r)=>String(r?.rollover_state||'').toLowerCase()==='renewal_contact_needed');
+    const retentionAttention=onHold||repeatedServiceFriction||openIssues.length>0||rolloverOpen.some((r)=>['review','hold'].includes(String(r?.rollover_state||'').toLowerCase()));
+    const priceReviewCandidate=lossMaking||nonPositivePlannedContribution;
+    const attention=renewalCandidate||retentionAttention||priceReviewCandidate;
+    return {
+      agreement_id:p?.id||p?.agreement_id||null,agreement_code:p?.agreement_code||null,
+      client_name:p?.client_name||null,site_name:p?.site_name||p?.client_site_name||null,site_city:p?.site_city||null,
+      service_name:p?.service_name||null,service_program_type:p?.service_program_type||null,
+      season_context:forecastSeason(p),agreement_status:p?.agreement_status||null,start_date:p?.start_date||null,end_date:p?.end_date||null,
+      open_end_date:p?.open_end_date===true,renewal_status:renewalStatus,next_service_date:p?.next_service_date||null,
+      customer_hold_until:p?.customer_hold_until||null,customer_hold_reason:p?.customer_hold_reason||p?.pause_reason||null,
+      skip_cancel_180d:skipCount,weather_delay_180d:delayCount,repeated_service_friction:repeatedServiceFriction,
+      unresolved_service_issue_count:openIssues.length,seasonal_rollover_review_count:rolloverOpen.length,
+      actual_profit_total:profit==null?null:(Number.isFinite(actualProfit)?actualProfit:null),
+      actual_margin_percent:profit==null?null:(Number.isFinite(actualMargin)?actualMargin:null),
+      finance_evidence_state:input.financeVisible?(profit?'available':'not_recorded'):'not_visible',
+      renewal_candidate:renewalCandidate,retention_attention:retentionAttention,price_review_candidate:priceReviewCandidate,
+      attention_required:attention,attention_reasons:reasons,
+      suggested_next_action:renewalCandidate?'Review renewal context':priceReviewCandidate?'Review pricing and cost evidence':retentionAttention?'Review customer/service history':'No renewal or retention action indicated by loaded evidence',
+      action_boundary:'review_only'
+    };
+  });
+  const attention=rows.filter((r)=>r.attention_required).sort((a,b)=>{
+    const score=(r:any)=>(r.renewal_status==='overdue'?50:r.renewal_status==='due_30_days'?40:r.renewal_status==='due_90_days'?30:0)+(r.unresolved_service_issue_count>0?20:0)+(r.repeated_service_friction?15:0)+(r.retention_attention?10:0)+(r.price_review_candidate?5:0);
+    return score(b)-score(a)||String(a.client_name||a.agreement_code||'').localeCompare(String(b.client_name||b.agreement_code||''));
+  });
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',event_lookback_days:180,
+    summary:{
+      loaded_agreements:rows.length,attention_agreements:attention.length,
+      renewal_candidates:rows.filter((r)=>r.renewal_candidate).length,
+      retention_attention:rows.filter((r)=>r.retention_attention).length,
+      repeated_service_friction:rows.filter((r)=>r.repeated_service_friction).length,
+      unresolved_service_issues:rows.reduce((sum,r)=>sum+Number(r.unresolved_service_issue_count||0),0),
+      customer_holds:rows.filter((r)=>r.customer_hold_reason||String(r.agreement_status||'').toLowerCase()==='paused').length,
+      price_review_candidates:rows.filter((r)=>r.price_review_candidate).length,
+      finance_evidence_visible:input.financeVisible
+    },
+    attention_queue:attention.slice(0,100),agreements:rows.slice(0,250),
+    margin_boundary:'Price-review candidates use only negative recorded agreement profit or a planned visit charge that does not exceed the recorded planned visit cost. No target margin or automatic price change is invented.',
+    retention_boundary:'Repeated service friction means two or more recorded skip/cancel/weather-delay events in the loaded 180-day history; unresolved issues come from open CRM complaint/service-review evidence linked to the agreement.',
+    communication_boundary:'Renewal/contact suggestions are preparation context only. No customer message is sent and no renewal is accepted automatically.',
+    pricing_boundary:'Pricing review is advisory only. No agreement price, estimate, invoice or customer commitment is changed.',
+    authority_boundary:'Recurring agreements, CRM interactions, seasonal rollover and Finance profitability remain their existing authorities; this workbench is read-only decision support.'
+  };
+}
+
+
   if (scope === 'owner_management_command') {
     const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
@@ -650,7 +765,7 @@ function buildRouteCrewEfficiencyEvidence(input:{
     const [
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
-      routesRead,timekeepingDetailRead
+      routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -674,14 +789,21 @@ function buildRouteCrewEfficiencyEvidence(input:{
       canFinanceView ? safeListEvidence(supabase,'v_accounting_close_dashboard','*',undefined,200,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:200}),
       canJobsView ? safeListEvidence(supabase,'v_weather_workability_queue','*','observed_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_route_planning_directory','*','route_code',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
-      canAdminManage ? safeListEvidence(supabase,'v_timekeeping_payroll_evidence','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500})
+      canAdminManage ? safeListEvidence(supabase,'v_timekeeping_payroll_evidence','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      canJobsView ? safeListEvidence(supabase,'recurring_service_visit_events','*','created_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      canJobsView ? safeListEvidence(supabase,'v_crm_renewal_queue','*','end_date',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
+      canJobsView ? safeListEvidence(supabase,'v_crm_interaction_timeline','*','occurred_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
+      canFinanceView ? safeListEvidence(supabase,'v_service_agreement_profitability_summary','*','agreement_code',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
+      canJobsView ? safeListEvidence(supabase,'v_seasonal_operations_rollover_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750})
     ]);
     const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
       timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,crews=crewsRead.rows,storms=stormsRead.rows,
       stormRoutes=stormRoutesRead.rows,seasonalWork=seasonalWorkRead.rows,safety=safetyRead.rows,equipment=equipmentRead.rows,
       maintenance=maintenanceRead.rows,trainingSummary=trainingSummaryRead.rows,workforceSummary=workforceSummaryRead.rows,
       receivables=receivablesRead.rows,bank=bankRead.rows,financeExceptions=financeExceptionsRead.rows,
-      closeDashboard=closeDashboardRead.rows,workability=workabilityRead.rows,routes=routesRead.rows,timekeepingDetail=timekeepingDetailRead.rows;
+      closeDashboard=closeDashboardRead.rows,workability=workabilityRead.rows,routes=routesRead.rows,timekeepingDetail=timekeepingDetailRead.rows,
+      recurringEvents=recurringEventsRead.rows,crmRenewals=crmRenewalsRead.rows,crmInteractions=crmInteractionsRead.rows,
+      agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows;
     const sourceFreshness:Record<string,any> = {};
     const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
       sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
@@ -709,6 +831,11 @@ function buildRouteCrewEfficiencyEvidence(input:{
     addFresh(workabilityRead,'workability','jobs','v_weather_workability_queue',canJobsView,72);
     addFresh(routesRead,'routes','jobs','v_route_planning_directory',canJobsView,168);
     addFresh(timekeepingDetailRead,'timekeeping_detail','admin','v_timekeeping_payroll_evidence',canAdminManage,168);
+    addFresh(recurringEventsRead,'recurring_events','jobs','recurring_service_visit_events',canJobsView,168);
+    addFresh(crmRenewalsRead,'crm_renewals','jobs','v_crm_renewal_queue',canJobsView,168);
+    addFresh(crmInteractionsRead,'crm_interactions','jobs','v_crm_interaction_timeline',canJobsView,168);
+    addFresh(agreementProfitabilityRead,'agreement_profitability','finance','v_service_agreement_profitability_summary',canFinanceView,168);
+    addFresh(seasonalRolloverRead,'seasonal_rollover','jobs','v_seasonal_operations_rollover_directory',canJobsView,168);
     const metricConfidence = {
       crews_today:buildManagementMetricConfidence(sourceFreshness,['dispatch']),
       completion_today:buildManagementMetricConfidence(sourceFreshness,['dispatch','production']),
@@ -726,13 +853,18 @@ function buildRouteCrewEfficiencyEvidence(input:{
       workforce_blockers:buildManagementMetricConfidence(sourceFreshness,['training','workforce']),
       finance_readiness:buildManagementMetricConfidence(sourceFreshness,['finance_exceptions','close_dashboard']),
       capacity_forecast:buildManagementMetricConfidence(sourceFreshness,['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work']),
-      route_efficiency:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','routes','workability'])
+      route_efficiency:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','routes','workability']),
+      recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
     });
     const routeCrewEfficiencyEvidence=buildRouteCrewEfficiencyEvidence({
       dispatch,production,timekeeping:timekeepingDetail,workability,routes
+    });
+    const recurringRenewalRetentionWorkbench=buildRecurringRenewalRetentionWorkbench({
+      programs:recurring,events:recurringEvents,renewals:crmRenewals,interactions:crmInteractions,
+      profitability:agreementProfitability,rollovers:seasonalRollover,financeVisible:canFinanceView
     });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
@@ -748,6 +880,7 @@ function buildRouteCrewEfficiencyEvidence(input:{
       management_metric_confidence:metricConfidence,
       four_season_capacity_forecast:fourSeasonCapacityForecast,
       route_crew_efficiency_evidence:routeCrewEfficiencyEvidence,
+      recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'

@@ -1,4 +1,4 @@
-/* Builds 350–353 — Owner / Management Command Centre + evidence confidence + four-season capacity forecast */
+/* Builds 350–355 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention */
 'use strict';
 (function(){
   const $=id=>document.getElementById(id);
@@ -17,7 +17,7 @@
     let el=$('ownerCommand350');if(el)return el;
     el=document.createElement('details');el.id='ownerCommand350';el.className='admin-hub-detail';el.dataset.adminHubTitle='Owner / Management Command Centre';el.dataset.adminHubGroups='operations';el.open=true;
     el.innerHTML=[
-      '<summary><span>Owner / Management Command Centre</span><small>Build 350–354 · four-season cockpit + evidence confidence + capacity + route/crew efficiency</small></summary>',
+      '<summary><span>Owner / Management Command Centre</span><small>Build 350–355 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention</small></summary>',
       '<div class="admin-panel-block" data-build="350">',
       '<div class="section-heading"><div><span class="module-kicker">Build 350 · Management</span><h3>Owner / Management Command Centre</h3><p class="section-subtitle">One read-only view of today, production, profitability, workforce, seasonal execution, Safety, equipment and Finance readiness.</p></div><button id="owner350Refresh" class="secondary" type="button">Refresh</button></div>',
       '<div class="notice"><strong>Authority boundary:</strong> this cockpit summarizes existing source workflows only. It cannot dispatch crews, alter routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close accounting periods.</div>',
@@ -26,6 +26,7 @@
       '<section class="admin-panel-block owner351-evidence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management metric freshness &amp; confidence</h4><p class="section-subtitle">Build 351 · authoritative source age, coverage, visibility and confidence. Missing evidence is never converted into a zero-valued business fact.</p></div></div><div id="owner351Freshness"></div></section>',
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
       '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
+      '<section class="admin-panel-block owner355-retention" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring service renewal &amp; retention workbench</h4><p class="section-subtitle">Build 355 · renewal windows, holds, repeated skips/delays, unresolved service issues, seasonal rollover and price-review evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only:</strong> this workbench prepares context. It does not renew an agreement, change pricing, send a customer message or create a customer commitment.</div><div id="owner355Retention"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -131,6 +132,38 @@
         '<details style="margin-top:8px;"><summary>Clustering opportunities</summary><div class="owner350-list">'+(clusters||'<p class="muted">No same-day city overlap across routes is visible in the loaded evidence.</p>')+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Evidence boundaries</summary><p class="muted">'+esc(e.comparison_boundary||'')+'</p><p class="muted">'+esc(e.clustering_boundary||'')+'</p><p class="muted">'+esc(e.performance_boundary||'')+'</p><p class="muted">'+esc(e.authority_boundary||'')+'</p></details>';
     }
+
+    function renderRecurringRetention(){
+      const host=$('owner355Retention');if(!host)return;
+      const w=state.data?.recurring_renewal_retention_workbench;
+      const meta=metricMeta('recurring_retention');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Recurring-service evidence is unavailable to this profile.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Recurring renewal and retention evidence is unavailable from this response.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){
+        host.innerHTML='<p class="muted">'+esc(meta.reason||'Required recurring-service evidence is unavailable.')+'</p>';return
+      }
+      const s=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Renewal candidates',num(s.renewal_candidates),num(s.loaded_agreements)+' loaded agreement(s)','recurring_retention'),
+        card('Retention attention',num(s.retention_attention),'holds / friction / unresolved issues','recurring_retention'),
+        card('Repeated service friction',num(s.repeated_service_friction),'2+ skip/cancel/delay events in 180d','recurring_retention'),
+        card('Unresolved service issues',num(s.unresolved_service_issues),'open CRM complaint/service-review evidence','recurring_retention'),
+        card('Customer holds',num(s.customer_holds),'paused or active hold evidence','recurring_retention'),
+        card('Price-review candidates',s.finance_evidence_visible?num(s.price_review_candidates):'Unavailable',s.finance_evidence_visible?'loss/non-positive contribution evidence':'Finance evidence not visible','recurring_retention')
+      ].join('')+'</div>';
+      const queue=(w.attention_queue||[]).slice(0,16).map(r=>{
+        const finance=r.finance_evidence_state==='available'&&r.actual_margin_percent!=null?' · actual margin '+Number(r.actual_margin_percent).toFixed(1)+'%':'';
+        const flags=[
+          r.renewal_candidate?'renewal':'',
+          r.retention_attention?'retention':'',
+          r.price_review_candidate?'price review':''
+        ].filter(Boolean).join(' · ');
+        return '<div class="owner350-row"><strong>'+esc((r.client_name||r.agreement_code||'Recurring agreement')+' · '+(r.service_name||'Service'))+'</strong><small>'+esc((r.renewal_status||'renewal status n/a')+' · '+(r.site_name||r.site_city||'site n/a')+' · '+(flags||'review'))+'</small><small>'+esc((r.attention_reasons||[]).join(' · ')+finance)+'</small><small>'+esc(r.suggested_next_action||'Review source evidence')+'</small></div>';
+      }).join('');
+      host.innerHTML=summary+
+        '<details style="margin-top:10px;" open><summary>Renewal &amp; retention attention queue</summary><div class="owner350-list">'+(queue||'<p class="muted">No recurring agreement is in the loaded renewal/retention attention queue.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Decision boundaries</summary><p class="muted">'+esc(w.margin_boundary||'')+'</p><p class="muted">'+esc(w.retention_boundary||'')+'</p><p class="muted">'+esc(w.communication_boundary||'')+'</p><p class="muted">'+esc(w.pricing_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -179,6 +212,7 @@
       renderFreshness();
       renderCapacityForecast();
       renderRouteCrewEfficiency();
+      renderRecurringRetention();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
@@ -231,8 +265,8 @@
       window.YWIRouter?.showSection?.('admin');setTimeout(()=>window.YWIAdminHub?.open?.(target==='safety'?'safety':'operations'),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 354 route and crew efficiency evidence refreshed. Source records were not changed.')}
-      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null};render();note('Unable to load Build 354 route and crew efficiency evidence: '+(e?.message||e),true)}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 355 recurring renewal and retention evidence refreshed. Source records were not changed.')}
+      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null};render();note('Unable to load Build 355 recurring renewal and retention evidence: '+(e?.message||e),true)}
     }
     el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open]');if(b)openSource(b.getAttribute('data-owner350-open'))});
     $('owner350Refresh').onclick=load;load();

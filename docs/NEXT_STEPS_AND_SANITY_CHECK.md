@@ -372,7 +372,7 @@ This release adds a permission-aware, read-only command-centre index across cust
 
 Saved views are browser-local preferences scoped to the signed-in profile. They preserve search, domain, season, service context and the selected operational view, but they never become business authority and never mutate jobs, routing, equipment, Safety, Finance, invoicing or source records. Global result navigation deep-links to the existing authoritative module/workspace. Spring/summer, fall, winter and four-season context remain explicit.
 
-Items **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, and **354 — Route & Crew Efficiency Evidence** are implemented. The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.
+Items **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, **354 — Route & Crew Efficiency Evidence**, and **355 — Recurring Service Renewal & Retention Workbench** are implemented. The next planned autonomous item is **356 — Estimate-to-Cash Leakage & Margin Recovery**.
 
 #### **350 — Owner / Management Command Centre** is implemented
 
@@ -396,7 +396,7 @@ Operations Needs Attention now collapses duplicate candidates by canonical sourc
 
 The score uses the existing source severity as the dominant signal, then bounded overdue age and an explicit unassigned-owner signal. Stable source-key ordering breaks any remaining ties. Suggested actions only navigate to or prepare review in the authoritative source workflow; they do not auto-dispatch, auto-resolve Safety, unlock equipment, change Finance, send customer messages, collect payment or mutate provider state.
 
-The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.
+The next planned autonomous item is **356 — Estimate-to-Cash Leakage & Margin Recovery**.
 
 #### **353 — Four-Season Capacity & Workability Forecast** is implemented
 
@@ -404,7 +404,7 @@ The Owner / Management Command Centre now provides seven- and fourteen-day advis
 
 Recorded demand uses only source durations and travel allowances that already exist; the release does not invent jobs-per-crew targets, productivity assumptions or missing durations. Workability is based only on YW-stored evidence and does not add an external weather provider. The forecast remains read-only and cannot dispatch crews, rewrite routes, change workability decisions, unlock equipment, send messages or mutate provider state.
 
-The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.
+The next planned autonomous item is **356 — Estimate-to-Cash Leakage & Margin Recovery**.
 
 #### **354 — Route & Crew Efficiency Evidence** is implemented
 
@@ -414,11 +414,17 @@ Route-day evidence uses existing configured `daily_capacity_minutes` only when t
 
 Planned travel allowance and linked crew travel minutes are intentionally shown as different measures. Crew-time travel is not treated as vehicle elapsed travel, so the release does not fabricate a direct travel variance.
 
-The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.
+The next planned autonomous item is **356 — Estimate-to-Cash Leakage & Margin Recovery**.
 
-#### 355 — Recurring Service Renewal & Retention Workbench
+#### **355 — Recurring Service Renewal & Retention Workbench** is implemented
 
-Identify recurring agreements approaching seasonal end, repeated skips/delays, customer holds, unresolved service issues, low-margin recurring work and renewal/price-review candidates. Keep customer communication and pricing changes deliberate; the workbench may prepare context and navigation but must not auto-renew, auto-price or auto-message.
+The Owner / Management Command Centre now includes a read-only renewal and retention queue using canonical recurring agreements, 180-day recurring visit-event history, CRM renewal and complaint/service-review evidence, seasonal rollover decisions and permission-scoped agreement profitability.
+
+Renewal review is based on recorded end dates and the existing CRM renewal states: overdue, due within 30 days, due within 90 days, or an explicit seasonal renewal-contact decision. Retention attention surfaces active customer/service holds, repeated skip/cancel/weather-delay evidence and unresolved agreement-linked CRM issues. Finance evidence is optional: when visible, price review is limited to negative recorded agreement profit or a planned visit charge that does not exceed its recorded planned visit cost. No target margin is invented when the business has not configured one.
+
+The workbench prepares context only. It does not renew agreements, change prices, create estimates or invoices, send messages, or create customer commitments. Missing or permission-hidden Finance evidence remains unavailable rather than becoming a zero-margin fact.
+
+The next planned autonomous item is **356 — Estimate-to-Cash Leakage & Margin Recovery**.
 
 #### 356 — Estimate-to-Cash Leakage & Margin Recovery
 
@@ -448,7 +454,7 @@ Measure high-cost read paths, repeated fan-out, mobile payload size, offline rep
 
 Review the outcomes and evidence from items 351–361, identify remaining operational friction, reliability gaps, seasonal gaps and economic opportunities, then write the next bounded autonomous roadmap sequence before this item is promoted. The renewed queue must contain at least ten implementable releases, preserve the non-interactive rule above, and avoid reintroducing human/provider acceptance as the next ordinary build.
 
-Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, and **354 — Route & Crew Efficiency Evidence** are implemented by the current release. The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
+Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, and **354 — Route & Crew Efficiency Evidence** are implemented by the current release. The next planned autonomous item is **356 — Estimate-to-Cash Leakage & Margin Recovery**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
 
 ### Roadmap selection rules
 
