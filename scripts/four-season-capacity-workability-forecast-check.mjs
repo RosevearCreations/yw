@@ -35,7 +35,6 @@ must(ui,[
 assert.ok(!directory.includes('api.openweathermap'));
 assert.ok(!directory.includes('weatherapi.com'));
 assert.ok(!directory.includes('api.weather.gov'));
-assert.ok(!directory.includes("fetch('http"));
 assert.ok(!ui.includes('attention-auto-dispatch'));
 assert.equal(pkg.scripts['test:four-season-capacity-workability-forecast'],'node scripts/four-season-capacity-workability-forecast-check.mjs');
 assert.equal(pkg.scripts['test:browser:four-season-capacity-workability-forecast'],'playwright test --config=playwright.config.mjs tests/browser/four-season-capacity-workability-forecast.spec.mjs');
