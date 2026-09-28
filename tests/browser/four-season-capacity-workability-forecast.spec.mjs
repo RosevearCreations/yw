@@ -60,10 +60,10 @@ test('Build 353 renders 7/14 day four-season readiness without invented capacity
   await expect(host).toContainText('14-day planned');
   await expect(host).toContainText('28.0 h recorded demand');
   await expect(host).toContainText('56.0 h recorded demand');
-  await expect(host).toContainText('SPRING/SUMMER');
-  await expect(host).toContainText('FALL');
-  await expect(host).toContainText('WINTER');
-  await expect(host).toContainText('FOUR_SEASON');
+  await expect(host).toContainText('Spring/summer');
+  await expect(host).toContainText('Fall');
+  await expect(host).toContainText('Winter');
+  await expect(host).toContainText('Four-season');
   await expect(host).toContainText('No jobs-per-crew target or external weather forecast is assumed');
   await expect(host.locator('[data-owner353-state="blocked"]')).toContainText('workability restriction');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth)).toBeFalsy();
