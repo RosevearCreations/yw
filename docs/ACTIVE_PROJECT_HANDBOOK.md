@@ -131,7 +131,7 @@ Production promotion is deliberate/manual. Source work must not enable Finance e
 
 When another AI system takes over YW, treat this handbook and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` as the durable project authority. Resolve the live `dev` and `main` heads from GitHub at task start rather than trusting copied commit identifiers.
 
-**351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, and **354 — Route & Crew Efficiency Evidence** are implemented. The current autonomous queue continues with:
+**351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, and **353 — Four-Season Capacity & Workability Forecast** are implemented. **354 — Route & Crew Efficiency Evidence** is implemented. The current autonomous queue continues with:
 
 - **355 — Recurring Service Renewal & Retention Workbench**
 - **356 — Estimate-to-Cash Leakage & Margin Recovery**
