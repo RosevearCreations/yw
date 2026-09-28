@@ -254,7 +254,7 @@ function buildFourSeasonCapacityForecast(input:{
     return {days:windowDays,planned_items:planned,recorded_demand_minutes:demand,blocked_days:blocked,attention_days:attention,review_days:review,ready_days:windowDays-blocked-attention-review,peak_date:peak?.date||null,peak_recorded_demand_minutes:Number(peak?.recorded_demand_minutes||0)};
   };
   return {
-    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk,days,
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',days,
     windows:{seven_day:summarize(7),fourteen_day:summarize(14)},
     capacity_method:'Evidence-only forecast: planned work, assigned crews, recorded durations, equipment readiness, stored workability evidence and seasonal operations. No jobs-per-crew target or external weather forecast is assumed.',
     weather_boundary:'Uses stored YW workability observations/rules and seasonal evidence only; no external weather provider is queried.',
@@ -896,7 +896,7 @@ function buildEstimateToCashLeakageWorkbench(input:{
   const order:Record<string,number>={completed_not_invoiced:10,approved_extra_not_billed:20,invoiced_not_collected:30,material_margin_leakage:40,accepted_not_scheduled:50};
   queue.sort((a,b)=>(order[a.signal_type]||99)-(order[b.signal_type]||99)||String(a.source_reference||'').localeCompare(String(b.source_reference||'')));
   return {
-    generated_at:new Date().toISOString(),timezone:'America/Toronto',
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk,
     summary:{
       accepted_estimate_lifecycles:lifecycle.length,
       accepted_not_scheduled:queue.filter((r)=>r.signal_type==='accepted_not_scheduled').length,
