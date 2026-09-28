@@ -26,10 +26,10 @@ must(directory,[
 ],'Build 353 forecast server');
 
 must(ui,[
-  'Build 350–354','Four-season capacity &amp; workability forecast','owner353Forecast','renderCapacityForecast',
+  'Build 350–355','Four-season capacity &amp; workability forecast','owner353Forecast','renderCapacityForecast',
   '7-day planned','14-day planned','No external weather provider','data-owner353-state',
   'Spring/summer ','Fall ','Winter ','Four-season ','recorded demand','equipment ready',
-  'Build 354 route and crew efficiency evidence refreshed'
+  'Build 355 recurring renewal and retention evidence refreshed'
 ],'Build 353 forecast UI');
 
 assert.ok(!directory.includes('api.openweathermap'));
@@ -39,9 +39,9 @@ assert.ok(!ui.includes('attention-auto-dispatch'));
 assert.equal(pkg.scripts['test:four-season-capacity-workability-forecast'],'node scripts/four-season-capacity-workability-forecast-check.mjs');
 assert.equal(pkg.scripts['test:browser:four-season-capacity-workability-forecast'],'playwright test --config=playwright.config.mjs tests/browser/four-season-capacity-workability-forecast.spec.mjs');
 must(workflow,['npm run test:four-season-capacity-workability-forecast','npm run test:browser:four-season-capacity-workability-forecast'],'Build 353 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-28b354'],'Build 353 asset version');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-28b355'],'Build 353 asset version');
 must(help,['Build 353 — Four-Season Capacity &amp; Workability Forecast','Recorded demand, not invented capacity','Four seasons remain distinct','No new weather provider and no automatic mutation'],'Build 353 help');
-must(roadmap,['#### **353 — Four-Season Capacity & Workability Forecast** is implemented','#### **354 — Route & Crew Efficiency Evidence** is implemented','The next planned autonomous item is **355 — Recurring Service Renewal & Retention Workbench**.'],'Build 353 roadmap');
-must(handbook,['**353 — Four-Season Capacity & Workability Forecast**','**354 — Route & Crew Efficiency Evidence** is implemented','- **355 — Recurring Service Renewal & Retention Workbench**'],'Build 353 handoff');
+must(roadmap,['#### **353 — Four-Season Capacity & Workability Forecast** is implemented','#### **354 — Route & Crew Efficiency Evidence** is implemented','#### **355 — Recurring Service Renewal & Retention Workbench** is implemented','The next planned autonomous item is **356 — Estimate-to-Cash Leakage & Margin Recovery**.'],'Build 353 roadmap');
+must(handbook,['**353 — Four-Season Capacity & Workability Forecast**','**354 — Route & Crew Efficiency Evidence** is implemented','**355 — Recurring Service Renewal & Retention Workbench** is implemented','- **356 — Estimate-to-Cash Leakage & Margin Recovery**'],'Build 353 handoff');
 
 console.log('Build 353 Four-Season Capacity & Workability Forecast source gate GREEN');
