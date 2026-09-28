@@ -172,15 +172,15 @@
       const meta=metricMeta('estimate_to_cash');
       if(!allowed('jobs')||!allowed('finance')){host.innerHTML='<p class="muted">Estimate-to-cash evidence requires both Jobs and Finance visibility for this profile.</p>';return}
       if(!w||!w.summary){host.innerHTML='<p class="muted">Estimate-to-cash evidence is unavailable from this response.</p>';return}
-      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required estimate-to-cash evidence is unavailable.')+'</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical estimate-to-cash source queries failed. Leakage counts are withheld rather than converted into zero-valued facts.</p>';return}
       const s=w.summary||{};
       const summary='<div class="owner351-summary">'+[
-        card('Accepted lifecycles',num(s.accepted_estimate_lifecycles),'accepted estimate chains loaded','estimate_to_cash'),
-        card('Accepted not scheduled',num(s.accepted_not_scheduled),'no active dispatch evidence','estimate_to_cash'),
-        card('Completed not invoiced',num(s.completed_not_invoiced),'completion/accounting-ready without A/R invoice','estimate_to_cash'),
-        card('Approved extras not billed',num(s.approved_extra_not_billed),'authorized/applied scope without linked invoice evidence','estimate_to_cash'),
-        card('Invoiced not collected',num(s.invoiced_not_collected),'A/R balance remains due','estimate_to_cash'),
-        card('Margin leakage',num(s.material_margin_leakage),'loss or simultaneous adverse revenue/cost variance','estimate_to_cash')
+        card('Accepted lifecycles',num(s.accepted_estimate_lifecycles),'accepted estimate chains loaded'),
+        card('Accepted not scheduled',num(s.accepted_not_scheduled),'no active dispatch evidence'),
+        card('Completed not invoiced',num(s.completed_not_invoiced),'completion/accounting-ready without A/R invoice'),
+        card('Approved extras not billed',num(s.approved_extra_not_billed),'authorized/applied scope without linked invoice evidence'),
+        card('Invoiced not collected',num(s.invoiced_not_collected),'A/R balance remains due'),
+        card('Margin leakage',num(s.material_margin_leakage),'loss or simultaneous adverse revenue/cost variance')
       ].join('')+'</div>';
       const queue=(w.attention_queue||[]).slice(0,20).map(r=>{
         const amount=r.amount==null?'':' · '+money(r.amount);
