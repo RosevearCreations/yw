@@ -149,6 +149,105 @@ function buildManagementMetricConfidence(sourceFreshness:Record<string,any>, sou
   return { source_keys:sourceKeys, state:'current', confidence:'high', last_authoritative_update:latest, reason:'All required authoritative sources are current and within their configured query limits.' };
 }
 
+function ontarioDateKey(value:unknown) {
+  if (!value) return null;
+  const raw=String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const date=new Date(raw);
+  if (!Number.isFinite(date.valueOf())) return null;
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+  const get=(type:string)=>parts.find((part)=>part.type===type)?.value;
+  const year=get('year'),month=get('month'),day=get('day');
+  return year&&month&&day ? `${year}-${month}-${day}` : date.toISOString().slice(0,10);
+}
+
+function addCalendarDays(dateKey:string, days:number) {
+  const [y,m,d]=dateKey.split('-').map(Number);
+  const date=new Date(Date.UTC(y,m-1,d+days,12,0,0));
+  return date.toISOString().slice(0,10);
+}
+
+function minutesBetween(start:unknown,end:unknown) {
+  const a=new Date(String(start||'')).valueOf(),b=new Date(String(end||'')).valueOf();
+  if(!Number.isFinite(a)||!Number.isFinite(b)||b<=a) return 0;
+  return Math.max(0,Math.round((b-a)/60000));
+}
+
+function forecastSeason(row:any) {
+  const explicit=String(row?.season_context||row?.season||'').toLowerCase();
+  if(['spring_summer','fall','winter','four_season'].includes(explicit)) return explicit;
+  const source=[row?.service_program_type,row?.service_name,row?.work_type,row?.job_name,row?.route_name,row?.label,row?.category,row?.detail].filter(Boolean).join(' ').toLowerCase();
+  if(/snow|storm|ice|winter/.test(source)) return 'winter';
+  if(/fall|leaf|autumn/.test(source)) return 'fall';
+  if(/mow|lawn|landscap|garden|hedge|shrub|spring|aerat|fertiliz/.test(source)) return 'spring_summer';
+  return 'four_season';
+}
+
+function buildFourSeasonCapacityForecast(input:{
+  dispatch:any[];visits:any[];crews:any[];equipment:any[];workability:any[];storms:any[];stormRoutes:any[];seasonalWork:any[];
+}) {
+  const today=ontarioDateKey(new Date())!;
+  const crews=(input.crews||[]).filter((row)=>!['inactive','ended','archived'].includes(String(row?.crew_status||'').toLowerCase()));
+  const readyEquipment=(input.equipment||[]).filter((row)=>String(row?.registry_readiness_status||'ready').toLowerCase()==='ready' && row?.is_locked_out!==true);
+  const equipmentAttention=(input.equipment||[]).filter((row)=>String(row?.registry_readiness_status||'ready').toLowerCase()!=='ready' || row?.is_locked_out===true);
+  const days:any[]=[];
+  for(let offset=0;offset<14;offset++){
+    const date=addCalendarDays(today,offset);
+    const dispatch=(input.dispatch||[]).filter((row)=>ontarioDateKey(row?.scheduled_start||row?.service_date)===date && !['cancelled','superseded','completed'].includes(String(row?.schedule_status||'').toLowerCase()));
+    const visits=(input.visits||[]).filter((row)=>String(row?.service_date||'').slice(0,10)===date && !['skipped','cancelled','held','completed'].includes(String(row?.visit_status||'').toLowerCase()));
+    const workability=(input.workability||[]).filter((row)=>String(row?.service_date||ontarioDateKey(row?.scheduled_start)||'').slice(0,10)===date);
+    const storms=(input.storms||[]).filter((row)=>ontarioDateKey(row?.planned_start)===date || ontarioDateKey(row?.planned_end)===date);
+    const stormRoutes=(input.stormRoutes||[]).filter((row)=>{
+      const start=ontarioDateKey(row?.planned_start),end=ontarioDateKey(row?.planned_end);
+      return (start&&start<=date)&&(!end||end>=date) && !['completed','cancelled','closed'].includes(String(row?.activation_status||row?.route_status||'').toLowerCase());
+    });
+    const seasonalDue=(input.seasonalWork||[]).filter((row)=>String(row?.due_date||'').slice(0,10)===date);
+    const scheduledCrewIds=new Set(dispatch.map((row)=>row?.crew_id).filter(Boolean).map(String));
+    const unassignedDispatch=dispatch.filter((row)=>!row?.crew_id);
+    const dispatchMinutes=dispatch.reduce((sum,row)=>sum+Math.max(0,Number(row?.estimated_duration_minutes||0)||minutesBetween(row?.scheduled_start,row?.scheduled_end))+Math.max(0,Number(row?.travel_allowance_minutes||0)),0);
+    const recurringMinutes=visits.reduce((sum,row)=>sum+Math.max(0,Number(row?.visit_estimated_minutes||0))+Math.max(0,Number(row?.default_travel_allowance_minutes||0)),0);
+    const conflicts=dispatch.filter((row)=>Number(row?.conflict_count||0)>0 && !String(row?.conflict_override_note||'').trim());
+    const blocked=workability.filter((row)=>['blocked','postpone','reschedule'].includes(String(row?.decision_workability_state||row?.workability_state||row?.decision_state||'').toLowerCase()) || String(row?.workability_queue_status||'').toLowerCase()==='decision_required' && Number(row?.restriction_guidance_count||0)>0);
+    const review=workability.filter((row)=>!blocked.includes(row) && (['caution','delayed','review'].includes(String(row?.decision_workability_state||row?.workability_state||'').toLowerCase()) || ['decision_required','notification_review','operator_dispatch_required'].includes(String(row?.workability_queue_status||'').toLowerCase())));
+    const seasons={spring_summer:0,fall:0,winter:0,four_season:0};
+    for(const row of [...dispatch,...visits,...seasonalDue,...storms,...stormRoutes]) seasons[forecastSeason(row)]++;
+    const readiness=blocked.length?'blocked':conflicts.length||unassignedDispatch.length||equipmentAttention.length?'attention':review.length?'review':'ready';
+    const reasons:string[]=[];
+    if(blocked.length) reasons.push(`${blocked.length} workability restriction/block signal(s)`);
+    if(review.length) reasons.push(`${review.length} workability review signal(s)`);
+    if(conflicts.length) reasons.push(`${conflicts.length} unresolved dispatch conflict(s)`);
+    if(unassignedDispatch.length) reasons.push(`${unassignedDispatch.length} unassigned dispatch item(s)`);
+    if(equipmentAttention.length) reasons.push(`${equipmentAttention.length} equipment readiness attention item(s)`);
+    if(!reasons.length) reasons.push('No loaded blocker signal for this date');
+    days.push({
+      date,horizon_day:offset+1,readiness_state:readiness,readiness_reason:reasons.join(' · '),
+      dispatch_count:dispatch.length,recurring_visit_count:visits.length,total_planned_items:dispatch.length+visits.length,
+      recorded_demand_minutes:dispatchMinutes+recurringMinutes,
+      active_crew_count:crews.length,scheduled_crew_count:scheduledCrewIds.size,unassigned_dispatch_count:unassignedDispatch.length,
+      unresolved_dispatch_conflict_count:conflicts.length,ready_equipment_count:readyEquipment.length,equipment_attention_count:equipmentAttention.length,
+      workability_blocked_count:blocked.length,workability_review_count:review.length,storm_event_count:storms.length,storm_route_count:stormRoutes.length,
+      seasonal_due_count:seasonalDue.length,season_load:seasons
+    });
+  }
+  const summarize=(windowDays:number)=>{
+    const slice=days.slice(0,windowDays);
+    const demand=slice.reduce((sum,row)=>sum+Number(row.recorded_demand_minutes||0),0);
+    const planned=slice.reduce((sum,row)=>sum+Number(row.total_planned_items||0),0);
+    const blocked=slice.filter((row)=>row.readiness_state==='blocked').length;
+    const attention=slice.filter((row)=>row.readiness_state==='attention').length;
+    const review=slice.filter((row)=>row.readiness_state==='review').length;
+    const peak=[...slice].sort((a,b)=>Number(b.recorded_demand_minutes||0)-Number(a.recorded_demand_minutes||0)||Number(b.total_planned_items||0)-Number(a.total_planned_items||0))[0]||null;
+    return {days:windowDays,planned_items:planned,recorded_demand_minutes:demand,blocked_days:blocked,attention_days:attention,review_days:review,ready_days:windowDays-blocked-attention-review,peak_date:peak?.date||null,peak_recorded_demand_minutes:Number(peak?.recorded_demand_minutes||0)};
+  };
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',days,
+    windows:{seven_day:summarize(7),fourteen_day:summarize(14)},
+    capacity_method:'Evidence-only forecast: planned work, assigned crews, recorded durations, equipment readiness, stored workability evidence and seasonal operations. No jobs-per-crew target or external weather forecast is assumed.',
+    weather_boundary:'Uses stored YW workability observations/rules and seasonal evidence only; no external weather provider is queried.',
+    authority_boundary:'Advisory only. Forecasting does not dispatch crews, rewrite routes, change workability decisions, unlock equipment, send messages or mutate provider state.'
+  };
+}
+
 async function safeListWhere(supabase: any, table: string, columns = '*', filters: Array<[string, any]> = [], orderColumn?: string, limit = 200, ascending = true) {
   try {
     let q = supabase.from(table).select(columns).limit(limit);
@@ -335,7 +434,7 @@ serve(async (req) => {
       hasModuleAccess(supabase, actorProfile, 'admin', 'manage')
     ]);
     const [
-      jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
+      jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -345,6 +444,7 @@ serve(async (req) => {
       canAdminManage ? safeListEvidence(supabase,'v_timekeeping_attendance_summary','*',undefined,200,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:200}),
       canJobsView ? safeListEvidence(supabase,'v_recurring_service_program_directory','*','next_service_date',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_recurring_service_visit_schedule','*','service_date',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
+      canJobsView ? safeListEvidence(supabase,'v_workforce_crew_directory','*','crew_name',250,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:250}),
       canJobsView ? safeListEvidence(supabase,'seasonal_storm_events','*','planned_start',250,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:250}),
       canJobsView ? safeListEvidence(supabase,'v_seasonal_storm_route_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_seasonal_operations_outstanding_work','*','due_date',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
@@ -360,7 +460,7 @@ serve(async (req) => {
       canJobsView ? safeListEvidence(supabase,'v_weather_workability_queue','*','observed_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500})
     ]);
     const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
-      timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,storms=stormsRead.rows,
+      timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,crews=crewsRead.rows,storms=stormsRead.rows,
       stormRoutes=stormRoutesRead.rows,seasonalWork=seasonalWorkRead.rows,safety=safetyRead.rows,equipment=equipmentRead.rows,
       maintenance=maintenanceRead.rows,trainingSummary=trainingSummaryRead.rows,workforceSummary=workforceSummaryRead.rows,
       receivables=receivablesRead.rows,bank=bankRead.rows,financeExceptions=financeExceptionsRead.rows,
@@ -376,6 +476,7 @@ serve(async (req) => {
     addFresh(timekeepingRead,'timekeeping','admin','v_timekeeping_attendance_summary',canAdminManage,168);
     addFresh(recurringRead,'recurring','jobs','v_recurring_service_program_directory',canJobsView,168);
     addFresh(recurringVisitsRead,'recurring_visits','jobs','v_recurring_service_visit_schedule',canJobsView,72);
+    addFresh(crewsRead,'crews','jobs','v_workforce_crew_directory',canJobsView,168);
     addFresh(stormsRead,'storms','jobs','seasonal_storm_events',canJobsView,72);
     addFresh(stormRoutesRead,'storm_routes','jobs','v_seasonal_storm_route_directory',canJobsView,72);
     addFresh(seasonalWorkRead,'seasonal_work','jobs','v_seasonal_operations_outstanding_work',canJobsView,168);
@@ -404,13 +505,17 @@ serve(async (req) => {
       safety_blockers:buildManagementMetricConfidence(sourceFreshness,['safety']),
       equipment_blockers:buildManagementMetricConfidence(sourceFreshness,['equipment','maintenance']),
       workforce_blockers:buildManagementMetricConfidence(sourceFreshness,['training','workforce']),
-      finance_readiness:buildManagementMetricConfidence(sourceFreshness,['finance_exceptions','close_dashboard'])
+      finance_readiness:buildManagementMetricConfidence(sourceFreshness,['finance_exceptions','close_dashboard']),
+      capacity_forecast:buildManagementMetricConfidence(sourceFreshness,['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work'])
     };
+    const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
+      dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
+    });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
       evidence_generated_at:new Date().toISOString(),
       owner_jobs:jobs,owner_dispatch:dispatch,owner_production:production,owner_profitability:profitability,
-      owner_timekeeping_summary:timekeeping,owner_recurring:recurring,owner_recurring_visits:recurringVisits,
+      owner_timekeeping_summary:timekeeping,owner_recurring:recurring,owner_recurring_visits:recurringVisits,owner_crews:crews,
       owner_storms:storms,owner_storm_routes:stormRoutes,owner_seasonal_work:seasonalWork,owner_safety:safety,
       owner_equipment:equipment,owner_maintenance:maintenance,owner_training_summary:trainingSummary,
       owner_workforce_summary:workforceSummary,owner_receivables:receivables,owner_bank:bank,
@@ -418,6 +523,7 @@ serve(async (req) => {
       source_visibility:{jobs:canJobsView,finance:canFinanceView,safety:canSafetyView,admin:canAdminManage},
       source_freshness:sourceFreshness,
       management_metric_confidence:metricConfidence,
+      four_season_capacity_forecast:fourSeasonCapacityForecast,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
