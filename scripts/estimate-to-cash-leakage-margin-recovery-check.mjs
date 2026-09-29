@@ -22,10 +22,10 @@ must(directory,[
 ],'Build 356 server');
 
 must(ui,[
-  'Build 350–357','Estimate-to-cash leakage &amp; margin recovery','owner356EstimateCash','renderEstimateToCash',
+  'Build 350–358','Estimate-to-cash leakage &amp; margin recovery','owner356EstimateCash','renderEstimateToCash',
   'Accepted lifecycles','Accepted not scheduled','Completed not invoiced','Approved extras not billed','Invoiced not collected','Margin leakage',
   'Analytical only:','Leakage &amp; recovery queue','Accepted estimate lifecycle traces',
-  'Build 357 labour, equipment and fleet utilization decision-support evidence refreshed'
+  'Build 358 materials, consumables and seasonal stock-readiness evidence refreshed'
 ],'Build 356 UI');
 
 const b356=directory.slice(directory.indexOf('function buildEstimateToCashLeakageWorkbench'),directory.indexOf('function buildLabourEquipmentFleetUtilizationDecisionSupport'));
@@ -34,8 +34,8 @@ assert.ok(!/\.(insert|update|delete|upsert)\s*\(/.test(b356),'Build 356 helper m
 assert.equal(pkg.scripts['test:estimate-to-cash-leakage-margin-recovery'],'node scripts/estimate-to-cash-leakage-margin-recovery-check.mjs');
 assert.equal(pkg.scripts['test:browser:estimate-to-cash-leakage-margin-recovery'],'playwright test --config=playwright.config.mjs tests/browser/estimate-to-cash-leakage-margin-recovery.spec.mjs');
 must(workflow,['npm run test:estimate-to-cash-leakage-margin-recovery','npm run test:browser:estimate-to-cash-leakage-margin-recovery'],'Build 356 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-28b357'],'Build 356 asset');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-29b358'],'Build 356 asset');
 must(help,['Build 356 — Estimate-to-Cash Leakage &amp; Margin Recovery','Accepted not scheduled','Completed not invoiced','Approved extras not billed','Invoiced not collected','Margin leakage','Analytical only'],'Build 356 help');
-must(roadmap,['#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **358 — Materials, Consumables & Seasonal Stock Readiness**.'],'Build 356 roadmap');
-must(handbook,['**356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','- **358 — Materials, Consumables & Seasonal Stock Readiness**'],'Build 356 handoff');
+must(roadmap,['#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **359 — Customer Communication Readiness & Queue Quality**.'],'Build 356 roadmap');
+must(handbook,['**356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','- **359 — Customer Communication Readiness & Queue Quality**'],'Build 356 handoff');
 console.log('Build 356 Estimate-to-Cash Leakage & Margin Recovery source gate GREEN');
