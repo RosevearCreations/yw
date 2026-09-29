@@ -25,14 +25,14 @@ must(directory,[
 ],'Build 357 server');
 
 must(ui,[
-  'Build 350–357','Labour, equipment &amp; fleet utilization decision support','owner357Utilization','renderUtilizationSupport',
+  'Build 350–358','Labour, equipment &amp; fleet utilization decision support','owner357Utilization','renderUtilizationSupport',
   'Paid time, 30d','Job-linked paid time','Paid time without job link','Production labour','Equipment with recorded use',
   'Fleet known available','Fleet downtime','Maintenance attention','Crew-level recording context',
   'Utilization, downtime &amp; maintenance signals','Decision support only:',
-  'Build 357 labour, equipment and fleet utilization decision-support evidence refreshed'
+  'Build 358 materials, consumables and seasonal stock-readiness evidence refreshed'
 ],'Build 357 UI');
 
-const b357=directory.slice(directory.indexOf('function buildLabourEquipmentFleetUtilizationDecisionSupport'),directory.indexOf("\n\n  if (scope === 'owner_management_command')"));
+const b357=directory.slice(directory.indexOf('function buildLabourEquipmentFleetUtilizationDecisionSupport'),directory.indexOf('function buildMaterialsConsumablesSeasonalStockReadiness'));
 assert.ok(b357.length>1500,'Build 357 helper slice missing');
 assert.ok(!/\.(insert|update|delete|upsert)\s*\(/.test(b357),'Build 357 helper must remain read-only');
 assert.ok(!b357.includes('full_name')&&!b357.includes('employee_number'),'Build 357 decision-support output must not expose individual employee identity fields.');
@@ -47,8 +47,8 @@ must(b357,[
 assert.equal(pkg.scripts['test:labour-equipment-fleet-utilization-decision-support'],'node scripts/labour-equipment-fleet-utilization-decision-support-check.mjs');
 assert.equal(pkg.scripts['test:browser:labour-equipment-fleet-utilization-decision-support'],'playwright test --config=playwright.config.mjs tests/browser/labour-equipment-fleet-utilization-decision-support.spec.mjs');
 must(workflow,['npm run test:labour-equipment-fleet-utilization-decision-support','npm run test:browser:labour-equipment-fleet-utilization-decision-support'],'Build 357 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-28b357'],'Build 357 asset');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-29b358'],'Build 357 asset');
 must(help,['Build 357 — Labour, Equipment &amp; Fleet Utilization Decision Support','Crew-level labour context','Equipment use is evidence, not an idle verdict','Fleet downtime and maintenance','No employee performance scoring'],'Build 357 help');
-must(roadmap,['#### **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','The next planned autonomous item is **358 — Materials, Consumables & Seasonal Stock Readiness**.'],'Build 357 roadmap');
-must(handbook,['**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','- **358 — Materials, Consumables & Seasonal Stock Readiness**','After item 357, that item is 358 — Materials, Consumables & Seasonal Stock Readiness.'],'Build 357 handoff');
+must(roadmap,['#### **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','The next planned autonomous item is **359 — Customer Communication Readiness & Queue Quality**.'],'Build 357 roadmap');
+must(handbook,['**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','- **359 — Customer Communication Readiness & Queue Quality**','After item 358, that item is 359 — Customer Communication Readiness & Queue Quality.'],'Build 357 handoff');
 console.log('Build 357 Labour, Equipment & Fleet Utilization Decision Support source gate GREEN');
