@@ -1092,6 +1092,205 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
   };
 }
 
+
+function buildMaterialsConsumablesSeasonalStockReadiness(input:{
+  materials:any[];materialPlans:any[];dispatch:any[];recurringVisits:any[];seasonalWork:any[];
+  jobsVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const today=ontarioDateKey(new Date())!;
+  const horizon7=addCalendarDays(today,7);
+  const horizon14=addCalendarDays(today,14);
+  const norm=(v:any)=>String(v??'').trim().toLowerCase().replace(/\s+/g,'_');
+  const activeDispatch=(input.dispatch||[]).filter((r)=>{
+    const d=ontarioDateKey(r?.scheduled_start||r?.service_date);
+    return !!d&&d>=today&&d<=horizon14&&!['cancelled','superseded','completed'].includes(norm(r?.schedule_status||r?.status));
+  });
+  const dispatchByWorkOrder=new Map<string,any[]>();
+  const dispatchByRecurringKey=new Map<string,any>();
+  for(const row of activeDispatch){
+    const wid=String(row?.work_order_id||'');
+    if(wid){const list=dispatchByWorkOrder.get(wid)||[];list.push(row);dispatchByWorkOrder.set(wid,list);}
+    const rk=String(row?.recurring_visit_key||'');
+    if(rk&&!dispatchByRecurringKey.has(rk)) dispatchByRecurringKey.set(rk,row);
+  }
+  for(const list of dispatchByWorkOrder.values()) list.sort((a,b)=>String(a?.scheduled_start||'').localeCompare(String(b?.scheduled_start||'')));
+
+  const activePlans=(input.materialPlans||[]).filter((r)=>norm(r?.plan_status)==='planned'&&Number(r?.planned_quantity||0)>0);
+  const plansByWorkOrder=new Map<string,any[]>();
+  for(const row of activePlans){
+    const wid=String(row?.work_order_id||'');
+    if(wid){const list=plansByWorkOrder.get(wid)||[];list.push(row);plansByWorkOrder.set(wid,list);}
+  }
+
+  const demandEvents:any[]=[];
+  const unscheduledPlanLines:any[]=[];
+  const uncataloguedPlanLines:any[]=[];
+  for(const row of activePlans){
+    const wid=String(row?.work_order_id||'');
+    const scheduled=(wid?(dispatchByWorkOrder.get(wid)||[]):[])[0]||null;
+    if(!scheduled){
+      unscheduledPlanLines.push({
+        estimator_code:row?.estimator_code||null,work_order_id:row?.work_order_id||null,
+        material_id:row?.material_id||null,material_label:row?.material_label||row?.catalog_material_name||null,
+        planned_quantity:Number(row?.planned_quantity||0),planned_unit:row?.planned_unit||null,
+        service_context:row?.service_context||null,season_context:row?.season_context||null
+      });
+      continue;
+    }
+    if(!row?.material_id){
+      uncataloguedPlanLines.push({
+        estimator_code:row?.estimator_code||null,work_order_id:row?.work_order_id||null,
+        scheduled_date:ontarioDateKey(scheduled?.scheduled_start),material_label:row?.material_label||null,
+        planned_quantity:Number(row?.planned_quantity||0),planned_unit:row?.planned_unit||null,
+        service_context:row?.service_context||null,season_context:row?.season_context||null
+      });
+      continue;
+    }
+    demandEvents.push({
+      material_id:String(row.material_id),scheduled_date:ontarioDateKey(scheduled?.scheduled_start),
+      planned_quantity:Number(row?.planned_quantity||0),planned_unit:row?.planned_unit||null,
+      estimator_code:row?.estimator_code||null,work_order_id:row?.work_order_id||null,
+      work_order_number:scheduled?.work_order_number||null,recurring_visit_key:scheduled?.recurring_visit_key||null,
+      service_context:row?.service_context||null,season_context:row?.season_context||null
+    });
+  }
+
+  const eventsByMaterial=new Map<string,any[]>();
+  for(const e of demandEvents){
+    const list=eventsByMaterial.get(e.material_id)||[];list.push(e);eventsByMaterial.set(e.material_id,list);
+  }
+  for(const list of eventsByMaterial.values()) list.sort((a,b)=>String(a.scheduled_date||'').localeCompare(String(b.scheduled_date||'')));
+
+  const seasonalBucket=(row:any)=>{
+    const text=norm([row?.material_category,row?.sku,row?.item_name].filter(Boolean).join(' '));
+    if(/salt|de_?icer|de-?icer|ice_?melt|traction|winter|road_?sand/.test(text)) return 'winter';
+    if(/leaf|yard_?waste|bag|fall|disposal/.test(text)) return 'fall';
+    if(/mulch|soil|sod|seed|fertiliz|grass|lawn|landscap|plant|stone|gravel|compost/.test(text)) return 'spring_summer';
+    return 'four_season';
+  };
+
+  const stockReadiness=(input.materials||[]).filter((m)=>m?.is_active!==false).map((m)=>{
+    const id=String(m?.id||'');
+    const unit=norm(m?.unit_code);
+    const events=eventsByMaterial.get(id)||[];
+    const comparable=events.filter((e)=>unit&&norm(e?.planned_unit)===unit);
+    const mismatched=events.filter((e)=>!unit||norm(e?.planned_unit)!==unit);
+    const demand7=comparable.filter((e)=>e.scheduled_date&&e.scheduled_date<=horizon7).reduce((s,e)=>s+Math.max(0,Number(e.planned_quantity||0)),0);
+    const demand14=comparable.reduce((s,e)=>s+Math.max(0,Number(e.planned_quantity||0)),0);
+    const stock=Number(m?.stock_on_hand||0);
+    const tracked=m?.inventory_tracked!==false;
+    let running=0,shortageDate:string|null=null;
+    if(tracked){
+      for(const e of comparable){running+=Math.max(0,Number(e.planned_quantity||0));if(running>stock){shortageDate=e.scheduled_date||null;break;}}
+    }
+    const projectionComplete=mismatched.length===0;
+    const projected7=tracked&&projectionComplete?Number((stock-demand7).toFixed(2)):null;
+    const projected14=tracked&&projectionComplete?Number((stock-demand14).toFixed(2)):null;
+    const definiteShortage7=tracked&&demand7>stock;
+    const definiteShortage14=tracked&&demand14>stock;
+    const reorderPoint=m?.reorder_point==null?null:Number(m.reorder_point);
+    const projectedReorder=tracked&&projectionComplete&&reorderPoint!=null&&projected14!=null&&projected14<=reorderPoint;
+    const risk=definiteShortage7?'shortage_within_7_days':
+      definiteShortage14?'shortage_within_14_days':
+      mismatched.length?'unit_comparison_required':
+      (m?.reorder_required===true||projectedReorder)?'reorder_risk':
+      norm(m?.stock_status)==='below_target'?'below_target':'ready';
+    return {
+      material_id:m?.id||null,sku:m?.sku||null,item_name:m?.item_name||null,material_category:m?.material_category||null,
+      stock_unit:m?.unit_code||null,stock_on_hand:tracked?stock:null,inventory_tracked:tracked,
+      reorder_point:m?.reorder_point??null,reorder_quantity:m?.reorder_quantity??null,target_stock_quantity:m?.target_stock_quantity??null,
+      stock_status:m?.stock_status||null,preferred_vendor_name:m?.preferred_vendor_name||m?.last_vendor_name||null,storage_location:m?.storage_location||null,
+      seasonal_bucket:seasonalBucket(m),planned_demand_7:tracked?Number(demand7.toFixed(2)):null,planned_demand_14:tracked?Number(demand14.toFixed(2)):null,
+      projected_on_hand_7:projected7,projected_on_hand_14:projected14,projection_complete:projectionComplete,
+      unit_mismatch_event_count:mismatched.length,comparable_demand_event_count:comparable.length,shortage_date:shortageDate,
+      readiness_state:risk,reorder_review:m?.reorder_required===true||projectedReorder,
+      recorded_reorder_quantity:m?.reorder_quantity??null
+    };
+  }).sort((a,b)=>{
+    const order:Record<string,number>={shortage_within_7_days:10,shortage_within_14_days:20,unit_comparison_required:30,reorder_risk:40,below_target:50,ready:90};
+    return (order[a.readiness_state]||99)-(order[b.readiness_state]||99)||String(a.sku||a.item_name||'').localeCompare(String(b.sku||b.item_name||''));
+  });
+
+  const upcomingVisits=(input.recurringVisits||[]).filter((v)=>{
+    const d=ontarioDateKey(v?.service_date);
+    return !!d&&d>=today&&d<=horizon14&&!['skipped','cancelled','held'].includes(norm(v?.visit_status));
+  });
+  const recurringCoverage=upcomingVisits.map((v)=>{
+    const dispatch=dispatchByRecurringKey.get(String(v?.occurrence_key||''))||null;
+    const wid=String(dispatch?.work_order_id||'');
+    const quantified=!!wid&&(plansByWorkOrder.get(wid)||[]).some((p)=>!!p?.material_id&&Number(p?.planned_quantity||0)>0);
+    return {
+      occurrence_key:v?.occurrence_key||null,agreement_code:v?.agreement_code||null,service_name:v?.service_name||null,
+      service_program_type:v?.service_program_type||null,service_date:v?.service_date||null,
+      dispatch_work_order_id:dispatch?.work_order_id||null,work_order_number:dispatch?.work_order_number||null,
+      material_plan_coverage:quantified?'quantified':'unquantified'
+    };
+  });
+
+  const materialReadinessTasks=(input.seasonalWork||[]).filter((r)=>{
+    const type=norm(r?.readiness_type||r?.work_type||r?.category||r?.item_type);
+    const text=norm([type,r?.title,r?.readiness_title,r?.description].filter(Boolean).join(' '));
+    return type==='material'||type==='materials'||/material|consumable|salt|de_?icer|traction|bag/.test(text);
+  }).slice(0,100);
+
+  const bySeason=['spring_summer','fall','winter','four_season'].map((season)=>{
+    const rows=stockReadiness.filter((r)=>r.seasonal_bucket===season);
+    return {
+      season,material_count:rows.length,attention_count:rows.filter((r)=>r.readiness_state!=='ready').length,
+      shortage_count:rows.filter((r)=>String(r.readiness_state).startsWith('shortage_')).length,
+      reorder_review_count:rows.filter((r)=>r.reorder_review).length,
+      unit_comparison_required_count:rows.filter((r)=>r.readiness_state==='unit_comparison_required').length
+    };
+  });
+
+  const attentionQueue=stockReadiness.filter((r)=>r.readiness_state!=='ready').map((r)=>({
+    signal_type:r.readiness_state,material_id:r.material_id,sku:r.sku,item_name:r.item_name,seasonal_bucket:r.seasonal_bucket,
+    stock_on_hand:r.stock_on_hand,stock_unit:r.stock_unit,planned_demand_7:r.planned_demand_7,planned_demand_14:r.planned_demand_14,
+    projected_on_hand_14:r.projected_on_hand_14,shortage_date:r.shortage_date,recorded_reorder_quantity:r.recorded_reorder_quantity,
+    preferred_vendor_name:r.preferred_vendor_name,
+    detail:r.readiness_state==='unit_comparison_required'
+      ? 'One or more scheduled material plans use a unit that does not match the catalog stock unit; projected stock is withheld.'
+      : r.shortage_date
+        ? 'Recorded planned demand exceeds current on-hand stock by '+r.shortage_date+'.'
+        : r.reorder_review
+          ? 'Current or projected on-hand evidence reaches the recorded reorder point.'
+          : 'Current stock is below the recorded target stock quantity.',
+    suggested_next_action:'Review the canonical Materials Control stock, planned work and recorded reorder settings before purchasing.',
+    navigation_target:'jobs'
+  }));
+
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',forecast_start:today,forecast_end:horizon14,source_queries_ok:input.sourceQueriesOk,
+    summary:{
+      active_material_count:stockReadiness.length,tracked_material_count:stockReadiness.filter((r)=>r.inventory_tracked).length,
+      materials_with_quantified_14_day_demand:stockReadiness.filter((r)=>Number(r.comparable_demand_event_count||0)>0).length,
+      shortage_within_7_days:stockReadiness.filter((r)=>r.readiness_state==='shortage_within_7_days').length,
+      shortage_within_14_days:stockReadiness.filter((r)=>r.readiness_state==='shortage_within_14_days').length,
+      reorder_review_count:stockReadiness.filter((r)=>r.reorder_review).length,
+      unit_comparison_required_count:stockReadiness.filter((r)=>r.readiness_state==='unit_comparison_required').length,
+      unscheduled_material_plan_line_count:unscheduledPlanLines.length,
+      uncatalogued_scheduled_plan_line_count:uncataloguedPlanLines.length,
+      recurring_visit_count_14_days:recurringCoverage.length,
+      recurring_visits_with_quantified_material_plan:recurringCoverage.filter((r)=>r.material_plan_coverage==='quantified').length,
+      recurring_visits_without_quantified_material_plan:recurringCoverage.filter((r)=>r.material_plan_coverage==='unquantified').length,
+      seasonal_material_readiness_task_count:materialReadinessTasks.length
+    },
+    stock_readiness:stockReadiness.slice(0,250),
+    seasonal_summary:bySeason,
+    attention_queue:attentionQueue.slice(0,150),
+    recurring_demand_coverage:recurringCoverage.slice(0,250),
+    unscheduled_material_plan_lines:unscheduledPlanLines.slice(0,100),
+    uncatalogued_scheduled_plan_lines:uncataloguedPlanLines.slice(0,100),
+    seasonal_material_readiness_tasks:materialReadinessTasks,
+    demand_boundary:'Quantified demand comes only from planned Landscape Material Estimator lines whose work order has an active dispatch inside the 14-day window. The same plan is scheduled once at its earliest active dispatch and is not multiplied across repeated dispatch rows.',
+    recurring_boundary:'Upcoming recurring visits are checked for a linked dispatch/work order with a quantified material plan. Visits without that chain are shown as unquantified demand coverage; no per-visit material amount is invented.',
+    unit_boundary:'Projected on-hand and shortage timing are calculated only when the planned material unit exactly matches the canonical catalog stock unit after simple text normalization. No hidden unit conversion is performed.',
+    seasonal_boundary:'Stock context distinguishes spring/summer landscaping and lawn materials, fall cleanup supplies, winter salt/de-icer/traction materials, and general four-season stock using recorded catalog names/categories. Classification is advisory and does not rewrite catalog data.',
+    purchasing_boundary:'Reorder signals reuse current stock, planned demand and recorded reorder/target settings. They do not create purchase orders, contact suppliers, reserve stock, or create vendor commitments.',
+    authority_boundary:'Read-only management evidence. Materials catalog, receipts, issues, adjustments, Landscape Material Estimator plans, recurring service and dispatch remain their existing authorities.'
+  };
+}
+
   if (scope === 'owner_management_command') {
     const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
@@ -1103,7 +1302,7 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
       routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
-      estimateWorkflowRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead
+      estimateWorkflowRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,materialStockRead,materialPlansRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -1137,7 +1336,9 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
       canJobsView ? safeListEvidence(supabase,'v_change_order_extras_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       canFinanceView ? safeListEvidence(supabase,'v_ar_payment_application_directory','*','application_date',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_equipment_signout_history','*','checked_out_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
-      canJobsView ? safeListEvidence(supabase,'v_fleet_vehicle_operations','*','equipment_code',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500})
+      canJobsView ? safeListEvidence(supabase,'v_fleet_vehicle_operations','*','equipment_code',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canJobsView ? safeListEvidence(supabase,'v_material_stock_control','*','sku',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
+      canJobsView ? safeListEvidence(supabase,'v_landscape_material_line_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500})
     ]);
     const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
       timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,crews=crewsRead.rows,storms=stormsRead.rows,
@@ -1148,7 +1349,7 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
       recurringEvents=recurringEventsRead.rows,crmRenewals=crmRenewalsRead.rows,crmInteractions=crmInteractionsRead.rows,
       agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows,
       estimateWorkflow=estimateWorkflowRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
-      equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows;
+      equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows;
     const sourceFreshness:Record<string,any> = {};
     const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
       sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
@@ -1186,6 +1387,8 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
     addFresh(paymentApplicationsRead,'payment_applications','finance','v_ar_payment_application_directory',canFinanceView,168);
     addFresh(equipmentUseRead,'equipment_use','jobs','v_equipment_signout_history',canJobsView,168);
     addFresh(fleetRead,'fleet','jobs','v_fleet_vehicle_operations',canJobsView,168);
+    addFresh(materialStockRead,'material_stock','jobs','v_material_stock_control',canJobsView,168);
+    addFresh(materialPlansRead,'material_plans','jobs','v_landscape_material_line_directory',canJobsView,168);
     const metricConfidence = {
       crews_today:buildManagementMetricConfidence(sourceFreshness,['dispatch']),
       completion_today:buildManagementMetricConfidence(sourceFreshness,['dispatch','production']),
@@ -1206,7 +1409,8 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
       route_efficiency:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','routes','workability']),
       recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover']),
       estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability']),
-      utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet'])
+      utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
+      stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
@@ -1228,6 +1432,10 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
       jobsVisible:canJobsView,adminVisible:canAdminManage,
       sourceQueriesOk:[timekeepingDetailRead,productionRead,dispatchRead,equipmentRead,equipmentUseRead,maintenanceRead,fleetRead].every((r)=>r.query_ok!==false)
     });
+    const materialsConsumablesSeasonalStockReadiness=buildMaterialsConsumablesSeasonalStockReadiness({
+      materials:materialStock,materialPlans,dispatch,recurringVisits,seasonalWork,jobsVisible:canJobsView,
+      sourceQueriesOk:[materialStockRead,materialPlansRead,dispatchRead,recurringVisitsRead,seasonalWorkRead].every((r)=>r.query_ok!==false)
+    });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
       evidence_generated_at:new Date().toISOString(),
@@ -1237,7 +1445,7 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
       owner_equipment:equipment,owner_maintenance:maintenance,owner_training_summary:trainingSummary,
       owner_workforce_summary:workforceSummary,owner_receivables:receivables,owner_bank:bank,
       owner_finance_exceptions:financeExceptions,owner_close_dashboard:closeDashboard,owner_workability:workability,
-      owner_equipment_use:equipmentUse,owner_fleet:fleet,
+      owner_equipment_use:equipmentUse,owner_fleet:fleet,owner_material_stock:materialStock,owner_material_plans:materialPlans,
       source_visibility:{jobs:canJobsView,finance:canFinanceView,safety:canSafetyView,admin:canAdminManage},
       source_freshness:sourceFreshness,
       management_metric_confidence:metricConfidence,
@@ -1246,6 +1454,7 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
       recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,
       estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
+      materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
