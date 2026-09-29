@@ -23,14 +23,14 @@ must(directory,[
 ],'Build 351 server evidence');
 
 must(ui,[
-  'Build 350–357','Management metric freshness &amp; confidence','owner351Freshness','renderFreshness','metricMeta','sourceMeta','metricValue','metricEvidence',
-  'No source evidence','Evidence: ','Coverage gaps','Authoritative source details','Build 357 labour, equipment and fleet utilization decision-support evidence refreshed'
+  'Build 350–358','Management metric freshness &amp; confidence','owner351Freshness','renderFreshness','metricMeta','sourceMeta','metricValue','metricEvidence',
+  'No source evidence','Evidence: ','Coverage gaps','Authoritative source details','Build 358 materials, consumables and seasonal stock-readiness evidence refreshed'
 ],'Build 351 management UI');
 
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-28b357'],'Build 351 asset version');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-29b358'],'Build 351 asset version');
 must(help,['Build 351 — Management Metric Freshness &amp; Confidence','Missing is not zero','Stale and partial evidence stays visible','Authority remains read-only'],'Build 351 help');
-must(roadmap,['#### **351 — Management Metric Freshness & Confidence** is implemented','#### **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented','#### **353 — Four-Season Capacity & Workability Forecast** is implemented','#### **354 — Route & Crew Efficiency Evidence** is implemented','#### **355 — Recurring Service Renewal & Retention Workbench** is implemented','#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **358 — Materials, Consumables & Seasonal Stock Readiness**.'],'Build 351 roadmap');
-must(handbook,['**351 — Management Metric Freshness & Confidence**','**352 — Autonomous Exception Triage & Next-Safe-Action**','**353 — Four-Season Capacity & Workability Forecast**','**354 — Route & Crew Efficiency Evidence** is implemented','**355 — Recurring Service Renewal & Retention Workbench** is implemented','**356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','- **358 — Materials, Consumables & Seasonal Stock Readiness**'],'Build 351 handoff');
+must(roadmap,['#### **351 — Management Metric Freshness & Confidence** is implemented','#### **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented','#### **353 — Four-Season Capacity & Workability Forecast** is implemented','#### **354 — Route & Crew Efficiency Evidence** is implemented','#### **355 — Recurring Service Renewal & Retention Workbench** is implemented','#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **359 — Customer Communication Readiness & Queue Quality**.'],'Build 351 roadmap');
+must(handbook,['**351 — Management Metric Freshness & Confidence**','**352 — Autonomous Exception Triage & Next-Safe-Action**','**353 — Four-Season Capacity & Workability Forecast**','**354 — Route & Crew Efficiency Evidence** is implemented','**355 — Recurring Service Renewal & Retention Workbench** is implemented','**356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','- **359 — Customer Communication Readiness & Queue Quality**'],'Build 351 handoff');
 must(pkg,['test:management-metric-freshness-confidence','test:browser:management-metric-freshness-confidence'],'Build 351 package');
 must(workflow,['npm run test:management-metric-freshness-confidence','npm run test:browser:management-metric-freshness-confidence'],'Build 351 CI');
 
