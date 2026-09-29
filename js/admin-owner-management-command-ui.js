@@ -1,4 +1,4 @@
-/* Builds 350–356 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention + estimate-to-cash */
+/* Builds 350–357 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention + estimate-to-cash + utilization support */
 'use strict';
 (function(){
   const $=id=>document.getElementById(id);
@@ -17,7 +17,7 @@
     let el=$('ownerCommand350');if(el)return el;
     el=document.createElement('details');el.id='ownerCommand350';el.className='admin-hub-detail';el.dataset.adminHubTitle='Owner / Management Command Centre';el.dataset.adminHubGroups='operations';el.open=true;
     el.innerHTML=[
-      '<summary><span>Owner / Management Command Centre</span><small>Build 350–356 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention + estimate-to-cash</small></summary>',
+      '<summary><span>Owner / Management Command Centre</span><small>Build 350–357 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention + estimate-to-cash + utilization support</small></summary>',
       '<div class="admin-panel-block" data-build="350">',
       '<div class="section-heading"><div><span class="module-kicker">Build 350 · Management</span><h3>Owner / Management Command Centre</h3><p class="section-subtitle">One read-only view of today, production, profitability, workforce, seasonal execution, Safety, equipment and Finance readiness.</p></div><button id="owner350Refresh" class="secondary" type="button">Refresh</button></div>',
       '<div class="notice"><strong>Authority boundary:</strong> this cockpit summarizes existing source workflows only. It cannot dispatch crews, alter routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close accounting periods.</div>',
@@ -28,6 +28,7 @@
       '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
       '<section class="admin-panel-block owner355-retention" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring service renewal &amp; retention workbench</h4><p class="section-subtitle">Build 355 · renewal windows, holds, repeated skips/delays, unresolved service issues, seasonal rollover and price-review evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only:</strong> this workbench prepares context. It does not renew an agreement, change pricing, send a customer message or create a customer commitment.</div><div id="owner355Retention"></div></section>',
       '<section class="admin-panel-block owner356-cash" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate-to-cash leakage &amp; margin recovery</h4><p class="section-subtitle">Build 356 · accepted estimate → scheduling → production → approved extras → invoice readiness → invoicing → payment application → collection.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Analytical only:</strong> this workbench does not create invoices, post accounting, apply payments, send collection messages or charge customers.</div><div id="owner356EstimateCash"></div></section>',
+      '<section class="admin-panel-block owner357-utilization" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour, equipment &amp; fleet utilization decision support</h4><p class="section-subtitle">Build 357 · 30-day paid-time, crew assignment, production labour, equipment-use, maintenance, lockout/downtime and fleet availability evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Decision support only:</strong> this view does not score employees, clear Safety restrictions, change crew/equipment assignments, complete maintenance, replace assets or create purchases.</div><div id="owner357Utilization"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -72,7 +73,7 @@
         card('Stale sources',stale.length,'requires cautious interpretation'),
         card('Coverage gaps',gaps.length,'missing/error/timestamp/cap signals')
       ].join('')+'</div>';
-      const priority=['jobs','dispatch','production','profitability','timekeeping','workability','receivables','bank','safety','equipment','maintenance','recurring_visits','storms','storm_routes'];
+      const priority=['jobs','dispatch','production','profitability','timekeeping','timekeeping_detail','workability','receivables','bank','safety','equipment','equipment_use','maintenance','fleet','recurring_visits','storms','storm_routes'];
       const ordered=[...priority.map(k=>sourceMeta(k)).filter(Boolean),...entries.filter(s=>!priority.includes(s?.source_key))];
       const rows='<div class="owner350-list">'+ordered.map(s=>'<div class="owner351-source"><strong>'+esc(s.source_module||'source')+' · '+esc(s.source_view||s.source_key||'unknown')+'</strong><small><span class="owner351-state">'+esc(String(s.freshness_state||'unknown').toUpperCase())+'</span> · confidence '+esc(String(s.confidence||'unknown').toUpperCase())+' · '+esc(String(s.row_count??0))+' row(s) · updated '+esc(when(s.last_authoritative_update))+'</small><small>'+esc(s.reason||'No freshness explanation supplied.')+'</small></div>').join('')+'</div>';
       host.innerHTML=summary+'<details><summary>Authoritative source details</summary>'+rows+'</details>';
@@ -202,6 +203,53 @@
         '<details style="margin-top:8px;"><summary>Accepted estimate lifecycle traces</summary><div class="owner350-list">'+(lifecycle||'<p class="muted">No accepted estimate lifecycle is loaded.</p>')+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Evidence boundaries</summary><p class="muted">'+esc(w.margin_boundary||'')+'</p><p class="muted">'+esc(w.scheduling_boundary||'')+'</p><p class="muted">'+esc(w.billing_boundary||'')+'</p><p class="muted">'+esc(w.collection_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
+
+    function renderUtilizationSupport(){
+      const host=$('owner357Utilization');if(!host)return;
+      const w=state.data?.labour_equipment_fleet_utilization_support;
+      const meta=metricMeta('utilization_support');
+      if(!allowed('jobs')||!allowed('admin')){host.innerHTML='<p class="muted">Utilization decision support requires Jobs visibility and Admin management access so crew-level paid-time evidence stays permission scoped.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Labour, equipment and fleet utilization evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical utilization source queries failed. Utilization counts are withheld rather than converted into zero-valued facts.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){
+        host.innerHTML='<p class="muted">'+esc(meta.reason||'Required utilization evidence is unavailable.')+'</p>';return
+      }
+      const s=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Paid time, 30d',Number(s.paid_hours||0).toFixed(1)+' h','recorded paid time','utilization_support'),
+        card('Job-linked paid time',Number(s.job_linked_paid_hours||0).toFixed(1)+' h','paid time linked to job/session evidence','utilization_support'),
+        card('Paid time without job link',Number(s.paid_hours_without_job_link||0).toFixed(1)+' h','recording/assignment evidence to review','utilization_support'),
+        card('Production labour',Number(s.production_labour_hours||0).toFixed(1)+' h','recorded production crew-hours','utilization_support'),
+        card('Equipment with recorded use',num(s.equipment_with_recent_recorded_use),num(s.equipment_asset_count)+' loaded asset(s)','utilization_support'),
+        card('Fleet known available',num(s.fleet_known_available),num(s.fleet_asset_count)+' fleet asset(s)','utilization_support'),
+        card('Fleet downtime',num(s.fleet_downtime_assets),'recorded downtime evidence','utilization_support'),
+        card('Maintenance attention',num(s.maintenance_attention_assets),'due / due-soon / overdue assets','utilization_support')
+      ].join('')+'</div>';
+      const crews=(w.crew_utilization||[]).slice(0,30).map(r=>{
+        const coverage=r.job_link_coverage_percent==null?'job-link coverage unavailable':Number(r.job_link_coverage_percent).toFixed(1)+'% job-link coverage';
+        return '<div class="owner350-row"><strong>'+esc(r.crew_name||'Unassigned / not recorded')+'</strong><small>'+esc(Number(r.paid_hours||0).toFixed(1)+' paid h · '+Number(r.job_linked_paid_hours||0).toFixed(1)+' job-linked h · '+Number(r.travel_hours||0).toFixed(1)+' travel h')+'</small><small>'+esc(Number(r.production_labour_hours||0).toFixed(1)+' production h · '+num(r.dispatch_item_count)+' dispatch item(s) · '+coverage)+'</small></div>';
+      }).join('');
+      const queue=(w.attention_queue||[]).slice(0,30).map(r=>{
+        const label=String(r.signal_type||'review').replaceAll('_',' ');
+        return '<div class="owner350-row"><strong>'+esc(label.toUpperCase()+' · '+(r.equipment_code||r.equipment_name||'Asset'))+'</strong><small>'+esc(r.equipment_name||'')+'</small><small>'+esc(r.detail||'')+'</small><small>'+esc(r.suggested_next_action||'Review source evidence')+'</small><button class="secondary" style="margin-top:6px;" data-owner357-open="operations">Open Operations</button></div>';
+      }).join('');
+      const fleet=(w.fleet_availability||[]).slice(0,20).map(r=>{
+        const state=[
+          r.fleet_operational_status?'operations '+r.fleet_operational_status:'',
+          r.fleet_readiness_status?'readiness '+r.fleet_readiness_status:'',
+          r.locked_out?'locked out':'',
+          r.fleet_downtime?'downtime':'',
+          r.last_recorded_use_at?'last recorded use '+when(r.last_recorded_use_at):'no recorded use timestamp'
+        ].filter(Boolean).join(' · ');
+        return '<div class="owner350-row"><strong>'+esc((r.equipment_code||'Fleet asset')+' · '+(r.equipment_name||''))+'</strong><small>'+esc(state)+'</small></div>';
+      }).join('');
+      host.innerHTML=summary+
+        '<details style="margin-top:10px;" open><summary>Crew-level recording context</summary><div class="owner350-list">'+(crews||'<p class="muted">No crew-level paid-time/production evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;" open><summary>Utilization, downtime &amp; maintenance signals</summary><div class="owner350-list">'+(queue||'<p class="muted">No equipment/fleet utilization attention signal is visible in the loaded evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Fleet availability evidence</summary><div class="owner350-list">'+(fleet||'<p class="muted">No fleet asset evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Evidence boundaries</summary><p class="muted">'+esc(w.labour_boundary||'')+'</p><p class="muted">'+esc(w.equipment_boundary||'')+'</p><p class="muted">'+esc(w.safety_boundary||'')+'</p><p class="muted">'+esc(w.maintenance_boundary||'')+'</p><p class="muted">'+esc(w.privacy_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -252,6 +300,7 @@
       renderRouteCrewEfficiency();
       renderRecurringRetention();
       renderEstimateToCash();
+      renderUtilizationSupport();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
@@ -304,10 +353,10 @@
       window.YWIRouter?.showSection?.('admin');setTimeout(()=>window.YWIAdminHub?.open?.(target==='safety'?'safety':'operations'),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 356 estimate-to-cash leakage and margin recovery evidence refreshed. Source records were not changed.')}
-      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null};render();note('Unable to load Build 356 estimate-to-cash leakage and margin recovery evidence: '+(e?.message||e),true)}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 357 labour, equipment and fleet utilization decision-support evidence refreshed. Source records were not changed.')}
+      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null,labour_equipment_fleet_utilization_support:null};render();note('Unable to load Build 357 labour, equipment and fleet utilization decision-support evidence: '+(e?.message||e),true)}
     }
-    el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open'))});
+    el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open'))});
     $('owner350Refresh').onclick=load;load();
   }
   window.YWIOwnerManagementCommandUI={mount};
