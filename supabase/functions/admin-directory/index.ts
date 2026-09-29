@@ -755,6 +755,168 @@ function buildRecurringRenewalRetentionWorkbench(input:{
 }
 
 
+function buildEstimateToCashLeakageWorkbench(input:{
+  workflows:any[];dispatch:any[];production:any[];changeOrders:any[];receivables:any[];paymentApplications:any[];
+  profitability:any[];jobs:any[];jobsVisible:boolean;financeVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const activeDispatchByWorkOrder=new Map<string,any[]>();
+  for(const row of input.dispatch||[]){
+    const id=String(row?.work_order_id||''); if(!id) continue;
+    const status=String(row?.schedule_status||row?.dispatch_status||'').toLowerCase();
+    if(['cancelled','superseded'].includes(status)) continue;
+    const list=activeDispatchByWorkOrder.get(id)||[]; list.push(row); activeDispatchByWorkOrder.set(id,list);
+  }
+  const productionByWorkOrder=new Map<string,any[]>();
+  for(const row of input.production||[]){
+    const id=String(row?.work_order_id||''); if(!id) continue;
+    const list=productionByWorkOrder.get(id)||[]; list.push(row); productionByWorkOrder.set(id,list);
+  }
+  const changeByWorkOrder=new Map<string,any[]>();
+  const changeByEstimate=new Map<string,any[]>();
+  for(const row of input.changeOrders||[]){
+    const wid=String(row?.work_order_id||''); if(wid){const list=changeByWorkOrder.get(wid)||[];list.push(row);changeByWorkOrder.set(wid,list);}
+    const eid=String(row?.estimate_id||''); if(eid){const list=changeByEstimate.get(eid)||[];list.push(row);changeByEstimate.set(eid,list);}
+  }
+  const receivableByInvoice=new Map((input.receivables||[]).map((r)=>[String(r?.id||''),r]));
+  const paymentsByInvoice=new Map<string,any[]>();
+  for(const row of input.paymentApplications||[]){
+    const id=String(row?.invoice_id||''); if(!id) continue;
+    const list=paymentsByInvoice.get(id)||[]; list.push(row); paymentsByInvoice.set(id,list);
+  }
+  const jobById=new Map((input.jobs||[]).map((r)=>[String(r?.id||''),r]));
+  const profitByJobCode=new Map((input.profitability||[]).filter((r)=>String(r?.group_type||'').toLowerCase()==='job').map((r)=>[String(r?.group_key||''),r]));
+  const queue:any[]=[];
+  const lifecycle:any[]=[];
+
+  for(const w of input.workflows||[]){
+    const accepted=w?.customer_approval_ready===true || String(w?.estimate_status||'').toLowerCase()==='accepted' || !!w?.quote_accepted_at;
+    if(!accepted) continue;
+    const estimateId=String(w?.estimate_id||'');
+    const workOrderId=String(w?.work_order_id||'');
+    const invoiceId=String(w?.ar_invoice_id||'');
+    const dispatchRows=workOrderId?(activeDispatchByWorkOrder.get(workOrderId)||[]):[];
+    const productionRows=workOrderId?(productionByWorkOrder.get(workOrderId)||[]):[];
+    const relatedChanges=[...(workOrderId?(changeByWorkOrder.get(workOrderId)||[]):[]),...(estimateId?(changeByEstimate.get(estimateId)||[]):[])]
+      .filter((row,index,all)=>all.findIndex((x)=>String(x?.id||'')===String(row?.id||''))===index);
+    const completed=w?.completion_ready_for_accounting===true || productionRows.some((r)=>['complete','completed_with_evidence','completed_missing_evidence'].includes(String(r?.completion_state||r?.production_state||r?.session_status||'').toLowerCase()));
+    const acceptedNotScheduled=dispatchRows.length===0;
+    const completedNotInvoiced=completed && !invoiceId;
+    const receivable=invoiceId?receivableByInvoice.get(invoiceId)||null:null;
+    const paymentRows=invoiceId?(paymentsByInvoice.get(invoiceId)||[]):[];
+    const invoiceBalance=receivable==null?null:Number(receivable?.balance_due);
+    const invoicedNotCollected=!!invoiceId && receivable!=null && Number.isFinite(invoiceBalance) && invoiceBalance>0;
+    const legacyJob=workOrderId?jobById.get(String(w?.legacy_job_id||''))||null:null;
+    const jobCode=String(legacyJob?.job_code||'');
+    const profit=jobCode?profitByJobCode.get(jobCode)||null:null;
+    const actualProfit=profit==null?null:Number(profit?.actual_profit_total);
+    const revenueVariance=profit==null?null:Number(profit?.revenue_variance_total);
+    const costVariance=profit==null?null:Number(profit?.cost_variance_total);
+    const materialMarginLeakage=profit!=null && (
+      (Number.isFinite(actualProfit)&&actualProfit<0) ||
+      (Number.isFinite(revenueVariance)&&revenueVariance<0&&Number.isFinite(costVariance)&&costVariance>0)
+    );
+    const approvedExtraNotBilled=relatedChanges.filter((ch)=>{
+      const authorized=String(ch?.customer_authorization_status||'').toLowerCase()==='authorized' || String(ch?.status||'').toLowerCase()==='approved';
+      const applied=String(ch?.scope_application_status||'').toLowerCase()==='applied' || !!ch?.budget_application_id;
+      const invoiceEvidence=String(ch?.invoice_evidence_status||'').toLowerCase();
+      return authorized&&applied&&invoiceEvidence!=='linked';
+    });
+    const line={
+      estimate_id:w?.estimate_id||null,estimate_number:w?.estimate_number||null,client_name:w?.client_name||null,site_name:w?.site_name||null,
+      estimate_total_amount:w?.estimate_total_amount??null,estimate_total_cost:w?.estimate_total_cost??null,estimate_margin_amount:w?.estimate_margin_amount??null,estimate_margin_percent:w?.estimate_margin_percent??null,
+      work_order_id:w?.work_order_id||null,work_order_number:w?.work_order_number||null,work_order_status:w?.work_order_status||null,
+      active_dispatch_count:dispatchRows.length,production_session_count:productionRows.length,completion_ready_for_accounting:w?.completion_ready_for_accounting===true,
+      invoice_id:w?.ar_invoice_id||null,invoice_number:w?.ar_invoice_number||null,invoice_status:w?.ar_invoice_status||null,
+      invoice_balance_due:invoiceBalance,payment_application_count:paymentRows.length,
+      payment_applied_total:paymentRows.reduce((sum,r)=>sum+Number(r?.applied_amount||0),0),
+      accepted_not_scheduled:acceptedNotScheduled,completed_not_invoiced:completedNotInvoiced,
+      approved_extra_not_billed_count:approvedExtraNotBilled.length,invoiced_not_collected:invoicedNotCollected,
+      material_margin_leakage:materialMarginLeakage,
+      actual_profit_total:profit==null?null:(Number.isFinite(actualProfit)?actualProfit:null),
+      revenue_variance_total:profit==null?null:(Number.isFinite(revenueVariance)?revenueVariance:null),
+      cost_variance_total:profit==null?null:(Number.isFinite(costVariance)?costVariance:null),
+      finance_evidence_state:input.financeVisible?'available':'not_visible',
+      workflow_stage:w?.workflow_stage||null
+    };
+    lifecycle.push(line);
+    if(acceptedNotScheduled) queue.push({
+      signal_type:'accepted_not_scheduled',source_module:'jobs',source_record_id:w?.work_order_id||w?.estimate_id||null,
+      source_reference:w?.work_order_number||w?.estimate_number||'Accepted estimate',client_name:w?.client_name||null,site_name:w?.site_name||null,
+      amount:w?.estimate_total_amount??null,detail:w?.work_order_id?'Accepted/converted work has no active dispatch evidence.':'Accepted estimate has not yet produced a work order/dispatch.',
+      suggested_next_action:'Review scheduling / dispatch readiness',navigation_target:'jobs'
+    });
+    if(completedNotInvoiced) queue.push({
+      signal_type:'completed_not_invoiced',source_module:'finance',source_record_id:w?.work_order_id||w?.estimate_id||null,
+      source_reference:w?.work_order_number||w?.estimate_number||'Completed work',client_name:w?.client_name||null,site_name:w?.site_name||null,
+      amount:w?.current_work_order_charge_total??w?.estimate_total_amount??null,detail:'Completion/accounting-ready evidence exists without an A/R invoice.',
+      suggested_next_action:'Review invoice readiness and Finance handoff',navigation_target:'finance'
+    });
+    for(const ch of approvedExtraNotBilled) queue.push({
+      signal_type:'approved_extra_not_billed',source_module:'jobs',source_record_id:ch?.id||null,
+      source_reference:ch?.change_order_number||'Approved extra',client_name:w?.client_name||null,site_name:w?.site_name||ch?.site_name||null,
+      amount:ch?.estimated_charge_delta??null,detail:'Authorized/applied change-order scope is not linked to invoice evidence.',
+      suggested_next_action:'Review change-order invoice evidence',navigation_target:'jobs'
+    });
+    if(invoicedNotCollected) queue.push({
+      signal_type:'invoiced_not_collected',source_module:'finance',source_record_id:w?.ar_invoice_id||null,
+      source_reference:w?.ar_invoice_number||'A/R invoice',client_name:w?.client_name||receivable?.client_name||null,site_name:w?.site_name||null,
+      amount:invoiceBalance,detail:'Invoice has a remaining recorded balance after '+paymentRows.length+' payment application record(s).',
+      suggested_next_action:'Review receivable and payment application evidence',navigation_target:'finance'
+    });
+    if(materialMarginLeakage) queue.push({
+      signal_type:'material_margin_leakage',source_module:'finance',source_record_id:w?.legacy_job_id||w?.work_order_id||null,
+      source_reference:jobCode||w?.work_order_number||w?.estimate_number||'Job profitability',client_name:w?.client_name||null,site_name:w?.site_name||null,
+      amount:actualProfit,detail:Number.isFinite(actualProfit)&&actualProfit<0?'Recorded actual job profit is negative.':'Recorded cost variance is adverse while recorded revenue variance is also adverse.',
+      suggested_next_action:'Review estimate assumptions, approved extras, actual cost and billed revenue',navigation_target:'finance'
+    });
+  }
+
+  const seenStandaloneChange=new Set(queue.filter((r)=>r.signal_type==='approved_extra_not_billed').map((r)=>String(r.source_record_id||'')));
+  for(const ch of input.changeOrders||[]){
+    const id=String(ch?.id||''); if(!id||seenStandaloneChange.has(id)) continue;
+    const authorized=String(ch?.customer_authorization_status||'').toLowerCase()==='authorized' || String(ch?.status||'').toLowerCase()==='approved';
+    const applied=String(ch?.scope_application_status||'').toLowerCase()==='applied' || !!ch?.budget_application_id;
+    if(authorized&&applied&&String(ch?.invoice_evidence_status||'').toLowerCase()!=='linked'){
+      queue.push({signal_type:'approved_extra_not_billed',source_module:'jobs',source_record_id:ch?.id||null,source_reference:ch?.change_order_number||'Approved extra',
+        client_name:null,site_name:ch?.site_name||null,amount:ch?.estimated_charge_delta??null,
+        detail:'Authorized/applied change-order scope is not linked to invoice evidence.',suggested_next_action:'Review change-order invoice evidence',navigation_target:'jobs'});
+    }
+  }
+  const seenInvoice=new Set(queue.filter((r)=>r.signal_type==='invoiced_not_collected').map((r)=>String(r.source_record_id||'')));
+  for(const ar of input.receivables||[]){
+    const id=String(ar?.id||''); const balance=Number(ar?.balance_due);
+    if(!id||seenInvoice.has(id)||!Number.isFinite(balance)||balance<=0) continue;
+    const apps=paymentsByInvoice.get(id)||[];
+    queue.push({signal_type:'invoiced_not_collected',source_module:'finance',source_record_id:ar?.id||null,source_reference:ar?.invoice_number||'A/R invoice',
+      client_name:ar?.client_name||null,site_name:null,amount:balance,
+      detail:'Invoice has a remaining recorded balance after '+apps.length+' payment application record(s).',
+      suggested_next_action:'Review receivable and payment application evidence',navigation_target:'finance'});
+  }
+
+  const order:Record<string,number>={completed_not_invoiced:10,approved_extra_not_billed:20,invoiced_not_collected:30,material_margin_leakage:40,accepted_not_scheduled:50};
+  queue.sort((a,b)=>(order[a.signal_type]||99)-(order[b.signal_type]||99)||String(a.source_reference||'').localeCompare(String(b.source_reference||'')));
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk,
+    summary:{
+      accepted_estimate_lifecycles:lifecycle.length,
+      accepted_not_scheduled:queue.filter((r)=>r.signal_type==='accepted_not_scheduled').length,
+      completed_not_invoiced:queue.filter((r)=>r.signal_type==='completed_not_invoiced').length,
+      approved_extra_not_billed:queue.filter((r)=>r.signal_type==='approved_extra_not_billed').length,
+      invoiced_not_collected:queue.filter((r)=>r.signal_type==='invoiced_not_collected').length,
+      material_margin_leakage:queue.filter((r)=>r.signal_type==='material_margin_leakage').length,
+      total_open_leakage_signals:queue.length,
+      jobs_evidence_visible:input.jobsVisible,finance_evidence_visible:input.financeVisible
+    },
+    attention_queue:queue.slice(0,150),lifecycles:lifecycle.slice(0,250),
+    margin_boundary:'Material margin leakage is flagged only from strong recorded evidence: negative actual job profit, or simultaneous adverse recorded revenue and cost variance. No dollar or percentage threshold is invented.',
+    scheduling_boundary:'Accepted-not-scheduled means accepted customer evidence exists and no active dispatch record is loaded for the resulting work order; an accepted estimate without a work order is also surfaced.',
+    billing_boundary:'Completed-not-invoiced uses completion/accounting-ready evidence without an A/R invoice. Approved-extra-not-billed requires authorized/applied change-order scope without linked invoice evidence.',
+    collection_boundary:'Invoiced-not-collected uses the recorded A/R balance due and payment-application evidence; it does not initiate reminders, collect payment or mutate provider state.',
+    authority_boundary:'Estimate, Jobs/dispatch/production, change-order and Finance records remain their existing authorities. This workbench is analytical only and cannot post accounting, create invoices, apply payments or charge customers.'
+  };
+}
+
+
   if (scope === 'owner_management_command') {
     const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
@@ -765,7 +927,8 @@ function buildRecurringRenewalRetentionWorkbench(input:{
     const [
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
-      routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead
+      routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
+      estimateWorkflowRead,changeOrdersRead,paymentApplicationsRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -794,7 +957,10 @@ function buildRecurringRenewalRetentionWorkbench(input:{
       canJobsView ? safeListEvidence(supabase,'v_crm_renewal_queue','*','end_date',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       canJobsView ? safeListEvidence(supabase,'v_crm_interaction_timeline','*','occurred_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canFinanceView ? safeListEvidence(supabase,'v_service_agreement_profitability_summary','*','agreement_code',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
-      canJobsView ? safeListEvidence(supabase,'v_seasonal_operations_rollover_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750})
+      canJobsView ? safeListEvidence(supabase,'v_seasonal_operations_rollover_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
+      (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'v_estimate_job_invoice_workflow','*','estimate_number',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
+      canJobsView ? safeListEvidence(supabase,'v_change_order_extras_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
+      canFinanceView ? safeListEvidence(supabase,'v_ar_payment_application_directory','*','application_date',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000})
     ]);
     const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
       timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,crews=crewsRead.rows,storms=stormsRead.rows,
@@ -803,7 +969,8 @@ function buildRecurringRenewalRetentionWorkbench(input:{
       receivables=receivablesRead.rows,bank=bankRead.rows,financeExceptions=financeExceptionsRead.rows,
       closeDashboard=closeDashboardRead.rows,workability=workabilityRead.rows,routes=routesRead.rows,timekeepingDetail=timekeepingDetailRead.rows,
       recurringEvents=recurringEventsRead.rows,crmRenewals=crmRenewalsRead.rows,crmInteractions=crmInteractionsRead.rows,
-      agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows;
+      agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows,
+      estimateWorkflow=estimateWorkflowRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows;
     const sourceFreshness:Record<string,any> = {};
     const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
       sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
@@ -836,6 +1003,9 @@ function buildRecurringRenewalRetentionWorkbench(input:{
     addFresh(crmInteractionsRead,'crm_interactions','jobs','v_crm_interaction_timeline',canJobsView,168);
     addFresh(agreementProfitabilityRead,'agreement_profitability','finance','v_service_agreement_profitability_summary',canFinanceView,168);
     addFresh(seasonalRolloverRead,'seasonal_rollover','jobs','v_seasonal_operations_rollover_directory',canJobsView,168);
+    addFresh(estimateWorkflowRead,'estimate_workflow','jobs+finance','v_estimate_job_invoice_workflow',canJobsView&&canFinanceView,168);
+    addFresh(changeOrdersRead,'change_orders','jobs','v_change_order_extras_directory',canJobsView,168);
+    addFresh(paymentApplicationsRead,'payment_applications','finance','v_ar_payment_application_directory',canFinanceView,168);
     const metricConfidence = {
       crews_today:buildManagementMetricConfidence(sourceFreshness,['dispatch']),
       completion_today:buildManagementMetricConfidence(sourceFreshness,['dispatch','production']),
@@ -854,7 +1024,8 @@ function buildRecurringRenewalRetentionWorkbench(input:{
       finance_readiness:buildManagementMetricConfidence(sourceFreshness,['finance_exceptions','close_dashboard']),
       capacity_forecast:buildManagementMetricConfidence(sourceFreshness,['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work']),
       route_efficiency:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','routes','workability']),
-      recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover'])
+      recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover']),
+      estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
@@ -865,6 +1036,11 @@ function buildRecurringRenewalRetentionWorkbench(input:{
     const recurringRenewalRetentionWorkbench=buildRecurringRenewalRetentionWorkbench({
       programs:recurring,events:recurringEvents,renewals:crmRenewals,interactions:crmInteractions,
       profitability:agreementProfitability,rollovers:seasonalRollover,financeVisible:canFinanceView
+    });
+    const estimateToCashLeakageWorkbench=buildEstimateToCashLeakageWorkbench({
+      workflows:estimateWorkflow,dispatch,production,changeOrders,receivables,paymentApplications,
+      profitability,jobs,jobsVisible:canJobsView,financeVisible:canFinanceView,
+      sourceQueriesOk:[estimateWorkflowRead,dispatchRead,productionRead,changeOrdersRead,receivablesRead,paymentApplicationsRead,profitabilityRead].every((r)=>r.query_ok!==false)
     });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
@@ -881,6 +1057,7 @@ function buildRecurringRenewalRetentionWorkbench(input:{
       four_season_capacity_forecast:fourSeasonCapacityForecast,
       route_crew_efficiency_evidence:routeCrewEfficiencyEvidence,
       recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,
+      estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
