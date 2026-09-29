@@ -126,6 +126,17 @@
           <p><strong>No automatic renewal or messaging:</strong> suggested renewal/contact actions prepare context only. The workbench does not renew an agreement, send a customer message, create a commitment or mutate customer/provider state.</p>
         </section>
 
+        <section class="help-section" id="estimate-to-cash-leakage-margin-recovery">
+          <h2>Build 356 — Estimate-to-Cash Leakage &amp; Margin Recovery</h2>
+          <p>Build 356 adds a cross-module, read-only trace from accepted estimates through scheduling, production, approved extras, invoice readiness, invoicing, payment application and collection.</p>
+          <p><strong>Accepted not scheduled:</strong> accepted customer evidence is surfaced when no active dispatch is loaded. Accepted estimates that have not yet produced a work order are also visible rather than silently disappearing between quote and operations.</p>
+          <p><strong>Completed not invoiced:</strong> completion/accounting-ready evidence without an A/R invoice is flagged for deliberate Finance review. The workbench does not create the invoice.</p>
+          <p><strong>Approved extras not billed:</strong> authorized and applied change-order scope without linked invoice evidence is shown as a leakage candidate with its source change-order reference.</p>
+          <p><strong>Invoiced not collected:</strong> remaining A/R balance is shown beside recorded payment-application evidence. The workbench does not send reminders, apply payments or charge a customer.</p>
+          <p><strong>Margin leakage:</strong> the release flags only strong recorded evidence: negative actual job profit, or simultaneous adverse revenue and cost variance. It does not invent a dollar or percentage threshold.</p>
+          <p><strong>Analytical only:</strong> source navigation is deliberate and permission-aware. Finance posting, invoice creation, payment application, provider mutation and customer charges remain separate authorities.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">

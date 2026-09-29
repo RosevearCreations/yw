@@ -189,7 +189,9 @@
     "test:route-crew-efficiency-evidence": "node scripts/route-crew-efficiency-evidence-check.mjs",
     "test:browser:route-crew-efficiency-evidence": "playwright test --config=playwright.config.mjs tests/browser/route-crew-efficiency-evidence.spec.mjs",
     "test:recurring-service-renewal-retention": "node scripts/recurring-service-renewal-retention-check.mjs",
-    "test:browser:recurring-service-renewal-retention": "playwright test --config=playwright.config.mjs tests/browser/recurring-service-renewal-retention.spec.mjs"
+    "test:browser:recurring-service-renewal-retention": "playwright test --config=playwright.config.mjs tests/browser/recurring-service-renewal-retention.spec.mjs",
+    "test:estimate-to-cash-leakage-margin-recovery": "node scripts/estimate-to-cash-leakage-margin-recovery-check.mjs",
+    "test:browser:estimate-to-cash-leakage-margin-recovery": "playwright test --config=playwright.config.mjs tests/browser/estimate-to-cash-leakage-margin-recovery.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
