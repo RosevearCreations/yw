@@ -917,6 +917,181 @@ function buildEstimateToCashLeakageWorkbench(input:{
 }
 
 
+
+function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
+  timekeeping:any[];production:any[];dispatch:any[];equipment:any[];equipmentUse:any[];maintenance:any[];fleet:any[];
+  jobsVisible:boolean;adminVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const today=ontarioDateKey(new Date())!;
+  const cutoff=addCalendarDays(today,-30);
+  const inWindow=(value:any)=>{
+    const d=ontarioDateKey(value);
+    return !!d&&d>=cutoff&&d<=today;
+  };
+  const timeRows=(input.timekeeping||[]).filter((r)=>inWindow(r?.signed_in_at||r?.updated_at));
+  const productionRows=(input.production||[]).filter((r)=>inWindow(r?.session_date||r?.started_at));
+  const dispatchRows=(input.dispatch||[]).filter((r)=>{
+    const d=ontarioDateKey(r?.scheduled_start||r?.service_date);
+    return !!d&&d>=cutoff&&d<=today&&!['cancelled','superseded'].includes(String(r?.schedule_status||r?.status||'').toLowerCase());
+  });
+  const dispatchById=new Map<string,any>();
+  for(const row of dispatchRows) if(row?.id) dispatchById.set(String(row.id),row);
+
+  const crewMap=new Map<string,any>();
+  const crewRow=(id:any,name:any)=>{
+    const key=String(id||name||'unassigned');
+    const current=crewMap.get(key)||{
+      crew_id:id||null,crew_name:name||'Unassigned / not recorded',paid_minutes:0,job_linked_paid_minutes:0,
+      travel_minutes:0,paid_minutes_without_job_link:0,production_labour_hours:0,dispatch_item_count:0,production_session_count:0
+    };
+    crewMap.set(key,current);return current;
+  };
+  for(const row of timeRows){
+    const s=crewRow(row?.crew_id,row?.crew_name);
+    const paid=Math.max(0,Number(row?.paid_minutes||0)),travel=Math.max(0,Number(row?.travel_minutes||0));
+    s.paid_minutes+=paid;s.travel_minutes+=travel;
+    if(row?.job_id||row?.job_session_id) s.job_linked_paid_minutes+=paid;
+    else s.paid_minutes_without_job_link+=paid;
+  }
+  for(const row of dispatchRows){
+    const s=crewRow(row?.crew_id,row?.crew_name);
+    s.dispatch_item_count++;
+  }
+  for(const row of productionRows){
+    const dispatch=dispatchById.get(String(row?.dispatch_schedule_item_id||''))||{};
+    const s=crewRow(dispatch?.crew_id,dispatch?.crew_name);
+    s.production_labour_hours+=Math.max(0,Number(row?.total_labour_hours||0));
+    s.production_session_count++;
+  }
+  const crewUtilization=[...crewMap.values()].map((s)=>({
+    ...s,
+    paid_hours:Number((s.paid_minutes/60).toFixed(2)),
+    job_linked_paid_hours:Number((s.job_linked_paid_minutes/60).toFixed(2)),
+    travel_hours:Number((s.travel_minutes/60).toFixed(2)),
+    paid_hours_without_job_link:Number((s.paid_minutes_without_job_link/60).toFixed(2)),
+    production_labour_hours:Number(Number(s.production_labour_hours||0).toFixed(2)),
+    job_link_coverage_percent:s.paid_minutes>0?Number(((s.job_linked_paid_minutes/s.paid_minutes)*100).toFixed(1)):null
+  })).sort((a,b)=>String(a.crew_name).localeCompare(String(b.crew_name)));
+
+  const useByAsset=new Map<string,any[]>();
+  for(const row of input.equipmentUse||[]){
+    const id=row?.equipment_item_id;if(!id) continue;
+    const key=String(id),list=useByAsset.get(key)||[];list.push(row);useByAsset.set(key,list);
+  }
+  const maintenanceByAsset=new Map<string,any[]>();
+  for(const row of input.maintenance||[]){
+    const id=row?.equipment_item_id;if(!id) continue;
+    const key=String(id),list=maintenanceByAsset.get(key)||[];list.push(row);maintenanceByAsset.set(key,list);
+  }
+  const fleetByAsset=new Map<string,any>();
+  for(const row of input.fleet||[]) if(row?.equipment_item_id) fleetByAsset.set(String(row.equipment_item_id),row);
+
+  const assetUtilization=(input.equipment||[]).map((asset)=>{
+    const key=String(asset?.id||asset?.equipment_item_id||'');
+    const allUse=(useByAsset.get(key)||[]).sort((a,b)=>String(b?.checked_out_at||'').localeCompare(String(a?.checked_out_at||'')));
+    const recentUse=allUse.filter((r)=>inWindow(r?.checked_out_at));
+    const activeUse=allUse.filter((r)=>!r?.returned_at);
+    const maintenance=maintenanceByAsset.get(key)||[];
+    const overdue=maintenance.filter((m)=>String(m?.due_status||'').toLowerCase()==='overdue');
+    const due=maintenance.filter((m)=>['due','due_soon'].includes(String(m?.due_status||'').toLowerCase()));
+    const fleet=fleetByAsset.get(key)||null;
+    const status=String(asset?.status||asset?.equipment_status||'').toLowerCase();
+    const activeAsset=!['retired','disposed','inactive','lost'].includes(status)&&String(asset?.replacement_state||'').toLowerCase()!=='retired';
+    const locked=asset?.is_locked_out===true||String(asset?.registry_readiness_status||'').toLowerCase()==='locked_out';
+    const fleetDowntime=!!fleet&&(String(fleet?.operational_status||'').toLowerCase()==='downtime'||Number(fleet?.open_downtime_count||0)>0);
+    const fleetReadiness=String(fleet?.latest_readiness_status||'').toLowerCase();
+    const fleetReadinessAttention=!!fleet&&!!fleetReadiness&&!['ready','passed','available','clear'].includes(fleetReadiness);
+    const replacementState=String(asset?.replacement_state||'retain').toLowerCase();
+    const replacementAttention=['plan_replacement','replace','retired'].includes(replacementState);
+    const noRecentRecordedUse=activeAsset&&recentUse.length===0;
+    const reasons:string[]=[];
+    if(locked) reasons.push('equipment locked out');
+    if(fleetDowntime) reasons.push('fleet downtime');
+    if(overdue.length) reasons.push('preventive maintenance overdue');
+    else if(due.length) reasons.push('preventive maintenance due / due soon');
+    if(fleetReadinessAttention) reasons.push('fleet readiness attention');
+    if(replacementAttention) reasons.push('recorded replacement state '+replacementState);
+    if(noRecentRecordedUse) reasons.push('no recorded equipment signout in the 30-day window');
+    return {
+      equipment_item_id:asset?.id||asset?.equipment_item_id||null,equipment_code:asset?.equipment_code||null,
+      equipment_name:asset?.equipment_name||null,category:asset?.category||null,assigned_crew_id:asset?.assigned_crew_id||null,
+      assigned_crew_name:asset?.assigned_crew_name||null,status:asset?.status||asset?.equipment_status||null,
+      registry_readiness_status:asset?.registry_readiness_status||null,replacement_state:asset?.replacement_state||null,
+      recent_signout_count:recentUse.length,active_signout_count:activeUse.length,last_recorded_use_at:allUse[0]?.checked_out_at||null,
+      locked_out:locked,no_recent_recorded_use:noRecentRecordedUse,
+      maintenance_overdue_count:overdue.length,maintenance_due_count:due.length,
+      fleet_asset:!!fleet,fleet_asset_class:fleet?.asset_class||null,fleet_operational_status:fleet?.operational_status||null,
+      fleet_readiness_status:fleet?.latest_readiness_status||null,fleet_downtime:fleetDowntime,
+      fleet_downtime_reason:fleet?.downtime_reason||null,open_downtime_count:Number(fleet?.open_downtime_count||0),
+      replacement_attention:replacementAttention,attention_reasons:reasons,
+      utilization_evidence_state:recentUse.length?'recorded_use':noRecentRecordedUse?'no_recent_recorded_use':'not_applicable'
+    };
+  }).sort((a,b)=>String(a.equipment_code||a.equipment_name||'').localeCompare(String(b.equipment_code||b.equipment_name||'')));
+
+  const fleetRows=assetUtilization.filter((a)=>a.fleet_asset);
+  const knownFleetAvailable=fleetRows.filter((a)=>{
+    const op=String(a.fleet_operational_status||'').toLowerCase(),ready=String(a.fleet_readiness_status||'').toLowerCase();
+    return !a.locked_out&&!a.fleet_downtime&&['ready','available','active'].includes(op)&&(!ready||['ready','passed','available','clear'].includes(ready));
+  }).length;
+  const fleetUnknown=fleetRows.filter((a)=>{
+    const op=String(a.fleet_operational_status||'').toLowerCase();
+    return !a.locked_out&&!a.fleet_downtime&&!['ready','available','active'].includes(op);
+  }).length;
+
+  const attentionQueue=assetUtilization.filter((a)=>a.attention_reasons.length).map((a)=>{
+    const blocking=a.locked_out||a.fleet_downtime;
+    const maintenance=a.maintenance_overdue_count>0||a.maintenance_due_count>0;
+    return {
+      signal_type:blocking?'downtime_or_lockout':maintenance?'maintenance_attention':a.replacement_attention?'replacement_review':'utilization_evidence_review',
+      equipment_item_id:a.equipment_item_id,equipment_code:a.equipment_code,equipment_name:a.equipment_name,
+      assigned_crew_name:a.assigned_crew_name||null,attention_reasons:a.attention_reasons,
+      detail:a.attention_reasons.join(' · '),
+      suggested_next_action:blocking?'Review the existing lockout / fleet downtime authority before assignment.':
+        maintenance?'Review the existing preventive-maintenance plan and service-task authority.':
+        a.replacement_attention?'Review the recorded replacement plan and lifecycle evidence.':
+        'Review whether the asset is intentionally spare/seasonal or whether usage evidence is missing.',
+      navigation_target:'operations'
+    };
+  }).sort((a,b)=>{
+    const order:Record<string,number>={downtime_or_lockout:10,maintenance_attention:20,replacement_review:30,utilization_evidence_review:40};
+    return (order[a.signal_type]||99)-(order[b.signal_type]||99)||String(a.equipment_code||'').localeCompare(String(b.equipment_code||''));
+  });
+
+  const totalPaid=timeRows.reduce((sum,r)=>sum+Math.max(0,Number(r?.paid_minutes||0)),0);
+  const linkedPaid=timeRows.filter((r)=>r?.job_id||r?.job_session_id).reduce((sum,r)=>sum+Math.max(0,Number(r?.paid_minutes||0)),0);
+  const unlinkedPaid=Math.max(0,totalPaid-linkedPaid);
+  const productionHours=productionRows.reduce((sum,r)=>sum+Math.max(0,Number(r?.total_labour_hours||0)),0);
+  const assignedDispatch=dispatchRows.filter((r)=>r?.crew_id||r?.crew_name).length;
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',lookback_days:30,source_queries_ok:input.sourceQueriesOk,
+    summary:{
+      paid_hours:Number((totalPaid/60).toFixed(2)),job_linked_paid_hours:Number((linkedPaid/60).toFixed(2)),
+      paid_hours_without_job_link:Number((unlinkedPaid/60).toFixed(2)),production_labour_hours:Number(productionHours.toFixed(2)),
+      dispatch_items:dispatchRows.length,dispatch_items_with_crew_assignment:assignedDispatch,
+      crew_assignment_coverage_percent:dispatchRows.length?Number(((assignedDispatch/dispatchRows.length)*100).toFixed(1)):null,
+      equipment_asset_count:assetUtilization.length,equipment_with_recent_recorded_use:assetUtilization.filter((a)=>a.recent_signout_count>0).length,
+      equipment_no_recent_recorded_use:assetUtilization.filter((a)=>a.no_recent_recorded_use).length,
+      active_equipment_signouts:assetUtilization.reduce((sum,a)=>sum+Number(a.active_signout_count||0),0),
+      locked_out_assets:assetUtilization.filter((a)=>a.locked_out).length,
+      maintenance_attention_assets:assetUtilization.filter((a)=>a.maintenance_overdue_count>0||a.maintenance_due_count>0).length,
+      replacement_attention_assets:assetUtilization.filter((a)=>a.replacement_attention).length,
+      fleet_asset_count:fleetRows.length,fleet_known_available:knownFleetAvailable,
+      fleet_downtime_assets:fleetRows.filter((a)=>a.fleet_downtime).length,fleet_availability_unknown:fleetUnknown,
+      attention_asset_count:attentionQueue.length
+    },
+    crew_utilization:crewUtilization,
+    asset_utilization:assetUtilization.slice(0,150),
+    fleet_availability:fleetRows.slice(0,100),
+    attention_queue:attentionQueue.slice(0,100),
+    labour_boundary:'Labour utilization is crew/business-level recording context only: paid time, job-linked paid time, travel, dispatch assignment coverage and recorded production labour. It does not score, rank or infer individual employee performance.',
+    equipment_boundary:'Equipment utilization is based on existing signout evidence. No recorded signout in the 30-day window is an evidence signal only and is not treated as proof that an asset was idle or unnecessary.',
+    safety_boundary:'Equipment lockout, fleet downtime and readiness restrictions are operating constraints from their existing authorities. They are never converted into employee performance judgments or used to clear a Safety restriction.',
+    maintenance_boundary:'Maintenance and replacement signals reuse recorded preventive-maintenance due states and equipment replacement states. This layer does not complete maintenance, clear lockouts, replace assets, purchase equipment or create vendor commitments.',
+    privacy_boundary:'Returned utilization evidence is aggregated by crew and asset. Individual employee names, employee numbers, explanations and other private timekeeping details are not returned by this decision-support layer.',
+    authority_boundary:'Read-only management evidence. Timekeeping, dispatch, production, equipment signout, lockout/return-to-service, maintenance and fleet workflows remain the existing mutation authorities.'
+  };
+}
+
   if (scope === 'owner_management_command') {
     const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
@@ -928,7 +1103,7 @@ function buildEstimateToCashLeakageWorkbench(input:{
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
       routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
-      estimateWorkflowRead,changeOrdersRead,paymentApplicationsRead
+      estimateWorkflowRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -960,7 +1135,9 @@ function buildEstimateToCashLeakageWorkbench(input:{
       canJobsView ? safeListEvidence(supabase,'v_seasonal_operations_rollover_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'v_estimate_job_invoice_workflow','*','estimate_number',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       canJobsView ? safeListEvidence(supabase,'v_change_order_extras_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
-      canFinanceView ? safeListEvidence(supabase,'v_ar_payment_application_directory','*','application_date',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000})
+      canFinanceView ? safeListEvidence(supabase,'v_ar_payment_application_directory','*','application_date',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
+      canJobsView ? safeListEvidence(supabase,'v_equipment_signout_history','*','checked_out_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      canJobsView ? safeListEvidence(supabase,'v_fleet_vehicle_operations','*','equipment_code',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500})
     ]);
     const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
       timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,crews=crewsRead.rows,storms=stormsRead.rows,
@@ -970,7 +1147,8 @@ function buildEstimateToCashLeakageWorkbench(input:{
       closeDashboard=closeDashboardRead.rows,workability=workabilityRead.rows,routes=routesRead.rows,timekeepingDetail=timekeepingDetailRead.rows,
       recurringEvents=recurringEventsRead.rows,crmRenewals=crmRenewalsRead.rows,crmInteractions=crmInteractionsRead.rows,
       agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows,
-      estimateWorkflow=estimateWorkflowRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows;
+      estimateWorkflow=estimateWorkflowRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
+      equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows;
     const sourceFreshness:Record<string,any> = {};
     const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
       sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
@@ -1006,6 +1184,8 @@ function buildEstimateToCashLeakageWorkbench(input:{
     addFresh(estimateWorkflowRead,'estimate_workflow','jobs+finance','v_estimate_job_invoice_workflow',canJobsView&&canFinanceView,168);
     addFresh(changeOrdersRead,'change_orders','jobs','v_change_order_extras_directory',canJobsView,168);
     addFresh(paymentApplicationsRead,'payment_applications','finance','v_ar_payment_application_directory',canFinanceView,168);
+    addFresh(equipmentUseRead,'equipment_use','jobs','v_equipment_signout_history',canJobsView,168);
+    addFresh(fleetRead,'fleet','jobs','v_fleet_vehicle_operations',canJobsView,168);
     const metricConfidence = {
       crews_today:buildManagementMetricConfidence(sourceFreshness,['dispatch']),
       completion_today:buildManagementMetricConfidence(sourceFreshness,['dispatch','production']),
@@ -1025,7 +1205,8 @@ function buildEstimateToCashLeakageWorkbench(input:{
       capacity_forecast:buildManagementMetricConfidence(sourceFreshness,['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work']),
       route_efficiency:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','routes','workability']),
       recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover']),
-      estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability'])
+      estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability']),
+      utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
@@ -1042,6 +1223,11 @@ function buildEstimateToCashLeakageWorkbench(input:{
       profitability,jobs,jobsVisible:canJobsView,financeVisible:canFinanceView,
       sourceQueriesOk:[estimateWorkflowRead,dispatchRead,productionRead,changeOrdersRead,receivablesRead,paymentApplicationsRead,profitabilityRead].every((r)=>r.query_ok!==false)
     });
+    const labourEquipmentFleetUtilizationSupport=buildLabourEquipmentFleetUtilizationDecisionSupport({
+      timekeeping:timekeepingDetail,production,dispatch,equipment,equipmentUse,maintenance,fleet,
+      jobsVisible:canJobsView,adminVisible:canAdminManage,
+      sourceQueriesOk:[timekeepingDetailRead,productionRead,dispatchRead,equipmentRead,equipmentUseRead,maintenanceRead,fleetRead].every((r)=>r.query_ok!==false)
+    });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
       evidence_generated_at:new Date().toISOString(),
@@ -1051,6 +1237,7 @@ function buildEstimateToCashLeakageWorkbench(input:{
       owner_equipment:equipment,owner_maintenance:maintenance,owner_training_summary:trainingSummary,
       owner_workforce_summary:workforceSummary,owner_receivables:receivables,owner_bank:bank,
       owner_finance_exceptions:financeExceptions,owner_close_dashboard:closeDashboard,owner_workability:workability,
+      owner_equipment_use:equipmentUse,owner_fleet:fleet,
       source_visibility:{jobs:canJobsView,finance:canFinanceView,safety:canSafetyView,admin:canAdminManage},
       source_freshness:sourceFreshness,
       management_metric_confidence:metricConfidence,
@@ -1058,6 +1245,7 @@ function buildEstimateToCashLeakageWorkbench(input:{
       route_crew_efficiency_evidence:routeCrewEfficiencyEvidence,
       recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,
       estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
+      labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
