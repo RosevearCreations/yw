@@ -191,7 +191,9 @@
     "test:recurring-service-renewal-retention": "node scripts/recurring-service-renewal-retention-check.mjs",
     "test:browser:recurring-service-renewal-retention": "playwright test --config=playwright.config.mjs tests/browser/recurring-service-renewal-retention.spec.mjs",
     "test:estimate-to-cash-leakage-margin-recovery": "node scripts/estimate-to-cash-leakage-margin-recovery-check.mjs",
-    "test:browser:estimate-to-cash-leakage-margin-recovery": "playwright test --config=playwright.config.mjs tests/browser/estimate-to-cash-leakage-margin-recovery.spec.mjs"
+    "test:browser:estimate-to-cash-leakage-margin-recovery": "playwright test --config=playwright.config.mjs tests/browser/estimate-to-cash-leakage-margin-recovery.spec.mjs",
+    "test:labour-equipment-fleet-utilization-decision-support": "node scripts/labour-equipment-fleet-utilization-decision-support-check.mjs",
+    "test:browser:labour-equipment-fleet-utilization-decision-support": "playwright test --config=playwright.config.mjs tests/browser/labour-equipment-fleet-utilization-decision-support.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
