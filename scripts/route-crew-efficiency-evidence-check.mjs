@@ -28,10 +28,10 @@ must(directory,[
 ],'Build 354 route/crew evidence server');
 
 must(ui,[
-  'Build 350–357','Route &amp; crew efficiency evidence','owner354Efficiency','renderRouteCrewEfficiency',
+  'Build 350–358','Route &amp; crew efficiency evidence','owner354Efficiency','renderRouteCrewEfficiency',
   'Actual service coverage','Duration overruns','Route-order differences','Repeated route friction','Cluster candidates','Capacity-headroom days',
   'Advisory, not employee scoring','Evidence boundaries',
-  'Build 357 labour, equipment and fleet utilization decision-support evidence refreshed'
+  'Build 358 materials, consumables and seasonal stock-readiness evidence refreshed'
 ],'Build 354 route/crew evidence UI');
 
 assert.ok(!directory.includes('employee_performance_score'));
@@ -40,9 +40,9 @@ assert.ok(!ui.includes('employee performance score'));
 assert.equal(pkg.scripts['test:route-crew-efficiency-evidence'],'node scripts/route-crew-efficiency-evidence-check.mjs');
 assert.equal(pkg.scripts['test:browser:route-crew-efficiency-evidence'],'playwright test --config=playwright.config.mjs tests/browser/route-crew-efficiency-evidence.spec.mjs');
 must(workflow,['npm run test:route-crew-efficiency-evidence','npm run test:browser:route-crew-efficiency-evidence'],'Build 354 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-28b357'],'Build 354 asset version');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-29b358'],'Build 354 asset version');
 must(help,['Build 354 — Route &amp; Crew Efficiency Evidence','Planned versus recorded service evidence','Travel evidence is not over-interpreted','Clustering and capacity are advisory','No employee performance inference'],'Build 354 help');
-must(roadmap,['#### **354 — Route & Crew Efficiency Evidence** is implemented','#### **355 — Recurring Service Renewal & Retention Workbench** is implemented','#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **358 — Materials, Consumables & Seasonal Stock Readiness**.'],'Build 354 roadmap');
-must(handbook,['**354 — Route & Crew Efficiency Evidence** is implemented','**355 — Recurring Service Renewal & Retention Workbench** is implemented','**356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','- **358 — Materials, Consumables & Seasonal Stock Readiness**'],'Build 354 handoff');
+must(roadmap,['#### **354 — Route & Crew Efficiency Evidence** is implemented','#### **355 — Recurring Service Renewal & Retention Workbench** is implemented','#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **359 — Customer Communication Readiness & Queue Quality**.'],'Build 354 roadmap');
+must(handbook,['**354 — Route & Crew Efficiency Evidence** is implemented','**355 — Recurring Service Renewal & Retention Workbench** is implemented','**356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','- **359 — Customer Communication Readiness & Queue Quality**'],'Build 354 handoff');
 
 console.log('Build 354 Route & Crew Efficiency Evidence source gate GREEN');
