@@ -193,7 +193,9 @@
     "test:estimate-to-cash-leakage-margin-recovery": "node scripts/estimate-to-cash-leakage-margin-recovery-check.mjs",
     "test:browser:estimate-to-cash-leakage-margin-recovery": "playwright test --config=playwright.config.mjs tests/browser/estimate-to-cash-leakage-margin-recovery.spec.mjs",
     "test:labour-equipment-fleet-utilization-decision-support": "node scripts/labour-equipment-fleet-utilization-decision-support-check.mjs",
-    "test:browser:labour-equipment-fleet-utilization-decision-support": "playwright test --config=playwright.config.mjs tests/browser/labour-equipment-fleet-utilization-decision-support.spec.mjs"
+    "test:browser:labour-equipment-fleet-utilization-decision-support": "playwright test --config=playwright.config.mjs tests/browser/labour-equipment-fleet-utilization-decision-support.spec.mjs",
+    "test:materials-consumables-seasonal-stock-readiness": "node scripts/materials-consumables-seasonal-stock-readiness-check.mjs",
+    "test:browser:materials-consumables-seasonal-stock-readiness": "playwright test --config=playwright.config.mjs tests/browser/materials-consumables-seasonal-stock-readiness.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
