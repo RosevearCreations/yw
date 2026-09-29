@@ -147,6 +147,16 @@
           <p><strong>Decision support only:</strong> the release cannot change crew/equipment assignments, clear a lockout, return equipment to service, complete maintenance, replace an asset, purchase equipment or create a vendor commitment.</p>
         </section>
 
+        <section class="help-section" id="materials-consumables-seasonal-stock-readiness">
+          <h2>Build 358 — Materials, Consumables &amp; Seasonal Stock Readiness</h2>
+          <p>Build 358 adds a read-only 7- and 14-day stock-readiness view using the existing Materials Control, Landscape Material Estimator, dispatch, recurring-service and Seasonal Operations authorities.</p>
+          <p><strong>Scheduled material demand:</strong> quantified demand comes from planned material-estimator lines whose work order has an active dispatch inside the forecast window. A material plan is placed at its earliest active dispatch and is not silently multiplied across repeated dispatch rows.</p>
+          <p><strong>Recurring demand coverage:</strong> upcoming recurring visits are checked for a linked dispatch/work order and quantified material plan. Visits without that evidence remain visibly unquantified; the system does not invent a per-visit material amount.</p>
+          <p><strong>Units are not guessed:</strong> projected on-hand and shortage timing are calculated only when the planned unit matches the canonical catalog stock unit after simple text normalization. Unit mismatches are review items, not hidden conversions.</p>
+          <p><strong>Seasonal stock context:</strong> recorded catalog names/categories are grouped for spring/summer mowing and landscaping materials, fall cleanup supplies, winter salt/de-icer/traction stock, and general four-season materials without rewriting catalog data.</p>
+          <p><strong>No automatic purchasing:</strong> reorder and shortage signals reuse current on-hand evidence, scheduled planned demand and recorded reorder/target settings. The workbench does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">
