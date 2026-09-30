@@ -28,7 +28,8 @@ must(endpoint,[
   'equipment_signouts',
   'work_order_execution_proofs',
   'work_order_closeout_packages',
-  'hasModuleAccess(supabase, profile, "jobs", "view")'
+  'effectiveModuleAccess(supabase, profile, "jobs")',
+  'accessAtLeast(jobsAccess, "view")'
 ],'mobile crew context');
 assert.ok(!endpoint.includes('subtotal,total_amount,total_cost'), 'Mobile crew response must not expose work-order Finance totals.');
 

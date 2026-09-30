@@ -10,6 +10,29 @@
 (function () {
   const DEFAULT_FUNCTION_TIMEOUT_MS = 30000;
   const ANALYTICS_ENDPOINT = 'analytics-traffic';
+  const ADMIN_READ_COALESCE_MS = 3000;
+  const adminReadCache = new Map();
+  const adminReadInflight = new Map();
+
+  function adminReadOwnerKey() {
+    const auth = window.YWI_AUTH?.getState?.() || window.YWI_BOOT?.getState?.() || {};
+    return String(auth?.profile?.id || auth?.user?.id || auth?.session?.user?.id || 'signed-in-session');
+  }
+
+  function stableReadValue(value) {
+    if (Array.isArray(value)) return value.map(stableReadValue);
+    if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableReadValue(value[key])]));
+    return value;
+  }
+
+  function adminReadKey(body) {
+    return adminReadOwnerKey() + ':' + JSON.stringify(stableReadValue(body || {}));
+  }
+
+  function invalidateAdminReadCache() {
+    adminReadCache.clear();
+    adminReadInflight.clear();
+  }
 
   function getRuntimeConfig() {
     return window.YWI_RUNTIME_CONFIG || window.__YWI_RUNTIME_CONFIG || {};
@@ -800,14 +823,32 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
   async function loadAdminDirectory(payload = {}) {
     const body = (payload && typeof payload === 'object') ? { ...payload } : {};
     const requestedTimeout = Number(body.timeoutMs || 0);
+    const requestedCacheMs = Number(body.cacheMs ?? ADMIN_READ_COALESCE_MS);
+    const forceFresh = body.forceFresh === true;
     delete body.timeoutMs;
+    delete body.cacheMs;
+    delete body.forceFresh;
 
-    return jsonFetch('admin-directory', {
+    const cacheMs = Number.isFinite(requestedCacheMs) ? Math.max(0, Math.min(10000, requestedCacheMs)) : ADMIN_READ_COALESCE_MS;
+    const key = adminReadKey(body);
+    const now = Date.now();
+    const cached = adminReadCache.get(key);
+    if (!forceFresh && cacheMs > 0 && cached && now - cached.savedAt <= cacheMs) return cached.payload;
+    if (!forceFresh && adminReadInflight.has(key)) return adminReadInflight.get(key);
+
+    const request = jsonFetch('admin-directory', {
       method: 'POST',
       body,
       requireAuth: true,
       timeoutMs: Number.isFinite(requestedTimeout) && requestedTimeout > 0 ? requestedTimeout : DEFAULT_FUNCTION_TIMEOUT_MS
+    }).then((result) => {
+      if (result?.ok !== false && cacheMs > 0) adminReadCache.set(key, { savedAt: Date.now(), payload: result });
+      return result;
+    }).finally(() => {
+      if (adminReadInflight.get(key) === request) adminReadInflight.delete(key);
     });
+    adminReadInflight.set(key, request);
+    return request;
   }
 
   async function loadAdminSelectors(payload = {}) {
@@ -819,6 +860,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
   }
 
   async function manageAdminEntity(payload = {}) {
+    invalidateAdminReadCache();
     const entityName = String(payload?.entity || '').trim().toLowerCase();
     const specializedFunction = entityName.startsWith('performance_')
       ? 'performance-manage'
@@ -1120,6 +1162,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     fetchJobsDirectory,
     fetchMobileCrewContext,
     loadAdminDirectory,
+    invalidateAdminReadCache,
     loadAdminSelectors,
     manageAdminEntity,
     accountRecoveryAction,
