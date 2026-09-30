@@ -195,7 +195,9 @@
     "test:labour-equipment-fleet-utilization-decision-support": "node scripts/labour-equipment-fleet-utilization-decision-support-check.mjs",
     "test:browser:labour-equipment-fleet-utilization-decision-support": "playwright test --config=playwright.config.mjs tests/browser/labour-equipment-fleet-utilization-decision-support.spec.mjs",
     "test:materials-consumables-seasonal-stock-readiness": "node scripts/materials-consumables-seasonal-stock-readiness-check.mjs",
-    "test:browser:materials-consumables-seasonal-stock-readiness": "playwright test --config=playwright.config.mjs tests/browser/materials-consumables-seasonal-stock-readiness.spec.mjs"
+    "test:browser:materials-consumables-seasonal-stock-readiness": "playwright test --config=playwright.config.mjs tests/browser/materials-consumables-seasonal-stock-readiness.spec.mjs",
+    "test:customer-communication-readiness-queue-quality": "node scripts/customer-communication-readiness-queue-quality-check.mjs",
+    "test:browser:customer-communication-readiness-queue-quality": "playwright test --config=playwright.config.mjs tests/browser/customer-communication-readiness-queue-quality.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
