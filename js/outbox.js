@@ -10,6 +10,8 @@
   const OUTBOX_KEY = 'ywi_outbox_v1';
   const ACTION_QUEUE_KEY = 'ywi_action_outbox_v1';
   const RECOVERY_HISTORY_KEY = 'ywi_conflict_recovery_history_v1';
+  const ACTION_REPLAY_BATCH_LIMIT = 12;
+  let actionReplayPromise = null;
 
   function ownerKey() {
     try {
@@ -191,18 +193,50 @@
     return list.length;
   }
 
-  async function retryQueuedActions(config = {}) {
+  async function runQueuedActionReplay(config = {}) {
     const handlers = config.handlers || {};
     const scope = config.scope || '';
+    const includeLegacy = config.includeLegacy === true;
+    const currentOwner = ownerKey();
+    const requestedMax = Number(config.maxItems || ACTION_REPLAY_BATCH_LIMIT);
+    const maxItems = Number.isFinite(requestedMax) ? Math.max(1, Math.min(ACTION_REPLAY_BATCH_LIMIT, Math.trunc(requestedMax))) : ACTION_REPLAY_BATCH_LIMIT;
     const list = getActionItems();
     const remaining = [];
     const conflicts = [];
     let retried = 0;
+    let processed = 0;
+    let deferred = 0;
+    let skippedConflicts = 0;
+    let skippedOwner = 0;
+
     for (const item of list) {
       if (scope && item.scope !== scope) {
         remaining.push(item);
         continue;
       }
+      if (item?.owner_key && (!currentOwner || String(item.owner_key) !== currentOwner)) {
+        remaining.push(item);
+        skippedOwner += 1;
+        continue;
+      }
+      if (!item?.owner_key && !includeLegacy) {
+        remaining.push(item);
+        skippedOwner += 1;
+        continue;
+      }
+      if (item?.status === 'conflict') {
+        remaining.push(item);
+        conflicts.push(item);
+        skippedConflicts += 1;
+        continue;
+      }
+      if (processed >= maxItems) {
+        remaining.push(item);
+        deferred += 1;
+        continue;
+      }
+
+      processed += 1;
       const handler = handlers[item.action_type];
       if (typeof handler !== 'function') {
         const failed = { ...item, status: 'conflict', error: `No handler for ${item.action_type}`, attempts: Number(item.attempts || 0) + 1, conflict_details: ['Missing replay handler.'] };
@@ -223,7 +257,7 @@
           error: msg,
           attempts: Number(item.attempts || 0) + 1,
           conflict_details: detail,
-          owner_key: item?.owner_key || ownerKey(),
+          owner_key: item?.owner_key || currentOwner,
           local_payload: item?.payload || {},
           server_payload: isConflict ? serverSnapshotFromError(err, detail) : (item?.server_payload || null),
           conflict_detected_at: isConflict ? (item?.conflict_detected_at || new Date().toISOString()) : (item?.conflict_detected_at || null)
@@ -233,7 +267,25 @@
       }
     }
     setActionItems(remaining);
-    return { total: list.length, retried, remaining: remaining.length, conflicts };
+    return {
+      total: list.length,
+      retried,
+      processed,
+      remaining: remaining.length,
+      conflicts,
+      deferred,
+      skipped_conflicts: skippedConflicts,
+      skipped_owner: skippedOwner,
+      max_items: maxItems
+    };
+  }
+
+  function retryQueuedActions(config = {}) {
+    if (actionReplayPromise) return actionReplayPromise;
+    actionReplayPromise = runQueuedActionReplay(config).finally(() => {
+      actionReplayPromise = null;
+    });
+    return actionReplayPromise;
   }
 
   function getActionItem(id) {
@@ -387,6 +439,7 @@
     bindRetryButtons,
     ACTION_QUEUE_KEY,
     RECOVERY_HISTORY_KEY,
+    ACTION_REPLAY_BATCH_LIMIT,
     notifyQueueChanged,
     getActionItems,
     setActionItems,
