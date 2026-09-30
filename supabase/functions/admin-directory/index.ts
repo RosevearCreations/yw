@@ -1441,7 +1441,7 @@ function buildCustomerCommunicationReadinessQueue(input:{
     outbox_id:r?.id||null,delivery_status:r?.delivery_status||null,work_order_id:r?.work_order_id||null,
     work_order_number:r?.work_order_number||null,client_name:r?.client_name||null,live_update_title:r?.live_update_title||null,
     attempt_count:Number(r?.attempt_count||0),next_attempt_at:r?.next_attempt_at||null,last_attempt_at:r?.last_attempt_at||null,
-    consent_status:r?.consent_status||null,contact_email_configured:r?.contact_email_configured===true,
+    consent_status:r?.consent_status||null,
     detail:'Existing protected customer-notification delivery requires operational review.'
   }));
 
