@@ -1291,6 +1291,197 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
   };
 }
 
+
+function buildCustomerCommunicationReadinessQueue(input:{
+  workability:any[];dispatch:any[];recurringVisits:any[];closeouts:any[];crmFollowups:any[];crmInteractions:any[];
+  customerDirectory:any[];notificationQueue:any[];receivables:any[];jobsVisible:boolean;financeVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const today=ontarioDateKey(new Date())!;
+  const horizon14=addCalendarDays(today,14);
+  const norm=(v:any)=>String(v??'').trim().toLowerCase();
+  const customerById=new Map<string,any>();
+  for(const r of input.customerDirectory||[]) if(r?.client_id) customerById.set(String(r.client_id),r);
+  const dispatchById=new Map<string,any>();
+  const dispatchByRecurringKey=new Map<string,any>();
+  for(const r of input.dispatch||[]){
+    if(r?.id) dispatchById.set(String(r.id),r);
+    if(r?.recurring_visit_key&&!['cancelled','superseded','completed'].includes(norm(r?.schedule_status))){
+      const key=String(r.recurring_visit_key),old=dispatchByRecurringKey.get(key);
+      if(!old||String(r?.scheduled_start||'')>String(old?.scheduled_start||'')) dispatchByRecurringKey.set(key,r);
+    }
+  }
+  const interactionsByWorkOrder=new Map<string,any[]>();
+  for(const r of input.crmInteractions||[]){
+    const id=String(r?.work_order_id||''); if(!id) continue;
+    const list=interactionsByWorkOrder.get(id)||[]; list.push(r); interactionsByWorkOrder.set(id,list);
+  }
+  const candidates=new Map<string,any>();
+  const add=(row:any)=>{
+    const key=String(row.dedupe_key||''); if(!key) return;
+    const existing=candidates.get(key);
+    if(!existing){candidates.set(key,{...row,source_links:Array.isArray(row.source_links)?row.source_links:[]});return;}
+    const links=[...(existing.source_links||[]),...(row.source_links||[])];
+    const seen=new Set<string>(); existing.source_links=links.filter((x:any)=>{const k=String(x?.source_type||'')+':'+String(x?.source_id||'');if(seen.has(k))return false;seen.add(k);return true;});
+    existing.signal_types=Array.from(new Set([...(existing.signal_types||[existing.signal_type]),...(row.signal_types||[row.signal_type])]));
+    existing.detail=[existing.detail,row.detail].filter(Boolean).join(' · ');
+    if(!existing.scheduled_at&&row.scheduled_at) existing.scheduled_at=row.scheduled_at;
+    if(!existing.reason&&row.reason) existing.reason=row.reason;
+    if(!existing.client_id&&row.client_id) existing.client_id=row.client_id;
+    if(!existing.client_name&&row.client_name) existing.client_name=row.client_name;
+    if(!existing.work_order_id&&row.work_order_id) existing.work_order_id=row.work_order_id;
+    if(!existing.work_order_number&&row.work_order_number) existing.work_order_number=row.work_order_number;
+  };
+  const withCustomer=(row:any)=>{
+    const customer=row?.client_id?customerById.get(String(row.client_id)):null;
+    return {
+      client_id:row?.client_id||null,client_name:row?.client_name||customer?.client_name||null,
+      preferred_contact_method:customer?.crm_preferred_contact_method||null,
+      preferred_contact_window:customer?.crm_preferred_contact_window||null
+    };
+  };
+
+  for(const r of input.workability||[]){
+    const state=norm(r?.decision_state),ready=norm(r?.latest_readiness_state||r?.customer_notification_readiness);
+    if(!['postpone','reschedule','blocked'].includes(state)) continue;
+    if(ready==='notified'||ready==='not_needed') continue;
+    const wo=String(r?.work_order_id||'');
+    const key=wo?'schedule:'+wo:'workability:'+String(r?.latest_decision_id||r?.observation_id||'');
+    add({
+      dedupe_key:key,signal_type:'weather_workability_change',signal_types:['weather_workability_change'],
+      ...withCustomer(r),work_order_id:r?.work_order_id||null,work_order_number:r?.work_order_number||null,
+      site_name:r?.site_name||null,service_context:r?.service_context||r?.work_type||null,season_context:r?.season_context||null,
+      scheduled_at:r?.proposed_reschedule_start||r?.scheduled_start||null,reason:r?.decision_reason||r?.service_restriction_summary||null,
+      detail:'Recorded workability decision '+state+'; customer-notification readiness is '+(ready||'not recorded')+'.',
+      readiness_state:ready||'not_recorded',navigation_target:'operations',
+      source_links:[{source_type:'workability_decision',source_id:r?.latest_decision_id||r?.observation_id||null,reference:r?.observation_code||r?.work_order_number||null}]
+    });
+  }
+
+  for(const r of input.dispatch||[]){
+    if(norm(r?.schedule_status)!=='rescheduled'&&!r?.supersedes_dispatch_id) continue;
+    if(['sent','notified','complete','completed'].includes(norm(r?.customer_notification_status))) continue;
+    const prior=r?.supersedes_dispatch_id?dispatchById.get(String(r.supersedes_dispatch_id)):null;
+    const changed=!!prior&&String(prior?.scheduled_start||'')!==String(r?.scheduled_start||'');
+    const wo=String(r?.work_order_id||''); if(!wo) continue;
+    add({
+      dedupe_key:'schedule:'+wo,signal_type:changed?'eta_change':'reschedule_notice',signal_types:[changed?'eta_change':'reschedule_notice'],
+      ...withCustomer(r),work_order_id:r?.work_order_id||null,work_order_number:r?.work_order_number||null,
+      site_name:r?.site_name||null,service_context:r?.work_type||null,season_context:null,
+      scheduled_at:r?.scheduled_start||null,reason:r?.reschedule_reason||r?.schedule_reason||null,
+      detail:changed
+        ? 'Dispatch start changed from '+String(prior?.scheduled_start||'unknown')+' to '+String(r?.scheduled_start||'unknown')+'.'
+        : 'Dispatch is recorded as rescheduled and customer notification is not recorded complete.',
+      readiness_state:'review_ready',navigation_target:'jobs',
+      source_links:[
+        {source_type:'dispatch',source_id:r?.id||null,reference:r?.work_order_number||null},
+        ...(prior?[{source_type:'superseded_dispatch',source_id:prior.id||null,reference:prior?.work_order_number||null}]:[])
+      ]
+    });
+  }
+
+  for(const r of input.closeouts||[]){
+    if(!['approved','invoice_ready'].includes(norm(r?.closeout_status))) continue;
+    const base=r?.signed_off_at||r?.approved_at; if(!base) continue;
+    const interactions=interactionsByWorkOrder.get(String(r?.work_order_id||''))||[];
+    const outboundAfter=interactions.some((i)=>['outbound'].includes(norm(i?.direction))&&String(i?.occurred_at||'')>=String(base));
+    if(outboundAfter) continue;
+    add({
+      dedupe_key:'completion:'+String(r?.work_order_id||r?.id),signal_type:'completion_followup',signal_types:['completion_followup'],
+      ...withCustomer(r),work_order_id:r?.work_order_id||null,work_order_number:r?.work_order_number||null,
+      service_context:'completed_work',scheduled_at:base,reason:r?.review_request_requested?'review request is recorded':'completion follow-up has no later outbound CRM interaction',
+      detail:'Approved/completed closeout has no later outbound CRM interaction recorded.',
+      readiness_state:'review_ready',navigation_target:'jobs',
+      source_links:[{source_type:'closeout',source_id:r?.id||null,reference:r?.work_order_number||null}]
+    });
+  }
+
+  for(const r of input.recurringVisits||[]){
+    const d=ontarioDateKey(r?.service_date); if(!d||d<today||d>horizon14) continue;
+    if(['skipped','cancelled','held'].includes(norm(r?.visit_status))) continue;
+    const dispatch=dispatchByRecurringKey.get(String(r?.occurrence_key||''))||null;
+    if(dispatch&&['sent','notified','complete','completed'].includes(norm(dispatch?.customer_notification_status))) continue;
+    add({
+      dedupe_key:'recurring:'+String(r?.occurrence_key||r?.agreement_id||d),signal_type:'recurring_service_notice',signal_types:['recurring_service_notice'],
+      ...withCustomer(r),work_order_id:dispatch?.work_order_id||null,work_order_number:dispatch?.work_order_number||null,
+      service_context:r?.service_name||r?.service_program_type||null,season_context:r?.season_context||null,
+      scheduled_at:r?.service_date||null,reason:'upcoming recurring service visit',
+      detail:'Upcoming recurring visit is in the 14-day operating window; no completed dispatch customer-notification state is recorded for this occurrence.',
+      readiness_state:'review_ready',navigation_target:'jobs',
+      source_links:[{source_type:'recurring_visit',source_id:r?.occurrence_key||r?.agreement_id||null,reference:r?.agreement_code||null},...(dispatch?[{source_type:'dispatch',source_id:dispatch.id||null,reference:dispatch?.work_order_number||null}]:[])]
+    });
+  }
+
+  for(const r of input.crmFollowups||[]){
+    if(!r?.overdue||!['pending','in_progress','deferred'].includes(norm(r?.followup_status))) continue;
+    add({
+      dedupe_key:'crm_followup:'+String(r?.id||''),signal_type:'overdue_customer_followup',signal_types:['overdue_customer_followup'],
+      ...withCustomer(r),service_context:r?.service_type||r?.followup_type||null,season_context:r?.season_context||null,
+      scheduled_at:r?.due_at||null,reason:r?.summary||null,
+      detail:'CRM follow-up is overdue and remains '+norm(r?.followup_status)+'.',
+      readiness_state:'overdue',navigation_target:'jobs',
+      source_links:[{source_type:'crm_followup',source_id:r?.id||null,reference:r?.followup_type||null}]
+    });
+  }
+
+  if(input.financeVisible){
+    for(const r of input.receivables||[]){
+      if(Number(r?.balance_due||0)<=0||Number(r?.days_past_due||0)<=0) continue;
+      add({
+        dedupe_key:'invoice:'+String(r?.id||r?.invoice_number||''),signal_type:'invoice_reminder_candidate',signal_types:['invoice_reminder_candidate'],
+        ...withCustomer(r),work_order_id:r?.work_order_id||null,service_context:'accounts_receivable',
+        scheduled_at:r?.due_date||null,reason:'invoice is '+Number(r?.days_past_due||0)+' day(s) past due',
+        detail:'Invoice '+String(r?.invoice_number||'')+' has recorded balance due '+Number(r?.balance_due||0).toFixed(2)+'.',
+        readiness_state:'finance_review',navigation_target:'finance',amount:Number(r?.balance_due||0),
+        source_links:[{source_type:'ar_invoice',source_id:r?.id||null,reference:r?.invoice_number||null}]
+      });
+    }
+  }
+
+  const deliveryAttention=(input.notificationQueue||[]).filter((r)=>['manual_review','failed','retry_scheduled'].includes(norm(r?.delivery_status))).map((r)=>({
+    outbox_id:r?.id||null,delivery_status:r?.delivery_status||null,work_order_id:r?.work_order_id||null,
+    work_order_number:r?.work_order_number||null,client_name:r?.client_name||null,live_update_title:r?.live_update_title||null,
+    attempt_count:Number(r?.attempt_count||0),next_attempt_at:r?.next_attempt_at||null,last_attempt_at:r?.last_attempt_at||null,
+    consent_status:r?.consent_status||null,contact_email_configured:r?.contact_email_configured===true,
+    detail:'Existing protected customer-notification delivery requires operational review.'
+  }));
+
+  const queue=[...candidates.values()].map((r:any)=>({
+    ...r,signal_types:r.signal_types||[r.signal_type],
+    source_link_count:(r.source_links||[]).length,
+    message_context:[
+      r.client_name?'Customer: '+r.client_name:null,
+      r.site_name?'Site: '+r.site_name:null,
+      r.work_order_number?'Work order: '+r.work_order_number:null,
+      r.service_context?'Service: '+r.service_context:null,
+      r.scheduled_at?'Timing: '+r.scheduled_at:null,
+      r.reason?'Reason: '+r.reason:null,
+      r.preferred_contact_method?'Preferred contact: '+r.preferred_contact_method:null,
+      r.preferred_contact_window?'Preferred window: '+r.preferred_contact_window:null
+    ].filter(Boolean)
+  })).sort((a:any,b:any)=>{
+    const order:Record<string,number>={overdue_customer_followup:10,weather_workability_change:20,eta_change:25,reschedule_notice:30,invoice_reminder_candidate:40,completion_followup:50,recurring_service_notice:60};
+    return (order[a.signal_type]||99)-(order[b.signal_type]||99)||String(a.scheduled_at||'9999').localeCompare(String(b.scheduled_at||'9999'))||String(a.dedupe_key).localeCompare(String(b.dedupe_key));
+  });
+  const count=(type:string)=>queue.filter((r:any)=>(r.signal_types||[]).includes(type)).length;
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',horizon_end:horizon14,source_queries_ok:input.sourceQueriesOk,
+    summary:{
+      queue_count:queue.length,weather_workability_changes:count('weather_workability_change'),reschedule_notices:count('reschedule_notice'),
+      eta_changes:count('eta_change'),completion_followups:count('completion_followup'),recurring_service_notices:count('recurring_service_notice'),
+      overdue_customer_followups:count('overdue_customer_followup'),invoice_reminder_candidates:count('invoice_reminder_candidate'),
+      delivery_attention_count:deliveryAttention.length,merged_multi_source_count:queue.filter((r:any)=>Number(r.source_link_count||0)>1).length
+    },
+    readiness_queue:queue.slice(0,250),delivery_attention:deliveryAttention.slice(0,100),
+    duplicate_boundary:'Queue identity is deterministic. Workability and dispatch schedule-change evidence collapse to one work-order communication candidate while retaining every source link; other candidates use their canonical source identity.',
+    context_boundary:'Message context is assembled from source references, service/timing/reason, and CRM preferred contact method/window only. Customer email addresses, phone numbers and portal tokens are not returned by this management queue.',
+    completion_boundary:'A completion follow-up is suppressed when an outbound CRM interaction linked to the same work order is recorded at or after the closeout approval/signoff evidence.',
+    recurring_boundary:'Recurring-service notices are readiness candidates only. The recurring occurrence key is retained for duplicate suppression; no message is sent and no customer preference is inferred.',
+    finance_boundary:'Invoice-reminder candidates appear only with Finance visibility and are based on recorded positive balance plus days-past-due evidence. This layer cannot send reminders, collect payment or mutate A/R.',
+    delivery_boundary:'Existing notification outbox state is review evidence only. Protected consent, enqueue, claim, retry and provider delivery remain the existing customer-notification authority.',
+    authority_boundary:'Read-only readiness and queue-quality evidence. This scope does not send email/text, publish live updates, reschedule work, change workability decisions, create CRM interactions/follow-ups, retry delivery, mutate invoices or contact a provider.'
+  };
+}
+
   if (scope === 'owner_management_command') {
     const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
@@ -1302,7 +1493,8 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
       routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
-      estimateWorkflowRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,materialStockRead,materialPlansRead
+      estimateWorkflowRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,materialStockRead,materialPlansRead,
+      crmFollowupsRead,customerDirectoryRead,notificationQueueRead,closeoutsRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -1338,7 +1530,11 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
       canJobsView ? safeListEvidence(supabase,'v_equipment_signout_history','*','checked_out_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
       canJobsView ? safeListEvidence(supabase,'v_fleet_vehicle_operations','*','equipment_code',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_material_stock_control','*','sku',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
-      canJobsView ? safeListEvidence(supabase,'v_landscape_material_line_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500})
+      canJobsView ? safeListEvidence(supabase,'v_landscape_material_line_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      canJobsView ? safeListEvidence(supabase,'v_crm_followup_queue','*','due_at',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
+      canJobsView ? safeListEvidence(supabase,'v_crm_customer_directory','*','last_crm_activity_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
+      canJobsView ? safeListEvidence(supabase,'v_customer_notification_delivery_queue','*','created_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
+      canJobsView ? safeListEvidence(supabase,'v_work_order_closeout_queue','*','updated_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000})
     ]);
     const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
       timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,crews=crewsRead.rows,storms=stormsRead.rows,
@@ -1349,7 +1545,8 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
       recurringEvents=recurringEventsRead.rows,crmRenewals=crmRenewalsRead.rows,crmInteractions=crmInteractionsRead.rows,
       agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows,
       estimateWorkflow=estimateWorkflowRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
-      equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows;
+      equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,
+      crmFollowups=crmFollowupsRead.rows,customerDirectory=customerDirectoryRead.rows,notificationQueue=notificationQueueRead.rows,closeouts=closeoutsRead.rows;
     const sourceFreshness:Record<string,any> = {};
     const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
       sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
@@ -1389,6 +1586,10 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
     addFresh(fleetRead,'fleet','jobs','v_fleet_vehicle_operations',canJobsView,168);
     addFresh(materialStockRead,'material_stock','jobs','v_material_stock_control',canJobsView,168);
     addFresh(materialPlansRead,'material_plans','jobs','v_landscape_material_line_directory',canJobsView,168);
+    addFresh(crmFollowupsRead,'crm_followups','jobs','v_crm_followup_queue',canJobsView,168);
+    addFresh(customerDirectoryRead,'crm_customers','jobs','v_crm_customer_directory',canJobsView,168);
+    addFresh(notificationQueueRead,'notification_delivery','jobs','v_customer_notification_delivery_queue',canJobsView,72);
+    addFresh(closeoutsRead,'closeouts','jobs','v_work_order_closeout_queue',canJobsView,168);
     const metricConfidence = {
       crews_today:buildManagementMetricConfidence(sourceFreshness,['dispatch']),
       completion_today:buildManagementMetricConfidence(sourceFreshness,['dispatch','production']),
@@ -1410,7 +1611,8 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
       recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover']),
       estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability']),
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
-      stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work'])
+      stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
+      communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
@@ -1436,6 +1638,11 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
       materials:materialStock,materialPlans,dispatch,recurringVisits,seasonalWork,jobsVisible:canJobsView,
       sourceQueriesOk:[materialStockRead,materialPlansRead,dispatchRead,recurringVisitsRead,seasonalWorkRead].every((r)=>r.query_ok!==false)
     });
+    const customerCommunicationReadinessQueue=buildCustomerCommunicationReadinessQueue({
+      workability,dispatch,recurringVisits,closeouts,crmFollowups,crmInteractions,customerDirectory,notificationQueue,receivables,
+      jobsVisible:canJobsView,financeVisible:canFinanceView,
+      sourceQueriesOk:[workabilityRead,dispatchRead,recurringVisitsRead,closeoutsRead,crmFollowupsRead,crmInteractionsRead,customerDirectoryRead,notificationQueueRead,receivablesRead].every((r)=>r.query_ok!==false)
+    });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
       evidence_generated_at:new Date().toISOString(),
@@ -1446,6 +1653,7 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
       owner_workforce_summary:workforceSummary,owner_receivables:receivables,owner_bank:bank,
       owner_finance_exceptions:financeExceptions,owner_close_dashboard:closeDashboard,owner_workability:workability,
       owner_equipment_use:equipmentUse,owner_fleet:fleet,owner_material_stock:materialStock,owner_material_plans:materialPlans,
+      owner_crm_followups:crmFollowups,owner_notification_delivery:notificationQueue,owner_closeouts:closeouts,
       source_visibility:{jobs:canJobsView,finance:canFinanceView,safety:canSafetyView,admin:canAdminManage},
       source_freshness:sourceFreshness,
       management_metric_confidence:metricConfidence,
@@ -1455,6 +1663,7 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
       estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
+      customer_communication_readiness_queue:customerCommunicationReadinessQueue,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
