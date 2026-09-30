@@ -199,7 +199,9 @@
     "test:customer-communication-readiness-queue-quality": "node scripts/customer-communication-readiness-queue-quality-check.mjs",
     "test:browser:customer-communication-readiness-queue-quality": "playwright test --config=playwright.config.mjs tests/browser/customer-communication-readiness-queue-quality.spec.mjs",
     "test:data-quality-duplicate-orphan-reconciliation": "node scripts/data-quality-duplicate-orphan-reconciliation-check.mjs",
-    "test:browser:data-quality-duplicate-orphan-reconciliation": "playwright test --config=playwright.config.mjs tests/browser/data-quality-duplicate-orphan-reconciliation.spec.mjs"
+    "test:browser:data-quality-duplicate-orphan-reconciliation": "playwright test --config=playwright.config.mjs tests/browser/data-quality-duplicate-orphan-reconciliation.spec.mjs",
+    "test:mobile-offline-read-budget-reliability": "node scripts/mobile-offline-read-budget-reliability-check.mjs",
+    "test:browser:mobile-offline-read-budget-reliability": "playwright test --config=playwright.config.mjs tests/browser/mobile-offline-read-budget-reliability.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

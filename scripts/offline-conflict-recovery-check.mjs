@@ -44,7 +44,7 @@ must(today,[
 assert.ok(!today.includes('Object.assign(comparison.server_payload'), 'Build 348 must not auto-merge server payload into local payload.');
 assert.ok(!outbox.includes("action === 'merge' ? { ..."), 'Build 348 must not use an implicit merge shortcut.');
 must(operations,["action === 'offline_conflict_card' || action === 'offline_conflict_resolve'","mobile_offline_conflict_cards","retry_sync","keep_local","reload_server","discard_local"],'Existing server conflict-card authority');
-must(index,['/js/mobile-today.js?v=2026-09-25b348','/js/outbox.js?v=2026-09-25b348'],'Build 348 cache bust');
+must(index,['/js/mobile-today.js?v=2026-09-30b361','/js/outbox.js?v=2026-09-30b361'],'Build 348 cache-bust contract remains current after Build 361');
 must(help,['Build 348 — Offline &amp; Conflict Recovery','Compare before deciding:','Explicit recovery only:','Profile isolation:'],'Build 348 help');
 must(roadmap,['#### **348 — Offline & Conflict Recovery** is implemented','#### **350 — Owner / Management Command Centre** is implemented'],'Build 348 roadmap');
 must(pkg,['test:offline-conflict-recovery','test:browser:offline-conflict-recovery'],'Build 348 scripts');

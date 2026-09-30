@@ -53,6 +53,6 @@ assert.equal(pkg.scripts['test:browser:data-quality-duplicate-orphan-reconciliat
 must(workflow,['npm run test:data-quality-duplicate-orphan-reconciliation','npm run test:browser:data-quality-duplicate-orphan-reconciliation'],'Build 360 CI');
 must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b360'],'Build 360 asset');
 must(help,['Build 360 — Data Quality, Duplicate &amp; Orphan Reconciliation Workbench','Duplicate customers and properties','Broken and cross-module references','Stale crew and equipment assignments','Four-season tag conflicts','No destructive automatic reconciliation'],'Build 360 help');
-must(roadmap,['#### **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.'],'Build 360 roadmap');
-must(handbook,['**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','- **361 — Mobile, Offline & Read-Budget Reliability Optimization**','After item 360, that item is 361 — Mobile, Offline & Read-Budget Reliability Optimization.'],'Build 360 handoff');
+must(roadmap,['#### **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.'],'Build 360 roadmap');
+must(handbook,['**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','After item 361, that item is 362 — Production Learning & Autonomous Roadmap Renewal.'],'Build 360 handoff');
 console.log('Build 360 Data Quality, Duplicate & Orphan Reconciliation Workbench source gate GREEN');

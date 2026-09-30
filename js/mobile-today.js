@@ -6,6 +6,9 @@
 'use strict';
 
 (function () {
+  const CREW_LIVE_TTL_MS = 5 * 60 * 1000;
+  const CREW_CACHE_STALE_MS = 4 * 60 * 60 * 1000;
+
   const state = {
     bound: false,
     deferredInstallPrompt: null,
@@ -398,7 +401,9 @@
     try {
       const raw = sessionStorage.getItem(crewCacheKey());
       const parsed = raw ? JSON.parse(raw) : null;
-      return parsed?.payload?.build === 326 ? parsed : null;
+      if (parsed?.payload?.build !== 326) return null;
+      const ageMs = Date.now() - Date.parse(String(parsed?.saved_at || ''));
+      return Number.isFinite(ageMs) && ageMs <= CREW_CACHE_STALE_MS ? parsed : null;
     } catch { return null; }
   }
 
@@ -411,7 +416,7 @@
   async function loadMobileCrewContext(force = false) {
     const signedIn = !!authState().isAuthenticated;
     if (!signedIn || state.crewLoading) return;
-    if (!force && state.crewContext && Date.now() - state.crewLoadedAt < 60000) return;
+    if (!force && state.crewContext && Date.now() - state.crewLoadedAt < CREW_LIVE_TTL_MS) return;
     if (navigator.onLine === false) {
       const cached = readCrewCache();
       if (cached?.payload) {
@@ -498,9 +503,9 @@
     const evidence = row?.evidence || {};
     const routeOrder = dispatch.route_order || row?.route?.stop?.stop_order || '';
     const equipmentProblems = (row?.equipment || []).filter((item) => item?.is_locked_out || (item?.defect_status && item.defect_status !== 'clear' && item.defect_status !== 'none'));
-    const materialCount = production.material_issues?.length || 0;
-    const quantityCount = production.quantities?.length || 0;
-    const proofCount = evidence.proofs?.length || 0;
+    const materialCount = Number(production.material_issue_count ?? production.material_issues?.length ?? 0);
+    const quantityCount = Number(production.quantity_count ?? production.quantities?.length ?? 0);
+    const proofCount = Number(evidence.proof_count ?? evidence.proofs?.length ?? 0);
     const closeoutStatus = row?.closeout?.closeout_status || 'not submitted';
     return '<article class="mobile-crew-v2-card" data-crew-card="' + index + '">' +
       '<div class="mobile-crew-v2-card-head"><div><h3>' + crewEscape(crewTitle(row)) + '</h3><p>' + crewEscape(crewSiteLine(row)) + '</p></div><span class="mobile-crew-v2-chip">' + crewEscape(dispatch.schedule_status || row?.work_order?.status || 'scheduled') + '</span></div>' +
@@ -536,7 +541,11 @@
     const payload = state.crewContext;
     const rows = state.crewTab === 'jobs' ? (payload?.my_jobs || []) : (payload?.my_route || []);
     const snapshot = syncSnapshot();
-    const syncCopy = state.crewError || (snapshot.online ? 'Assignment-filtered live field context.' : 'Offline — server writes are disabled; local supported forms retain their own drafts/outbox.');
+    const readBudget = payload?.meta?.read_budget || null;
+    const budgetCopy = readBudget && snapshot.online
+      ? ` Read budget ≤${Number(readBudget.business_read_budget_max || 0)} business reads; payload ≈${Math.max(1, Math.round(Number(readBudget.payload_bytes_estimate || 0) / 1024))} KB.`
+      : '';
+    const syncCopy = state.crewError || (snapshot.online ? 'Assignment-filtered live field context.' + budgetCopy : 'Offline — server writes are disabled; local supported forms retain their own drafts/outbox.');
     panel.innerHTML =
       '<div class="mobile-crew-v2-head"><div><h2>Mobile Crew App v2</h2><p>My Jobs, My Route and field actions for 390/430-width phones.</p></div><span class="field-sync-state">' + crewEscape(syncLabel(snapshot)) + '</span></div>' +
       '<div class="mobile-crew-v2-tabs"><button type="button" class="secondary" data-crew-tab="route" aria-selected="' + (state.crewTab === 'route') + '">My Route</button><button type="button" class="secondary" data-crew-tab="jobs" aria-selected="' + (state.crewTab === 'jobs') + '">My Jobs</button><button type="button" class="secondary" data-crew-refresh="1"' + (state.crewLoading || !snapshot.online ? ' disabled' : '') + '>' + (state.crewLoading ? 'Refreshing…' : 'Refresh') + '</button></div>' +
@@ -681,7 +690,6 @@
     renderSyncHealth();
     renderInstallCard();
     renderMobileCrewApp();
-    if (authState().isAuthenticated) loadMobileCrewContext(false);
     ensureJobsDesktopWorkbench();
     document.dispatchEvent(new CustomEvent('ywi:mobile-today-rendered', {
       detail: { role: currentRole(), outbox_count: snapshot.forms, action_count: snapshot.actions, conflict_count: snapshot.conflicts }
@@ -699,14 +707,22 @@
     window.addEventListener('online', () => { render(); loadMobileCrewContext(true); });
     window.addEventListener('offline', render);
     document.addEventListener('ywi:auth-changed', () => { state.crewContext=null; state.crewLoadedAt=0; render(); loadMobileCrewContext(true); });
-    document.addEventListener('ywi:route-shown', render);
+    document.addEventListener('ywi:route-shown', (event) => {
+      render();
+      if (String(event?.detail?.allowed || event?.detail?.section || '') === 'today' && authState().isAuthenticated) loadMobileCrewContext(false);
+    });
     document.addEventListener('ywi:mobile-badges-updated', render);
     document.addEventListener('ywi:mobile-drafts-updated', render);
     document.addEventListener('ywi:outbox-changed', render);
     document.addEventListener('ywi:conflict-recovery', render);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) return;
+      render();
+      if (document.getElementById('today') && authState().isAuthenticated) loadMobileCrewContext(false);
+    });
     window.setInterval(render, 30000);
     render();
+    if (authState().isAuthenticated) loadMobileCrewContext(false);
   }
 
   window.YWIMobileToday = {
