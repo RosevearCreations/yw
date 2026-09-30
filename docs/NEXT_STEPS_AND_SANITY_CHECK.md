@@ -372,7 +372,7 @@ This release adds a permission-aware, read-only command-centre index across cust
 
 Saved views are browser-local preferences scoped to the signed-in profile. They preserve search, domain, season, service context and the selected operational view, but they never become business authority and never mutate jobs, routing, equipment, Safety, Finance, invoicing or source records. Global result navigation deep-links to the existing authoritative module/workspace. Spring/summer, fall, winter and four-season context remain explicit.
 
-Items **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, **354 — Route & Crew Efficiency Evidence**, **355 — Recurring Service Renewal & Retention Workbench**, **356 — Estimate-to-Cash Leakage & Margin Recovery**, **357 — Labour, Equipment & Fleet Utilization Decision Support**, **358 — Materials, Consumables & Seasonal Stock Readiness**, **359 — Customer Communication Readiness & Queue Quality**, and **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** are implemented. The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+Items **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, **354 — Route & Crew Efficiency Evidence**, **355 — Recurring Service Renewal & Retention Workbench**, **356 — Estimate-to-Cash Leakage & Margin Recovery**, **357 — Labour, Equipment & Fleet Utilization Decision Support**, **358 — Materials, Consumables & Seasonal Stock Readiness**, **359 — Customer Communication Readiness & Queue Quality**, and **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** are implemented. The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### **350 — Owner / Management Command Centre** is implemented
 
@@ -396,7 +396,7 @@ Operations Needs Attention now collapses duplicate candidates by canonical sourc
 
 The score uses the existing source severity as the dominant signal, then bounded overdue age and an explicit unassigned-owner signal. Stable source-key ordering breaks any remaining ties. Suggested actions only navigate to or prepare review in the authoritative source workflow; they do not auto-dispatch, auto-resolve Safety, unlock equipment, change Finance, send customer messages, collect payment or mutate provider state.
 
-The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### **353 — Four-Season Capacity & Workability Forecast** is implemented
 
@@ -404,7 +404,7 @@ The Owner / Management Command Centre now provides seven- and fourteen-day advis
 
 Recorded demand uses only source durations and travel allowances that already exist; the release does not invent jobs-per-crew targets, productivity assumptions or missing durations. Workability is based only on YW-stored evidence and does not add an external weather provider. The forecast remains read-only and cannot dispatch crews, rewrite routes, change workability decisions, unlock equipment, send messages or mutate provider state.
 
-The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### **354 — Route & Crew Efficiency Evidence** is implemented
 
@@ -414,7 +414,7 @@ Route-day evidence uses existing configured `daily_capacity_minutes` only when t
 
 Planned travel allowance and linked crew travel minutes are intentionally shown as different measures. Crew-time travel is not treated as vehicle elapsed travel, so the release does not fabricate a direct travel variance.
 
-The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### **355 — Recurring Service Renewal & Retention Workbench** is implemented
 
@@ -424,7 +424,7 @@ Renewal review is based on recorded end dates and the existing CRM renewal state
 
 The workbench prepares context only. It does not renew agreements, change prices, create estimates or invoices, send messages, or create customer commitments. Missing or permission-hidden Finance evidence remains unavailable rather than becoming a zero-margin fact.
 
-The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented
 
@@ -434,7 +434,7 @@ The leakage queue surfaces accepted-not-scheduled work, completed/accounting-rea
 
 Each queue row preserves its source reference and deliberate Jobs or Finance navigation. The release is analytical only: it does not create invoices, post accounting, apply payments, send collection messages, mutate payment providers or charge customers.
 
-The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented
 
@@ -442,7 +442,7 @@ The Owner / Management Command Centre now combines a 30-day window of permission
 
 Crew evidence is aggregated by crew rather than individual employee. Equipment use is based on recorded signouts; no signout in the window is retained as an evidence-review signal and is not treated as proof that an asset was idle or unnecessary. Lockout, fleet downtime/readiness, maintenance due state and replacement state remain their existing operational authorities and are shown as constraints, not employee-performance judgments.
 
-The decision-support layer cannot change crew/equipment assignments, clear lockouts, return equipment to service, complete maintenance, replace assets, create purchases or create vendor commitments. The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+The decision-support layer cannot change crew/equipment assignments, clear lockouts, return equipment to service, complete maintenance, replace assets, create purchases or create vendor commitments. The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented
 
@@ -452,7 +452,7 @@ Quantified demand is scheduled only when a planned material line belongs to a wo
 
 The readiness view distinguishes spring/summer mowing and landscaping materials, fall cleanup supplies, winter salt/de-icer/traction stock and general four-season materials using recorded catalog labels/categories. Reorder signals reuse canonical on-hand stock and recorded reorder/target settings. No purchase order, supplier contact, stock reservation or vendor commitment is created.
 
-The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### **359 — Customer Communication Readiness & Queue Quality** is implemented
 
@@ -460,7 +460,7 @@ The Owner / Management Command Centre now exposes a permission-aware, read-only 
 
 Queue identity is deterministic. Workability and dispatch evidence for the same work order collapse into one schedule-change candidate while preserving all source links. Completion follow-up is suppressed when a later outbound CRM interaction already exists for that work order. Customer message context is limited to source/service/timing/reason plus recorded preferred contact method/window; customer email addresses, phone numbers and portal tokens are not returned.
 
-Existing protected notification-delivery failures/manual review remain visible as delivery-attention evidence, but this layer cannot send email/text, publish updates, reschedule work, retry provider delivery, mutate A/R or collect payment. The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+Existing protected notification-delivery failures/manual review remain visible as delivery-attention evidence, but this layer cannot send email/text, publish updates, reschedule work, retry provider delivery, mutate A/R or collect payment. The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented
 
@@ -472,17 +472,25 @@ Reference checks surface active job/dispatch/recurring links that are unavailabl
 
 Four-season service/season checks compare explicit service context with the established spring/summer landscaping and lawn, fall cleanup/leaf, and winter snow/ice taxonomy. The workbench is advisory only: it cannot merge/delete records, delete history, rewrite foreign keys, reassign crews/equipment, clear lockouts or mutate Jobs, CRM, Finance or Safety authority.
 
-The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.
+The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
-#### 361 — Mobile, Offline & Read-Budget Reliability Optimization
+#### **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented
 
-Measure high-cost read paths, repeated fan-out, mobile payload size, offline replay behavior, cache opportunities and conflict-recovery friction across field/admin surfaces. Reduce unnecessary reads and improve batching/caching without weakening permission checks, release evidence, offline data safety or exact-source verification. Add regression budgets for the optimized paths.
+Mobile Crew now resolves Jobs and Safety permissions once each, keeps post-auth business reads to a documented maximum of 13, removes route/live-update history that the phone cards did not use, returns production/material/proof summary counts instead of bulky history arrays, and reports its payload/read-budget evidence in the response metadata.
+
+The Today surface no longer turns its 30-second local render timer into a background server refresh. Mobile Crew live context uses a five-minute freshness window with a four-hour signed-in session snapshot for poor-connectivity fallback; route activation, reconnect, foreground return, explicit refresh and successful writes remain deliberate freshness triggers.
+
+Offline action replay is profile-isolated, single-flight and capped at 12 actions per batch. Existing conflicts are held for explicit recovery instead of being replayed repeatedly, while Keep Mine, Merge and Retry still return a reviewed action to the normal replay path. Identical Admin directory reads are coalesced for three seconds per signed-in profile and invalidated before Admin mutation.
+
+The current release shell cache is reused for same-origin static assets while navigation remains network-first and Auth/API/Storage/Supabase traffic remains uncached. Source and rendered regression gates enforce the read, refresh, replay, cache and 390px mobile contracts without weakening module authorization, release evidence or offline conflict safety.
+
+The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**.
 
 #### 362 — Production Learning & Autonomous Roadmap Renewal
 
 Review the outcomes and evidence from items 351–361, identify remaining operational friction, reliability gaps, seasonal gaps and economic opportunities, then write the next bounded autonomous roadmap sequence before this item is promoted. The renewed queue must contain at least ten implementable releases, preserve the non-interactive rule above, and avoid reintroducing human/provider acceptance as the next ordinary build.
 
-Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, and **354 — Route & Crew Efficiency Evidence** are implemented by the current release. The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
+Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, and **354 — Route & Crew Efficiency Evidence** are implemented by the current release. The next planned autonomous item is **362 — Production Learning & Autonomous Roadmap Renewal**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
 
 ### Roadmap selection rules
 
