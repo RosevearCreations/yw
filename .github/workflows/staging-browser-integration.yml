@@ -147,6 +147,7 @@ jobs:
       - run: npm run test:estimate-to-cash-leakage-margin-recovery
       - run: npm run test:labour-equipment-fleet-utilization-decision-support
       - run: npm run test:materials-consumables-seasonal-stock-readiness
+      - run: npm run test:customer-communication-readiness-queue-quality
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -238,6 +239,7 @@ jobs:
       - run: npm run test:browser:estimate-to-cash-leakage-margin-recovery
       - run: npm run test:browser:labour-equipment-fleet-utilization-decision-support
       - run: npm run test:browser:materials-consumables-seasonal-stock-readiness
+      - run: npm run test:browser:customer-communication-readiness-queue-quality
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
