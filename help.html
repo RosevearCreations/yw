@@ -168,6 +168,17 @@
           <p><strong>No automatic sending:</strong> the queue cannot email/text, publish a live update, reschedule work, retry notification delivery, collect payment or contact a provider. Existing consent, provider delivery, Jobs, CRM and Finance authorities remain canonical.</p>
         </section>
 
+        <section class="help-section" id="data-quality-duplicate-orphan-reconciliation">
+          <h2>Build 360 — Data Quality, Duplicate &amp; Orphan Reconciliation Workbench</h2>
+          <p>Build 360 adds read-only data-quality reconciliation across canonical CRM, Property, Jobs, Dispatch, Recurring Service, Crew, Equipment, Route, Workability and Material Estimator evidence.</p>
+          <p><strong>Duplicate customers and properties:</strong> customer candidates require exact normalized email/phone evidence or normalized name plus postal evidence. Property candidates use normalized service address/postal or rounded coordinates. Matching values support detection but contact values are not returned by the management workbench.</p>
+          <p><strong>Broken and cross-module references:</strong> active jobs, dispatch and recurring-service records are checked against the loaded canonical customer, property, job, crew, equipment and route identities. Customer/property ownership mismatches remain explicit review items.</p>
+          <p><strong>Stale crew and equipment assignments:</strong> active crew memberships past their recorded end date, equipment assigned to inactive crews, and active dispatch using inactive/locked-out/replacement-hold equipment are surfaced without changing assignments or Safety/equipment state.</p>
+          <p><strong>Four-season tag conflicts:</strong> spring/summer mowing/landscaping, fall cleanup/leaf work and winter snow/ice service tags are compared with recorded season context. Four-season and other/unknown context are not forced into a conflict.</p>
+          <p><strong>Coverage safety:</strong> broken-reference findings are withheld when a required canonical source reaches its configured row cap. Missing loaded rows are never assumed to mean missing business records.</p>
+          <p><strong>No destructive automatic reconciliation:</strong> the workbench cannot merge/delete customer or property records, delete history, rewrite foreign keys, reassign crews/equipment or clear lockouts. Every suggested correction routes back to the existing authoritative workflow while preserving source identity and audit history.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">
