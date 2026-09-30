@@ -1,4 +1,4 @@
-/* Builds 350–358 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention + estimate-to-cash + utilization + stock readiness */
+/* Builds 350–359 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness */
 'use strict';
 (function(){
   const $=id=>document.getElementById(id);
@@ -17,7 +17,7 @@
     let el=$('ownerCommand350');if(el)return el;
     el=document.createElement('details');el.id='ownerCommand350';el.className='admin-hub-detail';el.dataset.adminHubTitle='Owner / Management Command Centre';el.dataset.adminHubGroups='operations';el.open=true;
     el.innerHTML=[
-      '<summary><span>Owner / Management Command Centre</span><small>Build 350–358 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention + estimate-to-cash + utilization + stock readiness</small></summary>',
+      '<summary><span>Owner / Management Command Centre</span><small>Build 350–359 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness</small></summary>',
       '<div class="admin-panel-block" data-build="350">',
       '<div class="section-heading"><div><span class="module-kicker">Build 350 · Management</span><h3>Owner / Management Command Centre</h3><p class="section-subtitle">One read-only view of today, production, profitability, workforce, seasonal execution, Safety, equipment and Finance readiness.</p></div><button id="owner350Refresh" class="secondary" type="button">Refresh</button></div>',
       '<div class="notice"><strong>Authority boundary:</strong> this cockpit summarizes existing source workflows only. It cannot dispatch crews, alter routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close accounting periods.</div>',
@@ -30,6 +30,7 @@
       '<section class="admin-panel-block owner356-cash" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate-to-cash leakage &amp; margin recovery</h4><p class="section-subtitle">Build 356 · accepted estimate → scheduling → production → approved extras → invoice readiness → invoicing → payment application → collection.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Analytical only:</strong> this workbench does not create invoices, post accounting, apply payments, send collection messages or charge customers.</div><div id="owner356EstimateCash"></div></section>',
       '<section class="admin-panel-block owner357-utilization" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour, equipment &amp; fleet utilization decision support</h4><p class="section-subtitle">Build 357 · 30-day paid-time, crew assignment, production labour, equipment-use, maintenance, lockout/downtime and fleet availability evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Decision support only:</strong> this view does not score employees, clear Safety restrictions, change crew/equipment assignments, complete maintenance, replace assets or create purchases.</div><div id="owner357Utilization"></div></section>',
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
+      '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -74,7 +75,7 @@
         card('Stale sources',stale.length,'requires cautious interpretation'),
         card('Coverage gaps',gaps.length,'missing/error/timestamp/cap signals')
       ].join('')+'</div>';
-      const priority=['jobs','dispatch','production','profitability','timekeeping','timekeeping_detail','workability','receivables','bank','safety','equipment','equipment_use','maintenance','fleet','recurring_visits','storms','storm_routes'];
+      const priority=['jobs','dispatch','production','profitability','timekeeping','timekeeping_detail','workability','crm_followups','crm_customers','crm_interactions','notification_delivery','closeouts','receivables','bank','safety','equipment','equipment_use','maintenance','fleet','recurring_visits','storms','storm_routes'];
       const ordered=[...priority.map(k=>sourceMeta(k)).filter(Boolean),...entries.filter(s=>!priority.includes(s?.source_key))];
       const rows='<div class="owner350-list">'+ordered.map(s=>'<div class="owner351-source"><strong>'+esc(s.source_module||'source')+' · '+esc(s.source_view||s.source_key||'unknown')+'</strong><small><span class="owner351-state">'+esc(String(s.freshness_state||'unknown').toUpperCase())+'</span> · confidence '+esc(String(s.confidence||'unknown').toUpperCase())+' · '+esc(String(s.row_count??0))+' row(s) · updated '+esc(when(s.last_authoritative_update))+'</small><small>'+esc(s.reason||'No freshness explanation supplied.')+'</small></div>').join('')+'</div>';
       host.innerHTML=summary+'<details><summary>Authoritative source details</summary>'+rows+'</details>';
@@ -284,6 +285,37 @@
         '<details style="margin-top:8px;"><summary>Evidence boundaries</summary><p class="muted">'+esc(w.demand_boundary||'')+'</p><p class="muted">'+esc(w.recurring_boundary||'')+'</p><p class="muted">'+esc(w.unit_boundary||'')+'</p><p class="muted">'+esc(w.seasonal_boundary||'')+'</p><p class="muted">'+esc(w.purchasing_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
 
+
+    function renderCommunicationReadiness(){
+      const host=$('owner359Communications');if(!host)return;
+      const w=state.data?.customer_communication_readiness_queue;
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Customer communication readiness requires Jobs visibility for this profile.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Customer communication readiness evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical communication source queries failed. Queue counts are withheld rather than converted into zero-valued facts.</p>';return}
+      const s=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Ready for review',num(s.queue_count),'deduplicated candidates','communication_readiness'),
+        card('Weather / workability',num(s.weather_workability_changes),'recorded decision changes','communication_readiness'),
+        card('Reschedule / ETA',num(s.reschedule_notices)+num(s.eta_changes),'schedule-change candidates','communication_readiness'),
+        card('Completion follow-up',num(s.completion_followups),'no later outbound CRM interaction','communication_readiness'),
+        card('Recurring notices',num(s.recurring_service_notices),'upcoming 14-day visits','communication_readiness'),
+        card('Overdue follow-up',num(s.overdue_customer_followups),'canonical CRM follow-ups','communication_readiness'),
+        card('Invoice reminders',allowed('finance')?num(s.invoice_reminder_candidates):'Unavailable','Finance-scoped overdue A/R','communication_readiness'),
+        card('Merged multi-source',num(s.merged_multi_source_count),'duplicate schedule/workability signals collapsed','communication_readiness')
+      ].join('')+'</div>';
+      const queue=(w.readiness_queue||[]).slice(0,40).map(r=>{
+        const labels=(r.signal_types||[r.signal_type]).map(x=>String(x||'').replaceAll('_',' ')).join(' + ');
+        const context=(r.message_context||[]).join(' · ');
+        const target=r.navigation_target==='finance'?'finance':r.navigation_target==='jobs'?'jobs':'operations';
+        return '<div class="owner350-row"><strong>'+esc(labels.toUpperCase())+'</strong><small>'+esc(context||r.detail||'')+'</small><small>'+esc(r.detail||'')+'</small><small>'+esc('Sources: '+num(r.source_link_count)+' · key '+(r.dedupe_key||''))+'</small><button class="secondary" style="margin-top:6px;" data-owner359-open="'+esc(target)+'">Open source workspace</button></div>';
+      }).join('');
+      const delivery=(w.delivery_attention||[]).slice(0,20).map(r=>'<div class="owner350-row"><strong>'+esc(String(r.delivery_status||'review').replaceAll('_',' ').toUpperCase()+' · '+(r.work_order_number||'Work order'))+'</strong><small>'+esc((r.client_name||'Customer')+' · '+(r.live_update_title||'customer-visible update'))+'</small><small>'+esc(r.detail||'')+'</small></div>').join('');
+      host.innerHTML=summary+
+        '<details style="margin-top:10px;" open><summary>Communication readiness queue</summary><div class="owner350-list">'+(queue||'<p class="muted">No communication-readiness candidate is visible in the loaded evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Protected delivery attention</summary><div class="owner350-list">'+(delivery||'<p class="muted">No failed/manual-review/retry delivery state is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Queue-quality boundaries</summary><p class="muted">'+esc(w.duplicate_boundary||'')+'</p><p class="muted">'+esc(w.context_boundary||'')+'</p><p class="muted">'+esc(w.completion_boundary||'')+'</p><p class="muted">'+esc(w.recurring_boundary||'')+'</p><p class="muted">'+esc(w.finance_boundary||'')+'</p><p class="muted">'+esc(w.delivery_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -336,6 +368,7 @@
       renderEstimateToCash();
       renderUtilizationSupport();
       renderStockReadiness();
+      renderCommunicationReadiness();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
@@ -388,10 +421,10 @@
       window.YWIRouter?.showSection?.('admin');setTimeout(()=>window.YWIAdminHub?.open?.(target==='safety'?'safety':'operations'),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 358 materials, consumables and seasonal stock-readiness evidence refreshed. Source records were not changed.')}
-      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null,labour_equipment_fleet_utilization_support:null,materials_consumables_seasonal_stock_readiness:null};render();note('Unable to load Build 358 materials, consumables and seasonal stock-readiness evidence: '+(e?.message||e),true)}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 359 customer communication readiness and queue-quality evidence refreshed. Source records were not changed.')}
+      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null,labour_equipment_fleet_utilization_support:null,materials_consumables_seasonal_stock_readiness:null,customer_communication_readiness_queue:null};render();note('Unable to load Build 359 customer communication readiness and queue-quality evidence: '+(e?.message||e),true)}
     }
-    el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open'))});
+    el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open],[data-owner359-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open')||b.getAttribute('data-owner359-open'))});
     $('owner350Refresh').onclick=load;load();
   }
   window.YWIOwnerManagementCommandUI={mount};

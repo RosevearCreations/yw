@@ -157,6 +157,17 @@
           <p><strong>No automatic purchasing:</strong> reorder and shortage signals reuse current on-hand evidence, scheduled planned demand and recorded reorder/target settings. The workbench does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</p>
         </section>
 
+        <section class="help-section" id="customer-communication-readiness-queue-quality">
+          <h2>Build 359 — Customer Communication Readiness &amp; Queue Quality</h2>
+          <p>Build 359 adds a permission-aware, read-only customer communication readiness queue using existing workability, dispatch, recurring-service, closeout, CRM, notification-delivery and Finance A/R evidence.</p>
+          <p><strong>Weather, reschedule and ETA context:</strong> workability decisions and dispatch reschedule history collapse to one work-order candidate when they describe the same schedule-change situation. Each retained source link remains visible for review.</p>
+          <p><strong>Completion follow-up suppression:</strong> an approved/signed closeout becomes a completion-follow-up candidate only when no later outbound CRM interaction is recorded against the same work order.</p>
+          <p><strong>Recurring-service notice readiness:</strong> upcoming visits in the 14-day operating window retain their canonical occurrence key for duplicate suppression. A notice candidate does not imply consent and does not send a message.</p>
+          <p><strong>Overdue CRM and invoice reminder candidates:</strong> overdue CRM follow-ups are shown from the canonical CRM queue. Invoice-reminder candidates require Finance visibility plus a positive balance and recorded days past due.</p>
+          <p><strong>Privacy and provider boundary:</strong> management context may include customer name, service/timing/reason and recorded preferred contact method/window, but it does not return customer email addresses, phone numbers or portal tokens.</p>
+          <p><strong>No automatic sending:</strong> the queue cannot email/text, publish a live update, reschedule work, retry notification delivery, collect payment or contact a provider. Existing consent, provider delivery, Jobs, CRM and Finance authorities remain canonical.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">

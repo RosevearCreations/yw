@@ -23,7 +23,7 @@ must(directory,[
   "authority_boundary:'Read-only management evidence. Materials catalog"
 ],'Build 358 server');
 
-const b358=directory.slice(directory.indexOf('function buildMaterialsConsumablesSeasonalStockReadiness'),directory.indexOf("\n\n  if (scope === 'owner_management_command')"));
+const b358=directory.slice(directory.indexOf('function buildMaterialsConsumablesSeasonalStockReadiness'),directory.indexOf('function buildCustomerCommunicationReadinessQueue'));
 assert.ok(b358.length>2000,'Build 358 helper slice missing');
 assert.ok(!/\.(insert|update|delete|upsert)\s*\(/.test(b358),'Build 358 helper must remain read-only');
 must(b358,[
@@ -36,17 +36,17 @@ must(b358,[
 ],'Build 358 boundaries');
 
 must(ui,[
-  'Build 350–358','Materials, consumables &amp; seasonal stock readiness','owner358Stock','renderStockReadiness',
+  'Build 350–359','Materials, consumables &amp; seasonal stock readiness','owner358Stock','renderStockReadiness',
   'Tracked materials','Quantified 14-day demand','Shortage ≤7 days','Shortage ≤14 days','Reorder review',
   'Unit comparison needed','Recurring demand unquantified','Four-season stock context','Recurring demand coverage gaps',
-  'No automatic purchasing:','Build 358 materials, consumables and seasonal stock-readiness evidence refreshed'
+  'No automatic purchasing:','Build 359 customer communication readiness and queue-quality evidence refreshed'
 ],'Build 358 UI');
 
 assert.equal(pkg.scripts['test:materials-consumables-seasonal-stock-readiness'],'node scripts/materials-consumables-seasonal-stock-readiness-check.mjs');
 assert.equal(pkg.scripts['test:browser:materials-consumables-seasonal-stock-readiness'],'playwright test --config=playwright.config.mjs tests/browser/materials-consumables-seasonal-stock-readiness.spec.mjs');
 must(workflow,['npm run test:materials-consumables-seasonal-stock-readiness','npm run test:browser:materials-consumables-seasonal-stock-readiness'],'Build 358 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-29b358'],'Build 358 asset');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b359'],'Build 358 asset');
 must(help,['Build 358 — Materials, Consumables &amp; Seasonal Stock Readiness','Scheduled material demand','Recurring demand coverage','Units are not guessed','Seasonal stock context','No automatic purchasing'],'Build 358 help');
-must(roadmap,['#### **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','The next planned autonomous item is **359 — Customer Communication Readiness & Queue Quality**.'],'Build 358 roadmap');
-must(handbook,['**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','- **359 — Customer Communication Readiness & Queue Quality**','After item 358, that item is 359 — Customer Communication Readiness & Queue Quality.'],'Build 358 handoff');
+must(roadmap,['#### **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','The next planned autonomous item is **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**.'],'Build 358 roadmap');
+must(handbook,['**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','**359 — Customer Communication Readiness & Queue Quality** is implemented','- **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**','After item 359, that item is 360 — Data Quality, Duplicate & Orphan Reconciliation Workbench.'],'Build 358 handoff');
 console.log('Build 358 Materials, Consumables & Seasonal Stock Readiness source gate GREEN');

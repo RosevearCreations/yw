@@ -131,9 +131,8 @@ Production promotion is deliberate/manual. Source work must not enable Finance e
 
 When another AI system takes over YW, treat this handbook and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` as the durable project authority. Resolve the live `dev` and `main` heads from GitHub at task start rather than trusting copied commit identifiers.
 
-**351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, and **353 — Four-Season Capacity & Workability Forecast** are implemented. **354 — Route & Crew Efficiency Evidence** is implemented. **355 — Recurring Service Renewal & Retention Workbench** is implemented. **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented. **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented. **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented. The current autonomous queue continues with:
+**351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, and **353 — Four-Season Capacity & Workability Forecast** are implemented. **354 — Route & Crew Efficiency Evidence** is implemented. **355 — Recurring Service Renewal & Retention Workbench** is implemented. **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented. **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented. **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented. **359 — Customer Communication Readiness & Queue Quality** is implemented. The current autonomous queue continues with:
 
-- **359 — Customer Communication Readiness & Queue Quality**
 - **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**
 - **361 — Mobile, Offline & Read-Budget Reliability Optimization**
 - **362 — Production Learning & Autonomous Roadmap Renewal**
@@ -142,7 +141,7 @@ The last queue item must write at least ten further bounded autonomous items bef
 
 Ordinary roadmap work is non-interactive. Do not require the user to create a staging environment, provide provider credentials, execute manual acceptance scenarios, approve synthetic cases, send real messages, run real payments/refunds/disputes, enable Production provider rails, or manually sign off routine releases. If an external dependency is unavailable, keep external/provider mutation disabled and complete the safest repository-owned scope using existing operational evidence, deterministic source checks, synthetic fixtures and browser acceptance.
 
-When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. After item 358, that item is 359 — Customer Communication Readiness & Queue Quality. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. After item 359, that item is 360 — Data Quality, Duplicate & Orphan Reconciliation Workbench. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 
 For every ordinary release, use this sequence:
 
