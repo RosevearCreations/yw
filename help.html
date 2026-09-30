@@ -179,6 +179,16 @@
           <p><strong>No destructive automatic reconciliation:</strong> the workbench cannot merge/delete customer or property records, delete history, rewrite foreign keys, reassign crews/equipment or clear lockouts. Every suggested correction routes back to the existing authoritative workflow while preserving source identity and audit history.</p>
         </section>
 
+        <section class="help-section" id="mobile-offline-read-budget-reliability">
+          <h2>Build 361 — Mobile, Offline &amp; Read-Budget Reliability Optimization</h2>
+          <p>Build 361 reduces repeated field/admin reads while keeping the same server permission and source-authority boundaries.</p>
+          <p><strong>Mobile Crew read budget:</strong> Jobs and Safety access are each evaluated once, related field sources are loaded in one bounded fan-out, and route metadata plus live-update history are no longer fetched just to render the phone cards. Production, material and proof histories are returned as counts when only counts are displayed.</p>
+          <p><strong>Demand-driven refresh:</strong> a signed-in Mobile Crew snapshot remains live for five minutes. The 30-second Today presentation loop is local-only; route activation, visibility return, reconnection, explicit Refresh, and successful field writes may request fresh server context.</p>
+          <p><strong>Offline replay safety:</strong> action replay is profile-isolated, coalesced to one replay at a time and capped at 12 actions per batch. Conflict items stay paused until an operator explicitly chooses Keep Mine, Merge or Retry; automatic conflict overwrite/merge remains disabled.</p>
+          <p><strong>Admin and shell caching:</strong> identical Admin directory reads may share an in-flight request and a three-second profile-scoped result. Admin mutations invalidate that cache. Same-origin shell assets may reuse the current release cache while navigation stays network-first and Auth, API, Storage and Supabase requests remain uncached.</p>
+          <p><strong>Regression budgets:</strong> CI now verifies the Mobile Crew business-read, permission-evaluation, refresh, payload, replay-batch and cache contracts together with rendered 390px acceptance. Build 361 does not relax module authorization, exact-source release evidence, Finance/provider guards or offline conflict ownership.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">
