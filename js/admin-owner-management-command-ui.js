@@ -1,4 +1,4 @@
-/* Builds 350–359 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness */
+/* Builds 350–360 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness + data quality reconciliation */
 'use strict';
 (function(){
   const $=id=>document.getElementById(id);
@@ -17,7 +17,7 @@
     let el=$('ownerCommand350');if(el)return el;
     el=document.createElement('details');el.id='ownerCommand350';el.className='admin-hub-detail';el.dataset.adminHubTitle='Owner / Management Command Centre';el.dataset.adminHubGroups='operations';el.open=true;
     el.innerHTML=[
-      '<summary><span>Owner / Management Command Centre</span><small>Build 350–359 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness</small></summary>',
+      '<summary><span>Owner / Management Command Centre</span><small>Build 350–360 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness + data quality reconciliation</small></summary>',
       '<div class="admin-panel-block" data-build="350">',
       '<div class="section-heading"><div><span class="module-kicker">Build 350 · Management</span><h3>Owner / Management Command Centre</h3><p class="section-subtitle">One read-only view of today, production, profitability, workforce, seasonal execution, Safety, equipment and Finance readiness.</p></div><button id="owner350Refresh" class="secondary" type="button">Refresh</button></div>',
       '<div class="notice"><strong>Authority boundary:</strong> this cockpit summarizes existing source workflows only. It cannot dispatch crews, alter routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close accounting periods.</div>',
@@ -31,6 +31,7 @@
       '<section class="admin-panel-block owner357-utilization" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour, equipment &amp; fleet utilization decision support</h4><p class="section-subtitle">Build 357 · 30-day paid-time, crew assignment, production labour, equipment-use, maintenance, lockout/downtime and fleet availability evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Decision support only:</strong> this view does not score employees, clear Safety restrictions, change crew/equipment assignments, complete maintenance, replace assets or create purchases.</div><div id="owner357Utilization"></div></section>',
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
+      '<section class="admin-panel-block owner360-data-quality" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality, duplicate &amp; orphan reconciliation workbench</h4><p class="section-subtitle">Build 360 · duplicate customer/property candidates, broken canonical references, cross-module mismatches, stale crew/equipment assignments, and conflicting four-season service tags.</p></div><button class="secondary" data-owner360-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>No destructive auto-fix:</strong> this workbench preserves source IDs and audit history. It cannot merge/delete records, rewrite foreign keys, reassign crews/equipment or clear lockouts.</div><div id="owner360DataQuality"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -75,7 +76,7 @@
         card('Stale sources',stale.length,'requires cautious interpretation'),
         card('Coverage gaps',gaps.length,'missing/error/timestamp/cap signals')
       ].join('')+'</div>';
-      const priority=['jobs','dispatch','production','profitability','timekeeping','timekeeping_detail','workability','crm_followups','crm_customers','crm_interactions','notification_delivery','closeouts','receivables','bank','safety','equipment','equipment_use','maintenance','fleet','recurring_visits','storms','storm_routes'];
+      const priority=['jobs','dispatch','production','profitability','timekeeping','timekeeping_detail','workability','crm_followups','crm_customers','crm_properties','crm_interactions','notification_delivery','closeouts','receivables','bank','safety','equipment','equipment_use','maintenance','fleet','recurring','routes','recurring_visits','storms','storm_routes'];
       const ordered=[...priority.map(k=>sourceMeta(k)).filter(Boolean),...entries.filter(s=>!priority.includes(s?.source_key))];
       const rows='<div class="owner350-list">'+ordered.map(s=>'<div class="owner351-source"><strong>'+esc(s.source_module||'source')+' · '+esc(s.source_view||s.source_key||'unknown')+'</strong><small><span class="owner351-state">'+esc(String(s.freshness_state||'unknown').toUpperCase())+'</span> · confidence '+esc(String(s.confidence||'unknown').toUpperCase())+' · '+esc(String(s.row_count??0))+' row(s) · updated '+esc(when(s.last_authoritative_update))+'</small><small>'+esc(s.reason||'No freshness explanation supplied.')+'</small></div>').join('')+'</div>';
       host.innerHTML=summary+'<details><summary>Authoritative source details</summary>'+rows+'</details>';
@@ -316,6 +317,46 @@
         '<details style="margin-top:8px;"><summary>Queue-quality boundaries</summary><p class="muted">'+esc(w.duplicate_boundary||'')+'</p><p class="muted">'+esc(w.context_boundary||'')+'</p><p class="muted">'+esc(w.completion_boundary||'')+'</p><p class="muted">'+esc(w.recurring_boundary||'')+'</p><p class="muted">'+esc(w.finance_boundary||'')+'</p><p class="muted">'+esc(w.delivery_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
 
+
+    function renderDataQualityReconciliation(){
+      const host=$('owner360DataQuality');if(!host)return;
+      const w=state.data?.data_quality_duplicate_orphan_reconciliation;
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Data-quality reconciliation requires Jobs / Business &amp; Operations visibility for this profile.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Data-quality reconciliation evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical data-quality source queries failed. Reconciliation counts are withheld rather than converted into zero-valued facts.</p>';return}
+      const s=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Signals',num(s.total_signals),'review candidates','data_quality_reconciliation'),
+        card('Duplicate customers',num(s.duplicate_customer_candidates),'candidate pairs; no identity decision','data_quality_reconciliation'),
+        card('Duplicate properties',num(s.duplicate_property_candidates),'candidate pairs; source IDs preserved','data_quality_reconciliation'),
+        card('Broken references',w.reference_coverage_complete?num(s.broken_canonical_references):'Withheld',w.reference_coverage_complete?'complete loaded reference coverage':'one or more reference sources reached a row cap','data_quality_reconciliation'),
+        card('Cross-module mismatches',w.reference_coverage_complete?num(s.cross_module_link_mismatches):'Withheld','customer/property and operational ownership links','data_quality_reconciliation'),
+        card('Stale assignments',w.reference_coverage_complete?num(s.stale_assignments):'Withheld','crew membership, crew/equipment assignment','data_quality_reconciliation'),
+        card('Season tag conflicts',num(s.conflicting_season_service_tags),'four-season taxonomy review','data_quality_reconciliation')
+      ].join('')+'</div>';
+      const queue=(w.reconciliation_queue||[]).slice(0,50).map(r=>{
+        const basis=(r.match_basis||[]).map(x=>String(x).replaceAll('_',' ')).join(', ');
+        const related=(r.related_entities||[]).map(x=>[x.type,x.reference||x.name||x.id].filter(Boolean).join(': ')).join(' · ');
+        const target=['jobs','finance'].includes(r.navigation_target)?r.navigation_target:(r.navigation_target==='workforce'?'workforce':r.navigation_target==='crm'?'crm':'operations');
+        return '<div class="owner350-row"><strong>'+esc(String(r.signal_type||'review').replaceAll('_',' ').toUpperCase()+' · '+(r.title||r.reference||'Review candidate'))+'</strong>'+
+          (r.reference?'<small>'+esc('Reference: '+r.reference)+'</small>':'')+
+          (basis?'<small>'+esc('Match basis: '+basis)+'</small>':'')+
+          (related?'<small>'+esc('Related: '+related)+'</small>':'')+
+          '<small>'+esc(r.detail||'')+'</small><small>'+esc(r.suggested_action||'Review canonical source records.')+'</small>'+
+          '<button class="secondary" style="margin-top:6px;" data-owner360-open="'+esc(target)+'">Open source workspace</button></div>';
+      }).join('');
+      const duplicates=[...(w.duplicate_customer_pairs||[]),...(w.duplicate_property_pairs||[])].slice(0,30).map(r=>'<div class="owner350-row"><strong>'+esc(r.title||r.reference||'Duplicate candidate')+'</strong><small>'+esc((r.match_basis||[]).map(x=>String(x).replaceAll('_',' ')).join(', ')||'candidate evidence')+'</small><small>'+esc(r.detail||'')+'</small></div>').join('');
+      const refs=(w.reference_and_assignment_issues||[]).slice(0,30).map(r=>'<div class="owner350-row"><strong>'+esc(String(r.signal_type||'reference issue').replaceAll('_',' ').toUpperCase()+' · '+(r.reference||r.title||'source record'))+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('');
+      const seasons=(w.season_tag_conflicts||[]).slice(0,20).map(r=>'<div class="owner350-row"><strong>'+esc(r.reference||r.title||'Season/service tag')+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('');
+      host.innerHTML=summary+
+        (!w.reference_coverage_complete?'<div class="notice" style="margin:8px 0;"><strong>Reference-gap findings withheld:</strong> at least one canonical reference source reached its configured row cap. Duplicate and season-tag review may still be partial; missing rows are not treated as missing records.</div>':'')+
+        '<details style="margin-top:10px;" open><summary>Reconciliation queue</summary><div class="owner350-list">'+(queue||'<p class="muted">No data-quality reconciliation signal is visible in the loaded evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Duplicate customer &amp; property candidates</summary><div class="owner350-list">'+(duplicates||'<p class="muted">No duplicate candidate is visible from the deterministic matching rules.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Reference &amp; assignment issues</summary><div class="owner350-list">'+(refs||'<p class="muted">No broken/stale reference signal is visible, or reference-gap findings are withheld because coverage is incomplete.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Four-season tag conflicts</summary><div class="owner350-list">'+(seasons||'<p class="muted">No spring/summer, fall or winter service/season conflict is visible.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Reconciliation boundaries</summary><p class="muted">'+esc(w.duplicate_boundary||'')+'</p><p class="muted">'+esc(w.reference_boundary||'')+'</p><p class="muted">'+esc(w.assignment_boundary||'')+'</p><p class="muted">'+esc(w.season_boundary||'')+'</p><p class="muted">'+esc(w.destructive_boundary||'')+'</p><p class="muted">'+esc(w.audit_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -369,6 +410,7 @@
       renderUtilizationSupport();
       renderStockReadiness();
       renderCommunicationReadiness();
+      renderDataQualityReconciliation();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
@@ -418,13 +460,15 @@
     }
     function openSource(target){
       if(target==='jobs'||target==='finance'){window.YWIRouter?.showSection?.(target);return}
-      window.YWIRouter?.showSection?.('admin');setTimeout(()=>window.YWIAdminHub?.open?.(target==='safety'?'safety':'operations'),0);
+      window.YWIRouter?.showSection?.('admin');
+      const group=target==='safety'?'safety':target==='workforce'?'people':'operations';
+      setTimeout(()=>window.YWIAdminHub?.open?.(group),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 359 customer communication readiness and queue-quality evidence refreshed. Source records were not changed.')}
-      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null,labour_equipment_fleet_utilization_support:null,materials_consumables_seasonal_stock_readiness:null,customer_communication_readiness_queue:null};render();note('Unable to load Build 359 customer communication readiness and queue-quality evidence: '+(e?.message||e),true)}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 360 data-quality duplicate/orphan reconciliation evidence refreshed. Source records were not changed.')}
+      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null,labour_equipment_fleet_utilization_support:null,materials_consumables_seasonal_stock_readiness:null,customer_communication_readiness_queue:null,data_quality_duplicate_orphan_reconciliation:null};render();note('Unable to load Build 360 data-quality duplicate/orphan reconciliation evidence: '+(e?.message||e),true)}
     }
-    el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open],[data-owner359-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open')||b.getAttribute('data-owner359-open'))});
+    el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open],[data-owner359-open],[data-owner360-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open')||b.getAttribute('data-owner359-open')||b.getAttribute('data-owner360-open'))});
     $('owner350Refresh').onclick=load;load();
   }
   window.YWIOwnerManagementCommandUI={mount};

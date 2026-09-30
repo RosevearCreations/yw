@@ -36,17 +36,17 @@ must(b358,[
 ],'Build 358 boundaries');
 
 must(ui,[
-  'Build 350–359','Materials, consumables &amp; seasonal stock readiness','owner358Stock','renderStockReadiness',
+  'Build 350–360','Materials, consumables &amp; seasonal stock readiness','owner358Stock','renderStockReadiness',
   'Tracked materials','Quantified 14-day demand','Shortage ≤7 days','Shortage ≤14 days','Reorder review',
   'Unit comparison needed','Recurring demand unquantified','Four-season stock context','Recurring demand coverage gaps',
-  'No automatic purchasing:','Build 359 customer communication readiness and queue-quality evidence refreshed'
+  'No automatic purchasing:','Build 360 data-quality duplicate/orphan reconciliation evidence refreshed'
 ],'Build 358 UI');
 
 assert.equal(pkg.scripts['test:materials-consumables-seasonal-stock-readiness'],'node scripts/materials-consumables-seasonal-stock-readiness-check.mjs');
 assert.equal(pkg.scripts['test:browser:materials-consumables-seasonal-stock-readiness'],'playwright test --config=playwright.config.mjs tests/browser/materials-consumables-seasonal-stock-readiness.spec.mjs');
 must(workflow,['npm run test:materials-consumables-seasonal-stock-readiness','npm run test:browser:materials-consumables-seasonal-stock-readiness'],'Build 358 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b359'],'Build 358 asset');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b360'],'Build 358 asset');
 must(help,['Build 358 — Materials, Consumables &amp; Seasonal Stock Readiness','Scheduled material demand','Recurring demand coverage','Units are not guessed','Seasonal stock context','No automatic purchasing'],'Build 358 help');
-must(roadmap,['#### **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','The next planned autonomous item is **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**.'],'Build 358 roadmap');
-must(handbook,['**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','**359 — Customer Communication Readiness & Queue Quality** is implemented','- **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**','After item 359, that item is 360 — Data Quality, Duplicate & Orphan Reconciliation Workbench.'],'Build 358 handoff');
+must(roadmap,['#### **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.'],'Build 358 roadmap');
+must(handbook,['**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','**359 — Customer Communication Readiness & Queue Quality** is implemented','**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','- **361 — Mobile, Offline & Read-Budget Reliability Optimization**','After item 360, that item is 361 — Mobile, Offline & Read-Budget Reliability Optimization.'],'Build 358 handoff');
 console.log('Build 358 Materials, Consumables & Seasonal Stock Readiness source gate GREEN');

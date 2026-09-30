@@ -1482,6 +1482,280 @@ function buildCustomerCommunicationReadinessQueue(input:{
   };
 }
 
+
+function buildDataQualityDuplicateOrphanReconciliation(input:{
+  customers:any[];properties:any[];jobs:any[];dispatch:any[];recurring:any[];crews:any[];equipment:any[];routes:any[];
+  workability:any[];materialPlans:any[];jobsVisible:boolean;sourceQueriesOk:boolean;referenceCoverageComplete:boolean;
+}) {
+  const norm=(v:any)=>String(v??'').trim().toLowerCase();
+  const compact=(v:any)=>norm(v).replace(/[^a-z0-9]+/g,'');
+  const phoneKey=(v:any)=>String(v??'').replace(/\D+/g,'').slice(-10);
+  const postalKey=(v:any)=>String(v??'').toUpperCase().replace(/[^A-Z0-9]+/g,'');
+  const today=ontarioDateKey(new Date())!;
+  const activeStatus=(v:any)=>!['inactive','archived','retired','cancelled','completed','closed','superseded'].includes(norm(v));
+  const signalOrder:Record<string,number>={
+    broken_canonical_reference:10,cross_module_link_mismatch:20,stale_assignment:30,conflicting_season_service_tag:40,
+    duplicate_customer_candidate:50,duplicate_property_candidate:60
+  };
+  const customerById=new Map<string,any>((input.customers||[]).filter(r=>r?.client_id).map(r=>[String(r.client_id),r]));
+  const propertyById=new Map<string,any>((input.properties||[]).filter(r=>r?.id).map(r=>[String(r.id),r]));
+  const crewById=new Map<string,any>((input.crews||[]).filter(r=>r?.id).map(r=>[String(r.id),r]));
+  const equipmentById=new Map<string,any>((input.equipment||[]).filter(r=>r?.id!=null).map(r=>[String(r.id),r]));
+  const routeById=new Map<string,any>((input.routes||[]).filter(r=>r?.id).map(r=>[String(r.id),r]));
+  const jobById=new Map<string,any>((input.jobs||[]).filter(r=>r?.id).map(r=>[String(r.id),r]));
+  const signals:any[]=[];
+  const add=(r:any)=>signals.push({
+    severity:r.severity||'review',signal_type:r.signal_type,entity_type:r.entity_type||null,entity_id:r.entity_id||null,
+    reference:r.reference||null,title:r.title||null,detail:r.detail||null,match_basis:r.match_basis||[],
+    related_entities:r.related_entities||[],source_links:r.source_links||[],suggested_action:r.suggested_action||'Review the canonical source records before making any correction.',
+    navigation_target:r.navigation_target||'jobs',destructive_action_allowed:false
+  });
+
+  const pairMap=new Map<string,any>();
+  const customerRows=(input.customers||[]).filter(r=>r?.client_id&&r?.is_active!==false);
+  const addCustomerPair=(a:any,b:any,basis:string)=>{
+    const ids=[String(a.client_id),String(b.client_id)].sort(),key=ids.join('|');
+    const row=pairMap.get(key)||{a,b,basis:new Set<string>()}; row.basis.add(basis); pairMap.set(key,row);
+  };
+  for(let i=0;i<customerRows.length;i++) for(let j=i+1;j<customerRows.length;j++){
+    const a=customerRows[i],b=customerRows[j];
+    const ae=norm(a?.billing_email),be=norm(b?.billing_email),ap=phoneKey(a?.phone),bp=phoneKey(b?.phone);
+    const an=compact(a?.client_name||a?.legal_name||a?.display_name),bn=compact(b?.client_name||b?.legal_name||b?.display_name);
+    const az=postalKey(a?.postal_code),bz=postalKey(b?.postal_code);
+    if(ae&&ae===be) addCustomerPair(a,b,'same_email');
+    if(ap.length>=7&&ap===bp) addCustomerPair(a,b,'same_phone');
+    if(an&&an===bn&&az&&az===bz) addCustomerPair(a,b,'same_normalized_name_and_postal');
+  }
+  for(const {a,b,basis} of pairMap.values()){
+    const matchBasis=[...basis].sort();
+    add({
+      signal_type:'duplicate_customer_candidate',severity:matchBasis.includes('same_email')||matchBasis.includes('same_phone')?'high_review':'review',
+      entity_type:'customer_pair',entity_id:[a.client_id,b.client_id].sort().join('|'),
+      reference:[a.client_code,b.client_code].filter(Boolean).sort().join(' ↔ '),
+      title:(a.client_name||a.client_code||'Customer')+' ↔ '+(b.client_name||b.client_code||'Customer'),
+      detail:'Two active canonical customer records share '+matchBasis.map(x=>x.replaceAll('_',' ')).join(', ')+'. Contact values are used only for matching and are not returned in this workbench.',
+      match_basis:matchBasis,
+      related_entities:[
+        {type:'customer',id:a.client_id,reference:a.client_code||null,name:a.client_name||null},
+        {type:'customer',id:b.client_id,reference:b.client_code||null,name:b.client_name||null}
+      ],
+      source_links:[{source_type:'crm_customer',source_id:a.client_id,reference:a.client_code||null},{source_type:'crm_customer',source_id:b.client_id,reference:b.client_code||null}],
+      suggested_action:'Open CRM, compare service/property/history evidence, and decide manually whether records represent the same customer. Preserve both source IDs and audit history until an explicit reconciliation workflow exists.',
+      navigation_target:'crm'
+    });
+  }
+
+  const propertyGroups=new Map<string,any[]>();
+  for(const p of (input.properties||[]).filter(r=>r?.id&&r?.is_active!==false)){
+    const address=compact([p?.service_address,p?.city,p?.province].filter(Boolean).join(' ')),postal=postalKey(p?.postal_code);
+    const lat=Number(p?.latitude),lng=Number(p?.longitude);
+    const geo=Number.isFinite(lat)&&Number.isFinite(lng)?lat.toFixed(5)+','+lng.toFixed(5):'';
+    const keys=[address&&postal?'addr:'+address+'|'+postal:'',geo?'geo:'+geo:''].filter(Boolean);
+    for(const key of keys){const list=propertyGroups.get(key)||[];list.push(p);propertyGroups.set(key,list);}
+  }
+  const propertyPairs=new Map<string,any>();
+  for(const [key,rows] of propertyGroups.entries()){
+    if(rows.length<2) continue;
+    for(let i=0;i<rows.length;i++) for(let j=i+1;j<rows.length;j++){
+      const a=rows[i],b=rows[j],ids=[String(a.id),String(b.id)].sort(),pk=ids.join('|');
+      const row=propertyPairs.get(pk)||{a,b,basis:new Set<string>()}; row.basis.add(key.startsWith('addr:')?'same_normalized_service_address':'same_rounded_coordinates'); propertyPairs.set(pk,row);
+    }
+  }
+  for(const {a,b,basis} of propertyPairs.values()){
+    const matchBasis=[...basis].sort();
+    add({
+      signal_type:'duplicate_property_candidate',severity:'review',entity_type:'property_pair',entity_id:[a.id,b.id].sort().join('|'),
+      reference:[a.site_code,b.site_code].filter(Boolean).sort().join(' ↔ '),
+      title:(a.site_name||a.site_code||'Property')+' ↔ '+(b.site_name||b.site_code||'Property'),
+      detail:'Two active property records share '+matchBasis.map(x=>x.replaceAll('_',' ')).join(', ')+'. Address/coordinate values are used for matching; source property IDs remain distinct.',
+      match_basis:matchBasis,
+      related_entities:[
+        {type:'property',id:a.id,reference:a.site_code||null,name:a.site_name||null,client_id:a.client_id||null},
+        {type:'property',id:b.id,reference:b.site_code||null,name:b.site_name||null,client_id:b.client_id||null}
+      ],
+      source_links:[{source_type:'crm_property',source_id:a.id,reference:a.site_code||null},{source_type:'crm_property',source_id:b.id,reference:b.site_code||null}],
+      suggested_action:'Open Property / CRM, compare ownership, service history, zones and access data. Do not merge or delete automatically; preserve both property identities until reviewed.',
+      navigation_target:'crm'
+    });
+  }
+
+  if(input.referenceCoverageComplete){
+    for(const r of input.recurring||[]){
+      if(!['draft','active','paused'].includes(norm(r?.agreement_status))) continue;
+      const refs=[
+        ['customer',r?.client_id,customerById,'CRM customer'],
+        ['property',r?.client_site_id,propertyById,'CRM property'],
+        ['crew',r?.crew_id,crewById,'crew'],
+        ['route',r?.route_id,routeById,'route']
+      ] as any[];
+      for(const [kind,id,map,label] of refs){
+        if(id&&!map.has(String(id))) add({
+          signal_type:'broken_canonical_reference',severity:'high_review',entity_type:'recurring_service',entity_id:r?.id||null,reference:r?.agreement_code||null,
+          title:'Recurring service references an unavailable '+label,
+          detail:'Agreement '+String(r?.agreement_code||r?.id||'')+' records '+kind+' id '+String(id)+' but that id is absent from the complete loaded canonical '+label+' source.',
+          related_entities:[{type:'recurring_service',id:r?.id||null,reference:r?.agreement_code||null},{type:kind,id}],
+          source_links:[{source_type:'recurring_service',source_id:r?.id||null,reference:r?.agreement_code||null}],
+          suggested_action:'Open the recurring-service program and the referenced source. Repair the link deliberately; do not synthesize a replacement record.',
+          navigation_target:'operations'
+        });
+      }
+      const property=r?.client_site_id?propertyById.get(String(r.client_site_id)):null;
+      if(property&&r?.client_id&&String(property.client_id||'')!==String(r.client_id)) add({
+        signal_type:'cross_module_link_mismatch',severity:'high_review',entity_type:'recurring_service',entity_id:r?.id||null,reference:r?.agreement_code||null,
+        title:'Recurring service customer/property ownership mismatch',
+        detail:'The agreement customer id and the selected property customer id do not match.',
+        related_entities:[{type:'recurring_service',id:r?.id||null,reference:r?.agreement_code||null},{type:'customer',id:r?.client_id},{type:'property',id:r?.client_site_id,client_id:property.client_id}],
+        source_links:[{source_type:'recurring_service',source_id:r?.id||null,reference:r?.agreement_code||null},{source_type:'crm_property',source_id:r?.client_site_id,reference:property?.site_code||null}],
+        suggested_action:'Open CRM and the recurring-service program, determine the correct canonical customer/property pair, and update through the existing program authority.',
+        navigation_target:'crm'
+      });
+    }
+
+    for(const r of input.jobs||[]){
+      const status=norm(r?.status||r?.job_status);
+      if(!activeStatus(status)) continue;
+      if(r?.client_id&&!customerById.has(String(r.client_id))) add({
+        signal_type:'broken_canonical_reference',severity:'high_review',entity_type:'job',entity_id:r?.id||null,reference:r?.job_code||null,
+        title:'Active job references an unavailable customer',detail:'The active job customer id is absent from the complete loaded CRM customer source.',
+        related_entities:[{type:'job',id:r?.id||null,reference:r?.job_code||null},{type:'customer',id:r?.client_id}],
+        source_links:[{source_type:'job',source_id:r?.id||null,reference:r?.job_code||null}],suggested_action:'Open Jobs and CRM and repair the customer link through the authoritative job/customer workflow.',navigation_target:'jobs'
+      });
+      if(r?.client_site_id&&!propertyById.has(String(r.client_site_id))) add({
+        signal_type:'broken_canonical_reference',severity:'high_review',entity_type:'job',entity_id:r?.id||null,reference:r?.job_code||null,
+        title:'Active job references an unavailable property',detail:'The active job property id is absent from the complete loaded CRM property source.',
+        related_entities:[{type:'job',id:r?.id||null,reference:r?.job_code||null},{type:'property',id:r?.client_site_id}],
+        source_links:[{source_type:'job',source_id:r?.id||null,reference:r?.job_code||null}],suggested_action:'Open Jobs and Property / CRM and repair the property link deliberately.',navigation_target:'jobs'
+      });
+      const property=r?.client_site_id?propertyById.get(String(r.client_site_id)):null;
+      if(property&&r?.client_id&&String(property.client_id||'')!==String(r.client_id)) add({
+        signal_type:'cross_module_link_mismatch',severity:'high_review',entity_type:'job',entity_id:r?.id||null,reference:r?.job_code||null,
+        title:'Job customer/property ownership mismatch',detail:'The active job customer id differs from the customer that owns its canonical property.',
+        related_entities:[{type:'job',id:r?.id||null,reference:r?.job_code||null},{type:'customer',id:r?.client_id},{type:'property',id:r?.client_site_id,client_id:property.client_id}],
+        source_links:[{source_type:'job',source_id:r?.id||null,reference:r?.job_code||null},{source_type:'crm_property',source_id:r?.client_site_id,reference:property?.site_code||null}],
+        suggested_action:'Review Jobs and CRM together and correct the canonical ownership link without replacing or deleting source history.',navigation_target:'jobs'
+      });
+    }
+
+    for(const r of input.dispatch||[]){
+      if(!activeStatus(r?.schedule_status)) continue;
+      const effectiveJob=r?.job_id||r?.legacy_job_id;
+      const siteId=r?.effective_client_site_id||r?.client_site_id;
+      if(!r?.work_order_id) add({
+        signal_type:'broken_canonical_reference',severity:'high_review',entity_type:'dispatch',entity_id:r?.id||null,reference:r?.work_order_number||null,
+        title:'Active dispatch has no work-order identity',detail:'This active dispatch row does not expose a canonical work_order_id.',
+        source_links:[{source_type:'dispatch',source_id:r?.id||null,reference:r?.work_order_number||null}],suggested_action:'Open Dispatch and locate the source schedule record; repair through the scheduling authority rather than creating a parallel work order.',navigation_target:'jobs'
+      });
+      if(effectiveJob&&!jobById.has(String(effectiveJob))) add({
+        signal_type:'broken_canonical_reference',severity:'high_review',entity_type:'dispatch',entity_id:r?.id||null,reference:r?.work_order_number||null,
+        title:'Active dispatch references an unavailable job',detail:'The dispatch job identity is absent from the complete loaded canonical jobs source.',
+        related_entities:[{type:'dispatch',id:r?.id||null},{type:'job',id:effectiveJob}],source_links:[{source_type:'dispatch',source_id:r?.id||null,reference:r?.work_order_number||null}],
+        suggested_action:'Open Dispatch and Jobs, verify the work-order/job chain, and repair only through the existing scheduling/job authority.',navigation_target:'jobs'
+      });
+      if(siteId&&!propertyById.has(String(siteId))) add({
+        signal_type:'broken_canonical_reference',severity:'high_review',entity_type:'dispatch',entity_id:r?.id||null,reference:r?.work_order_number||null,
+        title:'Active dispatch references an unavailable property',detail:'The dispatch property identity is absent from the complete loaded CRM property source.',
+        related_entities:[{type:'dispatch',id:r?.id||null},{type:'property',id:siteId}],source_links:[{source_type:'dispatch',source_id:r?.id||null,reference:r?.work_order_number||null}],
+        suggested_action:'Review Dispatch and Property / CRM and correct the source link deliberately.',navigation_target:'jobs'
+      });
+      const crew=r?.crew_id?crewById.get(String(r.crew_id)):null;
+      if(r?.crew_id&&(!crew||!activeStatus(crew?.crew_status))) add({
+        signal_type:'stale_assignment',severity:'high_review',entity_type:'dispatch',entity_id:r?.id||null,reference:r?.work_order_number||null,
+        title:'Active dispatch is assigned to an inactive/unavailable crew',detail:'The current dispatch crew assignment is not backed by an active canonical crew record.',
+        related_entities:[{type:'dispatch',id:r?.id||null},{type:'crew',id:r?.crew_id,reference:crew?.crew_code||null}],source_links:[{source_type:'dispatch',source_id:r?.id||null,reference:r?.work_order_number||null}],
+        suggested_action:'Open Dispatch and Crew Management. Reassign only through the scheduling authority after confirming the correct active crew.',navigation_target:'jobs'
+      });
+      const equipmentIds=[
+        r?.assigned_truck_equipment_item_id,r?.assigned_trailer_equipment_item_id,
+        ...(Array.isArray(r?.assigned_equipment_item_ids)?r.assigned_equipment_item_ids:[])
+      ].filter((x:any)=>x!=null).map((x:any)=>String(x));
+      for(const id of [...new Set(equipmentIds)]){
+        const eq=equipmentById.get(id);
+        if(!eq) add({
+          signal_type:'broken_canonical_reference',severity:'high_review',entity_type:'dispatch',entity_id:r?.id||null,reference:r?.work_order_number||null,
+          title:'Active dispatch references unavailable equipment',detail:'Assigned equipment id '+id+' is absent from the complete loaded equipment registry.',
+          related_entities:[{type:'dispatch',id:r?.id||null},{type:'equipment',id}],source_links:[{source_type:'dispatch',source_id:r?.id||null,reference:r?.work_order_number||null}],
+          suggested_action:'Open Dispatch and Equipment Registry and repair the assignment through the authoritative scheduling/equipment workflow.',navigation_target:'jobs'
+        });
+        else if(eq?.is_locked_out===true||['inactive','retired','disposed'].includes(norm(eq?.status))||['locked_out','replacement_hold'].includes(norm(eq?.registry_readiness_status))) add({
+          signal_type:'stale_assignment',severity:'high_review',entity_type:'dispatch',entity_id:r?.id||null,reference:r?.work_order_number||null,
+          title:'Active dispatch includes unavailable equipment',detail:'Assigned equipment '+String(eq?.equipment_code||id)+' is locked out, retired/inactive, or on replacement hold.',
+          related_entities:[{type:'dispatch',id:r?.id||null},{type:'equipment',id,reference:eq?.equipment_code||null}],source_links:[{source_type:'dispatch',source_id:r?.id||null,reference:r?.work_order_number||null},{source_type:'equipment',source_id:id,reference:eq?.equipment_code||null}],
+          suggested_action:'Open Dispatch and Equipment Registry. Preserve the lockout/retirement authority and reassign equipment deliberately if required.',navigation_target:'jobs'
+        });
+      }
+    }
+
+    for(const eq of input.equipment||[]){
+      if(!eq?.assigned_crew_id) continue;
+      const crew=crewById.get(String(eq.assigned_crew_id));
+      if(!crew||!activeStatus(crew?.crew_status)) add({
+        signal_type:'stale_assignment',severity:'review',entity_type:'equipment',entity_id:eq?.id||null,reference:eq?.equipment_code||null,
+        title:'Equipment is assigned to an inactive/unavailable crew',detail:'Equipment '+String(eq?.equipment_code||eq?.equipment_name||eq?.id||'')+' retains a crew assignment that is not backed by an active canonical crew.',
+        related_entities:[{type:'equipment',id:eq?.id||null,reference:eq?.equipment_code||null},{type:'crew',id:eq?.assigned_crew_id,reference:crew?.crew_code||null}],
+        source_links:[{source_type:'equipment',source_id:eq?.id||null,reference:eq?.equipment_code||null}],
+        suggested_action:'Open Equipment Registry and Crew Management and correct the recorded crew assignment without bypassing equipment/crew authority.',navigation_target:'jobs'
+      });
+    }
+  }
+
+  for(const crew of input.crews||[]){
+    const members=Array.isArray(crew?.members_json)?crew.members_json:[];
+    for(const m of members){
+      if(norm(m?.membership_status)==='active'&&m?.active_until&&String(m.active_until)<today) add({
+        signal_type:'stale_assignment',severity:'review',entity_type:'crew_membership',entity_id:String(crew?.id||'')+':'+String(m?.profile_id||''),
+        reference:crew?.crew_code||null,title:'Crew membership is marked active after its recorded end date',
+        detail:String(m?.full_name||m?.employee_number||'Crew member')+' remains active in '+String(crew?.crew_name||crew?.crew_code||'crew')+' although active_until is '+String(m.active_until)+'.',
+        related_entities:[{type:'crew',id:crew?.id||null,reference:crew?.crew_code||null},{type:'profile',id:m?.profile_id||null,reference:m?.employee_number||null}],
+        source_links:[{source_type:'crew',source_id:crew?.id||null,reference:crew?.crew_code||null}],
+        suggested_action:'Open Crew Management and close or extend the membership deliberately. Do not infer employee status from this signal.',navigation_target:'workforce'
+      });
+    }
+  }
+
+  const expectedSeason=(v:any)=>{
+    const t=norm(v).replace(/[_-]+/g,' ');
+    if(/\b(snow|winter|ice|salting|salt|de icer|deicer)\b/.test(t)) return 'winter';
+    if(/\b(fall|autumn|leaf|leaves)\b/.test(t)) return 'fall';
+    if(/\b(mow|mowing|lawn|landscap|garden|hedge|shrub|spring|aerat|fertiliz|sod|mulch|soil|gravel|stone)\b/.test(t)) return 'spring_summer';
+    return null;
+  };
+  const checkSeason=(row:any,sourceType:string,id:any,reference:any,service:any,season:any,target:string)=>{
+    const expected=expectedSeason(service),actual=norm(season);
+    if(!expected||!actual||actual==='four_season'||actual==='other'||actual===expected) return;
+    add({
+      signal_type:'conflicting_season_service_tag',severity:'review',entity_type:sourceType,entity_id:id||null,reference:reference||null,
+      title:'Season/service tags conflict',detail:'Recorded service context "'+String(service||'')+'" maps to '+expected.replace('_',' / ')+' while the source records season_context "'+String(season||'')+'".',
+      related_entities:[{type:sourceType,id:id||null,reference:reference||null}],source_links:[{source_type:sourceType,source_id:id||null,reference:reference||null}],
+      suggested_action:'Open the source record and confirm whether the service label or season tag is wrong. Correct only the authoritative source; do not rewrite related records automatically.',navigation_target:target
+    });
+  };
+  for(const r of input.workability||[]) checkSeason(r,'workability',r?.observation_id||r?.id,r?.observation_code||r?.work_order_number,r?.service_context||r?.work_type,r?.season_context,'operations');
+  for(const r of input.materialPlans||[]) checkSeason(r,'material_plan',r?.id||r?.line_id,r?.estimator_code,r?.service_context||r?.material_category,r?.season_context,'jobs');
+
+  const sorted=signals.sort((a,b)=>(signalOrder[a.signal_type]||99)-(signalOrder[b.signal_type]||99)||String(a.reference||a.entity_id||'').localeCompare(String(b.reference||b.entity_id||'')));
+  const count=(t:string)=>sorted.filter(r=>r.signal_type===t).length;
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk,reference_coverage_complete:input.referenceCoverageComplete,
+    summary:{
+      total_signals:sorted.length,duplicate_customer_candidates:count('duplicate_customer_candidate'),duplicate_property_candidates:count('duplicate_property_candidate'),
+      broken_canonical_references:count('broken_canonical_reference'),cross_module_link_mismatches:count('cross_module_link_mismatch'),
+      stale_assignments:count('stale_assignment'),conflicting_season_service_tags:count('conflicting_season_service_tag')
+    },
+    reconciliation_queue:sorted.slice(0,300),
+    duplicate_customer_pairs:sorted.filter(r=>r.signal_type==='duplicate_customer_candidate').slice(0,100),
+    duplicate_property_pairs:sorted.filter(r=>r.signal_type==='duplicate_property_candidate').slice(0,100),
+    reference_and_assignment_issues:sorted.filter(r=>['broken_canonical_reference','cross_module_link_mismatch','stale_assignment'].includes(r.signal_type)).slice(0,200),
+    season_tag_conflicts:sorted.filter(r=>r.signal_type==='conflicting_season_service_tag').slice(0,150),
+    duplicate_boundary:'Duplicate signals are candidates, not identity decisions. Customer matching uses exact normalized email/phone or normalized name plus postal evidence; property matching uses normalized service address/postal or rounded coordinates. Contact values are never returned by this workbench.',
+    reference_boundary:'Broken-reference checks are emitted only when all required canonical reference sources are successfully loaded below their configured row caps. If coverage is partial, reference-gap findings are withheld rather than treating missing rows as missing business records.',
+    assignment_boundary:'Stale crew/equipment signals describe recorded assignment inconsistencies only. They do not infer employee performance and cannot clear equipment lockouts or reassign crews/equipment.',
+    season_boundary:'Season/service conflicts use the existing four-season Ontario taxonomy as a review heuristic: spring/summer landscaping and lawn work, fall cleanup/leaf work, and winter snow/ice service. Four-season/other tags are not treated as conflicts.',
+    destructive_boundary:'This workbench cannot merge or delete customers/properties, delete history, rewrite foreign keys, reassign crews/equipment, clear lockouts, or mutate Jobs/CRM/Finance/Safety records. Every correction remains a deliberate action in the canonical source workflow.',
+    audit_boundary:'Source IDs and references are retained on every reconciliation candidate so audit and historical identity remain visible during review.',
+    authority_boundary:'Read-only data-quality evidence assembled from canonical CRM, Jobs, Dispatch, Recurring Service, Crew, Equipment, Route, Workability and Material Estimator sources.'
+  };
+}
+
   if (scope === 'owner_management_command') {
     const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
@@ -1494,7 +1768,7 @@ function buildCustomerCommunicationReadinessQueue(input:{
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
       routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
       estimateWorkflowRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,materialStockRead,materialPlansRead,
-      crmFollowupsRead,customerDirectoryRead,notificationQueueRead,closeoutsRead
+      crmFollowupsRead,customerDirectoryRead,notificationQueueRead,closeoutsRead,propertyDirectoryRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -1534,7 +1808,8 @@ function buildCustomerCommunicationReadinessQueue(input:{
       canJobsView ? safeListEvidence(supabase,'v_crm_followup_queue','*','due_at',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_crm_customer_directory','*','last_crm_activity_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_customer_notification_delivery_queue','*','created_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
-      canJobsView ? safeListEvidence(supabase,'v_work_order_closeout_queue','*','updated_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000})
+      canJobsView ? safeListEvidence(supabase,'v_work_order_closeout_queue','*','updated_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
+      canJobsView ? safeListEvidence(supabase,'v_crm_property_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500})
     ]);
     const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
       timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,crews=crewsRead.rows,storms=stormsRead.rows,
@@ -1546,7 +1821,8 @@ function buildCustomerCommunicationReadinessQueue(input:{
       agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows,
       estimateWorkflow=estimateWorkflowRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
       equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,
-      crmFollowups=crmFollowupsRead.rows,customerDirectory=customerDirectoryRead.rows,notificationQueue=notificationQueueRead.rows,closeouts=closeoutsRead.rows;
+      crmFollowups=crmFollowupsRead.rows,customerDirectory=customerDirectoryRead.rows,notificationQueue=notificationQueueRead.rows,closeouts=closeoutsRead.rows,
+      propertyDirectory=propertyDirectoryRead.rows;
     const sourceFreshness:Record<string,any> = {};
     const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
       sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
@@ -1590,6 +1866,7 @@ function buildCustomerCommunicationReadinessQueue(input:{
     addFresh(customerDirectoryRead,'crm_customers','jobs','v_crm_customer_directory',canJobsView,168);
     addFresh(notificationQueueRead,'notification_delivery','jobs','v_customer_notification_delivery_queue',canJobsView,72);
     addFresh(closeoutsRead,'closeouts','jobs','v_work_order_closeout_queue',canJobsView,168);
+    addFresh(propertyDirectoryRead,'crm_properties','jobs','v_crm_property_directory',canJobsView,168);
     const metricConfidence = {
       crews_today:buildManagementMetricConfidence(sourceFreshness,['dispatch']),
       completion_today:buildManagementMetricConfidence(sourceFreshness,['dispatch','production']),
@@ -1612,7 +1889,8 @@ function buildCustomerCommunicationReadinessQueue(input:{
       estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability']),
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
-      communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables'])
+      communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
+      data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
@@ -1643,6 +1921,13 @@ function buildCustomerCommunicationReadinessQueue(input:{
       jobsVisible:canJobsView,financeVisible:canFinanceView,
       sourceQueriesOk:[workabilityRead,dispatchRead,recurringVisitsRead,closeoutsRead,crmFollowupsRead,crmInteractionsRead,customerDirectoryRead,notificationQueueRead,receivablesRead].every((r)=>r.query_ok!==false)
     });
+    const dataQualityReferenceReads=[customerDirectoryRead,propertyDirectoryRead,jobsRead,dispatchRead,recurringRead,crewsRead,equipmentRead,routesRead];
+    const dataQualityDuplicateOrphanReconciliation=buildDataQualityDuplicateOrphanReconciliation({
+      customers:customerDirectory,properties:propertyDirectory,jobs,dispatch,recurring,crews,equipment,routes,workability,materialPlans,
+      jobsVisible:canJobsView,
+      sourceQueriesOk:[...dataQualityReferenceReads,workabilityRead,materialPlansRead].every((r)=>r.query_ok!==false),
+      referenceCoverageComplete:dataQualityReferenceReads.every((r)=>r.query_ok!==false&&Number(r.row_count||0)<Number(r.limit||1))
+    });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
       evidence_generated_at:new Date().toISOString(),
@@ -1653,7 +1938,7 @@ function buildCustomerCommunicationReadinessQueue(input:{
       owner_workforce_summary:workforceSummary,owner_receivables:receivables,owner_bank:bank,
       owner_finance_exceptions:financeExceptions,owner_close_dashboard:closeDashboard,owner_workability:workability,
       owner_equipment_use:equipmentUse,owner_fleet:fleet,owner_material_stock:materialStock,owner_material_plans:materialPlans,
-      owner_crm_followups:crmFollowups,owner_notification_delivery:notificationQueue,owner_closeouts:closeouts,
+      owner_crm_followups:crmFollowups,owner_notification_delivery:notificationQueue,owner_closeouts:closeouts,owner_crm_properties:propertyDirectory,
       source_visibility:{jobs:canJobsView,finance:canFinanceView,safety:canSafetyView,admin:canAdminManage},
       source_freshness:sourceFreshness,
       management_metric_confidence:metricConfidence,
@@ -1664,6 +1949,7 @@ function buildCustomerCommunicationReadinessQueue(input:{
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
+      data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'

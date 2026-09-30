@@ -27,10 +27,10 @@ must(directory,[
 ],'Build 355 server');
 
 must(ui,[
-  'Build 350–359','Recurring service renewal &amp; retention workbench','owner355Retention','renderRecurringRetention',
+  'Build 350–360','Recurring service renewal &amp; retention workbench','owner355Retention','renderRecurringRetention',
   'Renewal candidates','Retention attention','Repeated service friction','Unresolved service issues','Customer holds','Price-review candidates',
   'Review only:','Renewal &amp; retention attention queue','Decision boundaries',
-  'Build 359 customer communication readiness and queue-quality evidence refreshed'
+  'Build 360 data-quality duplicate/orphan reconciliation evidence refreshed'
 ],'Build 355 UI');
 
 assert.ok(!directory.includes('auto_renew'));
@@ -39,9 +39,9 @@ assert.ok(!directory.includes('auto_message'));
 assert.equal(pkg.scripts['test:recurring-service-renewal-retention'],'node scripts/recurring-service-renewal-retention-check.mjs');
 assert.equal(pkg.scripts['test:browser:recurring-service-renewal-retention'],'playwright test --config=playwright.config.mjs tests/browser/recurring-service-renewal-retention.spec.mjs');
 must(workflow,['npm run test:recurring-service-renewal-retention','npm run test:browser:recurring-service-renewal-retention'],'Build 355 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b359'],'Build 355 asset version');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b360'],'Build 355 asset version');
 must(help,['Build 355 — Recurring Service Renewal &amp; Retention Workbench','Renewal windows and seasonal rollover','Service friction and unresolved issues','Price review without automatic pricing','No automatic renewal or messaging'],'Build 355 help');
-must(roadmap,['#### **355 — Recurring Service Renewal & Retention Workbench** is implemented','#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**.'],'Build 355 roadmap');
-must(handbook,['**355 — Recurring Service Renewal & Retention Workbench** is implemented','**356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','**359 — Customer Communication Readiness & Queue Quality** is implemented','- **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**'],'Build 355 handoff');
+must(roadmap,['#### **355 — Recurring Service Renewal & Retention Workbench** is implemented','#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **361 — Mobile, Offline & Read-Budget Reliability Optimization**.'],'Build 355 roadmap');
+must(handbook,['**355 — Recurring Service Renewal & Retention Workbench** is implemented','**356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','**359 — Customer Communication Readiness & Queue Quality** is implemented','**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','- **361 — Mobile, Offline & Read-Budget Reliability Optimization**'],'Build 355 handoff');
 
 console.log('Build 355 Recurring Service Renewal & Retention Workbench source gate GREEN');

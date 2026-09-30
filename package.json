@@ -197,7 +197,9 @@
     "test:materials-consumables-seasonal-stock-readiness": "node scripts/materials-consumables-seasonal-stock-readiness-check.mjs",
     "test:browser:materials-consumables-seasonal-stock-readiness": "playwright test --config=playwright.config.mjs tests/browser/materials-consumables-seasonal-stock-readiness.spec.mjs",
     "test:customer-communication-readiness-queue-quality": "node scripts/customer-communication-readiness-queue-quality-check.mjs",
-    "test:browser:customer-communication-readiness-queue-quality": "playwright test --config=playwright.config.mjs tests/browser/customer-communication-readiness-queue-quality.spec.mjs"
+    "test:browser:customer-communication-readiness-queue-quality": "playwright test --config=playwright.config.mjs tests/browser/customer-communication-readiness-queue-quality.spec.mjs",
+    "test:data-quality-duplicate-orphan-reconciliation": "node scripts/data-quality-duplicate-orphan-reconciliation-check.mjs",
+    "test:browser:data-quality-duplicate-orphan-reconciliation": "playwright test --config=playwright.config.mjs tests/browser/data-quality-duplicate-orphan-reconciliation.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
