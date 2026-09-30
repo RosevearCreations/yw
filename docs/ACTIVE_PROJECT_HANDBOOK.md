@@ -131,9 +131,8 @@ Production promotion is deliberate/manual. Source work must not enable Finance e
 
 When another AI system takes over YW, treat this handbook and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` as the durable project authority. Resolve the live `dev` and `main` heads from GitHub at task start rather than trusting copied commit identifiers.
 
-**351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, and **353 — Four-Season Capacity & Workability Forecast** are implemented. **354 — Route & Crew Efficiency Evidence** is implemented. **355 — Recurring Service Renewal & Retention Workbench** is implemented. **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented. **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented. **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented. **359 — Customer Communication Readiness & Queue Quality** is implemented. **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented. The current autonomous queue continues with:
+**351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, and **353 — Four-Season Capacity & Workability Forecast** are implemented. **354 — Route & Crew Efficiency Evidence** is implemented. **355 — Recurring Service Renewal & Retention Workbench** is implemented. **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented. **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented. **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented. **359 — Customer Communication Readiness & Queue Quality** is implemented. **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented. **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented. The current autonomous queue continues with:
 
-- **361 — Mobile, Offline & Read-Budget Reliability Optimization**
 - **362 — Production Learning & Autonomous Roadmap Renewal**
 
 The last queue item must write at least ten further bounded autonomous items before promotion so the queue does not run out.
