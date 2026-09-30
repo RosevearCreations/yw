@@ -63,6 +63,7 @@ test('Build 361 renders compact mobile counts and does not reread on local rende
 
 test('Build 361 conflict replay waits for explicit recovery and stays profile isolated',async({page})=>{
   await page.setContent('<main></main>');
+  await page.addScriptTag({content:`(()=>{const values=new Map();Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:(k)=>values.has(k)?values.get(k):null,setItem:(k,v)=>values.set(k,String(v)),removeItem:(k)=>values.delete(k)}})})();`});
   await page.evaluate(()=>{
     window.YWI_AUTH={getState:()=>({profile:{id:'owner-a'}})};
     window.YWIMobileMenu={syncBadges:()=>{}};
@@ -101,6 +102,7 @@ test('Build 361 conflict replay waits for explicit recovery and stays profile is
 
 test('Build 361 bounds one replay batch to twelve queued actions',async({page})=>{
   await page.setContent('<main></main>');
+  await page.addScriptTag({content:`(()=>{const values=new Map();Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:(k)=>values.has(k)?values.get(k):null,setItem:(k,v)=>values.set(k,String(v)),removeItem:(k)=>values.delete(k)}})})();`});
   await page.evaluate(()=>{
     window.YWI_AUTH={getState:()=>({profile:{id:'owner-a'}})};
     window.YWIMobileMenu={syncBadges:()=>{}};
