@@ -8,7 +8,7 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-09-07b';
+const CACHE_NAME = 'ywi-shell-v2026-09-30b361';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -143,23 +143,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (req.mode === 'navigate' || isShellAssetRequest(url)) {
+  if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
         .then((response) => {
-          const copy = response.clone();
-          if (response.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
-            if (req.mode === 'navigate') caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', response.clone())).catch(() => {});
-          }
+          if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', response.clone())).catch(() => {});
           return response;
         })
-        .catch(() =>
-          caches.match(req).then((cached) => {
-            if (cached) return cached;
-            return req.mode === 'navigate' ? caches.match('/index.html') : Response.error();
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  if (isShellAssetRequest(url)) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        const network = fetch(req)
+          .then((response) => {
+            if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(req, response.clone())).catch(() => {});
+            return response;
           })
-        )
+          .catch(() => null);
+        if (cached) {
+          event.waitUntil(network.then(() => undefined));
+          return cached;
+        }
+        return network.then((response) => response || Response.error());
+      })
     );
     return;
   }
