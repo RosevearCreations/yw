@@ -540,7 +540,7 @@ Add source-key outcome tracking for duplicate/orphan/stale-assignment/season-tag
 
 #### 374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes
 
-Turn Build 361 point-in-time budgets into release-over-release reliability evidence: Mobile Crew read ceiling, payload-size band, refresh triggers, replay batch behavior, conflict rate and cache/coalescing contracts. Use repository/runtime evidence that does not capture customer secrets or private payload bodies, and fail closed on regressions rather than silently raising budgets.
+Turn item 361 point-in-time budgets into release-over-release reliability evidence: Mobile Crew read ceiling, payload-size band, refresh triggers, replay batch behavior, conflict rate and cache/coalescing contracts. Use repository/runtime evidence that does not capture customer secrets or private payload bodies, and fail closed on regressions rather than silently raising budgets.
 
 #### 375 — Four-Season Capacity Mix & Profitability Scenario Evidence
 
