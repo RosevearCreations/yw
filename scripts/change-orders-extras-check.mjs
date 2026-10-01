@@ -65,7 +65,7 @@ must(help,['Build 344 — Change Orders &amp; Extras','No field-only price chang
 must(roadmap,['#### **344 — Change Orders & Extras** is implemented','#### **345 — Quality Control & Customer Signoff** is implemented','#### **350 — Owner / Management Command Centre** is implemented'],'Build 344 roadmap');
 must(pkg,['test:change-orders-extras','test:browser:change-orders-extras'],'Build 344 scripts');
 must(workflow,['npm run test:change-orders-extras','npm run test:browser:change-orders-extras'],'Build 344 CI');
-must(behavior,['boundary-exact-90-actions','boundary-build344-change-orders-extras'],'Build 344 boundary behavior');
+must(behavior,['boundary-exact-92-actions','boundary-build344-change-orders-extras'],'Build 344 boundary behavior');
 
 const require=createRequire(import.meta.url),ts=require('typescript');
 for(const p of ['supabase/functions/operations-manage/index.ts','supabase/functions/admin-directory/index.ts','supabase/functions/_shared/module-write-boundaries.ts']){
