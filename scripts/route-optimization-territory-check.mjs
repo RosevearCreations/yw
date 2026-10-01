@@ -44,7 +44,7 @@ must(help,['Build 341 — Route Optimization &amp; Territory Management','adviso
 must(roadmap,['#### **341 — Route Optimization & Territory Management** is implemented','#### **342 — Weather & Workability Controls** is implemented','#### **343 — Landscape Material Estimator** is implemented','#### **350 — Owner / Management Command Centre** is implemented'],'Build 341 roadmap');
 must(pkg,['test:route-optimization-territory','test:browser:route-optimization-territory'],'Build 341 scripts');
 must(workflow,['npm run test:route-optimization-territory','npm run test:browser:route-optimization-territory'],'Build 341 CI');
-must(behavior,['boundary-exact-90-actions','boundary-build341-route-optimization'],'Boundary behavior');
+must(behavior,['boundary-exact-92-actions','boundary-build341-route-optimization'],'Boundary behavior');
 
 const require=createRequire(import.meta.url),ts=require('typescript');
 for(const p of ['supabase/functions/operations-manage/index.ts','supabase/functions/admin-directory/index.ts','supabase/functions/_shared/module-write-boundaries.ts']){
