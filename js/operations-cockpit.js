@@ -33,6 +33,7 @@
     'signal-review':'content_signal_decision', 'signal-actioned':'content_signal_decision',
     'release-readiness-capture':'release_readiness_snapshot',
     'attention-defer':'operations_attention_defer', 'attention-resolve':'operations_attention_resolve',
+    'management-decision':'management_decision_record', 'management-outcome':'management_outcome_update',
     'dispatch-load':'dispatch_schedule', 'dispatch-cancel':'dispatch_schedule', 'dispatch-now':'dispatch_schedule',
     'recurring-program-edit':'recurring_service_program_save',
     'recurring-visit-skip':'recurring_service_visit_event', 'recurring-visit-weather':'recurring_service_visit_event', 'recurring-visit-makeup':'recurring_service_visit_event', 'recurring-visit-hold':'recurring_service_visit_event', 'recurring-visit-resume':'recurring_service_visit_event', 'recurring-visit-cancel':'recurring_service_visit_event',
@@ -1067,7 +1068,7 @@
       ? `<button type="button" class="secondary oc-row-action" data-oc-action="attention-open" data-id="${esc(row.source_key)}">${esc(next.label || `Open ${row.source_module}`)}</button>`
       : '<button type="button" class="secondary" disabled title="Source module access is required.">Source restricted</button>';
     const manage=canManage
-      ? `${button('Defer','attention-defer',row.source_key,'',true,'operations_attention_defer')}${button('Resolve','attention-resolve',row.source_key,'','', 'operations_attention_resolve')}`
+      ? `${button('Record decision','management-decision',row.source_key,'',true,'management_decision_record')}${button('Defer','attention-defer',row.source_key,'',true,'operations_attention_defer')}${button('Resolve','attention-resolve',row.source_key,'','', 'operations_attention_resolve')}`
       : '<button type="button" class="secondary" disabled title="Admin manage access is required.">Manage restricted</button>';
     const duplicateNote=Number(row?.duplicate_count||1)>1 ? ` · ${Number(row.duplicate_count)} duplicate source candidates collapsed` : '';
     return `<article class="oc-queue-card oc-attention-card" data-priority="${esc(row.priority)}" data-triage-score="${Number(row.triage_score||0)}">
@@ -1103,8 +1104,36 @@
         <header><strong>${esc(row.title)}</strong><span class="${statusClass('resolved')}">resolved</span></header>
         <dl><div><dt>Source</dt><dd>${esc(row.source_module)} · ${esc(String(row.source_type||'').replaceAll('_',' '))}</dd></div><div><dt>Resolved</dt><dd>${when(row.resolved_at)}</dd></div><div><dt>Note</dt><dd>${esc(row.state_note || 'Resolved')}</dd></div></dl>
       </article>`).join('') : emptyQueue('No recently resolved items', 'Resolved attention items remain visible here as management history.');
+    renderManagementLearning();
   }
-  window.YWIOperationsAttentionTriage={attentionCardHtml,attentionAgeLabel};
+  function renderManagementLearning() {
+    const wrap=byId('oc_management_learning_journal');
+    const summary=byId('oc_management_learning_summary');
+    if(!wrap&&!summary)return;
+    const rows=queues.management_decision_outcomes || [];
+    const meta=queues.management_decision_learning_meta || {};
+    const role=window.YWI_AUTH?.getState?.()?.role || 'employee';
+    const canManage=window.YWISecurity?.canViewModule?.('admin',role,'manage') === true;
+    if(summary) summary.textContent=canManage
+      ? `${Number(meta.total_decisions||rows.length)} decision(s) · ${Number(meta.pending_count||0)} pending · ${Number(meta.resolved_or_improved_count||0)} resolved/improved · ${Number(meta.recurring_count||0)} recurring · ${Number(meta.followup_due_count||0)} follow-up due`
+      : 'Admin manage access is required for management learning evidence.';
+    if(!wrap)return;
+    if(!canManage){wrap.innerHTML=emptyQueue('Management learning restricted','Admin manage access is required.');return}
+    wrap.innerHTML=rows.length ? rows.slice(0,40).map((row)=>`
+      <article class="oc-queue-card oc-management-learning-card" data-outcome-status="${esc(row.outcome_status||'pending')}" data-recurrence="${row.recurrence_signal===true?'true':'false'}">
+        <header><strong>${esc(row.recommendation_label || row.recommendation_key || row.source_key)}</strong><span class="${statusClass(row.outcome_status||'pending')}">${esc(row.outcome_status||'pending')}${row.recurrence_signal===true?' · recurring':''}</span></header>
+        <dl>
+          <div><dt>Source</dt><dd>${esc(row.source_module)} · ${esc(String(row.source_type||'').replaceAll('_',' '))}</dd></div>
+          <div><dt>Decision</dt><dd>${esc(row.chosen_safe_action||'—')}</dd></div>
+          <div><dt>Decision time</dt><dd>${when(row.decision_at)}</dd></div>
+          <div><dt>Source status at review</dt><dd>${esc(row.source_status_at_review||'not recorded')} · ${esc(row.source_due_state_at_review||'due state n/a')}</dd></div>
+          <div><dt>Follow-up</dt><dd>${row.followup_due_at?when(row.followup_due_at):'No follow-up due date'}${row.followup_evidence?' · '+esc(row.followup_evidence):''}</dd></div>
+          <div><dt>Outcome note</dt><dd>${esc(row.outcome_note||row.decision_note||'Pending outcome evidence')}</dd></div>
+        </dl>
+        <div class="oc-row-actions">${button('Update outcome','management-outcome',row.id,'',true,'management_outcome_update')}</div>
+      </article>`).join('') : emptyQueue('No management decisions recorded','Use Record decision on an attention item to start the learning loop.');
+  }
+  window.YWIOperationsAttentionTriage={attentionCardHtml,attentionAgeLabel,renderManagementLearning};
 
   function renderQueues() {
     renderLandscapeProduction(); renderEstimateInvoiceWorkflow(); renderPropertySiteIntelligence(); renderRecurringService(); renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydrateLandscapeProductionSelectors(); hydrateEstimateWorkflowSelectors(); hydratePropertySelectors(); hydrateRecurringSelectors(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
@@ -1421,6 +1450,39 @@
       if (target) window.YWIRouter?.showSection?.(target);
       return;
     }
+    if (action === 'management-decision') {
+      const row=(queues.operations_attention || []).find((item)=>String(item.source_key)===String(id));
+      if(!row)return;
+      const next=row.next_safe_action || {};
+      const chosen=(prompt('Chosen safe action:',next.label || 'Review canonical source') || '').trim();
+      if(chosen.length<3)return;
+      const note=(prompt('Decision note (optional):') || '').trim();
+      const response=await send({
+        action:'management_decision_record', idempotency_key:idem('management_decision'),
+        source_key:row.source_key, source_module:row.source_module, source_type:row.source_type, source_id:row.source_id,
+        recommendation_key:`${row.source_type}:next_safe_action`, recommendation_label:next.label || 'Review canonical source',
+        chosen_safe_action:chosen, decision_kind:'review', decision_note:note,
+        source_status_at_review:row.state_status || 'open', source_priority_at_review:row.priority,
+        source_due_state_at_review:row.due_state, triage_score_at_review:Number(row.triage_score||0)
+      },'Recording management decision');
+      if(response?.management_decision) status('Management decision recorded; source business record unchanged.');
+      return;
+    }
+    if (action === 'management-outcome') {
+      const row=(queues.management_decision_outcomes || []).find((item)=>String(item.id)===String(id));
+      if(!row)return;
+      const outcome=(prompt('Outcome status: pending, resolved, improved, recurring, no_change, or superseded',row.outcome_status || 'pending') || '').trim().toLowerCase();
+      if(!['pending','resolved','improved','recurring','no_change','superseded'].includes(outcome))return;
+      const note=(prompt(outcome==='pending'?'Follow-up note (optional):':'Outcome note or evidence:') || '').trim();
+      if(outcome!=='pending' && note.length<3)return;
+      const reference=(prompt('Evidence reference (optional):',row.followup_evidence_reference || '') || '').trim();
+      await send({
+        action:'management_outcome_update', journal_id:row.id, outcome_status:outcome,
+        outcome_note:outcome==='pending'?'':note, followup_evidence:note,
+        followup_evidence_reference:reference, recurrence_signal:outcome==='recurring'
+      },'Updating management outcome');
+      return;
+    }
     if (action === 'attention-defer' || action === 'attention-resolve') {
       const row=(queues.operations_attention || []).find((item)=>String(item.source_key)===String(id));
       if (!row) return;
@@ -1436,8 +1498,13 @@
       }
       await send({
         action:isResolve ? 'operations_attention_resolve' : 'operations_attention_defer',
+        idempotency_key:idem('attention_decision'),
         source_key:row.source_key, source_module:row.source_module, source_type:row.source_type, source_id:row.source_id,
         source_title:row.title, source_context:row.context, source_priority:row.priority, source_due_at:row.due_at,
+        recommendation_key:`${row.source_type}:next_safe_action`, recommendation_label:row.next_safe_action?.label || 'Review canonical source',
+        chosen_safe_action:isResolve ? 'Resolve management attention after source review.' : 'Defer management attention for deliberate follow-up.',
+        source_status_at_review:row.state_status || 'open', source_due_state_at_review:row.due_state,
+        triage_score_at_review:Number(row.triage_score||0),
         deferred_until:deferredUntil, note:note.trim()
       },isResolve ? 'Resolving attention item' : 'Deferring attention item');
       return;
@@ -1898,7 +1965,7 @@
           </form>
           <div id="oc_crew_dispatch_board"></div>
         </details>
-        <details open class="operations-attention-panel"><summary>Operations Needs Attention</summary><p class="muted">Build 352 adds deterministic deduplication, explainable priority/age/ownership/source authority and an advisory next-safe-action to the Build 320 cross-business queue. Source records remain authoritative.</p><div class="finance-module-note"><strong id="oc_attention_summary">Loading attention summary…</strong> · Suggested actions navigate or prepare review only. Defer/resolve changes management disposition only; triage never dispatches, resolves Safety, unlocks equipment, changes Finance, sends messages or mutates a provider.</div><div id="oc_attention_queue" class="oc-live-queue"></div><h4>Recently resolved</h4><div id="oc_attention_resolved" class="oc-live-queue"></div></details>
+        <details open class="operations-attention-panel"><summary>Operations Needs Attention</summary><p class="muted">Build 352 adds deterministic deduplication, explainable priority/age/ownership/source authority and an advisory next-safe-action to the Build 320 cross-business queue. Source records remain authoritative.</p><div class="finance-module-note"><strong id="oc_attention_summary">Loading attention summary…</strong> · Suggested actions navigate or prepare review only. Defer/resolve changes management disposition only; triage never dispatches, resolves Safety, unlocks equipment, changes Finance, sends messages or mutates a provider.</div><div id="oc_attention_queue" class="oc-live-queue"></div><h4>Recently resolved</h4><div id="oc_attention_resolved" class="oc-live-queue"></div><h4>Management decision outcome journal</h4><p class="muted">Build 363 records the management decision, source status at review, later outcome, recurrence and follow-up evidence. This journal is learning evidence only and never resolves or mutates the canonical source record.</p><div class="finance-module-note"><strong id="oc_management_learning_summary">Loading management learning…</strong> · Outcomes remain management evidence, not source-authority decisions.</div><div id="oc_management_learning_journal" class="oc-live-queue"></div></details>
         <details open><summary>Quote owners, alerts, and follow-up</summary><p class="muted">Assign each request, set a due time, and preserve every contact event.</p><div id="oc_quote_queue" class="oc-live-queue"></div></details>
         <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Production session<select name="job_session_id" data-oc-production-session><option value="">No production session link</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a consent-controlled customer e-mail when the customer has opted in</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div><h4>Customer e-mail delivery</h4><div id="oc_customer_notification_queue" class="oc-live-queue"></div></details>
         <details open><summary>Service-execution proof and internal job cost</summary><p class="muted">Capture arrival/completion evidence plus labour, material, equipment, and other costs. Customer-visible proof requires approved public images and a customer-safe summary; internal costs never appear in the portal.</p><form id="oc_execution_proof_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Production session<select name="job_session_id" data-oc-production-session><option value="">No production session link</option></select></label><label>Proof type<select name="proof_type"><option value="arrival">Arrival</option><option value="progress">Progress</option><option value="completion">Completion</option><option value="quality">Quality check</option><option value="material">Material use</option><option value="equipment">Equipment use</option><option value="expense">Other expense</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label>Labour minutes<input name="labour_minutes" type="number" min="0" step="1" value="0" /></label><label>Labour hourly cost<input name="labour_hourly_rate" type="number" min="0" step="0.01" value="0" /></label><label>Material cost<input name="material_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Equipment cost<input name="equipment_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Other cost<input name="other_cost_total" type="number" min="0" step="0.01" value="0" /></label><label class="operations-span">Proof title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Arrival walkaround completed" /></label><label class="operations-span">Staff notes<textarea name="staff_notes" maxlength="4000" placeholder="Internal proof notes, cost context, issue notes, or crew details. Never shown to customers."></textarea></label><label class="operations-span">Customer-safe summary<textarea name="customer_summary" maxlength="1500" placeholder="Optional summary shown only after supervisor approval if customer-visible is checked. Do not include costs or access details."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4"></select><small>Customer-visible proof may use only approved public images. Private review media stays internal.</small></label><label class="operations-inline-check operations-span"><input name="customer_visible" type="checkbox" /> After supervisor approval, show this proof summary in the secure customer portal</label><button type="submit" data-oc-permission="work_order_execution_proof_submit">Capture service proof</button></form><h4>Execution proof and cost review</h4><div id="oc_execution_proof_queue" class="oc-live-queue"></div></details>
