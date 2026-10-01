@@ -7,7 +7,7 @@ must(ui,['Owner / Management Command Centre','Four-season Ontario model','Crews 
 must(hub,['loadBuild350OwnerManagement','loadBuild350OwnerManagement();'],'Build 350 hub');
 must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b360'],'Build 350 preload');
 must(help,['Build 350 — Owner / Management Command Centre','read-only management cockpit','Four-season management context'],'Build 350 help');
-must(roadmap,['#### **350 — Owner / Management Command Centre** is implemented','#### **351 — Management Metric Freshness & Confidence** is implemented','#### 362 — Production Learning & Autonomous Roadmap Renewal' ,'Cross-AI autonomous handoff'],'Build 350 roadmap');
+must(roadmap,['#### **350 — Owner / Management Command Centre** is implemented','#### **351 — Management Metric Freshness & Confidence** is implemented','#### **362 — Production Learning & Autonomous Roadmap Renewal** is implemented' ,'Cross-AI autonomous handoff'],'Build 350 roadmap');
 must(handbook,['## Cross-AI autonomous handoff','351 — Management Metric Freshness & Confidence','362 — Production Learning & Autonomous Roadmap Renewal','canonical checks','Vercel Production','final `dev` and `main` are identical'],'Autonomous AI handoff');
 must(pkg,['test:owner-management-command','test:browser:owner-management-command'],'Build 350 package');
 must(workflow,['npm run test:owner-management-command','npm run test:browser:owner-management-command'],'Build 350 CI');
