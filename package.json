@@ -201,7 +201,9 @@
     "test:data-quality-duplicate-orphan-reconciliation": "node scripts/data-quality-duplicate-orphan-reconciliation-check.mjs",
     "test:browser:data-quality-duplicate-orphan-reconciliation": "playwright test --config=playwright.config.mjs tests/browser/data-quality-duplicate-orphan-reconciliation.spec.mjs",
     "test:mobile-offline-read-budget-reliability": "node scripts/mobile-offline-read-budget-reliability-check.mjs",
-    "test:browser:mobile-offline-read-budget-reliability": "playwright test --config=playwright.config.mjs tests/browser/mobile-offline-read-budget-reliability.spec.mjs"
+    "test:browser:mobile-offline-read-budget-reliability": "playwright test --config=playwright.config.mjs tests/browser/mobile-offline-read-budget-reliability.spec.mjs",
+    "test:production-learning-roadmap-renewal": "node scripts/production-learning-roadmap-renewal-check.mjs",
+    "test:browser:production-learning-roadmap-renewal": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
