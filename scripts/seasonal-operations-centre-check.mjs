@@ -85,7 +85,7 @@ must(help,['Build 346 — Seasonal Operations Centre','Winter is core operations
 must(roadmap,['#### **346 — Seasonal Operations Centre** is implemented','#### **347 — Universal Activity & Audit Timeline** is implemented','#### **350 — Owner / Management Command Centre** is implemented'],'Build 346 roadmap');
 must(pkg,['test:seasonal-operations-centre','test:browser:seasonal-operations-centre'],'Build 346 scripts');
 must(workflow,['npm run test:seasonal-operations-centre','npm run test:browser:seasonal-operations-centre'],'Build 346 CI');
-must(behavior,['boundary-exact-90-actions','boundary-build346-seasonal-operations-centre'],'Build 346 boundary behavior');
+must(behavior,['boundary-exact-92-actions','boundary-build346-seasonal-operations-centre'],'Build 346 boundary behavior');
 
 const require=createRequire(import.meta.url),ts=require('typescript');
 for(const p of ['supabase/functions/operations-manage/index.ts','supabase/functions/admin-directory/index.ts','supabase/functions/_shared/module-write-boundaries.ts']){

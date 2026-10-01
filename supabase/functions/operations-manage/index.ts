@@ -6,6 +6,8 @@ import { boundaryAuditFields, resolveModuleWriteBoundary } from "../_shared/modu
 const BUILD = '2026-09-01a';
 const PAYMENT_APPLICATION_BUILD = 313;
 const RECONCILIATION_EXCEPTION_BUILD = 315;
+const MANAGEMENT_OUTCOME_BUILD = 363;
+const MANAGEMENT_OUTCOME_SCHEMA = 236;
 const PAYMENT_POSTING_RPC = 'ywi_rpc_post_payment_action'; // Preserved authority contract; Build 313 does not invoke it.
 const SCHEMA = 159;
 const WRITE_BOUNDARY_BUILD = '2026-09-01f';
@@ -1419,10 +1421,11 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
   }));
 
 
-  const [jobsAttentionAllowed,safetyAttentionAllowed,financeAttentionAllowed] = await Promise.all([
+  const [jobsAttentionAllowed,safetyAttentionAllowed,financeAttentionAllowed,managementLearningAllowed] = await Promise.all([
     hasModuleAccess(supabase, profile, 'jobs', 'view'),
     hasModuleAccess(supabase, profile, 'safety', 'view'),
-    hasModuleAccess(supabase, profile, 'finance', 'view')
+    hasModuleAccess(supabase, profile, 'finance', 'view'),
+    hasModuleAccess(supabase, profile, 'admin', 'manage')
   ]);
   const [attentionJobs,attentionQuotes,attentionEquipment,attentionMaintenance,attentionSafety,attentionTime,attentionAr,attentionRecon,attentionStates] = await Promise.all([
     jobsAttentionAllowed ? safeSelect(supabase.from('v_jobs_directory').select('*').order('start_date',{ascending:true}).limit(250)) : Promise.resolve([]),
@@ -1439,6 +1442,24 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     jobs:attentionJobs, quotes:attentionQuotes, equipment:attentionEquipment, maintenance:attentionMaintenance,
     safety:attentionSafety, time:attentionTime, ar:attentionAr, reconciliation:attentionRecon, states:attentionStates
   });
+
+  const managementDecisionOutcomes = managementLearningAllowed
+    ? await safeSelect(supabase.from('v_management_decision_outcome_journal').select('*').order('decision_at',{ascending:false}).limit(150))
+    : [];
+  const managementLearningNow = Date.now();
+  const managementLearningMeta = {
+    build:MANAGEMENT_OUTCOME_BUILD,
+    schema:MANAGEMENT_OUTCOME_SCHEMA,
+    permission_filtered:true,
+    total_decisions:managementDecisionOutcomes.length,
+    pending_count:managementDecisionOutcomes.filter((row:any)=>row?.outcome_status==='pending').length,
+    resolved_or_improved_count:managementDecisionOutcomes.filter((row:any)=>['resolved','improved'].includes(clean(row?.outcome_status,40))).length,
+    recurring_count:managementDecisionOutcomes.filter((row:any)=>row?.recurrence_signal===true || row?.outcome_status==='recurring').length,
+    no_change_count:managementDecisionOutcomes.filter((row:any)=>row?.outcome_status==='no_change').length,
+    followup_due_count:managementDecisionOutcomes.filter((row:any)=>row?.outcome_status==='pending' && row?.followup_due_at && new Date(row.followup_due_at).valueOf()<=managementLearningNow).length,
+    source_authority:'canonical source records remain authoritative',
+    mutation_boundary:'journal-only; no automatic source mutation'
+  };
 
   const [dispatchSchedule,dispatchCrews,dispatchEquipment,dispatchRoutes,dispatchCandidates] = jobsAttentionAllowed ? await Promise.all([
     safeSelect(supabase.from('v_crew_dispatch_schedule').select('*').order('scheduled_start',{ascending:true}).limit(240)),
@@ -1484,6 +1505,8 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     operations_attention: operationsAttention.active,
     operations_attention_resolved: operationsAttention.resolved,
     operations_attention_meta: { build:352, foundation_build:320, schema_neutral:true, source_schema:209, total_active:operationsAttention.total_active, deferred_count:operationsAttention.deferred_count, candidate_count:operationsAttention.candidate_count, deduplicated_candidate_count:operationsAttention.deduplicated_candidate_count, duplicates_collapsed:operationsAttention.duplicates_collapsed, deterministic_triage:true, advisory_next_safe_action:true, permission_filtered:true },
+    management_decision_outcomes: managementDecisionOutcomes,
+    management_decision_learning_meta: managementLearningMeta,
     crew_dispatch_schedule: dispatchSchedule,
     crew_dispatch_crews: dispatchCrews,
     crew_dispatch_equipment: dispatchEquipment,
@@ -1585,6 +1608,91 @@ serve(async (req) => {
     }
 
 
+    if (action === 'management_decision_record') {
+      requireRank(profile, 50, action);
+      const sourceKey = clean(body.source_key, 240);
+      const sourceModule = clean(body.source_module, 20).toLowerCase();
+      const sourceType = clean(body.source_type, 100).toLowerCase();
+      const sourceId = clean(body.source_id, 180);
+      if (!sourceKey || !['safety','finance','jobs','admin'].includes(sourceModule) || !sourceType || !sourceId) {
+        throw new HttpError(400, 'A valid source_key, source_module, source_type and source_id are required.');
+      }
+      if (sourceKey !== `${sourceModule}:${sourceType}:${sourceId}`) {
+        throw new HttpError(400, 'Management-learning source identity does not match the canonical source key.');
+      }
+      const recommendationKey = clean(body.recommendation_key, 240);
+      const recommendationLabel = clean(body.recommendation_label, 500);
+      const chosenSafeAction = clean(body.chosen_safe_action, 1200);
+      const decisionKind = clean(body.decision_kind || 'review', 30).toLowerCase();
+      if (!recommendationKey || chosenSafeAction.length < 3) throw new HttpError(400, 'Recommendation key and chosen safe action are required.');
+      if (!['review','defer','resolve','escalate','follow_up'].includes(decisionKind)) throw new HttpError(400, 'Unsupported management decision kind.');
+      const followupDue = body.followup_due_at ? new Date(String(body.followup_due_at)) : null;
+      if (followupDue && Number.isNaN(followupDue.valueOf())) throw new HttpError(400, 'Follow-up due date/time is invalid.');
+      const decisionKey = idempotencyKey(req, body, 'management_decision');
+      const row = {
+        decision_key:decisionKey,
+        source_key:sourceKey, source_module:sourceModule, source_type:sourceType, source_id:sourceId,
+        recommendation_key:recommendationKey, recommendation_label:recommendationLabel || null,
+        chosen_safe_action:chosenSafeAction, decision_kind:decisionKind,
+        decision_note:clean(body.decision_note,1200) || null,
+        source_status_at_review:clean(body.source_status_at_review,120) || null,
+        source_priority_at_review:clean(body.source_priority_at_review,40) || null,
+        source_due_state_at_review:clean(body.source_due_state_at_review,40) || null,
+        triage_score_at_review:body.triage_score_at_review===null || body.triage_score_at_review===undefined ? null : Math.max(0,Math.min(10000,int(body.triage_score_at_review,0))),
+        outcome_status:'pending', outcome_recorded_at:null,
+        recurrence_signal:false,
+        followup_due_at:followupDue ? followupDue.toISOString() : null,
+        created_by_profile_id:profile.id, updated_by_profile_id:profile.id, updated_at:nowIso()
+      };
+      const { data, error } = await supabase.from('management_decision_outcome_journal')
+        .upsert(row,{onConflict:'decision_key'}).select('*').single();
+      if (error) throw error;
+      await audit(supabase, {
+        operation_action:action, operation_status:'completed', entity_type:'management_decision_outcome',
+        entity_id:data.id, actor_profile_id:profile.id,
+        request_payload:{source_key:sourceKey,recommendation_key:recommendationKey,decision_kind:decisionKind},
+        response_payload:{journal_id:data.id,outcome_status:data.outcome_status}
+      });
+      return Response.json({ok:true,build:MANAGEMENT_OUTCOME_BUILD,schema:MANAGEMENT_OUTCOME_SCHEMA,management_decision:data},{headers:corsHeaders});
+    }
+
+    if (action === 'management_outcome_update') {
+      requireRank(profile, 50, action);
+      const journalId = clean(body.journal_id, 80);
+      if (!isUuid(journalId)) throw new HttpError(400, 'Valid journal_id is required.');
+      const outcomeStatus = clean(body.outcome_status,40).toLowerCase();
+      if (!['pending','resolved','improved','recurring','no_change','superseded'].includes(outcomeStatus)) throw new HttpError(400, 'Unsupported management outcome status.');
+      const outcomeNote = clean(body.outcome_note,1200);
+      const followupEvidence = clean(body.followup_evidence,1600);
+      const evidenceReference = clean(body.followup_evidence_reference,500);
+      if (outcomeStatus !== 'pending' && outcomeNote.length < 3 && followupEvidence.length < 3) {
+        throw new HttpError(400, 'Record a short outcome note or follow-up evidence.');
+      }
+      const followupDue = body.followup_due_at ? new Date(String(body.followup_due_at)) : null;
+      if (followupDue && Number.isNaN(followupDue.valueOf())) throw new HttpError(400, 'Follow-up due date/time is invalid.');
+      const update = {
+        outcome_status:outcomeStatus,
+        outcome_note:outcomeNote || null,
+        recurrence_signal:body.recurrence_signal===true || outcomeStatus==='recurring',
+        followup_due_at:followupDue ? followupDue.toISOString() : null,
+        followup_evidence:followupEvidence || null,
+        followup_evidence_reference:evidenceReference || null,
+        outcome_recorded_at:outcomeStatus==='pending' ? null : nowIso(),
+        updated_by_profile_id:profile.id, updated_at:nowIso()
+      };
+      const { data, error } = await supabase.from('management_decision_outcome_journal')
+        .update(update).eq('id',journalId).select('*').single();
+      if (error) throw error;
+      await audit(supabase, {
+        operation_action:action, operation_status:'completed', entity_type:'management_decision_outcome',
+        entity_id:journalId, actor_profile_id:profile.id,
+        request_payload:{journal_id:journalId,outcome_status:outcomeStatus,recurrence_signal:update.recurrence_signal},
+        response_payload:{journal_id:journalId,outcome_status:data.outcome_status}
+      });
+      return Response.json({ok:true,build:MANAGEMENT_OUTCOME_BUILD,schema:MANAGEMENT_OUTCOME_SCHEMA,management_outcome:data},{headers:corsHeaders});
+    }
+
+
     if (action === 'operations_attention_defer' || action === 'operations_attention_resolve') {
       requireRank(profile, 50, action);
       const sourceKey = clean(body.source_key, 240);
@@ -1622,12 +1730,37 @@ serve(async (req) => {
       };
       const { data, error } = await supabase.from('operations_attention_states').upsert(row,{onConflict:'source_key'}).select('*').single();
       if (error) throw error;
+      const attentionDecisionKey = clean(body.idempotency_key,180) || `attention_${crypto.randomUUID()}`;
+      const attentionLearning = {
+        decision_key:`${attentionDecisionKey}:learning`,
+        source_key:sourceKey, source_module:sourceModule, source_type:sourceType, source_id:sourceId,
+        recommendation_key:clean(body.recommendation_key,240) || `${sourceType}:next_safe_action`,
+        recommendation_label:clean(body.recommendation_label,500) || null,
+        chosen_safe_action:clean(body.chosen_safe_action,1200) || (isResolve ? 'Resolve management attention after source review.' : 'Defer management attention for deliberate follow-up.'),
+        decision_kind:isResolve ? 'resolve' : 'defer',
+        decision_note:note || null,
+        source_status_at_review:clean(body.source_status_at_review,120) || 'open',
+        source_priority_at_review:priority,
+        source_due_state_at_review:clean(body.source_due_state_at_review,40) || null,
+        triage_score_at_review:body.triage_score_at_review===null || body.triage_score_at_review===undefined ? null : Math.max(0,Math.min(10000,int(body.triage_score_at_review,0))),
+        outcome_status:isResolve ? 'resolved' : 'pending',
+        outcome_note:isResolve ? (note || 'Management attention resolved after source review.') : null,
+        recurrence_signal:false,
+        followup_due_at:isResolve ? null : deferredUntil!.toISOString(),
+        outcome_recorded_at:isResolve ? nowIso() : null,
+        created_by_profile_id:profile.id, updated_by_profile_id:profile.id, updated_at:nowIso()
+      };
+      const { data:learningRecord, error:learningError } = await supabase.from('management_decision_outcome_journal')
+        .upsert(attentionLearning,{onConflict:'decision_key'}).select('id,outcome_status').single();
       await audit(supabase, {
         operation_action:action, operation_status:'completed', entity_type:'operations_attention',
         actor_profile_id:profile.id, request_payload:{source_key:sourceKey,state_status:row.state_status},
-        response_payload:{source_key:sourceKey,state_status:data.state_status}
+        response_payload:{source_key:sourceKey,state_status:data.state_status,management_learning_recorded:!learningError}
       });
-      return Response.json({ok:true,build:320,schema:209,attention_state:data},{headers:corsHeaders});
+      return Response.json({
+        ok:true,build:320,schema:209,attention_state:data,
+        management_learning:{build:MANAGEMENT_OUTCOME_BUILD,schema:MANAGEMENT_OUTCOME_SCHEMA,recorded:!learningError,journal_id:learningRecord?.id || null,error:learningError ? 'learning_journal_unavailable' : null}
+      },{headers:corsHeaders});
     }
 
     if (action === 'payment_action_request') {

@@ -91,8 +91,8 @@ must(index,[
 ],'Build 361 asset versions');
 
 must(help,['Build 361 — Mobile, Offline &amp; Read-Budget Reliability Optimization'],'Build 361 help');
-must(roadmap,['#### **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','The next planned autonomous item is **363 — Management Decision Outcome Journal & Learning Loop**.'],'Build 361 roadmap');
-must(handbook,['**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','**362 — Production Learning & Autonomous Roadmap Renewal** is implemented','- **363 — Management Decision Outcome Journal & Learning Loop**'],'Build 361 handbook');
+must(roadmap,['#### **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.'],'Build 361 roadmap');
+must(handbook,['**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','**362 — Production Learning & Autonomous Roadmap Renewal** is implemented','**363 — Management Decision Outcome Journal & Learning Loop** is implemented','- **364 — Workability-to-Schedule Recovery Outcomes**'],'Build 361 handbook');
 assert.equal(pkg.scripts?.['test:mobile-offline-read-budget-reliability'],'node scripts/mobile-offline-read-budget-reliability-check.mjs','Build 361 source script must be registered.');
 assert.equal(pkg.scripts?.['test:browser:mobile-offline-read-budget-reliability'],'playwright test --config=playwright.config.mjs tests/browser/mobile-offline-read-budget-reliability.spec.mjs','Build 361 browser script must be registered.');
 must(workflow,['npm run test:mobile-offline-read-budget-reliability','npm run test:browser:mobile-offline-read-budget-reliability'],'Build 361 CI wiring');

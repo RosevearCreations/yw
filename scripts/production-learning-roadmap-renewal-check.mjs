@@ -36,8 +36,13 @@ const queue=[
 assert.ok(queue.length>=10,'Build 362 must renew at least ten implementable autonomous releases.');
 for(const [number,title] of queue){
   assert.ok(review.renewed_queue?.some((row)=>row.item===number && row.title===title),`Build 362 review queue ${number} missing or mismatched.`);
-  must(roadmap,[`#### ${number} — ${title}`],`Build 362 roadmap queue ${number}`);
-  must(handbook,[`- **${number} — ${title}**`],`Build 362 handbook queue ${number}`);
+  if(number===363){
+    must(roadmap,[`#### **${number} — ${title}** is implemented`],`Build 362 implemented queue item ${number}`);
+    must(handbook,[`**${number} — ${title}** is implemented`],`Build 362 implemented handoff item ${number}`);
+  } else {
+    must(roadmap,[`#### ${number} — ${title}`],`Build 362 roadmap queue ${number}`);
+    must(handbook,[`- **${number} — ${title}**`],`Build 362 handbook queue ${number}`);
+  }
 }
 
 must(reviewText,[
@@ -52,14 +57,14 @@ must(reviewText,[
 must(roadmap,[
   '#### **362 — Production Learning & Autonomous Roadmap Renewal** is implemented',
   'docs/production_learning_review_362.json',
-  'The next planned autonomous item is **363 — Management Decision Outcome Journal & Learning Loop**.',
-  'renewed autonomous queue is **363–376**'
+  'The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.',
+  'renewed autonomous queue now continues with **364–376**'
 ],'Build 362 roadmap closure');
 
 must(handbook,[
   '## Production-learning renewal authority',
   '**362 — Production Learning & Autonomous Roadmap Renewal** is implemented',
-  'After item 362, that item is 363 — Management Decision Outcome Journal & Learning Loop.',
+  'After item 363, that item is 364 — Workability-to-Schedule Recovery Outcomes.',
   '- **376 — Production Learning & Autonomous Roadmap Renewal II**'
 ],'Build 362 durable handoff');
 

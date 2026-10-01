@@ -133,13 +133,14 @@ Item 362 closes the 351–361 learning cycle. The durable review is `docs/produc
 
 The outcome-learning layer is never permission to mutate its source authority. A learning release may record bounded decision/outcome metadata when necessary, but it must not silently resolve Jobs/Safety/Equipment/Employment/CRM/Finance records, change customer/vendor commitments, send provider messages, post accounting, or weaken exact-source release evidence.
 
+Item 363 implements that rule with a private Admin-manage decision/outcome journal keyed to canonical source identity. It stores recommendation/decision/outcome/recurrence/follow-up evidence only; source business payloads and source mutation remain outside the journal.
+
 ## Cross-AI autonomous handoff
 
 When another AI system takes over YW, treat this handbook and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` as the durable project authority. Resolve the live `dev` and `main` heads from GitHub at task start rather than trusting copied commit identifiers.
 
-**351 — Management Metric Freshness & Confidence** is implemented. **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented. **353 — Four-Season Capacity & Workability Forecast** is implemented. **354 — Route & Crew Efficiency Evidence** is implemented. **355 — Recurring Service Renewal & Retention Workbench** is implemented. **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented. **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented. **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented. **359 — Customer Communication Readiness & Queue Quality** is implemented. **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented. **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented. **362 — Production Learning & Autonomous Roadmap Renewal** is implemented. The current autonomous queue continues with:
+**351 — Management Metric Freshness & Confidence** is implemented. **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented. **353 — Four-Season Capacity & Workability Forecast** is implemented. **354 — Route & Crew Efficiency Evidence** is implemented. **355 — Recurring Service Renewal & Retention Workbench** is implemented. **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented. **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented. **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented. **359 — Customer Communication Readiness & Queue Quality** is implemented. **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented. **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented. **362 — Production Learning & Autonomous Roadmap Renewal** is implemented. **363 — Management Decision Outcome Journal & Learning Loop** is implemented. The current autonomous queue continues with:
 
-- **363 — Management Decision Outcome Journal & Learning Loop**
 - **364 — Workability-to-Schedule Recovery Outcomes**
 - **365 — Route Plan-vs-Actual & Stop-Sequence Learning**
 - **366 — Recurring Renewal Conversion & Churn Outcomes**
@@ -158,7 +159,7 @@ The last queue item must again write at least ten further bounded autonomous ite
 
 Ordinary roadmap work is non-interactive. Do not require the user to create a staging environment, provide provider credentials, execute manual acceptance scenarios, approve synthetic cases, send real messages, run real payments/refunds/disputes, enable Production provider rails, or manually sign off routine releases. If an external dependency is unavailable, keep external/provider mutation disabled and complete the safest repository-owned scope using existing operational evidence, deterministic source checks, synthetic fixtures and browser acceptance.
 
-When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. After item 362, that item is 363 — Management Decision Outcome Journal & Learning Loop. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. After item 363, that item is 364 — Workability-to-Schedule Recovery Outcomes. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 
 For every ordinary release, use this sequence:
 
