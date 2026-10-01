@@ -1,0 +1,140 @@
+{
+  "item": 362,
+  "title": "Production Learning & Autonomous Roadmap Renewal",
+  "purpose": "Close the 351–361 learning cycle and convert current observability into the next bounded autonomous release sequence without creating a parallel business authority.",
+  "learning_review": [
+    {
+      "item": 351,
+      "capability": "Management metric freshness and confidence",
+      "learning": "Missing, stale, capped, and permission-hidden evidence is no longer presented as a trustworthy zero.",
+      "remaining_gap": "Preserve confidence while adding outcome trends instead of one-time snapshots."
+    },
+    {
+      "item": 352,
+      "capability": "Autonomous exception triage and next-safe-action",
+      "learning": "Duplicate exceptions collapse to one source-backed queue item with advisory next action.",
+      "remaining_gap": "Measure whether reviewed exceptions close, recur, or expose a different upstream problem."
+    },
+    {
+      "item": 353,
+      "capability": "Four-season capacity and workability forecast",
+      "learning": "Seven- and fourteen-day readiness separates spring/summer, fall, winter, and four-season load.",
+      "remaining_gap": "Compare forecast constraints with actual schedule recovery and completed capacity."
+    },
+    {
+      "item": 354,
+      "capability": "Route and crew efficiency evidence",
+      "learning": "Planned duration/travel and recorded execution can be compared without inventing employee scores.",
+      "remaining_gap": "Learn route/stop-sequence friction from repeated plan-versus-actual evidence."
+    },
+    {
+      "item": 355,
+      "capability": "Recurring service renewal and retention",
+      "learning": "Renewal, hold, friction, complaint, and optional profitability evidence are visible together.",
+      "remaining_gap": "Track renewal conversion, churn reason, and retention outcome without automatic customer commitments."
+    },
+    {
+      "item": 356,
+      "capability": "Estimate-to-cash leakage and margin recovery",
+      "learning": "Accepted-not-scheduled, completed-not-invoiced, extras, collections, and margin leakage are visible.",
+      "remaining_gap": "Measure estimate accuracy and cycle-time recovery outcomes across the commercial chain."
+    },
+    {
+      "item": 357,
+      "capability": "Labour, equipment and fleet utilization",
+      "learning": "Crew-level labour and asset use are visible without individual performance ranking.",
+      "remaining_gap": "Improve capture completeness and connect downtime/replacement evidence to operating cost."
+    },
+    {
+      "item": 358,
+      "capability": "Materials and seasonal stock readiness",
+      "learning": "Scheduled demand, recurring coverage, unit mismatch, and seasonal stock context are explicit.",
+      "remaining_gap": "Compare planned versus actual use and calibrate reorder evidence without auto-purchasing."
+    },
+    {
+      "item": 359,
+      "capability": "Customer communication readiness",
+      "learning": "Schedule-change, follow-up, recurring notice, CRM, and A/R reminder candidates are deduplicated.",
+      "remaining_gap": "Measure recorded follow-up outcomes while preserving consent/provider boundaries."
+    },
+    {
+      "item": 360,
+      "capability": "Data-quality reconciliation",
+      "learning": "Duplicate, orphan, cross-module, stale-assignment, and seasonal-tag issues are visible without destructive repair.",
+      "remaining_gap": "Record remediation outcomes and recurrence so source-quality improvement can be measured."
+    },
+    {
+      "item": 361,
+      "capability": "Mobile, offline and read-budget reliability",
+      "learning": "Mobile read fan-out, payload size, refresh behavior, replay batch size, and shell/admin cache behavior now have explicit budgets.",
+      "remaining_gap": "Track reliability/read-budget trend and regressions across releases rather than only enforcing a point-in-time ceiling."
+    }
+  ],
+  "renewal_principles": [
+    "Prefer measurable operator, reliability, seasonal, economic, or data-quality outcomes over release-number churn.",
+    "Use existing canonical Jobs, Safety, Equipment, Employment, CRM, Finance, Dispatch, recurring-service, workability, inventory, and release-evidence authorities before creating new storage.",
+    "Where an outcome journal is required, record only the decision/outcome metadata needed for learning; never duplicate the source business record.",
+    "Keep spring/summer landscaping and lawn work, fall cleanup/leaf work, winter snow/storm/ice operations, and general four-season functions explicit.",
+    "Do not require external provider credentials, real payments, real customer messages, staging acceptance, or manual signoff to complete ordinary autonomous roadmap items.",
+    "Keep Finance posting, payment-provider mutation, external Auth controls, provider delivery, and destructive data reconciliation fail-closed unless separately authorized and evidenced.",
+    "Every future release must preserve exact-source release evidence, permission enforcement, mobile accessibility, and offline conflict ownership."
+  ],
+  "renewed_queue": [
+    {
+      "item": 363,
+      "title": "Management Decision Outcome Journal & Learning Loop"
+    },
+    {
+      "item": 364,
+      "title": "Workability-to-Schedule Recovery Outcomes"
+    },
+    {
+      "item": 365,
+      "title": "Route Plan-vs-Actual & Stop-Sequence Learning"
+    },
+    {
+      "item": 366,
+      "title": "Recurring Renewal Conversion & Churn Outcomes"
+    },
+    {
+      "item": 367,
+      "title": "Estimate Accuracy & Change-Order Margin Calibration"
+    },
+    {
+      "item": 368,
+      "title": "Completed-to-Invoiced Cycle-Time & Cash Conversion"
+    },
+    {
+      "item": 369,
+      "title": "Labour Capture Completeness & Payroll Exception Reduction"
+    },
+    {
+      "item": 370,
+      "title": "Equipment Downtime Cost & Replacement Readiness"
+    },
+    {
+      "item": 371,
+      "title": "Material Usage Variance & Reorder Calibration"
+    },
+    {
+      "item": 372,
+      "title": "Customer Communication Outcome & Follow-Up Effectiveness"
+    },
+    {
+      "item": 373,
+      "title": "Data Quality Remediation Outcome & Recurrence Prevention"
+    },
+    {
+      "item": 374,
+      "title": "Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes"
+    },
+    {
+      "item": 375,
+      "title": "Four-Season Capacity Mix & Profitability Scenario Evidence"
+    },
+    {
+      "item": 376,
+      "title": "Production Learning & Autonomous Roadmap Renewal II"
+    }
+  ]
+}
