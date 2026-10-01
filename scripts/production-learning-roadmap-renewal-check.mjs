@@ -52,7 +52,7 @@ must(roadmap,[
   '#### **362 — Production Learning & Autonomous Roadmap Renewal** is implemented',
   'docs/PRODUCTION_LEARNING_REVIEW_362.md',
   'The next planned autonomous item is **363 — Management Decision Outcome Journal & Learning Loop**.',
-  'Builds 363–376'
+  'Items 363–376'
 ],'Build 362 roadmap closure');
 
 must(handbook,[
