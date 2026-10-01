@@ -197,6 +197,14 @@
           <p><strong>Autonomous boundary:</strong> these ordinary builds remain repository-owned and must not require live payments, real customer/provider messages, external staging acceptance or manual signoff. Existing Jobs, Safety, Equipment, Employment, CRM, Finance, Auth and provider authorities remain canonical and fail-closed where already required.</p>
         </section>
 
+        <section class="help-section" id="management-decision-outcome-journal">
+          <h2>Build 363 — Management Decision Outcome Journal &amp; Learning Loop</h2>
+          <p>Build 363 adds a private management-learning journal beside Operations Needs Attention. The journal links each decision to the existing canonical source key instead of copying the Job, Safety, Finance, Equipment, Employment or CRM business record.</p>
+          <p><strong>Decision evidence:</strong> Admin-manage operators can record the recommendation, chosen safe action, decision time, source status/priority/due state at review and triage score. Recording a decision does not resolve, edit or dispatch the source record.</p>
+          <p><strong>Outcome learning:</strong> a later review can record pending, resolved, improved, recurring, no-change or superseded outcome state, a recurrence signal, follow-up timing and bounded evidence/reference. Repeated decisions for the same source remain visible so later releases can measure recurrence instead of treating one review as permanent closure.</p>
+          <p><strong>Authority boundary:</strong> Schema 236 keeps the journal and read view private behind RLS and service-side authority. The learning loop cannot send customer/provider messages, change Finance, clear Safety or equipment state, dispatch work, create customer/vendor commitments or replace the canonical source workflow.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">
