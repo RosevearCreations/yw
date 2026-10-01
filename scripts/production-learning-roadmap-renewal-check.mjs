@@ -13,7 +13,7 @@ const workflow=read('.github/workflows/staging-browser-integration.yml');
 const must=(source,needles,label)=>needles.forEach((needle)=>assert.ok(source.includes(needle), label + ': missing ' + needle));
 
 for(let build=351;build<=361;build+=1){
-  assert.ok(review.includes('| '+build+' |'),'Build 362 learning review must retain Build '+build+' evidence.');
+  assert.ok(review.learning_review?.some((row)=>row.item===build),'Build 362 learning review must retain item '+build+' evidence.');
 }
 
 const queue=[
