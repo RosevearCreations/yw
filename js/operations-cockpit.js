@@ -1106,6 +1106,21 @@
       </article>`).join('') : emptyQueue('No recently resolved items', 'Resolved attention items remain visible here as management history.');
     renderManagementLearning();
   }
+  function managementLearningCardHtml(row,canManage=true) {
+    const action=canManage ? button('Update outcome','management-outcome',row.id,'',true,'management_outcome_update') : '<button type="button" class="secondary" disabled title="Admin manage access is required.">Outcome restricted</button>';
+    return `<article class="oc-queue-card oc-management-learning-card" data-outcome-status="${esc(row.outcome_status||'pending')}" data-recurrence="${row.recurrence_signal===true?'true':'false'}">
+      <header><strong>${esc(row.recommendation_label || row.recommendation_key || row.source_key)}</strong><span class="${statusClass(row.outcome_status||'pending')}">${esc(row.outcome_status||'pending')}${row.recurrence_signal===true?' · recurring':''}</span></header>
+      <dl>
+        <div><dt>Source</dt><dd>${esc(row.source_module)} · ${esc(String(row.source_type||'').replaceAll('_',' '))}</dd></div>
+        <div><dt>Decision</dt><dd>${esc(row.chosen_safe_action||'—')}</dd></div>
+        <div><dt>Decision time</dt><dd>${when(row.decision_at)}</dd></div>
+        <div><dt>Source status at review</dt><dd>${esc(row.source_status_at_review||'not recorded')} · ${esc(row.source_due_state_at_review||'due state n/a')}</dd></div>
+        <div><dt>Follow-up</dt><dd>${row.followup_due_at?when(row.followup_due_at):'No follow-up due date'}${row.followup_evidence?' · '+esc(row.followup_evidence):''}</dd></div>
+        <div><dt>Outcome note</dt><dd>${esc(row.outcome_note||row.decision_note||'Pending outcome evidence')}</dd></div>
+      </dl>
+      <div class="oc-row-actions">${action}</div>
+    </article>`;
+  }
   function renderManagementLearning() {
     const wrap=byId('oc_management_learning_journal');
     const summary=byId('oc_management_learning_summary');
@@ -1119,21 +1134,9 @@
       : 'Admin manage access is required for management learning evidence.';
     if(!wrap)return;
     if(!canManage){wrap.innerHTML=emptyQueue('Management learning restricted','Admin manage access is required.');return}
-    wrap.innerHTML=rows.length ? rows.slice(0,40).map((row)=>`
-      <article class="oc-queue-card oc-management-learning-card" data-outcome-status="${esc(row.outcome_status||'pending')}" data-recurrence="${row.recurrence_signal===true?'true':'false'}">
-        <header><strong>${esc(row.recommendation_label || row.recommendation_key || row.source_key)}</strong><span class="${statusClass(row.outcome_status||'pending')}">${esc(row.outcome_status||'pending')}${row.recurrence_signal===true?' · recurring':''}</span></header>
-        <dl>
-          <div><dt>Source</dt><dd>${esc(row.source_module)} · ${esc(String(row.source_type||'').replaceAll('_',' '))}</dd></div>
-          <div><dt>Decision</dt><dd>${esc(row.chosen_safe_action||'—')}</dd></div>
-          <div><dt>Decision time</dt><dd>${when(row.decision_at)}</dd></div>
-          <div><dt>Source status at review</dt><dd>${esc(row.source_status_at_review||'not recorded')} · ${esc(row.source_due_state_at_review||'due state n/a')}</dd></div>
-          <div><dt>Follow-up</dt><dd>${row.followup_due_at?when(row.followup_due_at):'No follow-up due date'}${row.followup_evidence?' · '+esc(row.followup_evidence):''}</dd></div>
-          <div><dt>Outcome note</dt><dd>${esc(row.outcome_note||row.decision_note||'Pending outcome evidence')}</dd></div>
-        </dl>
-        <div class="oc-row-actions">${button('Update outcome','management-outcome',row.id,'',true,'management_outcome_update')}</div>
-      </article>`).join('') : emptyQueue('No management decisions recorded','Use Record decision on an attention item to start the learning loop.');
+    wrap.innerHTML=rows.length ? rows.slice(0,40).map((row)=>managementLearningCardHtml(row,canManage)).join('') : emptyQueue('No management decisions recorded','Use Record decision on an attention item to start the learning loop.');
   }
-  window.YWIOperationsAttentionTriage={attentionCardHtml,attentionAgeLabel,renderManagementLearning};
+  window.YWIOperationsAttentionTriage={attentionCardHtml,attentionAgeLabel,managementLearningCardHtml,renderManagementLearning};
 
   function renderQueues() {
     renderLandscapeProduction(); renderEstimateInvoiceWorkflow(); renderPropertySiteIntelligence(); renderRecurringService(); renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydrateLandscapeProductionSelectors(); hydrateEstimateWorkflowSelectors(); hydratePropertySelectors(); hydrateRecurringSelectors(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
