@@ -127,19 +127,38 @@ Recording release-source evidence is not deployment or Production promotion. A v
 Production promotion is deliberate/manual. Source work must not enable Finance execution, provider mutation, mutate external Auth controls, publish unapproved content, submit search URLs externally, run staging acceptance against Production, or close human/external acceptance rails unless that specific change is separately authorized and evidenced.
 
 
+## Production-learning renewal authority
+
+Build 362 closes the 351–361 learning cycle. The durable review is `docs/PRODUCTION_LEARNING_REVIEW_362.md`. Future autonomous releases should prefer measurable outcome loops over new disconnected dashboards: recommendation closure/recurrence, schedule recovery, route plan-versus-actual, renewal/churn, estimate accuracy, invoice/cash cycle time, labour capture completeness, downtime economics, material-use variance, communication outcomes, data-quality recurrence, mobile/read-budget trend, and four-season capacity/profitability mix.
+
+The outcome-learning layer is never permission to mutate its source authority. A learning release may record bounded decision/outcome metadata when necessary, but it must not silently resolve Jobs/Safety/Equipment/Employment/CRM/Finance records, change customer/vendor commitments, send provider messages, post accounting, or weaken exact-source release evidence.
+
 ## Cross-AI autonomous handoff
 
 When another AI system takes over YW, treat this handbook and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` as the durable project authority. Resolve the live `dev` and `main` heads from GitHub at task start rather than trusting copied commit identifiers.
 
-**351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, and **353 — Four-Season Capacity & Workability Forecast** are implemented. **354 — Route & Crew Efficiency Evidence** is implemented. **355 — Recurring Service Renewal & Retention Workbench** is implemented. **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented. **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented. **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented. **359 — Customer Communication Readiness & Queue Quality** is implemented. **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented. **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented. The current autonomous queue continues with:
+**351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, **354 — Route & Crew Efficiency Evidence**, **355 — Recurring Service Renewal & Retention Workbench**, **356 — Estimate-to-Cash Leakage & Margin Recovery**, **357 — Labour, Equipment & Fleet Utilization Decision Support**, **358 — Materials, Consumables & Seasonal Stock Readiness**, **359 — Customer Communication Readiness & Queue Quality**, **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**, **361 — Mobile, Offline & Read-Budget Reliability Optimization**, and **362 — Production Learning & Autonomous Roadmap Renewal** are implemented. The current autonomous queue continues with:
 
-- **362 — Production Learning & Autonomous Roadmap Renewal**
+- **363 — Management Decision Outcome Journal & Learning Loop**
+- **364 — Workability-to-Schedule Recovery Outcomes**
+- **365 — Route Plan-vs-Actual & Stop-Sequence Learning**
+- **366 — Recurring Renewal Conversion & Churn Outcomes**
+- **367 — Estimate Accuracy & Change-Order Margin Calibration**
+- **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion**
+- **369 — Labour Capture Completeness & Payroll Exception Reduction**
+- **370 — Equipment Downtime Cost & Replacement Readiness**
+- **371 — Material Usage Variance & Reorder Calibration**
+- **372 — Customer Communication Outcome & Follow-Up Effectiveness**
+- **373 — Data Quality Remediation Outcome & Recurrence Prevention**
+- **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes**
+- **375 — Four-Season Capacity Mix & Profitability Scenario Evidence**
+- **376 — Production Learning & Autonomous Roadmap Renewal II**
 
-The last queue item must write at least ten further bounded autonomous items before promotion so the queue does not run out.
+The last queue item must again write at least ten further bounded autonomous items before promotion so the queue does not run out.
 
 Ordinary roadmap work is non-interactive. Do not require the user to create a staging environment, provide provider credentials, execute manual acceptance scenarios, approve synthetic cases, send real messages, run real payments/refunds/disputes, enable Production provider rails, or manually sign off routine releases. If an external dependency is unavailable, keep external/provider mutation disabled and complete the safest repository-owned scope using existing operational evidence, deterministic source checks, synthetic fixtures and browser acceptance.
 
-When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. After item 361, that item is 362 — Production Learning & Autonomous Roadmap Renewal. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+When the user says only `continue`, select the earliest still-valid unimplemented roadmap item. After item 362, that item is 363 — Management Decision Outcome Journal & Learning Loop. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 
 For every ordinary release, use this sequence:
 
