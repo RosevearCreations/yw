@@ -129,7 +129,7 @@ Production promotion is deliberate/manual. Source work must not enable Finance e
 
 ## Production-learning renewal authority
 
-Build 362 closes the 351–361 learning cycle. The durable review is `docs/PRODUCTION_LEARNING_REVIEW_362.md`. Future autonomous releases should prefer measurable outcome loops over new disconnected dashboards: recommendation closure/recurrence, schedule recovery, route plan-versus-actual, renewal/churn, estimate accuracy, invoice/cash cycle time, labour capture completeness, downtime economics, material-use variance, communication outcomes, data-quality recurrence, mobile/read-budget trend, and four-season capacity/profitability mix.
+Item 362 closes the 351–361 learning cycle. The durable review is `docs/production_learning_review_362.json`. Future autonomous releases should prefer measurable outcome loops over new disconnected dashboards: recommendation closure/recurrence, schedule recovery, route plan-versus-actual, renewal/churn, estimate accuracy, invoice/cash cycle time, labour capture completeness, downtime economics, material-use variance, communication outcomes, data-quality recurrence, mobile/read-budget trend, and four-season capacity/profitability mix.
 
 The outcome-learning layer is never permission to mutate its source authority. A learning release may record bounded decision/outcome metadata when necessary, but it must not silently resolve Jobs/Safety/Equipment/Employment/CRM/Finance records, change customer/vendor commitments, send provider messages, post accounting, or weaken exact-source release evidence.
 
