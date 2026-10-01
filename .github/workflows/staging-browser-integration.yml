@@ -150,6 +150,7 @@ jobs:
       - run: npm run test:customer-communication-readiness-queue-quality
       - run: npm run test:data-quality-duplicate-orphan-reconciliation
       - run: npm run test:mobile-offline-read-budget-reliability
+      - run: npm run test:production-learning-roadmap-renewal
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -244,6 +245,7 @@ jobs:
       - run: npm run test:browser:customer-communication-readiness-queue-quality
       - run: npm run test:browser:data-quality-duplicate-orphan-reconciliation
       - run: npm run test:browser:mobile-offline-read-budget-reliability
+      - run: npm run test:browser:production-learning-roadmap-renewal
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
