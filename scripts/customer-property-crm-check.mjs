@@ -53,7 +53,7 @@ must(help,['Build 340 — Customer &amp; Property CRM','canonical customer','sno
 must(roadmap,['#### **340 — Customer & Property CRM** is implemented','#### **341 — Route Optimization & Territory Management** is implemented','#### **342 — Weather & Workability Controls** is implemented','#### **343 — Landscape Material Estimator** is implemented','#### **350 — Owner / Management Command Centre** is implemented'],'Build 340 roadmap');
 must(pkg,['test:customer-property-crm','test:browser:customer-property-crm'],'Build 340 package scripts');
 must(workflow,['npm run test:customer-property-crm','npm run test:browser:customer-property-crm'],'Build 340 CI wiring');
-must(behavior,['boundary-exact-90-actions','boundary-build340-customer-property-crm'],'Boundary behavior advancement');
+must(behavior,['boundary-exact-92-actions','boundary-build340-customer-property-crm'],'Boundary behavior advancement');
 
 const require=createRequire(import.meta.url),ts=require('typescript');
 for(const path of ['supabase/functions/operations-manage/index.ts','supabase/functions/admin-directory/index.ts','supabase/functions/_shared/module-write-boundaries.ts']){

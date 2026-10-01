@@ -85,7 +85,7 @@ must(help,['Build 343 — Landscape Material Estimator','mulch','salt/de-icer','
 must(roadmap,['#### **343 — Landscape Material Estimator** is implemented','#### **344 — Change Orders & Extras** is implemented','#### **350 — Owner / Management Command Centre** is implemented'],'Build 343 roadmap');
 must(pkg,['test:landscape-material-estimator','test:browser:landscape-material-estimator'],'Build 343 scripts');
 must(workflow,['npm run test:landscape-material-estimator','npm run test:browser:landscape-material-estimator'],'Build 343 CI');
-must(behavior,['boundary-exact-90-actions','boundary-build343-landscape-material-estimator'],'Boundary behavior');
+must(behavior,['boundary-exact-92-actions','boundary-build343-landscape-material-estimator'],'Boundary behavior');
 
 const require=createRequire(import.meta.url),ts=require('typescript');
 for(const p of ['supabase/functions/operations-manage/index.ts','supabase/functions/admin-directory/index.ts','supabase/functions/_shared/module-write-boundaries.ts']){

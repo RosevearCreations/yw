@@ -36,6 +36,6 @@ assert.equal(pkg.scripts['test:browser:estimate-to-cash-leakage-margin-recovery'
 must(workflow,['npm run test:estimate-to-cash-leakage-margin-recovery','npm run test:browser:estimate-to-cash-leakage-margin-recovery'],'Build 356 CI');
 must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b360'],'Build 356 asset');
 must(help,['Build 356 — Estimate-to-Cash Leakage &amp; Margin Recovery','Accepted not scheduled','Completed not invoiced','Approved extras not billed','Invoiced not collected','Margin leakage','Analytical only'],'Build 356 help');
-must(roadmap,['#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **363 — Management Decision Outcome Journal & Learning Loop**.'],'Build 356 roadmap');
+must(roadmap,['#### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.'],'Build 356 roadmap');
 must(handbook,['**356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented','**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','**359 — Customer Communication Readiness & Queue Quality** is implemented','**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented'],'Build 356 handoff');
 console.log('Build 356 Estimate-to-Cash Leakage & Margin Recovery source gate GREEN');
