@@ -81,7 +81,7 @@ must(help,['Build 345 — Quality Control &amp; Customer Signoff','Evidence auth
 must(roadmap,['#### **345 — Quality Control & Customer Signoff** is implemented','#### **346 — Seasonal Operations Centre** is implemented','#### **350 — Owner / Management Command Centre** is implemented'],'Build 345 roadmap');
 must(pkg,['test:quality-control-customer-signoff','test:browser:quality-control-customer-signoff'],'Build 345 scripts');
 must(workflow,['npm run test:quality-control-customer-signoff','npm run test:browser:quality-control-customer-signoff'],'Build 345 CI');
-must(behavior,['boundary-exact-90-actions','boundary-build345-quality-control-customer-signoff'],'Build 345 boundary behavior');
+must(behavior,['boundary-exact-92-actions','boundary-build345-quality-control-customer-signoff'],'Build 345 boundary behavior');
 
 const require=createRequire(import.meta.url),ts=require('typescript');
 for(const p of ['supabase/functions/operations-manage/index.ts','supabase/functions/admin-directory/index.ts','supabase/functions/_shared/module-write-boundaries.ts']){
