@@ -58,7 +58,7 @@ must(roadmap,[
 
 must(handbook,[
   '## Production-learning renewal authority',
-  '**362 — Production Learning & Autonomous Roadmap Renewal** are implemented',
+  '**362 — Production Learning & Autonomous Roadmap Renewal** is implemented',
   'After item 362, that item is 363 — Management Decision Outcome Journal & Learning Loop.',
   '- **376 — Production Learning & Autonomous Roadmap Renewal II**'
 ],'Build 362 durable handoff');
