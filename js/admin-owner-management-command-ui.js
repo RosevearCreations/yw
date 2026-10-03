@@ -1,4 +1,4 @@
-/* Builds 350–360 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness + data quality reconciliation */
+/* Builds 350–364 — Owner / Management Command Centre + evidence confidence + capacity + route/crew + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness + data quality reconciliation + workability recovery outcomes */
 'use strict';
 (function(){
   const $=id=>document.getElementById(id);
@@ -17,7 +17,7 @@
     let el=$('ownerCommand350');if(el)return el;
     el=document.createElement('details');el.id='ownerCommand350';el.className='admin-hub-detail';el.dataset.adminHubTitle='Owner / Management Command Centre';el.dataset.adminHubGroups='operations';el.open=true;
     el.innerHTML=[
-      '<summary><span>Owner / Management Command Centre</span><small>Build 350–360 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness + data quality reconciliation</small></summary>',
+      '<summary><span>Owner / Management Command Centre</span><small>Build 350–364 · four-season cockpit + evidence confidence + capacity + route/crew efficiency + recurring retention + estimate-to-cash + utilization + stock readiness + communication readiness + data quality reconciliation + workability recovery outcomes</small></summary>',
       '<div class="admin-panel-block" data-build="350">',
       '<div class="section-heading"><div><span class="module-kicker">Build 350 · Management</span><h3>Owner / Management Command Centre</h3><p class="section-subtitle">One read-only view of today, production, profitability, workforce, seasonal execution, Safety, equipment and Finance readiness.</p></div><button id="owner350Refresh" class="secondary" type="button">Refresh</button></div>',
       '<div class="notice"><strong>Authority boundary:</strong> this cockpit summarizes existing source workflows only. It cannot dispatch crews, alter routes, approve Safety, unlock equipment, edit training, post Finance, invoice work, collect payment or close accounting periods.</div>',
@@ -32,6 +32,7 @@
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
       '<section class="admin-panel-block owner360-data-quality" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality, duplicate &amp; orphan reconciliation workbench</h4><p class="section-subtitle">Build 360 · duplicate customer/property candidates, broken canonical references, cross-module mismatches, stale crew/equipment assignments, and conflicting four-season service tags.</p></div><button class="secondary" data-owner360-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>No destructive auto-fix:</strong> this workbench preserves source IDs and audit history. It cannot merge/delete records, rewrite foreign keys, reassign crews/equipment or clear lockouts.</div><div id="owner360DataQuality"></div></section>',
+      '<section class="admin-panel-block owner364-workability-recovery" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability-to-schedule recovery outcomes</h4><p class="section-subtitle">Build 364 · recorded postpone/reschedule/blocked decisions → replacement dispatch → explicit workable/caution schedule → production start → completion.</p></div><button class="secondary" data-owner364-open="operations">Open Workability</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome learning only:</strong> a reschedule is not labelled workable unless the later dispatch explicitly records workable/caution. This view never changes a workability decision or reschedules work.</div><div id="owner364WorkabilityRecovery"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -357,6 +358,44 @@
         '<details style="margin-top:8px;"><summary>Reconciliation boundaries</summary><p class="muted">'+esc(w.duplicate_boundary||'')+'</p><p class="muted">'+esc(w.reference_boundary||'')+'</p><p class="muted">'+esc(w.assignment_boundary||'')+'</p><p class="muted">'+esc(w.season_boundary||'')+'</p><p class="muted">'+esc(w.destructive_boundary||'')+'</p><p class="muted">'+esc(w.audit_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
 
+
+    function renderWorkabilityRecoveryOutcomes(){
+      const host=$('owner364WorkabilityRecovery');if(!host)return;
+      const w=state.data?.workability_schedule_recovery_outcomes;
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Workability recovery outcomes require Jobs / Business &amp; Operations visibility for this profile.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Workability recovery outcome evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical recovery source queries failed. Recovery counts and timing are withheld rather than converted into zero-valued facts.</p>';return}
+      const s=w.summary||{};
+      const fmt=v=>v==null?'—':Number(v).toFixed(1)+' h';
+      const summary='<div class="owner351-summary">'+[
+        card('Affected decisions',num(s.affected_decision_count),'postpone / reschedule / blocked','workability_recovery_outcomes'),
+        card('Replacement dispatch',num(s.rescheduled_count),'later replacement/reschedule evidence','workability_recovery_outcomes'),
+        card('Explicit workable / caution',num(s.explicit_workable_or_caution_schedule_count),'later dispatch with source workability state','workability_recovery_outcomes'),
+        card('Production started',num(s.production_started_count),'recorded execution after constraint','workability_recovery_outcomes'),
+        card('Completed',num(s.completed_count),'recorded completed production','workability_recovery_outcomes'),
+        card('Unresolved / unverified',num(s.unresolved_count),'no explicit workable recovery yet','workability_recovery_outcomes'),
+        card('Avg decision → replan',fmt(s.avg_decision_to_replan_hours),'replacement dispatch record timing','workability_recovery_outcomes'),
+        card('Avg decision → production',fmt(s.avg_decision_to_production_start_hours),'recorded production start','workability_recovery_outcomes')
+      ].join('')+'</div>';
+      const outcomes=(w.recovery_outcomes||[]).slice(0,40).map(r=>{
+        const state=String(r.outcome_state||'unresolved').replaceAll('_',' ');
+        const timings=[
+          r.decision_to_replan_hours!=null?'replan '+Number(r.decision_to_replan_hours).toFixed(1)+'h':null,
+          r.decision_to_workable_schedule_hours!=null?'workable/caution schedule '+Number(r.decision_to_workable_schedule_hours).toFixed(1)+'h':null,
+          r.decision_to_production_start_hours!=null?'production '+Number(r.decision_to_production_start_hours).toFixed(1)+'h':null,
+          r.decision_to_completion_hours!=null?'completion '+Number(r.decision_to_completion_hours).toFixed(1)+'h':null
+        ].filter(Boolean).join(' · ');
+        return '<div class="owner350-row"><strong>'+esc(state.toUpperCase()+' · '+(r.work_order_number||r.observation_code||'Workability record'))+'</strong><small>'+esc((r.site_name||'Site unavailable')+' · '+String(r.season_context||'four_season').replaceAll('_',' / ')+' · '+(r.service_context||'service context unavailable'))+'</small><small>'+esc('Decision: '+(r.decision_state||'')+' · '+(r.decision_reason||'reason unavailable'))+'</small><small>'+esc(timings||'No later recovery milestone recorded')+'</small><button class="secondary" style="margin-top:6px;" data-owner364-open="operations">Open Workability</button></div>';
+      }).join('');
+      const seasons=(w.seasonal_outcomes||[]).map(r=>'<div class="owner350-row"><strong>'+esc(String(r.season||'four_season').replaceAll('_',' / '))+'</strong><small>'+esc(num(r.affected_count)+' affected · '+num(r.production_started_count)+' production started · '+num(r.completed_count)+' completed · '+num(r.unresolved_count)+' unresolved/unverified')+'</small><small>'+esc('Avg decision→workable/caution '+fmt(r.avg_decision_to_workable_schedule_hours)+' · production '+fmt(r.avg_decision_to_production_start_hours)+' · completion '+fmt(r.avg_decision_to_completion_hours))+'</small></div>').join('');
+      const unresolved=(w.unresolved_queue||[]).slice(0,25).map(r=>'<div class="owner350-row"><strong>'+esc((r.work_order_number||r.observation_code||'Workability record')+' · '+String(r.outcome_state||'unresolved').replaceAll('_',' '))+'</strong><small>'+esc((r.decision_state||'decision')+' · '+(r.decision_reason||'reason unavailable'))+'</small><small>'+esc(r.recovery_scheduled_start?'Replacement schedule '+r.recovery_scheduled_start+' lacks explicit workable/caution state.':'No later replacement dispatch or execution milestone is recorded.')+'</small></div>').join('');
+      host.innerHTML=summary+
+        '<details style="margin-top:10px;" open><summary>Recovery outcome timeline</summary><div class="owner350-list">'+(outcomes||'<p class="muted">No affected workability decision with outcome evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;" open><summary>Four-season recovery cohorts</summary><div class="owner350-list">'+(seasons||'<p class="muted">No seasonal recovery cohort evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Unresolved / unverified recovery</summary><div class="owner350-list">'+(unresolved||'<p class="muted">No unresolved or workability-unverified recovery is visible in the loaded evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Outcome boundaries</summary><p class="muted">'+esc(w.workability_boundary||'')+'</p><p class="muted">'+esc(w.recovery_boundary||'')+'</p><p class="muted">'+esc(w.timing_boundary||'')+'</p><p class="muted">'+esc(w.seasonal_boundary||'')+'</p><p class="muted">'+esc(w.automation_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -411,6 +450,7 @@
       renderStockReadiness();
       renderCommunicationReadiness();
       renderDataQualityReconciliation();
+      renderWorkabilityRecoveryOutcomes();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
@@ -465,10 +505,10 @@
       setTimeout(()=>window.YWIAdminHub?.open?.(group),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 360 data-quality duplicate/orphan reconciliation evidence refreshed. Source records were not changed.')}
-      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null,labour_equipment_fleet_utilization_support:null,materials_consumables_seasonal_stock_readiness:null,customer_communication_readiness_queue:null,data_quality_duplicate_orphan_reconciliation:null};render();note('Unable to load Build 360 data-quality duplicate/orphan reconciliation evidence: '+(e?.message||e),true)}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 364 workability-to-schedule recovery outcome evidence refreshed. Source records were not changed.')}
+      catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null,labour_equipment_fleet_utilization_support:null,materials_consumables_seasonal_stock_readiness:null,customer_communication_readiness_queue:null,data_quality_duplicate_orphan_reconciliation:null,workability_schedule_recovery_outcomes:null};render();note('Unable to load Build 364 workability-to-schedule recovery outcome evidence: '+(e?.message||e),true)}
     }
-    el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open],[data-owner359-open],[data-owner360-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open')||b.getAttribute('data-owner359-open')||b.getAttribute('data-owner360-open'))});
+    el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open],[data-owner359-open],[data-owner360-open],[data-owner364-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open')||b.getAttribute('data-owner359-open')||b.getAttribute('data-owner360-open')||b.getAttribute('data-owner364-open'))});
     $('owner350Refresh').onclick=load;load();
   }
   window.YWIOwnerManagementCommandUI={mount};
