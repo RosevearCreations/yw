@@ -1756,6 +1756,149 @@ function buildDataQualityDuplicateOrphanReconciliation(input:{
   };
 }
 
+
+function buildWorkabilityScheduleRecoveryOutcomes(input:{workability:any[];dispatch:any[];production:any[];jobsVisible:boolean;sourceQueriesOk:boolean}) {
+  const norm=(v:any)=>String(v??'').trim().toLowerCase();
+  const ts=(v:any)=>{const n=v?new Date(v).getTime():NaN;return Number.isFinite(n)?n:null};
+  const hours=(from:any,to:any)=>{
+    const a=ts(from),b=ts(to);if(a==null||b==null||b<a)return null;
+    return Number(((b-a)/3600000).toFixed(2));
+  };
+  const seasonal=(v:any)=>{
+    const s=norm(v);
+    if(['spring_summer','fall','winter','four_season'].includes(s)) return s;
+    const t=s.replace(/[_-]+/g,' ');
+    if(/\b(snow|winter|ice|salting|salt|de icer|deicer)\b/.test(t)) return 'winter';
+    if(/\b(fall|autumn|leaf|leaves)\b/.test(t)) return 'fall';
+    if(/\b(mow|mowing|lawn|landscap|garden|hedge|shrub|spring|aerat|fertiliz|sod|mulch)\b/.test(t)) return 'spring_summer';
+    return 'four_season';
+  };
+  const impacted=(input.workability||[]).filter((r)=>{
+    const state=norm(r?.decision_state);
+    return !!r?.latest_decision_id&&['postpone','reschedule','blocked'].includes(state)&&(r?.decision_at||r?.observed_at);
+  });
+  const dispatchByWorkOrder=new Map<string,any[]>();
+  for(const r of input.dispatch||[]){
+    const id=String(r?.work_order_id||''); if(!id) continue;
+    const list=dispatchByWorkOrder.get(id)||[];list.push(r);dispatchByWorkOrder.set(id,list);
+  }
+  for(const list of dispatchByWorkOrder.values()) list.sort((a,b)=>String(a?.created_at||a?.scheduled_start||'').localeCompare(String(b?.created_at||b?.scheduled_start||'')));
+  const productionByWorkOrder=new Map<string,any[]>();
+  for(const r of input.production||[]){
+    const id=String(r?.work_order_id||''); if(!id) continue;
+    const list=productionByWorkOrder.get(id)||[];list.push(r);productionByWorkOrder.set(id,list);
+  }
+  for(const list of productionByWorkOrder.values()) list.sort((a,b)=>String(a?.started_at||a?.production_recorded_at||a?.session_date||'').localeCompare(String(b?.started_at||b?.production_recorded_at||b?.session_date||'')));
+
+  const rows=impacted.map((w)=>{
+    const baseline=w?.decision_at||w?.observed_at;
+    const baseTs=ts(baseline);
+    const workOrderId=String(w?.work_order_id||'');
+    const allDispatch=(dispatchByWorkOrder.get(workOrderId)||[]).filter((d)=>{
+      const created=ts(d?.created_at||d?.updated_at||d?.scheduled_start);
+      return baseTs!=null&&created!=null&&created>=baseTs;
+    });
+    const replacementDispatch=allDispatch.find((d)=>norm(d?.schedule_status)==='rescheduled'||!!d?.supersedes_dispatch_id)||null;
+    const explicitWorkableDispatch=allDispatch.find((d)=>{
+      const s=norm(d?.schedule_status),state=norm(d?.workability_state);
+      return !['cancelled','superseded'].includes(s)&&['workable','caution'].includes(state);
+    })||null;
+    const prod=(productionByWorkOrder.get(workOrderId)||[]).filter((p)=>{
+      const start=ts(p?.started_at||p?.production_recorded_at||p?.session_date);
+      return baseTs!=null&&start!=null&&start>=baseTs;
+    });
+    const firstProduction=prod.find((p)=>!!(p?.started_at||p?.production_recorded_at))||null;
+    const completed=prod.find((p)=>{
+      const state=norm(p?.completion_state),status=norm(p?.session_status),ended=ts(p?.ended_at);
+      return ended!=null&&(state==='complete'||status==='completed');
+    })||null;
+    const replanAt=replacementDispatch?.created_at||replacementDispatch?.updated_at||null;
+    const explicitScheduleAt=explicitWorkableDispatch?.scheduled_start||null;
+    const productionStartAt=firstProduction?.started_at||null;
+    const completionAt=completed?.ended_at||null;
+    const proposed=w?.proposed_reschedule_start||null;
+    let outcome='unresolved';
+    if(completionAt) outcome='completed_after_constraint';
+    else if(productionStartAt) outcome='production_started_after_constraint';
+    else if(explicitWorkableDispatch) outcome=norm(explicitWorkableDispatch?.workability_state)==='caution'?'caution_schedule_recorded':'workable_schedule_recorded';
+    else if(replacementDispatch) outcome='rescheduled_without_explicit_workability';
+    const season=seasonal(w?.season_context||w?.service_context||w?.work_type);
+    return {
+      observation_id:w?.id||null,observation_code:w?.observation_code||null,decision_id:w?.latest_decision_id||null,
+      decision_state:w?.decision_state||null,decision_at:baseline,decision_reason:w?.decision_reason||null,
+      work_order_id:w?.work_order_id||null,work_order_number:w?.work_order_number||null,site_name:w?.site_name||null,
+      service_context:w?.service_context||w?.work_type||null,season_context:season,
+      original_dispatch_id:w?.dispatch_schedule_item_id||null,proposed_reschedule_start:proposed,
+      recovery_dispatch_id:explicitWorkableDispatch?.id||replacementDispatch?.id||null,
+      recovery_dispatch_status:explicitWorkableDispatch?.schedule_status||replacementDispatch?.schedule_status||null,
+      recovery_workability_state:explicitWorkableDispatch?.workability_state||replacementDispatch?.workability_state||null,
+      recovery_scheduled_start:explicitScheduleAt||replacementDispatch?.scheduled_start||null,
+      production_session_id:firstProduction?.job_session_id||null,production_started_at:productionStartAt,
+      completion_session_id:completed?.job_session_id||null,completed_at:completionAt,
+      outcome_state:outcome,
+      decision_to_replan_hours:hours(baseline,replanAt),
+      decision_to_workable_schedule_hours:hours(baseline,explicitScheduleAt),
+      decision_to_production_start_hours:hours(baseline,productionStartAt),
+      decision_to_completion_hours:hours(baseline,completionAt),
+      proposed_to_actual_schedule_variance_hours:proposed&&(explicitScheduleAt||replacementDispatch?.scheduled_start)
+        ? Number((((ts(explicitScheduleAt||replacementDispatch?.scheduled_start)??0)-(ts(proposed)??0))/3600000).toFixed(2)):null,
+      source_links:[
+        {source_type:'workability_observation',source_id:w?.id||null,reference:w?.observation_code||null},
+        {source_type:'workability_decision',source_id:w?.latest_decision_id||null,reference:w?.decision_state||null},
+        ...(replacementDispatch?[{source_type:'dispatch',source_id:replacementDispatch.id||null,reference:replacementDispatch?.work_order_number||null}]:[]),
+        ...(firstProduction?[{source_type:'production',source_id:firstProduction?.job_session_id||null,reference:firstProduction?.work_order_number||null}]:[])
+      ]
+    };
+  }).sort((a,b)=>String(b.decision_at||'').localeCompare(String(a.decision_at||'')));
+
+  const avg=(vals:any[])=>{
+    const nums=vals.map(Number).filter(Number.isFinite);if(!nums.length)return null;
+    return Number((nums.reduce((s,n)=>s+n,0)/nums.length).toFixed(2));
+  };
+  const bySeason=['spring_summer','fall','winter','four_season'].map((season)=>{
+    const s=rows.filter(r=>r.season_context===season);
+    return {
+      season,affected_count:s.length,
+      explicit_workable_or_caution_schedule_count:s.filter(r=>['workable_schedule_recorded','caution_schedule_recorded','production_started_after_constraint','completed_after_constraint'].includes(r.outcome_state)&&r.decision_to_workable_schedule_hours!=null).length,
+      production_started_count:s.filter(r=>r.production_started_at).length,completed_count:s.filter(r=>r.completed_at).length,
+      unresolved_count:s.filter(r=>r.outcome_state==='unresolved'||r.outcome_state==='rescheduled_without_explicit_workability').length,
+      avg_decision_to_replan_hours:avg(s.map(r=>r.decision_to_replan_hours)),
+      avg_decision_to_workable_schedule_hours:avg(s.map(r=>r.decision_to_workable_schedule_hours)),
+      avg_decision_to_production_start_hours:avg(s.map(r=>r.decision_to_production_start_hours)),
+      avg_decision_to_completion_hours:avg(s.map(r=>r.decision_to_completion_hours))
+    };
+  });
+  const byDecision=['postpone','reschedule','blocked'].map((state)=>{
+    const s=rows.filter(r=>norm(r.decision_state)===state);
+    return {decision_state:state,affected_count:s.length,completed_count:s.filter(r=>r.completed_at).length,production_started_count:s.filter(r=>r.production_started_at).length,unresolved_count:s.filter(r=>['unresolved','rescheduled_without_explicit_workability'].includes(r.outcome_state)).length};
+  });
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk,
+    summary:{
+      affected_decision_count:rows.length,
+      rescheduled_count:rows.filter(r=>r.decision_to_replan_hours!=null).length,
+      explicit_workable_or_caution_schedule_count:rows.filter(r=>r.decision_to_workable_schedule_hours!=null).length,
+      production_started_count:rows.filter(r=>r.production_started_at).length,
+      completed_count:rows.filter(r=>r.completed_at).length,
+      unresolved_count:rows.filter(r=>['unresolved','rescheduled_without_explicit_workability'].includes(r.outcome_state)).length,
+      avg_decision_to_replan_hours:avg(rows.map(r=>r.decision_to_replan_hours)),
+      avg_decision_to_workable_schedule_hours:avg(rows.map(r=>r.decision_to_workable_schedule_hours)),
+      avg_decision_to_production_start_hours:avg(rows.map(r=>r.decision_to_production_start_hours)),
+      avg_decision_to_completion_hours:avg(rows.map(r=>r.decision_to_completion_hours))
+    },
+    recovery_outcomes:rows.slice(0,250),
+    seasonal_outcomes:bySeason,
+    decision_outcomes:byDecision,
+    unresolved_queue:rows.filter(r=>['unresolved','rescheduled_without_explicit_workability'].includes(r.outcome_state)).slice(0,100),
+    workability_boundary:'Only recorded human/source workability decisions with postpone, reschedule or blocked state enter this outcome view. The workbench never creates or revises a weather/workability verdict.',
+    recovery_boundary:'A replacement dispatch is not called workable unless its recorded workability_state is explicitly workable or caution. A reschedule without that evidence remains rescheduled_without_explicit_workability.',
+    timing_boundary:'Decision-to-replan measures when a replacement dispatch record was created/updated. Decision-to-workable-schedule measures the scheduled service start of the first later dispatch explicitly marked workable/caution. Production start and completion use recorded production timestamps.',
+    seasonal_boundary:'Outcome cohorts retain spring/summer landscaping/lawn, fall cleanup/leaf, winter snow/ice and four-season context from recorded service/season evidence. No external weather provider is introduced.',
+    automation_boundary:'Read-only outcome learning. This layer cannot reschedule work, change dispatch, send customer messages, alter workability decisions, dispatch crews, clear Safety restrictions or mutate provider state.',
+    authority_boundary:'Workability decisions remain human/source-authoritative; Dispatch remains the schedule authority; Production remains execution/completion authority.'
+  };
+}
+
   if (scope === 'owner_management_command') {
     const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
@@ -1890,7 +2033,8 @@ function buildDataQualityDuplicateOrphanReconciliation(input:{
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
-      data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans'])
+      data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
+      workability_recovery_outcomes:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
@@ -1928,6 +2072,10 @@ function buildDataQualityDuplicateOrphanReconciliation(input:{
       sourceQueriesOk:[...dataQualityReferenceReads,workabilityRead,materialPlansRead].every((r)=>r.query_ok!==false),
       referenceCoverageComplete:dataQualityReferenceReads.every((r)=>r.query_ok!==false&&Number(r.row_count||0)<Number(r.limit||1))
     });
+    const workabilityScheduleRecoveryOutcomes=buildWorkabilityScheduleRecoveryOutcomes({
+      workability,dispatch,production,jobsVisible:canJobsView,
+      sourceQueriesOk:[workabilityRead,dispatchRead,productionRead].every((r)=>r.query_ok!==false)
+    });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
       evidence_generated_at:new Date().toISOString(),
@@ -1950,6 +2098,7 @@ function buildDataQualityDuplicateOrphanReconciliation(input:{
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
       data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
+      workability_schedule_recovery_outcomes:workabilityScheduleRecoveryOutcomes,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'

@@ -87,13 +87,13 @@ must(help,[
 
 must(roadmap,[
   '#### **363 — Management Decision Outcome Journal & Learning Loop** is implemented',
-  'The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.'
+  'The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.'
 ],'Build 363 roadmap');
 
 must(handbook,[
   '**363 — Management Decision Outcome Journal & Learning Loop** is implemented',
-  '- **364 — Workability-to-Schedule Recovery Outcomes**',
-  'After item 363, that item is 364 — Workability-to-Schedule Recovery Outcomes.'
+  '**364 — Workability-to-Schedule Recovery Outcomes** is implemented','- **365 — Route Plan-vs-Actual & Stop-Sequence Learning**',
+  'After item 364, that item is 365 — Route Plan-vs-Actual & Stop-Sequence Learning.'
 ],'Build 363 handoff');
 
 assert.equal(pkg.scripts?.['test:management-decision-outcome-journal'],'node scripts/management-decision-outcome-journal-check.mjs');

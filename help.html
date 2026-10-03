@@ -205,6 +205,16 @@
           <p><strong>Authority boundary:</strong> Schema 236 keeps the journal and read view private behind RLS and service-side authority. The learning loop cannot send customer/provider messages, change Finance, clear Safety or equipment state, dispatch work, create customer/vendor commitments or replace the canonical source workflow.</p>
         </section>
 
+        <section class="help-section" id="workability-schedule-recovery-outcomes">
+          <h2>Build 364 — Workability-to-Schedule Recovery Outcomes</h2>
+          <p>Build 364 adds read-only outcome learning from existing Workability, Dispatch and Production evidence so management can see what happened after a recorded postpone, reschedule or blocked decision.</p>
+          <p><strong>Recorded constraints only:</strong> only human/source-authoritative workability decisions already stored in YW enter the analysis. The workbench does not create a weather verdict or introduce a weather provider.</p>
+          <p><strong>Reschedule is not automatically workable:</strong> a later replacement dispatch is called workable/caution only when that dispatch explicitly records <code>workable</code> or <code>caution</code>. A replacement schedule without that state remains visibly unverified.</p>
+          <p><strong>Recovery timing milestones:</strong> the view separates decision-to-replan, decision-to-explicit-workable/caution scheduled start, decision-to-production-start and decision-to-completion timing so planning recovery is not confused with field execution.</p>
+          <p><strong>Four-season cohorts:</strong> spring/summer landscaping and lawn work, fall cleanup/leaf work, winter snow/ice work and four-season activity remain separate outcome cohorts.</p>
+          <p><strong>No external weather or auto-rescheduling:</strong> the release cannot reschedule work, change dispatch, revise a workability decision, send customer messages, dispatch crews, clear Safety restrictions or mutate provider state.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">

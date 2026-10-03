@@ -372,7 +372,7 @@ This release adds a permission-aware, read-only command-centre index across cust
 
 Saved views are browser-local preferences scoped to the signed-in profile. They preserve search, domain, season, service context and the selected operational view, but they never become business authority and never mutate jobs, routing, equipment, Safety, Finance, invoicing or source records. Global result navigation deep-links to the existing authoritative module/workspace. Spring/summer, fall, winter and four-season context remain explicit.
 
-Items **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, **354 — Route & Crew Efficiency Evidence**, **355 — Recurring Service Renewal & Retention Workbench**, **356 — Estimate-to-Cash Leakage & Margin Recovery**, **357 — Labour, Equipment & Fleet Utilization Decision Support**, **358 — Materials, Consumables & Seasonal Stock Readiness**, **359 — Customer Communication Readiness & Queue Quality**, and **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** are implemented. The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+Items **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, **354 — Route & Crew Efficiency Evidence**, **355 — Recurring Service Renewal & Retention Workbench**, **356 — Estimate-to-Cash Leakage & Margin Recovery**, **357 — Labour, Equipment & Fleet Utilization Decision Support**, **358 — Materials, Consumables & Seasonal Stock Readiness**, **359 — Customer Communication Readiness & Queue Quality**, and **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** are implemented. The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **350 — Owner / Management Command Centre** is implemented
 
@@ -396,7 +396,7 @@ Operations Needs Attention now collapses duplicate candidates by canonical sourc
 
 The score uses the existing source severity as the dominant signal, then bounded overdue age and an explicit unassigned-owner signal. Stable source-key ordering breaks any remaining ties. Suggested actions only navigate to or prepare review in the authoritative source workflow; they do not auto-dispatch, auto-resolve Safety, unlock equipment, change Finance, send customer messages, collect payment or mutate provider state.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **353 — Four-Season Capacity & Workability Forecast** is implemented
 
@@ -404,7 +404,7 @@ The Owner / Management Command Centre now provides seven- and fourteen-day advis
 
 Recorded demand uses only source durations and travel allowances that already exist; the release does not invent jobs-per-crew targets, productivity assumptions or missing durations. Workability is based only on YW-stored evidence and does not add an external weather provider. The forecast remains read-only and cannot dispatch crews, rewrite routes, change workability decisions, unlock equipment, send messages or mutate provider state.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **354 — Route & Crew Efficiency Evidence** is implemented
 
@@ -414,7 +414,7 @@ Route-day evidence uses existing configured `daily_capacity_minutes` only when t
 
 Planned travel allowance and linked crew travel minutes are intentionally shown as different measures. Crew-time travel is not treated as vehicle elapsed travel, so the release does not fabricate a direct travel variance.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **355 — Recurring Service Renewal & Retention Workbench** is implemented
 
@@ -424,7 +424,7 @@ Renewal review is based on recorded end dates and the existing CRM renewal state
 
 The workbench prepares context only. It does not renew agreements, change prices, create estimates or invoices, send messages, or create customer commitments. Missing or permission-hidden Finance evidence remains unavailable rather than becoming a zero-margin fact.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented
 
@@ -434,7 +434,7 @@ The leakage queue surfaces accepted-not-scheduled work, completed/accounting-rea
 
 Each queue row preserves its source reference and deliberate Jobs or Finance navigation. The release is analytical only: it does not create invoices, post accounting, apply payments, send collection messages, mutate payment providers or charge customers.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented
 
@@ -442,7 +442,7 @@ The Owner / Management Command Centre now combines a 30-day window of permission
 
 Crew evidence is aggregated by crew rather than individual employee. Equipment use is based on recorded signouts; no signout in the window is retained as an evidence-review signal and is not treated as proof that an asset was idle or unnecessary. Lockout, fleet downtime/readiness, maintenance due state and replacement state remain their existing operational authorities and are shown as constraints, not employee-performance judgments.
 
-The decision-support layer cannot change crew/equipment assignments, clear lockouts, return equipment to service, complete maintenance, replace assets, create purchases or create vendor commitments. The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The decision-support layer cannot change crew/equipment assignments, clear lockouts, return equipment to service, complete maintenance, replace assets, create purchases or create vendor commitments. The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented
 
@@ -452,7 +452,7 @@ Quantified demand is scheduled only when a planned material line belongs to a wo
 
 The readiness view distinguishes spring/summer mowing and landscaping materials, fall cleanup supplies, winter salt/de-icer/traction stock and general four-season materials using recorded catalog labels/categories. Reorder signals reuse canonical on-hand stock and recorded reorder/target settings. No purchase order, supplier contact, stock reservation or vendor commitment is created.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **359 — Customer Communication Readiness & Queue Quality** is implemented
 
@@ -460,7 +460,7 @@ The Owner / Management Command Centre now exposes a permission-aware, read-only 
 
 Queue identity is deterministic. Workability and dispatch evidence for the same work order collapse into one schedule-change candidate while preserving all source links. Completion follow-up is suppressed when a later outbound CRM interaction already exists for that work order. Customer message context is limited to source/service/timing/reason plus recorded preferred contact method/window; customer email addresses, phone numbers and portal tokens are not returned.
 
-Existing protected notification-delivery failures/manual review remain visible as delivery-attention evidence, but this layer cannot send email/text, publish updates, reschedule work, retry provider delivery, mutate A/R or collect payment. The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+Existing protected notification-delivery failures/manual review remain visible as delivery-attention evidence, but this layer cannot send email/text, publish updates, reschedule work, retry provider delivery, mutate A/R or collect payment. The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented
 
@@ -472,7 +472,7 @@ Reference checks surface active job/dispatch/recurring links that are unavailabl
 
 Four-season service/season checks compare explicit service context with the established spring/summer landscaping and lawn, fall cleanup/leaf, and winter snow/ice taxonomy. The workbench is advisory only: it cannot merge/delete records, delete history, rewrite foreign keys, reassign crews/equipment, clear lockouts or mutate Jobs, CRM, Finance or Safety authority.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented
 
@@ -484,7 +484,7 @@ Offline action replay is profile-isolated, single-flight and capped at 12 action
 
 The current release shell cache is reused for same-origin static assets while navigation remains network-first and Auth/API/Storage/Supabase traffic remains uncached. Source and rendered regression gates enforce the read, refresh, replay, cache and 390px mobile contracts without weakening module authorization, release evidence or offline conflict safety.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **362 — Production Learning & Autonomous Roadmap Renewal** is implemented
 
@@ -492,7 +492,7 @@ Item 362 reviews the production-learning evidence from items 351–361 and recor
 
 The renewed sequence is deliberately repository-owned and non-interactive. Ordinary releases must not require provider credentials, live payments, real customer messages, external staging acceptance or manual signoff to complete. Finance posting, payment/provider mutation, Auth control changes, destructive reconciliation, and provider delivery remain separately authorized rails.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### **363 — Management Decision Outcome Journal & Learning Loop** is implemented
 
@@ -502,11 +502,17 @@ Later outcome review records pending/resolved/improved/recurring/no-change/super
 
 Schema 236 keeps the journal and its read view private behind RLS/service authority. The two management-learning writes are explicit Admin-manage contracts. The journal cannot dispatch work, change Finance, resolve Safety, clear equipment state, send customer/provider messages or create customer/vendor commitments.
 
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
-#### 364 — Workability-to-Schedule Recovery Outcomes
+#### **364 — Workability-to-Schedule Recovery Outcomes** is implemented
 
-Compare recorded workability constraints, reschedule decisions and subsequent dispatch/completion evidence to measure how quickly affected work returns to a workable schedule. Keep weather/workability decisions human/source-authoritative, distinguish winter snow/ice, fall cleanup, spring/summer landscaping/lawn and four-season work, and do not introduce an external weather provider or automatic rescheduling.
+The Owner / Management Command Centre now measures recorded outcomes after human/source-authoritative postpone, reschedule and blocked workability decisions using the existing Workability, Dispatch and Production sources.
+
+A replacement dispatch is not treated as a workable recovery unless the later dispatch explicitly records a workability state of workable or caution. Replacement schedules without that source evidence remain rescheduled-without-explicit-workability. The outcome chain keeps decision-to-replan, decision-to-explicit-workable/caution scheduled start, decision-to-production-start and decision-to-completion timing separate so scheduling progress is not confused with field execution.
+
+Outcome cohorts retain spring/summer landscaping and lawn, fall cleanup/leaf, winter snow/ice and four-season context. The release remains read-only and cannot create/revise workability decisions, introduce an external weather provider, reschedule work, change dispatch, send customer messages, dispatch crews, clear Safety restrictions or mutate provider state.
+
+The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
 
 #### 365 — Route Plan-vs-Actual & Stop-Sequence Learning
 

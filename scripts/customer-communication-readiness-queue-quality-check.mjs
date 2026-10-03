@@ -39,17 +39,17 @@ must(b359,[
 ],'Build 359 boundaries');
 
 must(ui,[
-  'Build 350–360','Customer communication readiness &amp; queue quality','owner359Communications','renderCommunicationReadiness',
+  'Build 350–364','Customer communication readiness &amp; queue quality','owner359Communications','renderCommunicationReadiness',
   'Ready for review','Weather / workability','Reschedule / ETA','Completion follow-up','Recurring notices','Overdue follow-up',
   'Invoice reminders','Merged multi-source','Communication readiness queue','Protected delivery attention','Review only — no send:',
-  'Build 360 data-quality duplicate/orphan reconciliation evidence refreshed'
+  'Build 364 workability-to-schedule recovery outcome evidence refreshed'
 ],'Build 359 UI');
 
 assert.equal(pkg.scripts['test:customer-communication-readiness-queue-quality'],'node scripts/customer-communication-readiness-queue-quality-check.mjs');
 assert.equal(pkg.scripts['test:browser:customer-communication-readiness-queue-quality'],'playwright test --config=playwright.config.mjs tests/browser/customer-communication-readiness-queue-quality.spec.mjs');
 must(workflow,['npm run test:customer-communication-readiness-queue-quality','npm run test:browser:customer-communication-readiness-queue-quality'],'Build 359 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b360'],'Build 359 asset');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-10-03b364'],'Build 359 asset');
 must(help,['Build 359 — Customer Communication Readiness &amp; Queue Quality','Weather, reschedule and ETA context','Completion follow-up suppression','Recurring-service notice readiness','Overdue CRM and invoice reminder candidates','No automatic sending'],'Build 359 help');
-must(roadmap,['#### **359 — Customer Communication Readiness & Queue Quality** is implemented','The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.'],'Build 359 roadmap');
-must(handbook,['**359 — Customer Communication Readiness & Queue Quality** is implemented','**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','After item 363, that item is 364 — Workability-to-Schedule Recovery Outcomes.'],'Build 359 handoff');
+must(roadmap,['#### **359 — Customer Communication Readiness & Queue Quality** is implemented','The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.'],'Build 359 roadmap');
+must(handbook,['**359 — Customer Communication Readiness & Queue Quality** is implemented','**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','After item 364, that item is 365 — Route Plan-vs-Actual & Stop-Sequence Learning.'],'Build 359 handoff');
 console.log('Build 359 Customer Communication Readiness & Queue Quality source gate GREEN');

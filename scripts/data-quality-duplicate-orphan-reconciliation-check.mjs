@@ -30,7 +30,7 @@ must(directory,[
 ],'Build 360 server');
 
 const start=directory.indexOf('function buildDataQualityDuplicateOrphanReconciliation');
-const end=directory.indexOf("\n\n  if (scope === 'owner_management_command')",start);
+const end=directory.indexOf('function buildWorkabilityScheduleRecoveryOutcomes',start);
 const b360=directory.slice(start,end);
 assert.ok(b360.length>5000,'Build 360 helper slice missing');
 assert.ok(!/\.(insert|update|delete|upsert)\s*\(/.test(b360),'Build 360 helper must remain read-only');
@@ -41,18 +41,18 @@ assert.ok(!b360.includes('billing_email:')&&!b360.includes('phone:')&&!b360.incl
 assert.ok(!b360.includes('merge_customer')&&!b360.includes('delete_customer')&&!b360.includes('delete_property'),'Build 360 must not add destructive actions');
 
 must(ui,[
-  'Build 350–360','Data quality, duplicate &amp; orphan reconciliation workbench','owner360DataQuality','renderDataQualityReconciliation',
+  'Build 350–364','Data quality, duplicate &amp; orphan reconciliation workbench','owner360DataQuality','renderDataQualityReconciliation',
   'No destructive auto-fix:','Signals','Duplicate customers','Duplicate properties','Broken references','Cross-module mismatches',
   'Stale assignments','Season tag conflicts','Reconciliation queue','Duplicate customer &amp; property candidates',
   'Reference &amp; assignment issues','Four-season tag conflicts','Reference-gap findings withheld:',
-  'Build 360 data-quality duplicate/orphan reconciliation evidence refreshed'
+  'Build 364 workability-to-schedule recovery outcome evidence refreshed'
 ],'Build 360 UI');
 
 assert.equal(pkg.scripts['test:data-quality-duplicate-orphan-reconciliation'],'node scripts/data-quality-duplicate-orphan-reconciliation-check.mjs');
 assert.equal(pkg.scripts['test:browser:data-quality-duplicate-orphan-reconciliation'],'playwright test --config=playwright.config.mjs tests/browser/data-quality-duplicate-orphan-reconciliation.spec.mjs');
 must(workflow,['npm run test:data-quality-duplicate-orphan-reconciliation','npm run test:browser:data-quality-duplicate-orphan-reconciliation'],'Build 360 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b360'],'Build 360 asset');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-10-03b364'],'Build 360 asset');
 must(help,['Build 360 — Data Quality, Duplicate &amp; Orphan Reconciliation Workbench','Duplicate customers and properties','Broken and cross-module references','Stale crew and equipment assignments','Four-season tag conflicts','No destructive automatic reconciliation'],'Build 360 help');
-must(roadmap,['#### **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.'],'Build 360 roadmap');
-must(handbook,['**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','After item 363, that item is 364 — Workability-to-Schedule Recovery Outcomes.'],'Build 360 handoff');
+must(roadmap,['#### **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.'],'Build 360 roadmap');
+must(handbook,['**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','After item 364, that item is 365 — Route Plan-vs-Actual & Stop-Sequence Learning.'],'Build 360 handoff');
 console.log('Build 360 Data Quality, Duplicate & Orphan Reconciliation Workbench source gate GREEN');
