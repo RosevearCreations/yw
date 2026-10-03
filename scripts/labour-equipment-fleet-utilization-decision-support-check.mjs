@@ -25,11 +25,11 @@ must(directory,[
 ],'Build 357 server');
 
 must(ui,[
-  'Build 350–360','Labour, equipment &amp; fleet utilization decision support','owner357Utilization','renderUtilizationSupport',
+  'Build 350–364','Labour, equipment &amp; fleet utilization decision support','owner357Utilization','renderUtilizationSupport',
   'Paid time, 30d','Job-linked paid time','Paid time without job link','Production labour','Equipment with recorded use',
   'Fleet known available','Fleet downtime','Maintenance attention','Crew-level recording context',
   'Utilization, downtime &amp; maintenance signals','Decision support only:',
-  'Build 360 data-quality duplicate/orphan reconciliation evidence refreshed'
+  'Build 364 workability-to-schedule recovery outcome evidence refreshed'
 ],'Build 357 UI');
 
 const b357=directory.slice(directory.indexOf('function buildLabourEquipmentFleetUtilizationDecisionSupport'),directory.indexOf('function buildMaterialsConsumablesSeasonalStockReadiness'));
@@ -47,8 +47,8 @@ must(b357,[
 assert.equal(pkg.scripts['test:labour-equipment-fleet-utilization-decision-support'],'node scripts/labour-equipment-fleet-utilization-decision-support-check.mjs');
 assert.equal(pkg.scripts['test:browser:labour-equipment-fleet-utilization-decision-support'],'playwright test --config=playwright.config.mjs tests/browser/labour-equipment-fleet-utilization-decision-support.spec.mjs');
 must(workflow,['npm run test:labour-equipment-fleet-utilization-decision-support','npm run test:browser:labour-equipment-fleet-utilization-decision-support'],'Build 357 CI');
-must(index,['/js/admin-owner-management-command-ui.js?v=2026-09-30b360'],'Build 357 asset');
+must(index,['/js/admin-owner-management-command-ui.js?v=2026-10-03b364'],'Build 357 asset');
 must(help,['Build 357 — Labour, Equipment &amp; Fleet Utilization Decision Support','Crew-level labour context','Equipment use is evidence, not an idle verdict','Fleet downtime and maintenance','No employee performance scoring'],'Build 357 help');
-must(roadmap,['#### **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.'],'Build 357 roadmap');
-must(handbook,['**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','**359 — Customer Communication Readiness & Queue Quality** is implemented','**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','After item 363, that item is 364 — Workability-to-Schedule Recovery Outcomes.'],'Build 357 handoff');
+must(roadmap,['#### **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.'],'Build 357 roadmap');
+must(handbook,['**357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented','**358 — Materials, Consumables & Seasonal Stock Readiness** is implemented','**359 — Customer Communication Readiness & Queue Quality** is implemented','**360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented','**361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented','After item 364, that item is 365 — Route Plan-vs-Actual & Stop-Sequence Learning.'],'Build 357 handoff');
 console.log('Build 357 Labour, Equipment & Fleet Utilization Decision Support source gate GREEN');
