@@ -504,7 +504,7 @@ Schema 236 keeps the journal and its read view private behind RLS/service author
 
 The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
 
-<!-- Build 362 historical queue markers retained for regression provenance: #### 364 — Workability-to-Schedule Recovery Outcomes | renewed autonomous queue now continues with **364–376** -->
+<!-- Historical item 362 queue markers retained for regression provenance: #### 364 — Workability-to-Schedule Recovery Outcomes | renewed autonomous queue now continues with **364–376** -->
 
 #### **364 — Workability-to-Schedule Recovery Outcomes** is implemented
 
