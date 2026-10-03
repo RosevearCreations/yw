@@ -362,7 +362,7 @@
     function renderWorkabilityRecoveryOutcomes(){
       const host=$('owner364WorkabilityRecovery');if(!host)return;
       const w=state.data?.workability_schedule_recovery_outcomes;
-      if(!allowed('jobs')){host.innerHTML='<p class="muted">Workability recovery outcomes require Jobs / Business &amp; Operations visibility for this profile.</p>';return}
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Workability recovery outcome evidence requires Jobs / Business &amp; Operations visibility for this profile.</p>';return}
       if(!w||!w.summary){host.innerHTML='<p class="muted">Workability recovery outcome evidence is unavailable from this response.</p>';return}
       if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical recovery source queries failed. Recovery counts and timing are withheld rather than converted into zero-valued facts.</p>';return}
       const s=w.summary||{};
