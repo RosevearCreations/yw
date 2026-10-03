@@ -1756,6 +1756,120 @@ function buildDataQualityDuplicateOrphanReconciliation(input:{
   };
 }
 
+
+function buildWorkabilityScheduleRecoveryOutcomes(input:{
+  workability:any[];dispatch:any[];production:any[];jobsVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const lookbackDays=90;
+  const today=ontarioDateKey(new Date())!;
+  const lookbackStart=addCalendarDays(today,-lookbackDays);
+  const dateDistance=(from:string|null,to:string|null)=>{
+    if(!from||!to) return null;
+    const a=Date.parse(from+'T12:00:00Z'),b=Date.parse(to+'T12:00:00Z');
+    return Number.isFinite(a)&&Number.isFinite(b) ? Math.max(0,Math.round((b-a)/86400000)) : null;
+  };
+  const eventTime=(row:any)=>Date.parse(String(row?.decision_at||row?.observed_at||row?.updated_at||row?.created_at||0))||0;
+  const isConstraint=(row:any)=>{
+    const decision=String(row?.decision_state||'').toLowerCase();
+    const state=String(row?.decision_workability_state||row?.dispatch_workability_state||row?.workability_state||'').toLowerCase();
+    return ['postpone','reschedule','blocked'].includes(decision) || ['delayed','blocked'].includes(state) || String(row?.dispatch_application_status||'').toLowerCase()==='pending_operator_dispatch';
+  };
+  const episodesByKey=new Map<string,any>();
+  for(const row of input.workability||[]){
+    const serviceDate=String(row?.service_date||ontarioDateKey(row?.scheduled_start)||'').slice(0,10);
+    if(!serviceDate||serviceDate<lookbackStart||serviceDate>today||!isConstraint(row)) continue;
+    const key=String(row?.dispatch_schedule_item_id||'') || (row?.work_order_id ? 'work_order:'+String(row.work_order_id)+':'+serviceDate : 'observation:'+String(row?.id||row?.observation_code||serviceDate));
+    const previous=episodesByKey.get(key);
+    if(!previous||eventTime(row)>=eventTime(previous)) episodesByKey.set(key,row);
+  }
+  const dispatchRows=input.dispatch||[],productionRows=input.production||[];
+  const outcomes=[...episodesByKey.values()].map((row:any)=>{
+    const originalDate=String(row?.service_date||ontarioDateKey(row?.scheduled_start)||'').slice(0,10);
+    const dispatchId=String(row?.dispatch_schedule_item_id||'');
+    const workOrderId=String(row?.work_order_id||'');
+    let dispatch=dispatchId ? dispatchRows.find((item:any)=>String(item?.id||'')===dispatchId) : null;
+    if(!dispatch&&workOrderId){
+      dispatch=[...dispatchRows].filter((item:any)=>String(item?.work_order_id||'')===workOrderId)
+        .sort((a:any,b:any)=>String(ontarioDateKey(a?.scheduled_start)||'').localeCompare(String(ontarioDateKey(b?.scheduled_start)||'')))
+        .find((item:any)=>String(ontarioDateKey(item?.scheduled_start)||'')>=originalDate) || null;
+    }
+    const linkedProduction=productionRows.filter((item:any)=>{
+      if(dispatchId&&String(item?.dispatch_schedule_item_id||'')===dispatchId) return true;
+      return Boolean(workOrderId)&&String(item?.work_order_id||'')===workOrderId;
+    }).filter((item:any)=>{
+      const date=String(ontarioDateKey(item?.session_date||item?.ended_at||item?.started_at)||'');
+      return date&&date>=originalDate;
+    }).sort((a:any,b:any)=>String(ontarioDateKey(a?.session_date||a?.ended_at||a?.started_at)||'').localeCompare(String(ontarioDateKey(b?.session_date||b?.ended_at||b?.started_at)||'')));
+    const full=linkedProduction.find((item:any)=>/(^complete$|completed)/i.test(String(item?.completion_state||item?.production_state||item?.session_status||'')))||null;
+    const partial=!full ? linkedProduction.find((item:any)=>/(partial|return_visit_required)/i.test(String(item?.completion_state||item?.production_state||''))||item?.return_visit_required===true)||null : null;
+    const completionDate=full ? String(ontarioDateKey(full?.session_date||full?.ended_at||full?.started_at)||'') : null;
+    const partialDate=partial ? String(ontarioDateKey(partial?.session_date||partial?.ended_at||partial?.started_at)||'') : null;
+    const dispatchDate=dispatch ? String(ontarioDateKey(dispatch?.scheduled_start)||'') : null;
+    const proposedDate=String(ontarioDateKey(row?.proposed_reschedule_start)||'')||null;
+    let outcomeState='blocked_unresolved',outcomeDate:string|null=null;
+    if(completionDate){
+      outcomeState=completionDate===originalDate?'same_day_completed':'completed_after_recovery';
+      outcomeDate=completionDate;
+    } else if(partialDate){
+      outcomeState='partial_or_return_visit';
+      outcomeDate=partialDate;
+    } else if(dispatchDate&&dispatchDate>originalDate){
+      outcomeState='rescheduled_pending';
+      outcomeDate=dispatchDate;
+    } else if(proposedDate&&proposedDate>originalDate){
+      outcomeState='proposed_reschedule_pending';
+      outcomeDate=proposedDate;
+    }
+    const season=['spring_summer','fall','winter','four_season'].includes(String(row?.season_context||'').toLowerCase())
+      ? String(row.season_context).toLowerCase() : forecastSeason(row);
+    return {
+      source_key:String(row?.observation_code||row?.id||dispatchId||workOrderId||originalDate),
+      observation_id:row?.id||null,dispatch_schedule_item_id:row?.dispatch_schedule_item_id||dispatch?.id||null,work_order_id:row?.work_order_id||dispatch?.work_order_id||null,
+      work_order_number:row?.work_order_number||dispatch?.work_order_number||null,site_name:row?.site_name||dispatch?.site_name||null,route_name:row?.route_name||dispatch?.route_name||null,
+      service_date:originalDate,season_context:season,service_context:row?.service_context||null,
+      decision_state:row?.decision_state||null,workability_state:row?.decision_workability_state||row?.dispatch_workability_state||row?.workability_state||null,
+      decision_reason:row?.decision_reason||row?.observation_note||row?.weather_condition||null,
+      proposed_reschedule_date:proposedDate,current_dispatch_date:dispatchDate,current_dispatch_status:dispatch?.schedule_status||null,
+      outcome_state:outcomeState,outcome_date:outcomeDate,recovery_days:dateDistance(originalDate,outcomeDate),
+      completed_service_minutes:full ? Math.max(0,Number(full?.duration_minutes||0)) : 0,
+      partial_or_return_visit:Boolean(partial),production_state:full?.production_state||partial?.production_state||null
+    };
+  }).sort((a:any,b:any)=>String(b.service_date).localeCompare(String(a.service_date)));
+  const full=outcomes.filter((row:any)=>['same_day_completed','completed_after_recovery'].includes(row.outcome_state));
+  const seasonKeys=['spring_summer','fall','winter','four_season'];
+  const seasonOutcomes=seasonKeys.map((season)=> {
+    const rows=outcomes.filter((row:any)=>row.season_context===season);
+    const completed=rows.filter((row:any)=>['same_day_completed','completed_after_recovery'].includes(row.outcome_state));
+    return {
+      season_context:season,constraint_episodes:rows.length,full_completion_recovery_count:completed.length,
+      partial_or_return_visit_count:rows.filter((row:any)=>row.outcome_state==='partial_or_return_visit').length,
+      reschedule_pending_count:rows.filter((row:any)=>['rescheduled_pending','proposed_reschedule_pending'].includes(row.outcome_state)).length,
+      unresolved_count:rows.filter((row:any)=>row.outcome_state==='blocked_unresolved').length,
+      recovery_rate_percent:rows.length?Math.round((completed.length/rows.length)*1000)/10:0
+    };
+  });
+  const recoveryDays=full.map((row:any)=>row.recovery_days).filter((value:any)=>Number.isFinite(Number(value))).map(Number);
+  return {
+    source_queries_ok:input.sourceQueriesOk!==false,jobs_visible:input.jobsVisible,lookback_days:lookbackDays,lookback_start:lookbackStart,lookback_end:today,
+    summary:{
+      constraint_episodes:outcomes.length,linked_dispatch_count:outcomes.filter((row:any)=>row.dispatch_schedule_item_id).length,
+      full_completion_recovery_count:full.length,same_day_completion_count:outcomes.filter((row:any)=>row.outcome_state==='same_day_completed').length,
+      completed_after_recovery_count:outcomes.filter((row:any)=>row.outcome_state==='completed_after_recovery').length,
+      partial_or_return_visit_count:outcomes.filter((row:any)=>row.outcome_state==='partial_or_return_visit').length,
+      reschedule_pending_count:outcomes.filter((row:any)=>['rescheduled_pending','proposed_reschedule_pending'].includes(row.outcome_state)).length,
+      unresolved_count:outcomes.filter((row:any)=>row.outcome_state==='blocked_unresolved').length,
+      completion_recovery_rate_percent:outcomes.length?Math.round((full.length/outcomes.length)*1000)/10:0,
+      average_recovery_days:recoveryDays.length?Math.round((recoveryDays.reduce((sum:number,value:number)=>sum+value,0)/recoveryDays.length)*10)/10:null,
+      recorded_completed_service_minutes:full.reduce((sum:number,row:any)=>sum+Math.max(0,Number(row.completed_service_minutes||0)),0)
+    },
+    season_outcomes:seasonOutcomes,outcomes:outcomes.slice(0,150),
+    evidence_boundary:'A recovery outcome is emitted only from recorded YW Workability, Dispatch and Production evidence. Missing schedule or production evidence remains unresolved rather than being guessed.',
+    capacity_boundary:'Completed-capacity evidence uses recorded production duration_minutes only. No jobs-per-crew target, productivity rate or missing duration is invented.',
+    weather_boundary:'No external weather provider is queried. Human/source-authoritative Workability observations and decisions remain the weather/workability authority.',
+    authority_boundary:'Read-only learning only. This outcome layer cannot change a Workability decision, move or dispatch a schedule item, complete work, send a customer message or alter Safety, Equipment or Finance state.'
+  };
+}
+
   if (scope === 'owner_management_command') {
     const [canJobsView,canFinanceView,canSafetyView,canAdminManage] = await Promise.all([
       hasModuleAccess(supabase, actorProfile, 'jobs', 'view'),
@@ -1890,10 +2004,15 @@ function buildDataQualityDuplicateOrphanReconciliation(input:{
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
-      data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans'])
+      data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
+      workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
+    });
+    const workabilityScheduleRecoveryOutcomes=buildWorkabilityScheduleRecoveryOutcomes({
+      workability,dispatch,production,jobsVisible:canJobsView,
+      sourceQueriesOk:[workabilityRead,dispatchRead,productionRead].every((r)=>r.query_ok!==false)
     });
     const routeCrewEfficiencyEvidence=buildRouteCrewEfficiencyEvidence({
       dispatch,production,timekeeping:timekeepingDetail,workability,routes
@@ -1943,6 +2062,7 @@ function buildDataQualityDuplicateOrphanReconciliation(input:{
       source_freshness:sourceFreshness,
       management_metric_confidence:metricConfidence,
       four_season_capacity_forecast:fourSeasonCapacityForecast,
+      workability_schedule_recovery_outcomes:workabilityScheduleRecoveryOutcomes,
       route_crew_efficiency_evidence:routeCrewEfficiencyEvidence,
       recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,
       estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
