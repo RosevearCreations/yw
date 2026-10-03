@@ -36,7 +36,7 @@ const queue=[
 assert.ok(queue.length>=10,'Build 362 must renew at least ten implementable autonomous releases.');
 for(const [number,title] of queue){
   assert.ok(review.renewed_queue?.some((row)=>row.item===number && row.title===title),`Build 362 review queue ${number} missing or mismatched.`);
-  if(number===363){
+  if([363,364].includes(number)){
     must(roadmap,[`#### **${number} — ${title}** is implemented`],`Build 362 implemented queue item ${number}`);
     must(handbook,[`**${number} — ${title}** is implemented`],`Build 362 implemented handoff item ${number}`);
   } else {
