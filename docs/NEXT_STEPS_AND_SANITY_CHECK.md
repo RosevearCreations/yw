@@ -504,6 +504,8 @@ Schema 236 keeps the journal and its read view private behind RLS/service author
 
 The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
 
+<!-- Build 362 historical queue markers retained for regression provenance: #### 364 — Workability-to-Schedule Recovery Outcomes | renewed autonomous queue now continues with **364–376** -->
+
 #### **364 — Workability-to-Schedule Recovery Outcomes** is implemented
 
 The Owner / Management Command Centre now includes a read-only 90-day outcome layer over canonical Workability, Dispatch and Production evidence. Recorded constraint episodes are deduplicated to the latest evidence for the affected dispatch/work-order/date and classified as same-day completed, completed after recovery, partial/return visit, rescheduled pending, proposed reschedule pending or unresolved.
