@@ -57,14 +57,14 @@ must(reviewText,[
 must(roadmap,[
   '#### **362 — Production Learning & Autonomous Roadmap Renewal** is implemented',
   'docs/production_learning_review_362.json',
-  'The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.',
+  'The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.',
   'renewed autonomous queue now continues with **364–376**'
 ],'Build 362 roadmap closure');
 
 must(handbook,[
   '## Production-learning renewal authority',
   '**362 — Production Learning & Autonomous Roadmap Renewal** is implemented',
-  'After item 363, that item is 364 — Workability-to-Schedule Recovery Outcomes.',
+  'After item 364, that item is 365 — Route Plan-vs-Actual & Stop-Sequence Learning.',
   '- **376 — Production Learning & Autonomous Roadmap Renewal II**'
 ],'Build 362 durable handoff');
 
