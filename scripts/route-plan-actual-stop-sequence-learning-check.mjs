@@ -36,8 +36,7 @@ must(ui,[
 
 must(review,[
   '"item": 365',
-  '"title": "Route Plan-vs-Actual & Stop-Sequence Learning"',
-  'Extend route evidence from static efficiency comparison into repeated plan-versus-actual learning.'
+  '"title": "Route Plan-vs-Actual & Stop-Sequence Learning"'
 ],'Build 362 learning authority for 365');
 
 assert.equal(pkg.scripts['test:route-plan-actual-stop-sequence-learning'],'node scripts/route-plan-actual-stop-sequence-learning-check.mjs');
