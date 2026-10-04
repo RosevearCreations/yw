@@ -143,6 +143,7 @@ jobs:
       - run: npm run test:autonomous-exception-triage-next-safe-action
       - run: npm run test:four-season-capacity-workability-forecast
       - run: npm run test:route-crew-efficiency-evidence
+      - run: npm run test:route-plan-actual-stop-sequence-learning
       - run: npm run test:recurring-service-renewal-retention
       - run: npm run test:estimate-to-cash-leakage-margin-recovery
       - run: npm run test:labour-equipment-fleet-utilization-decision-support
@@ -240,6 +241,7 @@ jobs:
       - run: npm run test:browser:autonomous-exception-triage-next-safe-action
       - run: npm run test:browser:four-season-capacity-workability-forecast
       - run: npm run test:browser:route-crew-efficiency-evidence
+      - run: npm run test:browser:route-plan-actual-stop-sequence-learning
       - run: npm run test:browser:recurring-service-renewal-retention
       - run: npm run test:browser:estimate-to-cash-leakage-margin-recovery
       - run: npm run test:browser:labour-equipment-fleet-utilization-decision-support
