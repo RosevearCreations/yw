@@ -29,6 +29,7 @@
       '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
       '<section class="admin-panel-block owner365-sequence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route plan-vs-actual &amp; stop-sequence learning</h4><p class="section-subtitle">Build 365 · repeated route-day learning from planned stop order, recorded production-start order, service duration, recorded delays, return visits and travel evidence already held by YW.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Learning only:</strong> repeated differences become review candidates, never automatic route changes. No worker scoring, GPS inference, stop reordering or dispatch mutation is performed.</div><div id="owner365Sequence"></div></section>',
       '<section class="admin-panel-block owner355-retention" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring service renewal &amp; retention workbench</h4><p class="section-subtitle">Build 355 · renewal windows, holds, repeated skips/delays, unresolved service issues, seasonal rollover and price-review evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only:</strong> this workbench prepares context. It does not renew an agreement, change pricing, send a customer message or create a customer commitment.</div><div id="owner355Retention"></div></section>',
+      '<section class="admin-panel-block owner366-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring renewal conversion &amp; churn outcomes</h4><p class="section-subtitle">Build 366 · recorded renewed, declined, held, expired and unresolved outcomes from recurring agreements, CRM decisions, seasonal rollover and permission-scoped Finance evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Recorded outcomes only:</strong> active or overdue status is not treated as a renewal. This view does not renew/cancel agreements, change pricing, contact customers or resolve complaints.</div><div id="owner366Outcomes"></div></section>',
       '<section class="admin-panel-block owner356-cash" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate-to-cash leakage &amp; margin recovery</h4><p class="section-subtitle">Build 356 · accepted estimate → scheduling → production → approved extras → invoice readiness → invoicing → payment application → collection.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Analytical only:</strong> this workbench does not create invoices, post accounting, apply payments, send collection messages or charge customers.</div><div id="owner356EstimateCash"></div></section>',
       '<section class="admin-panel-block owner357-utilization" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour, equipment &amp; fleet utilization decision support</h4><p class="section-subtitle">Build 357 · 30-day paid-time, crew assignment, production labour, equipment-use, maintenance, lockout/downtime and fleet availability evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Decision support only:</strong> this view does not score employees, clear Safety restrictions, change crew/equipment assignments, complete maintenance, replace assets or create purchases.</div><div id="owner357Utilization"></div></section>',
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
@@ -234,6 +235,39 @@
       host.innerHTML=summary+
         '<details style="margin-top:10px;" open><summary>Renewal &amp; retention attention queue</summary><div class="owner350-list">'+(queue||'<p class="muted">No recurring agreement is in the loaded renewal/retention attention queue.</p>')+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Decision boundaries</summary><p class="muted">'+esc(w.margin_boundary||'')+'</p><p class="muted">'+esc(w.retention_boundary||'')+'</p><p class="muted">'+esc(w.communication_boundary||'')+'</p><p class="muted">'+esc(w.pricing_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
+
+    function renderRecurringOutcomes(){
+      const host=$('owner366Outcomes');if(!host)return;
+      const o=state.data?.recurring_renewal_conversion_churn_outcomes;
+      const meta=metricMeta('recurring_outcomes');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Recurring-service outcome evidence is unavailable to this profile.</p>';return}
+      if(!o||!o.summary){host.innerHTML='<p class="muted">Recurring renewal outcome evidence is unavailable from this response.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){
+        host.innerHTML='<p class="muted">'+esc(meta.reason||'Required recurring outcome evidence is unavailable.')+'</p>';return
+      }
+      const x=o.summary||{};
+      const conversion=x.recorded_renewal_conversion_rate_percent==null?'N/A':pct(x.recorded_renewal_conversion_rate_percent);
+      const summary='<div class="owner351-summary">'+[
+        card('Renewed',num(x.renewed_count),num(x.explicit_renewal_decision_count)+' explicit renewal decision(s)','recurring_outcomes'),
+        card('Declined',num(x.declined_count),num(x.recorded_churn_outcome_count)+' recorded churn outcome(s)','recurring_outcomes'),
+        card('Held',num(x.held_count),'recorded pause / hold evidence','recurring_outcomes'),
+        card('Expired',num(x.expired_count),'recorded lifecycle outcome','recurring_outcomes'),
+        card('Unresolved',num(x.unresolved_count),'missing or non-terminal renewal evidence','recurring_outcomes'),
+        card('Recorded conversion',conversion,'renewed ÷ explicit renewed + declined','recurring_outcomes')
+      ].join('')+'</div>';
+      const labels={renewed:'Renewed',declined:'Declined',held:'Held',expired:'Expired',unresolved:'Unresolved'};
+      const outcomes=(o.outcomes||[]).slice(0,60).map(r=>{
+        const finance=r.finance_evidence_state==='available'&&r.actual_profit_total!=null?' · recorded profit '+money(r.actual_profit_total)+(r.actual_margin_percent!=null?' · margin '+pct(r.actual_margin_percent):''):'';
+        const evidence=(r.reason_evidence||[]).map(e=>(e.type||'evidence')+': '+(e.text||'')).join(' · ');
+        return '<div class="owner350-row" data-owner366-state="'+esc(r.outcome_state||'unresolved')+'"><strong>'+esc((r.client_name||r.agreement_code||'Agreement')+' · '+(labels[r.outcome_state]||r.outcome_state||'Unresolved'))+'</strong><small>'+esc((r.service_name||'service')+' · '+(r.agreement_code||'code n/a')+' · lifecycle '+(r.agreement_status||'not recorded')+(r.renewal_status?' · review '+r.renewal_status:''))+'</small><small>'+esc((evidence||'No explicit terminal renewal reason recorded')+finance)+'</small></div>';
+      }).join('');
+      const groups=(o.outcome_groups||[]).map(g=>'<div class="owner350-row"><strong>'+esc(labels[g.outcome_state]||g.outcome_state)+'</strong><small>'+esc(num(g.count)+' agreement(s)'+(g.recorded_profit_total!=null?' · recorded profit '+money(g.recorded_profit_total):''))+'</small></div>').join('');
+      host.innerHTML=summary+
+        '<details open><summary>Recorded renewal and churn outcomes</summary><div class="owner350-list" style="margin-top:8px;">'+(outcomes||'<p class="muted">No recurring agreement outcomes are loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Outcome mix</summary><div class="owner350-list" style="margin-top:8px;">'+groups+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Classification and authority boundaries</summary><p class="muted">'+esc(o.classification_boundary||'')+'</p><p class="muted">'+esc(o.conversion_boundary||'')+'</p><p class="muted">'+esc(o.churn_boundary||'')+'</p><p class="muted">'+esc(o.finance_boundary||'')+'</p><p class="muted">'+esc(o.authority_boundary||'')+'</p></details>';
     }
 
     function renderEstimateToCash(){
@@ -474,6 +508,7 @@
       renderRouteCrewEfficiency();
       renderRouteSequenceLearning();
       renderRecurringRetention();
+      renderRecurringOutcomes();
       renderEstimateToCash();
       renderUtilizationSupport();
       renderStockReadiness();
