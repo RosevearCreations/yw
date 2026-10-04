@@ -514,11 +514,15 @@ Recovery time is measured only from the recorded constrained service date to a r
 
 Workability observations/decisions remain human/source-authoritative. The outcome layer does not query an external weather provider and cannot change Workability decisions, move/dispatch schedule items, complete work, send customer messages, clear Safety/equipment state or alter Finance.
 
-The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**.
+<!-- Historical item 364 handoff marker retained for regression provenance: The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**. -->
 
-#### 365 — Route Plan-vs-Actual & Stop-Sequence Learning
+#### **365 — Route Plan-vs-Actual & Stop-Sequence Learning** is implemented
 
-Extend route evidence from static efficiency comparison into repeated plan-versus-actual learning: planned stop order, recorded production start order, service duration, travel allowance, delays and return visits. Surface stable route-day friction patterns and candidate sequencing review without rewriting routes, inferring worker performance or inventing GPS/travel facts that YW does not record.
+The Owner / Management Command Centre now extends the existing route-efficiency evidence into repeated plan-versus-actual learning. Planned stop position is compared with the sequence supported by recorded Production start times, while recorded service-duration variance, delay minutes, return visits, Workability effects, planned travel allowance and linked crew-travel evidence stay attached to each route-day comparison.
+
+Stable friction requires the same recorded friction type on at least two service dates for a route. Candidate sequencing review is stricter: the same planned-position versus recorded-start-position difference must recur on at least two dates. These are review signals only; YW does not rewrite routes, reorder stops, infer GPS or vehicle travel facts, score employees, dispatch crews or change Workability/source records.
+
+The next planned autonomous item is **366 — Recurring Renewal Conversion & Churn Outcomes**.
 
 #### 366 — Recurring Renewal Conversion & Churn Outcomes
 
