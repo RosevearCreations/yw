@@ -888,6 +888,128 @@ function buildRecurringRenewalRetentionWorkbench(input:{
 }
 
 
+
+function buildRecurringRenewalConversionChurnOutcomes(input:{
+  programs:any[];renewals:any[];interactions:any[];rollovers:any[];profitability:any[];
+  financeVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const today=ontarioDateKey(new Date())!;
+  const renewalByAgreement=new Map((input.renewals||[]).map((r)=>[String(r?.agreement_id||''),r]));
+  const interactionMap=new Map<string,any[]>();
+  for(const row of input.interactions||[]){
+    const id=String(row?.recurring_service_agreement_id||''); if(!id) continue;
+    const list=interactionMap.get(id)||[];list.push(row);interactionMap.set(id,list);
+  }
+  const rolloverMap=new Map<string,any[]>();
+  for(const row of input.rollovers||[]){
+    const id=String(row?.recurring_service_agreement_id||''); if(!id) continue;
+    const list=rolloverMap.get(id)||[];list.push(row);rolloverMap.set(id,list);
+  }
+  const profitByAgreement=new Map((input.profitability||[]).map((r)=>[String(r?.id||r?.agreement_id||''),r]));
+
+  const eventTime=(row:any)=>String(row?.occurred_at||row?.decided_at||row?.updated_at||row?.created_at||'');
+  const evidenceText=(row:any)=>[
+    row?.outcome,row?.interaction_status,row?.complaint_status,row?.subject,row?.summary,row?.rollover_state,row?.decision_note
+  ].filter(Boolean).join(' ').toLowerCase();
+  const renewedPattern=/(^|\b)(renewed|renewal accepted|accepted renewal|will continue|continue service|continued service)(\b|$)/i;
+  const declinedPattern=/(^|\b)(declined|decline renewal|not renew|do not renew|will not renew|won't renew|non-renewal|renewal cancelled)(\b|$)/i;
+  const holdPattern=/(^|\b)(hold|held|paused|defer|deferred|decision pending)(\b|$)/i;
+
+  const rows=(input.programs||[]).map((p)=>{
+    const id=String(p?.id||p?.agreement_id||'');
+    const renewal=renewalByAgreement.get(id)||{};
+    const interactions=[...(interactionMap.get(id)||[])].sort((a,b)=>eventTime(b).localeCompare(eventTime(a)));
+    const rollovers=[...(rolloverMap.get(id)||[])].sort((a,b)=>eventTime(b).localeCompare(eventTime(a)));
+    const explicitRenewed=interactions.find((r)=>renewedPattern.test(evidenceText(r)))||rollovers.find((r)=>renewedPattern.test(evidenceText(r)));
+    const explicitDeclined=interactions.find((r)=>declinedPattern.test(evidenceText(r)))||rollovers.find((r)=>declinedPattern.test(evidenceText(r)));
+    const explicitHeld=interactions.find((r)=>holdPattern.test(evidenceText(r)))||rollovers.find((r)=>holdPattern.test(evidenceText(r)));
+    const agreementStatus=String(p?.agreement_status||renewal?.agreement_status||'').toLowerCase();
+    const endDate=String(p?.end_date||renewal?.end_date||'').slice(0,10);
+    const holdUntil=String(p?.customer_hold_until||renewal?.customer_hold_until||'').slice(0,10);
+    const holdReason=p?.customer_hold_reason||p?.pause_reason||renewal?.customer_hold_reason||renewal?.pause_reason||null;
+    const cancellationReason=p?.cancellation_reason||renewal?.cancellation_reason||null;
+    const cancellationText=String(cancellationReason||'').toLowerCase();
+    const cancellationIsRenewalDecline=!!cancellationReason&&declinedPattern.test(cancellationText);
+    const lifecycleExpired=['expired','ended','closed'].includes(agreementStatus) || (!!endDate&&endDate<today&&!['active','paused','draft'].includes(agreementStatus));
+    const recordedHold=agreementStatus==='paused'||!!holdReason&&(!holdUntil||holdUntil>=today);
+    const reasonEvidence:any[]=[];
+    const pushEvidence=(source:string,type:string,text:any,at:any)=>{
+      if(!text)return;
+      reasonEvidence.push({source,type,text:String(text),recorded_at:at||null});
+    };
+    if(explicitRenewed) pushEvidence(interactions.includes(explicitRenewed)?'crm_interaction':'seasonal_rollover','renewal_decision',explicitRenewed.outcome||explicitRenewed.decision_note||explicitRenewed.summary||explicitRenewed.rollover_state,eventTime(explicitRenewed));
+    if(explicitDeclined) pushEvidence(interactions.includes(explicitDeclined)?'crm_interaction':'seasonal_rollover','renewal_decision',explicitDeclined.outcome||explicitDeclined.decision_note||explicitDeclined.summary||explicitDeclined.rollover_state,eventTime(explicitDeclined));
+    if(explicitHeld) pushEvidence(interactions.includes(explicitHeld)?'crm_interaction':'seasonal_rollover','hold_decision',explicitHeld.outcome||explicitHeld.decision_note||explicitHeld.summary||explicitHeld.rollover_state,eventTime(explicitHeld));
+    if(holdReason) pushEvidence('agreement','hold_reason',holdReason,p?.paused_at||renewal?.updated_at||null);
+    if(cancellationReason) pushEvidence('agreement','cancellation_reason',cancellationReason,p?.cancelled_at||renewal?.updated_at||null);
+    if(lifecycleExpired&&endDate) pushEvidence('agreement','end_date','Recorded lifecycle ended '+endDate,endDate);
+
+    let outcomeState='unresolved',outcomeDate:any=null,outcomeSource='current_review_state';
+    if(explicitRenewed){
+      outcomeState='renewed';outcomeDate=eventTime(explicitRenewed)||null;outcomeSource=interactions.includes(explicitRenewed)?'crm_interaction':'seasonal_rollover';
+    } else if(explicitDeclined||cancellationIsRenewalDecline){
+      outcomeState='declined';
+      outcomeDate=explicitDeclined?eventTime(explicitDeclined):(p?.cancelled_at||renewal?.updated_at||null);
+      outcomeSource=explicitDeclined?(interactions.includes(explicitDeclined)?'crm_interaction':'seasonal_rollover'):'agreement_cancellation_reason';
+    } else if(recordedHold||explicitHeld){
+      outcomeState='held';
+      outcomeDate=explicitHeld?eventTime(explicitHeld):(p?.paused_at||renewal?.updated_at||null);
+      outcomeSource=explicitHeld?(interactions.includes(explicitHeld)?'crm_interaction':'seasonal_rollover'):'agreement_hold';
+    } else if(lifecycleExpired){
+      outcomeState='expired';outcomeDate=endDate||p?.updated_at||null;outcomeSource='agreement_lifecycle';
+    }
+
+    const openIssues=interactions.filter((r)=>{
+      const type=String(r?.interaction_type||'').toLowerCase();
+      const status=String(r?.interaction_status||'').toLowerCase();
+      const complaint=String(r?.complaint_status||'').toLowerCase();
+      return ['open','investigating'].includes(complaint)||(['complaint','service_review'].includes(type)&&status==='open');
+    });
+    const profit=input.financeVisible?profitByAgreement.get(id)||null:null;
+    const actualProfit=profit==null?null:Number(profit?.actual_profit_rollup_total);
+    const actualMargin=profit==null?null:Number(profit?.actual_margin_percent);
+    return {
+      agreement_id:p?.id||p?.agreement_id||null,agreement_code:p?.agreement_code||renewal?.agreement_code||null,
+      client_name:p?.client_name||renewal?.client_name||null,site_name:p?.site_name||p?.client_site_name||renewal?.site_name||null,
+      service_name:p?.service_name||renewal?.service_name||null,season_context:p?.season_context||renewal?.season_context||forecastSeason(p),
+      agreement_status:p?.agreement_status||renewal?.agreement_status||null,renewal_status:renewal?.renewal_status||null,
+      end_date:endDate||null,outcome_state:outcomeState,outcome_date:outcomeDate,outcome_source:outcomeSource,
+      reason_evidence:reasonEvidence.slice(0,8),unresolved_service_issue_count:openIssues.length,
+      customer_hold_reason:holdReason,cancellation_reason:cancellationReason,
+      finance_evidence_state:input.financeVisible?(profit?'available':'not_recorded'):'not_visible',
+      actual_profit_total:profit!=null&&Number.isFinite(actualProfit)?actualProfit:null,
+      actual_margin_percent:profit!=null&&Number.isFinite(actualMargin)?actualMargin:null
+    };
+  });
+
+  const counts=(state:string)=>rows.filter((r)=>r.outcome_state===state).length;
+  const renewed=counts('renewed'),declined=counts('declined'),held=counts('held'),expired=counts('expired'),unresolved=counts('unresolved');
+  const explicitDecisionCount=renewed+declined;
+  const outcomeOrder={declined:0,expired:1,held:2,unresolved:3,renewed:4} as Record<string,number>;
+  const sorted=[...rows].sort((a,b)=>(outcomeOrder[a.outcome_state]??9)-(outcomeOrder[b.outcome_state]??9)||String(b.outcome_date||'').localeCompare(String(a.outcome_date||''))||String(a.client_name||a.agreement_code||'').localeCompare(String(b.client_name||b.agreement_code||'')));
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk!==false,
+    summary:{
+      loaded_agreements:rows.length,renewed_count:renewed,declined_count:declined,held_count:held,expired_count:expired,unresolved_count:unresolved,
+      explicit_renewal_decision_count:explicitDecisionCount,
+      recorded_renewal_conversion_rate_percent:explicitDecisionCount?Math.round((renewed/explicitDecisionCount)*1000)/10:null,
+      recorded_churn_outcome_count:declined+expired,
+      outcomes_with_unresolved_service_issues:rows.filter((r)=>r.unresolved_service_issue_count>0).length,
+      finance_evidence_visible:input.financeVisible
+    },
+    outcome_groups:['renewed','declined','held','expired','unresolved'].map((state)=>({
+      outcome_state:state,count:counts(state),
+      recorded_profit_total:input.financeVisible?Number(rows.filter((r)=>r.outcome_state===state&&r.actual_profit_total!=null).reduce((sum,r)=>sum+Number(r.actual_profit_total||0),0).toFixed(2)):null
+    })),
+    outcomes:sorted.slice(0,250),
+    classification_boundary:'Renewed and declined require explicit CRM/seasonal renewal-decision evidence or an explicitly renewal-related cancellation reason. Active, overdue, cancelled or future status alone is not converted into a renewal decision. Held uses recorded pause/hold evidence. Expired requires recorded ended/expired lifecycle evidence or an end date already passed on a non-active lifecycle.',
+    conversion_boundary:'Recorded renewal conversion rate is renewed divided by explicit renewed plus declined decisions only. Held, expired and unresolved agreements are excluded from that rate rather than being guessed.',
+    churn_boundary:'Recorded churn outcomes are explicit declined plus expired outcomes only. Ambiguous cancellation or missing renewal evidence remains unresolved.',
+    finance_boundary:'Profit and margin are shown only when Finance evidence is visible and recorded. No target profitability, renewal price or retention value is invented.',
+    authority_boundary:'Read-only outcome learning only. This layer cannot renew or cancel an agreement, change pricing, send customer contact, resolve a complaint, or mutate CRM, recurring-service, seasonal-rollover or Finance records.'
+  };
+}
+
 function buildEstimateToCashLeakageWorkbench(input:{
   workflows:any[];dispatch:any[];production:any[];changeOrders:any[];receivables:any[];paymentApplications:any[];
   profitability:any[];jobs:any[];jobsVisible:boolean;financeVisible:boolean;sourceQueriesOk:boolean;
@@ -2134,6 +2256,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       route_efficiency:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','routes','workability']),
       route_sequence_learning:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','timekeeping_detail','routes','workability']),
       recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover']),
+      recurring_outcomes:buildManagementMetricConfidence(sourceFreshness,['recurring','crm_renewals','crm_interactions','seasonal_rollover']),
       estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability']),
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
@@ -2155,6 +2278,11 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
     const recurringRenewalRetentionWorkbench=buildRecurringRenewalRetentionWorkbench({
       programs:recurring,events:recurringEvents,renewals:crmRenewals,interactions:crmInteractions,
       profitability:agreementProfitability,rollovers:seasonalRollover,financeVisible:canFinanceView
+    });
+    const recurringRenewalConversionChurnOutcomes=buildRecurringRenewalConversionChurnOutcomes({
+      programs:recurring,renewals:crmRenewals,interactions:crmInteractions,rollovers:seasonalRollover,
+      profitability:agreementProfitability,financeVisible:canFinanceView,
+      sourceQueriesOk:[recurringRead,crmRenewalsRead,crmInteractionsRead,seasonalRolloverRead].every((r)=>r.query_ok!==false)
     });
     const estimateToCashLeakageWorkbench=buildEstimateToCashLeakageWorkbench({
       workflows:estimateWorkflow,dispatch,production,changeOrders,receivables,paymentApplications,
@@ -2201,6 +2329,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       route_crew_efficiency_evidence:routeCrewEfficiencyEvidence,
       route_plan_actual_stop_sequence_learning:routePlanActualStopSequenceLearning,
       recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,
+      recurring_renewal_conversion_churn_outcomes:recurringRenewalConversionChurnOutcomes,
       estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,

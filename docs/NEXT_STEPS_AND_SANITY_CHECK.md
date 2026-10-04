@@ -523,11 +523,18 @@ The Owner / Management Command Centre now extends the existing route-efficiency 
 
 Stable friction requires the same recorded friction type on at least two service dates for a route. Candidate sequencing review is stricter: the same planned-position versus recorded-start-position difference must recur on at least two dates. These are review signals only; YW does not rewrite routes, reorder stops, infer GPS or vehicle travel facts, score employees, dispatch crews or change Workability/source records.
 
-The next planned autonomous item is **366 — Recurring Renewal Conversion & Churn Outcomes**.
+<!-- Historical item 365 handoff marker retained for regression provenance: The next planned autonomous item is **366 — Recurring Renewal Conversion & Churn Outcomes**. -->
+<!-- Historical item 362 queue marker retained for regression provenance: #### 366 — Recurring Renewal Conversion & Churn Outcomes -->
 
-#### 366 — Recurring Renewal Conversion & Churn Outcomes
+#### **366 — Recurring Renewal Conversion & Churn Outcomes** is implemented
 
-Track renewal-review outcomes across recurring agreements using existing renewal/contact decisions, agreement lifecycle, holds, cancellations, complaint/service-review evidence and permission-scoped profitability. Distinguish renewed, declined, held, expired and unresolved outcomes with recorded reason evidence; do not renew agreements, change prices or contact customers automatically.
+The Owner / Management Command Centre now includes a read-only recurring-renewal outcome layer over recurring agreements, CRM interaction/renewal evidence, seasonal rollover decisions and permission-scoped profitability. Renewed and declined outcomes require explicit recorded renewal-decision evidence (or an explicitly renewal-related cancellation reason); ordinary active, overdue, cancelled or future status does not become a renewal decision by inference.
+
+Held outcomes require recorded pause/hold evidence. Expired outcomes require recorded ended/expired lifecycle evidence or an already-passed end date on a non-active lifecycle. Ambiguous or incomplete records remain unresolved. The recorded conversion rate uses only explicit renewed plus declined decisions, while recorded churn counts explicit declined plus expired outcomes.
+
+Finance evidence remains optional and permission-scoped. The outcome layer does not invent target profitability or retention value and cannot renew/cancel agreements, change prices, contact customers, resolve complaints or mutate CRM, recurring-service, rollover or Finance records.
+
+The next planned autonomous item is **367 — Estimate Accuracy & Change-Order Margin Calibration**.
 
 #### 367 — Estimate Accuracy & Change-Order Margin Calibration
 
