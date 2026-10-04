@@ -27,6 +27,7 @@
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
       '<section class="admin-panel-block owner364-recovery" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability-to-schedule recovery outcomes</h4><p class="section-subtitle">Build 364 · 90-day comparison of recorded Workability constraints with later Dispatch and Production evidence, including same-day recovery, rescheduled completion, partial/return visits and unresolved work.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome learning only:</strong> missing schedule or production evidence remains unresolved. This view cannot change a Workability decision, move a schedule item, dispatch crews, complete work or send a customer message.</div><div id="owner364Recovery"></div></section>',
       '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
+      '<section class="admin-panel-block owner365-sequence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route plan-vs-actual &amp; stop-sequence learning</h4><p class="section-subtitle">Build 365 · repeated route-day learning from planned stop order, recorded production-start order, service duration, recorded delays, return visits and travel evidence already held by YW.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Learning only:</strong> repeated differences become review candidates, never automatic route changes. No worker scoring, GPS inference, stop reordering or dispatch mutation is performed.</div><div id="owner365Sequence"></div></section>',
       '<section class="admin-panel-block owner355-retention" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring service renewal &amp; retention workbench</h4><p class="section-subtitle">Build 355 · renewal windows, holds, repeated skips/delays, unresolved service issues, seasonal rollover and price-review evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only:</strong> this workbench prepares context. It does not renew an agreement, change pricing, send a customer message or create a customer commitment.</div><div id="owner355Retention"></div></section>',
       '<section class="admin-panel-block owner356-cash" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate-to-cash leakage &amp; margin recovery</h4><p class="section-subtitle">Build 356 · accepted estimate → scheduling → production → approved extras → invoice readiness → invoicing → payment application → collection.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Analytical only:</strong> this workbench does not create invoices, post accounting, apply payments, send collection messages or charge customers.</div><div id="owner356EstimateCash"></div></section>',
       '<section class="admin-panel-block owner357-utilization" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour, equipment &amp; fleet utilization decision support</h4><p class="section-subtitle">Build 357 · 30-day paid-time, crew assignment, production labour, equipment-use, maintenance, lockout/downtime and fleet availability evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Decision support only:</strong> this view does not score employees, clear Safety restrictions, change crew/equipment assignments, complete maintenance, replace assets or create purchases.</div><div id="owner357Utilization"></div></section>',
@@ -167,6 +168,40 @@
         '<details style="margin-top:8px;"><summary>Repeated route friction</summary><div class="owner350-list">'+(friction||'<p class="muted">No route has friction evidence on two or more loaded service dates.</p>')+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Clustering opportunities</summary><div class="owner350-list">'+(clusters||'<p class="muted">No same-day city overlap across routes is visible in the loaded evidence.</p>')+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Evidence boundaries</summary><p class="muted">'+esc(e.comparison_boundary||'')+'</p><p class="muted">'+esc(e.clustering_boundary||'')+'</p><p class="muted">'+esc(e.performance_boundary||'')+'</p><p class="muted">'+esc(e.authority_boundary||'')+'</p></details>';
+    }
+
+
+    function renderRouteSequenceLearning(){
+      const host=$('owner365Sequence');if(!host)return;
+      const e=state.data?.route_plan_actual_stop_sequence_learning;
+      const meta=metricMeta('route_sequence_learning');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Jobs/operations evidence is unavailable to this profile.</p>';return}
+      if(!e||!e.summary){host.innerHTML='<p class="muted">Route plan-vs-actual learning is unavailable from this response.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){
+        host.innerHTML='<p class="muted">'+esc(meta.reason||'Required route sequence source evidence is unavailable.')+'</p>';return
+      }
+      const x=e.summary||{};
+      const summary='<div class="owner350-grid">'+[
+        card('Comparable stop evidence',num(x.comparable_sequence_items),num(x.loaded_item_evidence)+' loaded items'),
+        card('Route days with order difference',num(x.route_days_with_sequence_deviation),num(x.route_days_reviewed)+' route days reviewed'),
+        card('Exact route-day sequence',num(x.exact_sequence_route_days),'recorded starts aligned to plan'),
+        card('Stable friction routes',num(x.stable_friction_pattern_routes),'same friction on 2+ dates'),
+        card('Sequencing review candidates',num(x.candidate_sequence_review_count),'same position difference on 2+ dates'),
+        card('Recorded delay',num(x.recorded_delay_minutes)+' min',num(x.return_visit_items)+' return-visit items')
+      ].join('')+'</div>';
+      const days=(e.route_day_comparisons||[]).slice(0,20).map(d=>{
+        const planned=(d.planned_sequence||[]).map(v=>num(v.position)+'. '+(v.site_name||'stop')).join(' → ');
+        const actual=(d.recorded_start_sequence||[]).map(v=>num(v.position)+'. '+(v.site_name||'stop')).join(' → ');
+        const travel=d.recorded_crew_travel_minutes==null?'crew travel not recorded':num(d.recorded_crew_travel_minutes)+' min recorded crew travel';
+        return '<div class="owner350-row" data-owner365-day="'+esc(d.route_id+'|'+d.service_date)+'"><strong>'+esc((d.route_name||'Route')+' · '+(d.service_date||'date n/a'))+'</strong><small>'+esc('Plan: '+(planned||'no planned stop-order evidence'))+'</small><small>'+esc('Recorded starts: '+(actual||'no production-start sequence evidence'))+'</small><small>'+esc(num(d.order_deviation_count)+' order differences · '+num(d.service_duration_overrun_count)+' duration overruns · '+num(d.recorded_delay_minutes)+' delay min · '+num(d.return_visit_count)+' return visits · '+num(d.planned_travel_allowance_minutes)+' min planned travel · '+travel)+'</small></div>';
+      }).join('');
+      const patterns=(e.stable_friction_patterns||[]).slice(0,20).map(p=>'<div class="owner350-row"><strong>'+esc(p.route_name||'Route')+'</strong><small>'+esc((p.repeated_friction_types||[]).join(' · '))+'</small><small>'+esc(num(p.service_days)+' service days reviewed · '+num(p.order_deviation_service_days)+' order-difference days · '+num(p.delay_service_days)+' delay days · '+num(p.return_visit_service_days)+' return-visit days')+'</small></div>').join('');
+      const candidates=(e.candidate_sequence_reviews||[]).slice(0,20).map(c=>'<div class="owner350-row" data-owner365-candidate="'+esc(String(c.route_id||''))+'"><strong>'+esc((c.route_name||'Route')+' · planned '+num(c.planned_position)+' → recorded start '+num(c.recorded_start_position))+'</strong><small>'+esc(num(c.repeat_service_date_count)+' service dates · '+(c.service_dates||[]).join(', '))+'</small><small>'+esc(c.review_reason||'Review sequencing context only; do not auto-reorder.')+'</small></div>').join('');
+      host.innerHTML=summary+
+        '<details open><summary>Recent route-day comparisons</summary><div class="owner350-list" style="margin-top:8px;">'+(days||'<p class="muted">No comparable route-day evidence in the loaded window.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Stable route-day friction patterns</summary><div class="owner350-list" style="margin-top:8px;">'+(patterns||'<p class="muted">No friction type repeated on two or more loaded service dates.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Candidate sequencing review</summary><div class="owner350-list" style="margin-top:8px;">'+(candidates||'<p class="muted">No repeated planned-position versus recorded-start-position difference met the review threshold.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Evidence and authority boundaries</summary><p class="muted">'+esc(e.source_scope_boundary||'')+'</p><p class="muted">'+esc(e.travel_boundary||'')+'</p><p class="muted">'+esc(e.learning_boundary||'')+'</p><p class="muted">'+esc(e.performance_boundary||'')+'</p><p class="muted">'+esc(e.authority_boundary||'')+'</p></details>';
     }
 
     function renderRecurringRetention(){
@@ -437,6 +472,7 @@
       renderCapacityForecast();
       renderWorkabilityRecovery();
       renderRouteCrewEfficiency();
+      renderRouteSequenceLearning();
       renderRecurringRetention();
       renderEstimateToCash();
       renderUtilizationSupport();
