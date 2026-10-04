@@ -117,6 +117,15 @@
           <p><strong>No employee performance inference:</strong> route and crew evidence may show recorded crew hours, delays, return visits, workability effects and repeated route friction, but it does not score, rank or infer individual employee performance.</p>
         </section>
 
+        <section class="help-section" id="route-plan-actual-stop-sequence-learning">
+          <h2>Build 365 — Route Plan-vs-Actual &amp; Stop-Sequence Learning</h2>
+          <p>Build 365 extends the existing route evidence into <strong>repeated plan-versus-actual learning</strong>. It compares planned stop position with the order supported by recorded Production start times, while carrying forward recorded service duration, delay, return-visit, Workability and travel context.</p>
+          <p><strong>Repeated evidence, not automatic optimization:</strong> a stable friction pattern requires the same recorded friction type on at least two service dates for a route. A sequencing review candidate requires the same planned-position versus recorded-start-position difference on at least two dates. Neither condition rewrites a route or stop order.</p>
+          <p><strong>Travel facts stay bounded:</strong> planned travel allowance and linked crew travel minutes can be shown side by side, but crew travel time is not treated as vehicle elapsed time. YW does not invent GPS, route-distance or unrecorded travel facts.</p>
+          <p><strong>No employee scoring or dispatch mutation:</strong> this is route-day operational evidence only. It does not score workers, infer individual performance, dispatch crews, change Workability decisions or mutate canonical Jobs/Route/Production records.</p>
+        </section>
+
+
         <section class="help-section" id="recurring-service-renewal-retention">
           <h2>Build 355 — Recurring Service Renewal &amp; Retention Workbench</h2>
           <p>Build 355 adds a read-only management queue that brings recurring agreement, CRM, seasonal rollover and permitted Finance evidence together without replacing those source workflows.</p>
