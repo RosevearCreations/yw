@@ -515,6 +515,7 @@ Recovery time is measured only from the recorded constrained service date to a r
 Workability observations/decisions remain human/source-authoritative. The outcome layer does not query an external weather provider and cannot change Workability decisions, move/dispatch schedule items, complete work, send customer messages, clear Safety/equipment state or alter Finance.
 
 <!-- Historical item 364 handoff marker retained for regression provenance: The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**. -->
+<!-- Historical item 362 queue marker retained for regression provenance: #### 365 — Route Plan-vs-Actual & Stop-Sequence Learning -->
 
 #### **365 — Route Plan-vs-Actual & Stop-Sequence Learning** is implemented
 
