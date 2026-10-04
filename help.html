@@ -135,6 +135,16 @@
           <p><strong>No automatic renewal or messaging:</strong> suggested renewal/contact actions prepare context only. The workbench does not renew an agreement, send a customer message, create a commitment or mutate customer/provider state.</p>
         </section>
 
+        <section class="help-section" id="recurring-renewal-conversion-churn-outcomes">
+          <h2>Build 366 — Recurring Renewal Conversion &amp; Churn Outcomes</h2>
+          <p>Build 366 adds a <strong>read-only outcome layer</strong> over recurring agreements, CRM renewal/contact evidence, seasonal rollover decisions and permission-scoped profitability. It distinguishes recorded renewed, declined, held, expired and unresolved outcomes without converting ordinary active/overdue status into a decision.</p>
+          <p><strong>Explicit renewal evidence drives conversion:</strong> renewed and declined require recorded CRM/seasonal renewal-decision evidence or an explicitly renewal-related cancellation reason. The recorded conversion rate uses only explicit renewed plus declined decisions; held, expired and unresolved agreements stay outside that denominator.</p>
+          <p><strong>Churn remains evidence-bounded:</strong> recorded churn is explicit declined plus expired outcomes. An ambiguous cancellation remains unresolved instead of being treated as a declined renewal.</p>
+          <p><strong>Finance is permission-scoped:</strong> recorded agreement profit and margin can accompany an outcome when Finance evidence is visible. No target margin, renewal value, retention value or automatic price change is invented.</p>
+          <p><strong>No automatic customer or agreement action:</strong> this layer cannot renew/cancel agreements, change pricing, contact customers, resolve complaints or mutate CRM, recurring-service, seasonal-rollover or Finance records.</p>
+        </section>
+
+
         <section class="help-section" id="estimate-to-cash-leakage-margin-recovery">
           <h2>Build 356 — Estimate-to-Cash Leakage &amp; Margin Recovery</h2>
           <p>Build 356 adds a cross-module, read-only trace from accepted estimates through scheduling, production, approved extras, invoice readiness, invoicing, payment application and collection.</p>
