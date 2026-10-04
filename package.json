@@ -205,7 +205,9 @@
     "test:production-learning-roadmap-renewal": "node scripts/production-learning-roadmap-renewal-check.mjs",
     "test:browser:production-learning-roadmap-renewal": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal.spec.mjs",
     "test:management-decision-outcome-journal": "node scripts/management-decision-outcome-journal-check.mjs",
-    "test:browser:management-decision-outcome-journal": "playwright test --config=playwright.config.mjs tests/browser/management-decision-outcome-journal.spec.mjs"
+    "test:browser:management-decision-outcome-journal": "playwright test --config=playwright.config.mjs tests/browser/management-decision-outcome-journal.spec.mjs",
+    "test:workability-schedule-recovery-outcomes": "node scripts/workability-schedule-recovery-outcomes-check.mjs",
+    "test:browser:workability-schedule-recovery-outcomes": "playwright test --config=playwright.config.mjs tests/browser/workability-schedule-recovery-outcomes.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

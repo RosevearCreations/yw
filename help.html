@@ -205,6 +205,15 @@
           <p><strong>Authority boundary:</strong> Schema 236 keeps the journal and read view private behind RLS and service-side authority. The learning loop cannot send customer/provider messages, change Finance, clear Safety or equipment state, dispatch work, create customer/vendor commitments or replace the canonical source workflow.</p>
         </section>
 
+        <section class="help-section" id="workability-schedule-recovery-outcomes">
+          <h2>Build 364 — Workability-to-Schedule Recovery Outcomes</h2>
+          <p>Build 364 adds a read-only 90-day outcome view that compares recorded Workability constraints with later Dispatch and Production evidence so management can see whether affected work returned to a workable schedule and reached recorded completion.</p>
+          <p><strong>Recorded recovery, not assumed recovery:</strong> same-day completion, later completion, partial/return-visit evidence, recorded or proposed reschedule, and unresolved work are classified only when the existing YW source records support that state. Missing schedule or production evidence remains unresolved rather than being guessed.</p>
+          <p><strong>Completed capacity uses recorded production duration:</strong> recovered capacity totals use only recorded <code>duration_minutes</code> from completed Production sessions. Build 364 does not invent jobs-per-crew targets, productivity rates, missing durations or a theoretical capacity number.</p>
+          <p><strong>Four-season recovery evidence:</strong> spring/summer landscaping and lawn work, fall cleanup/leaf work, winter snow/ice work, and general four-season work are reported separately so one season cannot hide another season's recovery pattern.</p>
+          <p><strong>No automatic rescheduling:</strong> Workability observations and decisions remain human/source-authoritative. The outcome view does not query an external weather provider and cannot change a Workability decision, move or dispatch a schedule item, complete work, send a customer message, clear Safety/equipment state or alter Finance.</p>
+        </section>
+
 </body>
 </html
         <section class="help-section" id="smart-reconciliation-workbench">
