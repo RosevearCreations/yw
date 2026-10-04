@@ -627,11 +627,11 @@ function buildRouteCrewEfficiencyEvidence(input:{
       clustering_opportunity_count:clusteringOpportunities.length,
       route_days_with_configured_capacity_headroom:routeDays.filter((r)=>Number(r.configured_capacity_headroom_minutes||0)>0).length
     },
-    route_days:routeDays.sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date))||String(a.route_name).localeCompare(String(b.route_name))).slice(0,60),
+    route_days:routeDays.sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date))||String(a.route_name).localeCompare(String(b.route_name))).slice(0,180),
     route_summaries:routeSummaries.slice(0,30),
     repeated_route_friction:repeatedRouteFriction,
     clustering_opportunities:clusteringOpportunities.slice(0,20),
-    item_evidence:evidenceRows.sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date))||Number(a.route_order||999)-Number(b.route_order||999)).slice(0,100),
+    item_evidence:evidenceRows.sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date))||Number(a.route_order||999)-Number(b.route_order||999)).slice(0,300),
     comparison_boundary:'Service-duration variance uses recorded planned duration versus recorded production duration. Planned travel allowance is shown beside linked crew travel minutes, but no direct travel variance is inferred because crew-time travel is not the same measure as vehicle elapsed travel.',
     clustering_boundary:'Clustering is advisory evidence only. It identifies same-day city overlap across existing routes and never rewrites route membership or stop order.',
     performance_boundary:'Crew and route evidence is operational context only. It does not score, rank or infer individual employee performance.',
@@ -639,6 +639,139 @@ function buildRouteCrewEfficiencyEvidence(input:{
   };
 }
 
+
+
+function buildRoutePlanActualStopSequenceLearning(routeEvidence:any) {
+  const items=Array.isArray(routeEvidence?.item_evidence)?routeEvidence.item_evidence:[];
+  const byRouteDay=new Map<string,any[]>();
+  for(const row of items){
+    if(!row?.route_id||!row?.service_date) continue;
+    const key=String(row.route_id)+'|'+String(row.service_date);
+    const list=byRouteDay.get(key)||[];
+    list.push(row);byRouteDay.set(key,list);
+  }
+
+  const dayComparisons=[...byRouteDay.entries()].map(([key,rows])=>{
+    const [routeId,serviceDate]=key.split('|');
+    const planned=[...rows].filter(r=>r.route_order!=null).sort((a,b)=>Number(a.route_order)-Number(b.route_order)||String(a.dispatch_id||'').localeCompare(String(b.dispatch_id||'')));
+    const actual=[...rows].filter(r=>r.actual_route_order!=null).sort((a,b)=>Number(a.actual_route_order)-Number(b.actual_route_order)||String(a.dispatch_id||'').localeCompare(String(b.dispatch_id||'')));
+    const comparable=rows.filter(r=>r.route_order!=null&&r.actual_route_order!=null);
+    const deviations=comparable.filter(r=>Number(r.route_order)!==Number(r.actual_route_order));
+    const durationOverruns=rows.filter(r=>r.service_duration_variance_minutes!=null&&Number(r.service_duration_variance_minutes)>0);
+    const delayMinutes=rows.reduce((sum,r)=>sum+Math.max(0,Number(r.delay_minutes||0)),0);
+    const returnVisits=rows.filter(r=>r.return_visit_required===true);
+    const workabilityItems=rows.filter(r=>Number(r.workability_effect_count||0)>0);
+    const plannedTravel=rows.reduce((sum,r)=>sum+Math.max(0,Number(r.planned_travel_allowance_minutes||0)),0);
+    const recordedTravelRows=rows.filter(r=>r.recorded_crew_travel_minutes!=null);
+    const recordedTravel=recordedTravelRows.length?recordedTravelRows.reduce((sum,r)=>sum+Math.max(0,Number(r.recorded_crew_travel_minutes||0)),0):null;
+    const frictionTypes:string[]=[];
+    if(deviations.length) frictionTypes.push('recorded stop order differed');
+    if(durationOverruns.length) frictionTypes.push('recorded service duration over plan');
+    if(delayMinutes>0) frictionTypes.push('recorded delay');
+    if(returnVisits.length) frictionTypes.push('return visit required');
+    if(workabilityItems.length) frictionTypes.push('workability effect');
+    return {
+      route_id:routeId,route_name:rows[0]?.route_name||'Unnamed route',service_date:serviceDate,
+      season_context:rows[0]?.season_context||'four_season',
+      stop_count:rows.length,comparable_stop_count:comparable.length,
+      exact_sequence:comparable.length>0&&deviations.length===0&&planned.length===actual.length,
+      order_deviation_count:deviations.length,
+      planned_sequence:planned.map(r=>({dispatch_id:r.dispatch_id||null,position:r.route_order,site_name:r.site_name||null})),
+      recorded_start_sequence:actual.map(r=>({dispatch_id:r.dispatch_id||null,position:r.actual_route_order,site_name:r.site_name||null,actual_start_at:r.actual_start_at||null})),
+      service_duration_overrun_count:durationOverruns.length,recorded_delay_minutes:delayMinutes,
+      return_visit_count:returnVisits.length,workability_effect_count:workabilityItems.length,
+      planned_travel_allowance_minutes:plannedTravel,
+      recorded_crew_travel_minutes:recordedTravel,
+      recorded_crew_travel_coverage_count:recordedTravelRows.length,
+      friction_types:frictionTypes
+    };
+  }).sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date))||String(a.route_name).localeCompare(String(b.route_name)));
+
+  const patternByRoute=new Map<string,any>();
+  for(const day of dayComparisons){
+    const key=String(day.route_id);
+    const p=patternByRoute.get(key)||{
+      route_id:day.route_id,route_name:day.route_name,service_days:0,
+      order_deviation_dates:new Set<string>(),duration_overrun_dates:new Set<string>(),delay_dates:new Set<string>(),
+      return_visit_dates:new Set<string>(),workability_dates:new Set<string>()
+    };
+    p.service_days++;
+    if(day.order_deviation_count>0) p.order_deviation_dates.add(day.service_date);
+    if(day.service_duration_overrun_count>0) p.duration_overrun_dates.add(day.service_date);
+    if(day.recorded_delay_minutes>0) p.delay_dates.add(day.service_date);
+    if(day.return_visit_count>0) p.return_visit_dates.add(day.service_date);
+    if(day.workability_effect_count>0) p.workability_dates.add(day.service_date);
+    patternByRoute.set(key,p);
+  }
+
+  const stablePatterns=[...patternByRoute.values()].map(p=>{
+    const repeated:string[]=[];
+    if(p.order_deviation_dates.size>=2) repeated.push('stop order differed on multiple service dates');
+    if(p.duration_overrun_dates.size>=2) repeated.push('service duration over plan on multiple service dates');
+    if(p.delay_dates.size>=2) repeated.push('recorded delay on multiple service dates');
+    if(p.return_visit_dates.size>=2) repeated.push('return visits on multiple service dates');
+    if(p.workability_dates.size>=2) repeated.push('workability effects on multiple service dates');
+    return {
+      route_id:p.route_id,route_name:p.route_name,service_days:p.service_days,
+      order_deviation_service_days:p.order_deviation_dates.size,
+      duration_overrun_service_days:p.duration_overrun_dates.size,
+      delay_service_days:p.delay_dates.size,
+      return_visit_service_days:p.return_visit_dates.size,
+      workability_effect_service_days:p.workability_dates.size,
+      repeated_friction_types:repeated
+    };
+  }).filter(p=>p.repeated_friction_types.length>0)
+    .sort((a,b)=>b.repeated_friction_types.length-a.repeated_friction_types.length||String(a.route_name).localeCompare(String(b.route_name)));
+
+  const positionPatterns=new Map<string,any>();
+  for(const row of items){
+    if(!row?.route_id||!row?.service_date||row.route_order==null||row.actual_route_order==null) continue;
+    if(Number(row.route_order)===Number(row.actual_route_order)) continue;
+    const key=[row.route_id,row.route_order,row.actual_route_order].join('|');
+    const p=positionPatterns.get(key)||{
+      route_id:row.route_id,route_name:row.route_name||'Unnamed route',
+      planned_position:Number(row.route_order),recorded_start_position:Number(row.actual_route_order),
+      service_dates:new Set<string>(),sample_sites:new Set<string>()
+    };
+    p.service_dates.add(String(row.service_date));
+    if(row.site_name) p.sample_sites.add(String(row.site_name));
+    positionPatterns.set(key,p);
+  }
+
+  const candidateSequenceReviews=[...positionPatterns.values()]
+    .filter(p=>p.service_dates.size>=2)
+    .map(p=>({
+      route_id:p.route_id,route_name:p.route_name,planned_position:p.planned_position,recorded_start_position:p.recorded_start_position,
+      repeat_service_date_count:p.service_dates.size,service_dates:[...p.service_dates].sort().slice(-12),
+      sample_sites:[...p.sample_sites].slice(0,6),
+      review_reason:'The same planned position and recorded production-start position differed on multiple service dates. Review sequencing context only; do not auto-reorder.'
+    }))
+    .sort((a,b)=>b.repeat_service_date_count-a.repeat_service_date_count||String(a.route_name).localeCompare(String(b.route_name)));
+
+  const comparableItems=items.filter(r=>r.route_order!=null&&r.actual_route_order!=null);
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',lookback_days:Number(routeEvidence?.lookback_days||90),
+    summary:{
+      loaded_item_evidence:items.length,route_days_reviewed:dayComparisons.length,comparable_sequence_items:comparableItems.length,
+      route_days_with_sequence_deviation:dayComparisons.filter(d=>d.order_deviation_count>0).length,
+      exact_sequence_route_days:dayComparisons.filter(d=>d.exact_sequence).length,
+      stable_friction_pattern_routes:stablePatterns.length,candidate_sequence_review_count:candidateSequenceReviews.length,
+      service_duration_overrun_items:items.filter(r=>r.service_duration_variance_minutes!=null&&Number(r.service_duration_variance_minutes)>0).length,
+      recorded_delay_minutes:items.reduce((sum,r)=>sum+Math.max(0,Number(r.delay_minutes||0)),0),
+      return_visit_items:items.filter(r=>r.return_visit_required===true).length,
+      planned_travel_allowance_minutes:items.reduce((sum,r)=>sum+Math.max(0,Number(r.planned_travel_allowance_minutes||0)),0),
+      recorded_crew_travel_minutes:items.some(r=>r.recorded_crew_travel_minutes!=null)?items.reduce((sum,r)=>sum+Math.max(0,Number(r.recorded_crew_travel_minutes||0)),0):null
+    },
+    route_day_comparisons:dayComparisons.slice(0,120),
+    stable_friction_patterns:stablePatterns.slice(0,40),
+    candidate_sequence_reviews:candidateSequenceReviews.slice(0,40),
+    source_scope_boundary:'Learning is derived only from the bounded Build 354 route evidence already loaded from Dispatch, Production, Timekeeping, Workability and Route sources. Missing production start, duration or travel evidence stays missing.',
+    travel_boundary:'Planned travel allowance and recorded crew travel minutes are shown side by side only. YW does not treat crew travel time as vehicle elapsed time and does not invent GPS or travel facts.',
+    learning_boundary:'A stable pattern means the same recorded friction type occurred on at least two service dates for a route. A sequencing review candidate requires the same planned-position to recorded-start-position difference on at least two dates; it is not a routing recommendation.',
+    performance_boundary:'Plan-versus-actual learning is route-day operational evidence only. It does not score, rank or infer individual employee performance.',
+    authority_boundary:'Read-only learning only. Routing and Dispatch remain operator authorities; this layer cannot rewrite routes, reorder stops, dispatch work, change Workability decisions or mutate source records.'
+  };
+}
 
 function buildRecurringRenewalRetentionWorkbench(input:{
   programs:any[];events:any[];renewals:any[];interactions:any[];profitability:any[];rollovers:any[];financeVisible:boolean;
@@ -1999,6 +2132,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       finance_readiness:buildManagementMetricConfidence(sourceFreshness,['finance_exceptions','close_dashboard']),
       capacity_forecast:buildManagementMetricConfidence(sourceFreshness,['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work']),
       route_efficiency:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','routes','workability']),
+      route_sequence_learning:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','timekeeping_detail','routes','workability']),
       recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover']),
       estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability']),
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
@@ -2017,6 +2151,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
     const routeCrewEfficiencyEvidence=buildRouteCrewEfficiencyEvidence({
       dispatch,production,timekeeping:timekeepingDetail,workability,routes
     });
+    const routePlanActualStopSequenceLearning=buildRoutePlanActualStopSequenceLearning(routeCrewEfficiencyEvidence);
     const recurringRenewalRetentionWorkbench=buildRecurringRenewalRetentionWorkbench({
       programs:recurring,events:recurringEvents,renewals:crmRenewals,interactions:crmInteractions,
       profitability:agreementProfitability,rollovers:seasonalRollover,financeVisible:canFinanceView
@@ -2064,6 +2199,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       four_season_capacity_forecast:fourSeasonCapacityForecast,
       workability_schedule_recovery_outcomes:workabilityScheduleRecoveryOutcomes,
       route_crew_efficiency_evidence:routeCrewEfficiencyEvidence,
+      route_plan_actual_stop_sequence_learning:routePlanActualStopSequenceLearning,
       recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,
       estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
