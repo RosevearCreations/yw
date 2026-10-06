@@ -188,6 +188,17 @@
           <p><strong>Decision support only:</strong> the release cannot change crew/equipment assignments, clear a lockout, return equipment to service, complete maintenance, replace an asset, purchase equipment or create a vendor commitment.</p>
         </section>
 
+        <section class="help-section" id="labour-capture-payroll-exception-reduction">
+          <h2>Build 369 — Labour Capture Completeness &amp; Payroll Exception Reduction</h2>
+          <p>Build 369 adds a <strong>read-only crew/job evidence layer</strong> that matches completed-day schedule/Production work with canonical timekeeping and payroll-readiness evidence.</p>
+          <p><strong>Completeness is source-bounded:</strong> a crew/job/service-date work unit is complete only when matching time entries exist and every matched entry is payroll-ready. Missing time capture, open shifts, pending corrections, attendance review and supervisor-approval states remain distinct.</p>
+          <p><strong>Late means explicitly late:</strong> the layer counts late capture only when the canonical payroll evidence contains a recorded late, missed or untimely exception/review code. It does not invent a lateness threshold.</p>
+          <p><strong>Reduction is descriptive:</strong> the most recent 14 completed calendar days are compared with the preceding 14 completed days so management can see whether the recorded exception rate moved lower, higher or stayed unchanged. This is not a worker-performance target.</p>
+          <p><strong>Privacy is aggregated:</strong> the management response is limited to crew/job/service-date evidence and repeated crew/job patterns. Individual names, employee numbers, explanations, supervisor notes and approver identities are not returned.</p>
+          <p><strong>Authority remains separate:</strong> this layer cannot edit time entries, approve payroll or corrections, change pay codes, rank employees, make employment decisions or override Safety restrictions.</p>
+        </section>
+
+
         <section class="help-section" id="materials-consumables-seasonal-stock-readiness">
           <h2>Build 358 — Materials, Consumables &amp; Seasonal Stock Readiness</h2>
           <p>Build 358 adds a read-only 7- and 14-day stock-readiness view using the existing Materials Control, Landscape Material Estimator, dispatch, recurring-service and Seasonal Operations authorities.</p>

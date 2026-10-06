@@ -34,6 +34,7 @@
       '<section class="admin-panel-block owner367-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate accuracy &amp; change-order margin calibration</h4><p class="section-subtitle">Build 367 · accepted estimate baselines versus recorded labour, material, equipment, approved/applied change-order and job-cost closeout evidence.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Calibration evidence only:</strong> recorded variances can identify repeated estimate patterns, but this view never edits assumptions, invents target margins, changes prices, approves extras or posts accounting.</div><div id="owner367Calibration"></div></section>',
       '<section class="admin-panel-block owner368-cash-cycle" style="margin-top:12px;"><div class="owner350-head"><div><h4>Completed-to-invoiced cycle-time &amp; cash conversion</h4><p class="section-subtitle">Build 368 · recorded completion/approved closeout → invoice readiness → A/R invoice creation → payment application and full-collection evidence.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Timing evidence only:</strong> this view measures recorded milestones and aging cohorts. It never creates invoices, applies payments, sends collection messages, posts journals or mutates payment-provider state.</div><div id="owner368CashCycle"></div></section>',
       '<section class="admin-panel-block owner357-utilization" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour, equipment &amp; fleet utilization decision support</h4><p class="section-subtitle">Build 357 · 30-day paid-time, crew assignment, production labour, equipment-use, maintenance, lockout/downtime and fleet availability evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Decision support only:</strong> this view does not score employees, clear Safety restrictions, change crew/equipment assignments, complete maintenance, replace assets or create purchases.</div><div id="owner357Utilization"></div></section>',
+      '<section class="admin-panel-block owner369-labour-capture" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour capture completeness &amp; payroll exception reduction</h4><p class="section-subtitle">Build 369 · 30 completed days of crew/job work evidence matched to canonical timekeeping and payroll-readiness evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Evidence quality, not employee scoring:</strong> this view surfaces missing/exception payroll evidence at crew/job level. It never ranks workers, approves payroll or corrections, changes pay codes, makes employment decisions or overrides Safety restrictions.</div><div id="owner369LabourCapture"></div></section>',
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
       '<section class="admin-panel-block owner360-data-quality" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality, duplicate &amp; orphan reconciliation workbench</h4><p class="section-subtitle">Build 360 · duplicate customer/property candidates, broken canonical references, cross-module mismatches, stale crew/equipment assignments, and conflicting four-season service tags.</p></div><button class="secondary" data-owner360-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>No destructive auto-fix:</strong> this workbench preserves source IDs and audit history. It cannot merge/delete records, rewrite foreign keys, reassign crews/equipment or clear lockouts.</div><div id="owner360DataQuality"></div></section>',
@@ -464,6 +465,50 @@
     }
 
 
+
+    function renderLabourCapturePayrollExceptions(){
+      const host=$('owner369LabourCapture');if(!host)return;
+      const w=state.data?.labour_capture_completeness_payroll_exception_reduction;
+      const meta=metricMeta('labour_capture_payroll_exceptions');
+      if(!allowed('jobs')||!allowed('admin')){host.innerHTML='<p class="muted">Labour-capture completeness requires Jobs visibility and Admin management access so payroll evidence remains permission scoped.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Labour-capture and payroll-exception evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical labour/payroll source queries failed. Coverage and exception results are withheld rather than converted into zero-valued facts.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required labour/payroll evidence is unavailable.')+'</p>';return}
+
+      const x=w.summary||{};
+      const rate=x.payroll_evidence_completion_rate_percent==null?'Unavailable':pct(x.payroll_evidence_completion_rate_percent);
+      const recent=x.recent_exception_rate_percent==null?'Unavailable':pct(x.recent_exception_rate_percent);
+      const prior=x.prior_exception_rate_percent==null?'Unavailable':pct(x.prior_exception_rate_percent);
+      const change=x.exception_rate_change_percentage_points==null?'Not comparable':((Number(x.exception_rate_change_percentage_points)>0?'+':'')+num(x.exception_rate_change_percentage_points)+' pp');
+      const summary='<div class="owner351-summary">'+[
+        card('Work units',num(x.work_units),'crew/job/service-date units','labour_capture_payroll_exceptions'),
+        card('Payroll-ready coverage',rate,num(x.complete_payroll_evidence_work_units)+' complete unit(s)','labour_capture_payroll_exceptions'),
+        card('Missing time capture',num(x.missing_time_capture_work_units),'no matching time entry','labour_capture_payroll_exceptions'),
+        card('Open shifts',num(x.open_shift_work_units),'canonical payroll readiness','labour_capture_payroll_exceptions'),
+        card('Corrections / review',num(x.correction_pending_work_units)+' / '+num(x.attendance_review_work_units),'pending correction / attendance review','labour_capture_payroll_exceptions'),
+        card('Recent exception rate',recent,'prior '+prior+' · change '+change,'labour_capture_payroll_exceptions')
+      ].join('')+'</div>';
+
+      const reduction='<div class="owner350-row"><strong>Recorded exception-rate movement</strong><small>'+esc((w.recent_period?.start_date||'')+' → '+(w.recent_period?.end_date||'')+' · '+recent+' exception rate · '+num(w.recent_period?.work_units)+' work unit(s)')+'</small><small>'+esc((w.prior_period?.start_date||'')+' → '+(w.prior_period?.end_date||'')+' · '+prior+' exception rate · '+num(w.prior_period?.work_units)+' work unit(s)')+'</small><small>'+esc('Movement: '+String(w.exception_reduction_state||'not_comparable').replaceAll('_',' ')+' · '+change)+'</small></div>';
+
+      const patterns=(w.repeated_patterns||[]).slice(0,40).map(r=>
+        '<div class="owner350-row" data-owner369-pattern="'+esc((r.crew_id||r.crew_name||'')+':'+(r.job_id||r.job_code||'')+':'+(r.capture_state||''))+'"><strong>'+esc((r.crew_name||'Unassigned / not recorded')+' · '+(r.job_code||r.job_name||'Job not recorded'))+'</strong><small>'+esc(String(r.capture_state||'review').replaceAll('_',' ')+' · '+num(r.occurrence_count)+' occurrence(s) · '+(r.first_service_date||'')+' → '+(r.last_service_date||''))+'</small><small>'+esc('open reviews '+num(r.open_review_count)+' · pending corrections '+num(r.pending_correction_count)+' · explicit late-coded exceptions '+num(r.explicit_late_exception_count))+'</small></div>'
+      ).join('');
+
+      const evidence=(w.work_unit_evidence||[]).slice(0,50).map(r=>{
+        const state=String(r.capture_state||'unknown').replaceAll('_',' ');
+        const payroll=r.capture_complete?'payroll-ready evidence complete':'payroll evidence requires review';
+        const codes=(r.open_review_codes||[]).join(', ')||'no open review code';
+        return '<div class="owner350-row" data-owner369-evidence="'+esc((r.job_id||r.job_code||'')+':'+(r.service_date||'')+':'+(r.crew_id||r.crew_name||''))+'"><strong>'+esc((r.service_date||'Date unavailable')+' · '+(r.crew_name||'Unassigned / not recorded')+' · '+(r.job_code||r.job_name||'Job not recorded'))+'</strong><small>'+esc(state+' · '+payroll+' · '+num(r.time_entry_count)+' time entr'+(num(r.time_entry_count)===1?'y':'ies'))+'</small><small>'+esc(num(r.paid_hours)+' paid h · '+num(r.job_work_hours)+' job-work h · '+num(r.production_labour_hours)+' Production labour h')+'</small><small>'+esc('open reviews '+num(r.open_review_count)+' · pending corrections '+num(r.pending_correction_count)+' · explicit late-coded '+num(r.explicit_late_exception_count)+' · '+codes)+'</small></div>';
+      }).join('');
+
+      host.innerHTML=summary+
+        '<div class="owner350-list" style="margin-top:8px;">'+reduction+'</div>'+
+        '<details open style="margin-top:8px;"><summary>Repeated crew/job exception patterns</summary><div class="owner350-list" style="margin-top:8px;">'+(patterns||'<p class="muted">No same crew/job exception pattern appears at least twice in the loaded 30-day evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Crew/job/service-date evidence</summary><div class="owner350-list" style="margin-top:8px;">'+(evidence||'<p class="muted">No eligible completed-day work evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Matching, lateness, privacy &amp; authority boundaries</summary><p class="muted">'+esc(w.matching_boundary||'')+'</p><p class="muted">'+esc(w.late_boundary||'')+'</p><p class="muted">'+esc(w.reduction_boundary||'')+'</p><p class="muted">'+esc(w.privacy_boundary||'')+'</p><p class="muted">'+esc(w.safety_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
     function renderStockReadiness(){
       const host=$('owner358Stock');if(!host)return;
       const w=state.data?.materials_consumables_seasonal_stock_readiness;
@@ -623,6 +668,7 @@
       renderEstimateCalibration();
       renderCompletedCashConversion();
       renderUtilizationSupport();
+      renderLabourCapturePayrollExceptions();
       renderStockReadiness();
       renderCommunicationReadiness();
       renderDataQualityReconciliation();

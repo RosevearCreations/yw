@@ -1776,6 +1776,164 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
 }
 
 
+
+function buildLabourCapturePayrollExceptionReduction(input:{
+  timekeeping:any[];dispatch:any[];production:any[];jobsVisible:boolean;adminVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const today=ontarioDateKey(new Date())!;
+  const endDate=addCalendarDays(today,-1);
+  const startDate=addCalendarDays(endDate,-29);
+  const recentStart=addCalendarDays(endDate,-13);
+  const priorEnd=addCalendarDays(recentStart,-1);
+  const priorStart=addCalendarDays(priorEnd,-13);
+  const inRange=(value:any,start=startDate,end=endDate)=>{
+    const d=ontarioDateKey(value);return !!d&&d>=start&&d<=end;
+  };
+  const normalizeCrew=(id:any,name:any)=>String(id||name||'unassigned');
+  const jobKey=(jobId:any,jobCode:any)=>String(jobId||jobCode||'unlinked');
+  const workUnitKey=(jobId:any,jobCode:any,date:any,crewId:any,crewName:any)=>[jobKey(jobId,jobCode),String(date||''),normalizeCrew(crewId,crewName)].join('|');
+  const completionLike=(r:any)=>/(complete|completed|done|closed|finished)/i.test(String(r?.completion_state||r?.production_state||r?.session_status||''));
+  const cancelled=(r:any)=>/(cancel|supersed)/i.test(String(r?.schedule_status||r?.status||''));
+  const lateCoded=(r:any)=>/(late|missed|untimely)/i.test([r?.open_review_codes,r?.exception_status,r?.payroll_readiness_status].filter(Boolean).join(' '));
+
+  const dispatchRows=(input.dispatch||[]).filter((r)=>inRange(r?.scheduled_start)&&!cancelled(r)&&r?.job_id);
+  const productionRows=(input.production||[]).filter((r)=>inRange(r?.session_date||r?.started_at)&&r?.job_id&&(completionLike(r)||Number(r?.duration_minutes||0)>0||Number(r?.total_labour_hours||0)>0));
+  const timeRows=(input.timekeeping||[]).filter((r)=>inRange(r?.signed_in_at||r?.signed_out_at||r?.updated_at)&&r?.job_id);
+
+  const units=new Map<string,any>();
+  const ensureUnit=(source:any,date:any,crewId:any,crewName:any,jobId:any,jobCode:any,jobName:any)=>{
+    const key=workUnitKey(jobId,jobCode,date,crewId,crewName);
+    const current=units.get(key)||{
+      key,service_date:date,crew_id:crewId||null,crew_name:crewName||'Unassigned / not recorded',
+      job_id:jobId||null,job_code:jobCode||null,job_name:jobName||null,
+      dispatch_count:0,production_session_count:0,production_labour_hours:0,production_duration_minutes:0
+    };
+    units.set(key,current);return current;
+  };
+  for(const r of dispatchRows){
+    const date=ontarioDateKey(r?.scheduled_start);
+    if(!date)continue;
+    const u=ensureUnit(r,date,r?.crew_id,r?.crew_name,r?.job_id,r?.job_code,r?.job_name);
+    u.dispatch_count++;
+  }
+  for(const r of productionRows){
+    const date=ontarioDateKey(r?.session_date||r?.started_at);
+    if(!date)continue;
+    const dispatch=dispatchRows.find((d)=>String(d?.id||'')===String(r?.dispatch_schedule_item_id||''))||null;
+    const u=ensureUnit(r,date,dispatch?.crew_id,dispatch?.crew_name,r?.job_id,dispatch?.job_code||null,dispatch?.job_name||null);
+    u.production_session_count++;
+    u.production_labour_hours+=Math.max(0,Number(r?.total_labour_hours||0));
+    u.production_duration_minutes+=Math.max(0,Number(r?.duration_minutes||0));
+  }
+
+  const rows=[...units.values()].map((u)=>{
+    const matching=timeRows.filter((r)=>{
+      const date=ontarioDateKey(r?.signed_in_at||r?.signed_out_at||r?.updated_at);
+      if(date!==u.service_date||String(r?.job_id||'')!==String(u.job_id||''))return false;
+      if(u.crew_id&&r?.crew_id&&String(r.crew_id)!==String(u.crew_id))return false;
+      return true;
+    });
+    const signedOut=matching.filter((r)=>!!r?.signed_out_at).length;
+    const ready=matching.filter((r)=>r?.payroll_ready===true||String(r?.payroll_readiness_status||'').toLowerCase()==='ready').length;
+    const openShift=matching.filter((r)=>String(r?.payroll_readiness_status||'').toLowerCase()==='open_shift'||!r?.signed_out_at).length;
+    const correctionPending=matching.filter((r)=>String(r?.payroll_readiness_status||'').toLowerCase()==='correction_pending'||Number(r?.pending_correction_count||0)>0).length;
+    const attendanceReview=matching.filter((r)=>String(r?.payroll_readiness_status||'').toLowerCase()==='attendance_review'||Number(r?.open_review_count||0)>0).length;
+    const supervisorApproval=matching.filter((r)=>String(r?.payroll_readiness_status||'').toLowerCase()==='supervisor_approval').length;
+    const lateExplicit=matching.filter(lateCoded).length;
+    const paidMinutes=matching.reduce((sum,r)=>sum+Math.max(0,Number(r?.paid_minutes||0)),0);
+    const jobWorkMinutes=matching.reduce((sum,r)=>sum+Math.max(0,Number(r?.job_work_minutes||0)),0);
+    const openReviewCount=matching.reduce((sum,r)=>sum+Math.max(0,Number(r?.open_review_count||0)),0);
+    const pendingCorrectionCount=matching.reduce((sum,r)=>sum+Math.max(0,Number(r?.pending_correction_count||0)),0);
+    const statuses=[...new Set(matching.map((r)=>String(r?.payroll_readiness_status||'').trim()).filter(Boolean))].sort();
+    const reviewCodes=[...new Set(matching.flatMap((r)=>String(r?.open_review_codes||'').split(',').map((x)=>x.trim()).filter(Boolean)))].sort();
+
+    let captureState='payroll_ready';
+    if(matching.length===0)captureState='missing_time_capture';
+    else if(ready<matching.length){
+      if(openShift>0)captureState='open_shift';
+      else if(correctionPending>0)captureState='correction_pending';
+      else if(attendanceReview>0)captureState='attendance_review';
+      else if(supervisorApproval>0)captureState='supervisor_approval';
+      else captureState='other_unready';
+    }
+    return {
+      service_date:u.service_date,crew_id:u.crew_id,crew_name:u.crew_name,job_id:u.job_id,job_code:u.job_code,job_name:u.job_name,
+      dispatch_count:u.dispatch_count,production_session_count:u.production_session_count,
+      production_labour_hours:Number(Number(u.production_labour_hours||0).toFixed(2)),
+      production_duration_minutes:Number(u.production_duration_minutes||0),
+      time_entry_count:matching.length,signed_out_time_entry_count:signedOut,payroll_ready_time_entry_count:ready,
+      paid_hours:Number((paidMinutes/60).toFixed(2)),job_work_hours:Number((jobWorkMinutes/60).toFixed(2)),
+      open_review_count:openReviewCount,pending_correction_count:pendingCorrectionCount,
+      explicit_late_exception_count:lateExplicit,payroll_readiness_statuses:statuses,open_review_codes:reviewCodes,
+      capture_state:captureState,capture_complete:matching.length>0&&ready===matching.length
+    };
+  }).sort((a,b)=>String(b.service_date).localeCompare(String(a.service_date))||String(a.crew_name).localeCompare(String(b.crew_name))||String(a.job_code||'').localeCompare(String(b.job_code||'')));
+
+  const issueRows=rows.filter((r)=>!r.capture_complete);
+  const summarizeWindow=(start:string,end:string)=>{
+    const windowRows=rows.filter((r)=>r.service_date>=start&&r.service_date<=end);
+    const issue=windowRows.filter((r)=>!r.capture_complete);
+    return {
+      start_date:start,end_date:end,work_units:windowRows.length,complete_work_units:windowRows.length-issue.length,
+      exception_work_units:issue.length,
+      completion_rate_percent:windowRows.length?Number((((windowRows.length-issue.length)/windowRows.length)*100).toFixed(1)):null,
+      exception_rate_percent:windowRows.length?Number(((issue.length/windowRows.length)*100).toFixed(1)):null
+    };
+  };
+  const recent=summarizeWindow(recentStart,endDate),prior=summarizeWindow(priorStart,priorEnd);
+  const exceptionRateChangePp=recent.exception_rate_percent!==null&&prior.exception_rate_percent!==null
+    ?Number((recent.exception_rate_percent-prior.exception_rate_percent).toFixed(1)):null;
+
+  const patternMap=new Map<string,any>();
+  for(const r of issueRows){
+    const patternKey=[normalizeCrew(r.crew_id,r.crew_name),jobKey(r.job_id,r.job_code),r.capture_state].join('|');
+    const p=patternMap.get(patternKey)||{
+      crew_id:r.crew_id,crew_name:r.crew_name,job_id:r.job_id,job_code:r.job_code,job_name:r.job_name,
+      capture_state:r.capture_state,occurrence_count:0,first_service_date:r.service_date,last_service_date:r.service_date,
+      open_review_count:0,pending_correction_count:0,explicit_late_exception_count:0
+    };
+    p.occurrence_count++;
+    if(r.service_date<p.first_service_date)p.first_service_date=r.service_date;
+    if(r.service_date>p.last_service_date)p.last_service_date=r.service_date;
+    p.open_review_count+=Number(r.open_review_count||0);
+    p.pending_correction_count+=Number(r.pending_correction_count||0);
+    p.explicit_late_exception_count+=Number(r.explicit_late_exception_count||0);
+    patternMap.set(patternKey,p);
+  }
+  const repeatedPatterns=[...patternMap.values()].filter((p)=>p.occurrence_count>=2)
+    .sort((a,b)=>b.occurrence_count-a.occurrence_count||String(a.crew_name).localeCompare(String(b.crew_name))||String(a.job_code||'').localeCompare(String(b.job_code||'')));
+
+  const stateCounts=(name:string)=>rows.filter((r)=>r.capture_state===name).length;
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',lookback_days:30,lookback_start:startDate,lookback_end:endDate,
+    source_queries_ok:input.sourceQueriesOk!==false,jobs_visible:input.jobsVisible,admin_visible:input.adminVisible,
+    summary:{
+      work_units:rows.length,complete_payroll_evidence_work_units:rows.filter((r)=>r.capture_complete).length,
+      payroll_evidence_completion_rate_percent:rows.length?Number(((rows.filter((r)=>r.capture_complete).length/rows.length)*100).toFixed(1)):null,
+      missing_time_capture_work_units:stateCounts('missing_time_capture'),
+      open_shift_work_units:stateCounts('open_shift'),
+      correction_pending_work_units:stateCounts('correction_pending'),
+      attendance_review_work_units:stateCounts('attendance_review'),
+      supervisor_approval_work_units:stateCounts('supervisor_approval'),
+      other_unready_work_units:stateCounts('other_unready'),
+      explicit_late_exception_work_units:rows.filter((r)=>r.explicit_late_exception_count>0).length,
+      repeated_pattern_count:repeatedPatterns.length,
+      recent_exception_rate_percent:recent.exception_rate_percent,prior_exception_rate_percent:prior.exception_rate_percent,
+      exception_rate_change_percentage_points:exceptionRateChangePp
+    },
+    recent_period:recent,prior_period:prior,
+    exception_reduction_state:exceptionRateChangePp===null?'not_comparable':exceptionRateChangePp<0?'recorded_exception_rate_lower':exceptionRateChangePp>0?'recorded_exception_rate_higher':'recorded_exception_rate_unchanged',
+    repeated_patterns:repeatedPatterns.slice(0,80),
+    work_unit_evidence:rows.slice(0,300),
+    matching_boundary:'Coverage is evaluated at recorded job/service-date and crew context where available. A scheduled or Production work unit is complete only when matching time entries exist and every matched entry is payroll-ready.',
+    late_boundary:'Late capture is counted only when the canonical payroll evidence explicitly carries a late, missed or untimely exception/review code. No arbitrary lateness threshold is invented.',
+    reduction_boundary:'Exception reduction compares the most recent 14 completed calendar days with the preceding 14 completed calendar days. It describes recorded exception-rate movement only and is not an employee-performance target.',
+    privacy_boundary:'Returned evidence is aggregated to crew/job/service-date. Individual employee names, employee numbers, explanations, supervisor notes and approver identities are not returned.',
+    safety_boundary:'Safety restrictions and fitness-for-work decisions remain under existing Safety authority and are not inferred from attendance, payroll readiness or missing time evidence.',
+    authority_boundary:'Read-only management evidence. This layer cannot edit time entries, approve payroll, approve corrections, change pay codes, rank employees, make employment decisions or override Safety restrictions.'
+  };
+}
+
 function buildMaterialsConsumablesSeasonalStockReadiness(input:{
   materials:any[];materialPlans:any[];dispatch:any[];recurringVisits:any[];seasonalWork:any[];
   jobsVisible:boolean;sourceQueriesOk:boolean;
@@ -2698,6 +2856,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       estimate_accuracy_calibration:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','estimate_assumptions','estimate_assumption_variance','production','change_orders','job_cost_depth','jobs']),
       completed_invoiced_cash_conversion:buildManagementMetricConfidence(sourceFreshness,['production','closeouts','invoice_candidates','receivables','payment_applications']),
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
+      labour_capture_payroll_exceptions:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
@@ -2743,6 +2902,10 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       jobsVisible:canJobsView,adminVisible:canAdminManage,
       sourceQueriesOk:[timekeepingDetailRead,productionRead,dispatchRead,equipmentRead,equipmentUseRead,maintenanceRead,fleetRead].every((r)=>r.query_ok!==false)
     });
+    const labourCapturePayrollExceptionReduction=buildLabourCapturePayrollExceptionReduction({
+      timekeeping:timekeepingDetail,dispatch,production,jobsVisible:canJobsView,adminVisible:canAdminManage,
+      sourceQueriesOk:[timekeepingDetailRead,dispatchRead,productionRead].every((r)=>r.query_ok!==false)
+    });
     const materialsConsumablesSeasonalStockReadiness=buildMaterialsConsumablesSeasonalStockReadiness({
       materials:materialStock,materialPlans,dispatch,recurringVisits,seasonalWork,jobsVisible:canJobsView,
       sourceQueriesOk:[materialStockRead,materialPlansRead,dispatchRead,recurringVisitsRead,seasonalWorkRead].every((r)=>r.query_ok!==false)
@@ -2783,6 +2946,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       estimate_accuracy_change_order_margin_calibration:estimateAccuracyChangeOrderMarginCalibration,
       completed_to_invoiced_cycle_time_cash_conversion:completedToInvoicedCashConversion,
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
+      labour_capture_completeness_payroll_exception_reduction:labourCapturePayrollExceptionReduction,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
       data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
