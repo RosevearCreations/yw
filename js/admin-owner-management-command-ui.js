@@ -396,6 +396,7 @@
           r.completion_to_closeout_hours==null?'completion → closeout unavailable':'completion → closeout '+num(r.completion_to_closeout_hours)+' h',
           r.completion_to_invoice_ready_hours==null?'completion → invoice ready unavailable':'completion → invoice ready '+num(r.completion_to_invoice_ready_hours)+' h',
           r.invoice_ready_to_invoice_hours==null?'ready → invoice unavailable':'ready → invoice '+num(r.invoice_ready_to_invoice_hours)+' h',
+          r.completion_to_invoice_hours==null?'completion → invoice unavailable':'completion → invoice '+num(r.completion_to_invoice_hours)+' h',
           r.invoice_to_first_payment_days==null?'invoice → first payment unavailable':'invoice → first payment '+num(r.invoice_to_first_payment_days)+' d',
           r.invoice_to_collection_days==null?'invoice → collection unavailable':'invoice → collection '+num(r.invoice_to_collection_days)+' d'
         ].join(' · ');
