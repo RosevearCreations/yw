@@ -556,11 +556,18 @@ Cash collection requires both recorded payment-application evidence and a record
 
 The timing layer is read-only and cannot create invoices, apply payments, send collection messages, post journals, change closeout approvals or mutate payment/provider state.
 
-The next planned autonomous item is **369 — Labour Capture Completeness & Payroll Exception Reduction**.
+<!-- Historical item 368 handoff marker retained for regression provenance: The next planned autonomous item is **369 — Labour Capture Completeness & Payroll Exception Reduction**. -->
+<!-- Historical item 362 queue marker retained for regression provenance: #### 369 — Labour Capture Completeness & Payroll Exception Reduction -->
 
-#### 369 — Labour Capture Completeness & Payroll Exception Reduction
+#### **369 — Labour Capture Completeness & Payroll Exception Reduction** is implemented
 
-Measure whether scheduled/production work has complete timekeeping and payroll-evidence coverage at crew/job level, and track repeated missing/late/exception patterns without ranking individual employees. Keep payroll approval, employment decisions and Safety restrictions under their existing authorities.
+The Owner / Management Command Centre now matches the last 30 completed calendar days of scheduled/Production crew-job evidence to canonical timekeeping and payroll-readiness evidence. A work unit is complete only when matching time entries exist and every matched entry is payroll-ready; missing capture, open shifts, pending corrections, attendance review, supervisor approval and other unready evidence remain distinct.
+
+Late capture is counted only from explicitly recorded late/missed/untimely payroll exception or review codes rather than an invented elapsed-time threshold. The most recent 14 completed days are compared with the preceding 14 completed days to show recorded exception-rate movement without turning the comparison into a worker-performance target.
+
+The management response remains aggregated to crew/job/service-date and repeated crew/job patterns. It excludes individual employee names, employee numbers, explanations, supervisor notes and approver identities, and cannot edit time entries, approve payroll/corrections, change pay codes, rank workers, make employment decisions or override Safety restrictions.
+
+The next planned autonomous item is **370 — Equipment Downtime Cost & Replacement Readiness**.
 
 #### 370 — Equipment Downtime Cost & Replacement Readiness
 
