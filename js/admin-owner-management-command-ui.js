@@ -31,6 +31,7 @@
       '<section class="admin-panel-block owner355-retention" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring service renewal &amp; retention workbench</h4><p class="section-subtitle">Build 355 · renewal windows, holds, repeated skips/delays, unresolved service issues, seasonal rollover and price-review evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only:</strong> this workbench prepares context. It does not renew an agreement, change pricing, send a customer message or create a customer commitment.</div><div id="owner355Retention"></div></section>',
       '<section class="admin-panel-block owner366-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring renewal conversion &amp; churn outcomes</h4><p class="section-subtitle">Build 366 · recorded renewed, declined, held, expired and unresolved outcomes from recurring agreements, CRM decisions, seasonal rollover and permission-scoped Finance evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Recorded outcomes only:</strong> active or overdue status is not treated as a renewal. This view does not renew/cancel agreements, change pricing, contact customers or resolve complaints.</div><div id="owner366Outcomes"></div></section>',
       '<section class="admin-panel-block owner356-cash" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate-to-cash leakage &amp; margin recovery</h4><p class="section-subtitle">Build 356 · accepted estimate → scheduling → production → approved extras → invoice readiness → invoicing → payment application → collection.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Analytical only:</strong> this workbench does not create invoices, post accounting, apply payments, send collection messages or charge customers.</div><div id="owner356EstimateCash"></div></section>',
+      '<section class="admin-panel-block owner367-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate accuracy &amp; change-order margin calibration</h4><p class="section-subtitle">Build 367 · accepted estimate baselines versus recorded labour, material, equipment, approved/applied change-order and job-cost closeout evidence.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Calibration evidence only:</strong> recorded variances can identify repeated estimate patterns, but this view never edits assumptions, invents target margins, changes prices, approves extras or posts accounting.</div><div id="owner367Calibration"></div></section>',
       '<section class="admin-panel-block owner357-utilization" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour, equipment &amp; fleet utilization decision support</h4><p class="section-subtitle">Build 357 · 30-day paid-time, crew assignment, production labour, equipment-use, maintenance, lockout/downtime and fleet availability evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Decision support only:</strong> this view does not score employees, clear Safety restrictions, change crew/equipment assignments, complete maintenance, replace assets or create purchases.</div><div id="owner357Utilization"></div></section>',
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
@@ -307,6 +308,59 @@
         '<details style="margin-top:8px;"><summary>Evidence boundaries</summary><p class="muted">'+esc(w.margin_boundary||'')+'</p><p class="muted">'+esc(w.scheduling_boundary||'')+'</p><p class="muted">'+esc(w.billing_boundary||'')+'</p><p class="muted">'+esc(w.collection_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
 
+
+    function renderEstimateCalibration(){
+      const host=$('owner367Calibration');if(!host)return;
+      const c=state.data?.estimate_accuracy_change_order_margin_calibration;
+      const meta=metricMeta('estimate_accuracy_calibration');
+      if(!allowed('jobs')||!allowed('finance')){host.innerHTML='<p class="muted">Estimate calibration evidence requires both Jobs and Finance visibility for this profile.</p>';return}
+      if(!c||!c.summary){host.innerHTML='<p class="muted">Estimate accuracy calibration evidence is unavailable from this response.</p>';return}
+      if(c.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical calibration source queries failed. Variance results are withheld rather than converted into zero-valued facts.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required estimate calibration evidence is unavailable.')+'</p>';return}
+
+      const x=c.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Accepted estimates',num(x.accepted_estimates_reviewed),'accepted estimate chains reviewed','estimate_accuracy_calibration'),
+        card('Comparable closeouts',num(x.comparison_ready_jobs),'adjusted baseline vs recorded known cost','estimate_accuracy_calibration'),
+        card('Applied approved changes',num(x.approved_applied_change_orders),num(x.approved_change_orders)+' approved change order(s)','estimate_accuracy_calibration'),
+        card('Labour cost comparisons',num(x.comparable_labour_cost_jobs),num(x.labour_hours_comparable_jobs)+' labour-hour comparison(s)','estimate_accuracy_calibration'),
+        card('Material / equipment',num(x.comparable_material_cost_jobs)+' / '+num(x.comparable_equipment_cost_jobs),'recorded cost comparisons','estimate_accuracy_calibration'),
+        card('Recurring patterns',num(x.recurring_calibration_pattern_count),'same variance direction on 2+ estimates','estimate_accuracy_calibration')
+      ].join('')+'</div>';
+
+      const components=(c.component_summary||[]).map(r=>{
+        const variance=Number(r.cost_variance_total||0);
+        const direction=variance>0?'actual above estimate':variance<0?'actual below estimate':'no aggregate difference';
+        return '<div class="owner350-row" data-owner367-component="'+esc(r.component||'other')+'"><strong>'+esc(String(r.component||'cost').toUpperCase())+'</strong><small>'+esc(num(r.comparable_jobs)+' comparable job(s) · estimated '+money(r.estimated_cost_total)+' · actual '+money(r.actual_cost_total))+'</small><small>'+esc('recorded variance '+money(r.cost_variance_total)+' · '+direction+' · '+num(r.adverse_jobs)+' above / '+num(r.favorable_jobs)+' below / '+num(r.exact_jobs)+' exact')+'</small></div>';
+      }).join('');
+
+      const patterns=(c.recurring_calibration_patterns||[]).slice(0,30).map(r=>{
+        const label=String(r.direction||'recorded variance').replaceAll('_',' ');
+        const value=r.pattern_type==='recorded_margin_variance'
+          ? num(r.recorded_variance_total)+' percentage-point total'
+          : money(r.recorded_variance_total);
+        return '<div class="owner350-row" data-owner367-pattern="'+esc(r.pattern_type||'pattern')+'"><strong>'+esc((r.template_key||'Estimate group')+' · '+(r.component||'total'))+'</strong><small>'+esc(num(r.occurrence_count)+' occurrence(s) across '+num(r.comparable_count)+' comparable record(s) · '+label+' · '+value)+'</small><small>'+esc(r.review_note||'Review recorded source evidence only.')+'</small></div>';
+      }).join('');
+
+      const records=(c.calibration_records||[]).slice(0,30).map(r=>{
+        const total=r.total_cost_variance==null?'known total cost not comparable':'adjusted baseline '+money(r.adjusted_baseline_cost_total)+' · known actual '+money(r.actual_known_cost_total)+' · variance '+money(r.total_cost_variance);
+        const hours=r.labour_hours_variance==null?'labour hours not comparable':'labour hours '+num(r.estimated_labour_hours)+' estimated → '+num(r.recorded_production_labour_hours)+' recorded · variance '+num(r.labour_hours_variance)+' h';
+        const margin=r.margin_variance_percentage_points==null?'margin not comparable':'margin '+pct(r.estimated_margin_percent)+' estimated → '+pct(r.actual_margin_percent)+' recorded · '+num(r.margin_variance_percentage_points)+' pp';
+        const comp=(r.component_cost_variance||[]).map(v=>v.comparable?(v.component+' '+money(v.estimated_cost)+' → '+money(v.actual_cost)+' ('+(Number(v.cost_variance)>0?'+':'')+money(v.cost_variance)+')'):(v.component+' unavailable')).join(' · ');
+        const units=(r.assumption_unit_evidence||[]).map(u=>u.component||u.assumption_type).map((type,i)=>{
+          const u=(r.assumption_unit_evidence||[])[i]||{};
+          return (type||'assumption')+': '+((u.source_unit_labels||[]).join(', ')||'unit not recorded');
+        }).join(' · ');
+        return '<div class="owner350-row" data-owner367-record="'+esc(String(r.estimate_id||r.work_order_id||''))+'"><strong>'+esc((r.estimate_number||'Estimate')+' → '+(r.work_order_number||'No work order')+' · '+(r.template_name||r.template_code||r.template_key||'No template'))+'</strong><small>'+esc((r.client_name||'Client unavailable')+' · '+(r.site_name||'Site unavailable')+' · baseline '+(r.baseline_source||'not recorded')+(r.baseline_snapshot_version!=null?' v'+r.baseline_snapshot_version:''))+'</small><small>'+esc(total+' · '+num(r.approved_applied_change_order_count)+' approved/applied change(s)')+'</small><small>'+esc(hours+' · '+margin)+'</small><small>'+esc(comp)+'</small><small>'+esc('Source units: '+units)+'</small></div>';
+      }).join('');
+
+      host.innerHTML=summary+
+        '<details open><summary>Component cost calibration</summary><div class="owner350-list" style="margin-top:8px;">'+(components||'<p class="muted">No comparable labour, material or equipment cost evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Recurring calibration patterns</summary><div class="owner350-list" style="margin-top:8px;">'+(patterns||'<p class="muted">No same-direction variance pattern appears on two or more comparable estimates.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Estimate-to-actual calibration records</summary><div class="owner350-list" style="margin-top:8px;">'+(records||'<p class="muted">No accepted estimate calibration record is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Evidence, units and authority boundaries</summary><p class="muted">'+esc(c.baseline_boundary||'')+'</p><p class="muted">'+esc(c.unit_boundary||'')+'</p><p class="muted">'+esc(c.change_order_boundary||'')+'</p><p class="muted">'+esc(c.margin_boundary||'')+'</p><p class="muted">'+esc(c.actuals_boundary||'')+'</p><p class="muted">'+esc(c.authority_boundary||'')+'</p></details>';
+    }
+
     function renderUtilizationSupport(){
       const host=$('owner357Utilization');if(!host)return;
       const w=state.data?.labour_equipment_fleet_utilization_support;
@@ -510,6 +564,7 @@
       renderRecurringRetention();
       renderRecurringOutcomes();
       renderEstimateToCash();
+      renderEstimateCalibration();
       renderUtilizationSupport();
       renderStockReadiness();
       renderCommunicationReadiness();
