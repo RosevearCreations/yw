@@ -147,6 +147,7 @@ jobs:
       - run: npm run test:recurring-service-renewal-retention
       - run: npm run test:recurring-renewal-conversion-churn-outcomes
       - run: npm run test:estimate-to-cash-leakage-margin-recovery
+      - run: npm run test:estimate-accuracy-change-order-margin-calibration
       - run: npm run test:labour-equipment-fleet-utilization-decision-support
       - run: npm run test:materials-consumables-seasonal-stock-readiness
       - run: npm run test:customer-communication-readiness-queue-quality
@@ -246,6 +247,7 @@ jobs:
       - run: npm run test:browser:recurring-service-renewal-retention
       - run: npm run test:browser:recurring-renewal-conversion-churn-outcomes
       - run: npm run test:browser:estimate-to-cash-leakage-margin-recovery
+      - run: npm run test:browser:estimate-accuracy-change-order-margin-calibration
       - run: npm run test:browser:labour-equipment-fleet-utilization-decision-support
       - run: npm run test:browser:materials-consumables-seasonal-stock-readiness
       - run: npm run test:browser:customer-communication-readiness-queue-quality

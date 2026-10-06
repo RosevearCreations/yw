@@ -156,6 +156,17 @@
           <p><strong>Analytical only:</strong> source navigation is deliberate and permission-aware. Finance posting, invoice creation, payment application, provider mutation and customer charges remain separate authorities.</p>
         </section>
 
+        <section class="help-section" id="estimate-accuracy-change-order-margin-calibration">
+          <h2>Build 367 — Estimate Accuracy &amp; Change-Order Margin Calibration</h2>
+          <p>Build 367 compares <strong>accepted estimate baselines with recorded actual evidence</strong>. It uses the accepted work-order assumption snapshot where available, recorded Production labour, recorded job-cost labour/material/equipment evidence, and customer-approved/applied change-order deltas.</p>
+          <p><strong>Source units are preserved:</strong> estimate assumption unit labels are shown exactly as recorded. Labour quantity variance is calculated only when both estimate and Production evidence are recorded in hours. Material and equipment quantities are not converted or compared when units are mixed, missing or incompatible.</p>
+          <p><strong>Approved change orders adjust context, not history:</strong> only customer-approved and applied estimated cost deltas adjust the comparison baseline. Approved but unapplied changes remain visible without silently changing the accepted baseline.</p>
+          <p><strong>Margin calibration is descriptive:</strong> recorded estimate margin can be compared with recorded actual job margin. No target margin, markup rule, price recommendation or profitability threshold is invented.</p>
+          <p><strong>Repeated patterns are review signals only:</strong> the same variance direction must appear on at least two comparable estimates in the same recorded template/group before a recurring calibration pattern is surfaced.</p>
+          <p><strong>Read-only authority:</strong> Build 367 cannot edit estimate assumptions, approve customer scope, change pricing, apply change orders, close job costs, create invoices or post Finance entries.</p>
+        </section>
+
+
         <section class="help-section" id="labour-equipment-fleet-utilization-decision-support">
           <h2>Build 357 — Labour, Equipment &amp; Fleet Utilization Decision Support</h2>
           <p>Build 357 adds read-only management decision support across the existing timekeeping, dispatch, production, equipment signout, equipment registry, preventive-maintenance and fleet authorities.</p>
