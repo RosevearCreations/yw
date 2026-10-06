@@ -166,6 +166,17 @@
           <p><strong>Read-only authority:</strong> Build 367 cannot edit estimate assumptions, approve customer scope, change pricing, apply change orders, close job costs, create invoices or post Finance entries.</p>
         </section>
 
+        <section class="help-section" id="completed-invoiced-cycle-time-cash-conversion">
+          <h2>Build 368 — Completed-to-Invoiced Cycle-Time &amp; Cash Conversion</h2>
+          <p>Build 368 adds a <strong>read-only timing layer</strong> from recorded Production completion or approved closeout through invoice readiness, A/R invoice creation, payment application and full-collection evidence.</p>
+          <p><strong>Recorded milestones only:</strong> completion uses explicit completed Production evidence, closeout uses recorded <code>approved_at</code>, invoice readiness uses <code>job_invoice_candidates.created_at</code>, and invoice creation uses recorded A/R creation evidence. Generic status or <code>updated_at</code> values do not become synthetic milestone times.</p>
+          <p><strong>Cash conversion needs payment evidence:</strong> full collection requires a recorded payment application plus an A/R balance at or below zero. A paid-looking status by itself is not counted as cash collection.</p>
+          <p><strong>Aging cohorts are descriptive:</strong> open records are grouped into 0–1, 2–3, 4–7 and 8+ day cohorts for visibility. These are not service-level targets, collection thresholds or automatic escalation rules.</p>
+          <p><strong>Missing evidence stays missing:</strong> averages use only records where both milestone timestamps exist. Missing completion, readiness, invoice or payment evidence is not converted to zero elapsed time.</p>
+          <p><strong>Read-only authority:</strong> this layer cannot create invoices, apply payments, send collection messages, post journals, change closeout approvals or mutate payment/provider state.</p>
+        </section>
+
+
 
         <section class="help-section" id="labour-equipment-fleet-utilization-decision-support">
           <h2>Build 357 — Labour, Equipment &amp; Fleet Utilization Decision Support</h2>
