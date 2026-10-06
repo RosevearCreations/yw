@@ -1173,6 +1173,251 @@ function buildEstimateToCashLeakageWorkbench(input:{
 
 
 
+
+function buildEstimateAccuracyChangeOrderCalibration(input:{
+  workflows:any[];assumptions:any[];assumptionVariance:any[];production:any[];changeOrders:any[];jobCosts:any[];jobs:any[];
+  jobsVisible:boolean;financeVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const numberOrNull=(value:any)=>{
+    if(value===null||value===undefined||value==='') return null;
+    const n=Number(value);return Number.isFinite(n)?n:null;
+  };
+  const round2=(value:number)=>Math.round(value*100)/100;
+  const normalizeType=(value:any)=>{
+    const v=String(value||'').trim().toLowerCase();
+    if(/labou?r|crew|wage|time/.test(v)) return 'labour';
+    if(/material|supply|consumable/.test(v)) return 'material';
+    if(/equipment|machine|tool|vehicle/.test(v)) return 'equipment';
+    return v||'other';
+  };
+  const isAccepted=(w:any)=>w?.customer_approval_ready===true||String(w?.estimate_status||'').toLowerCase()==='accepted'||!!w?.quote_accepted_at;
+  const isApprovedChange=(ch:any)=>String(ch?.customer_authorization_status||'').toLowerCase()==='authorized'||String(ch?.status||'').toLowerCase()==='approved'||!!ch?.customer_approved_at;
+  const isAppliedChange=(ch:any)=>String(ch?.scope_application_status||'').toLowerCase()==='applied'||!!ch?.budget_application_id||!!ch?.applied_work_order_line_id;
+
+  const varianceByWorkOrder=new Map((input.assumptionVariance||[]).map((r)=>[String(r?.work_order_id||''),r]));
+  const jobById=new Map((input.jobs||[]).map((r)=>[String(r?.id||''),r]));
+  const jobCostById=new Map((input.jobCosts||[]).map((r)=>[String(r?.job_id||''),r]));
+  const assumptionsByEstimate=new Map<string,any[]>();
+  for(const row of input.assumptions||[]){
+    const id=String(row?.estimate_id||'');if(!id)continue;
+    if(row?.is_active===false||row?.selected===false) continue;
+    const list=assumptionsByEstimate.get(id)||[];list.push(row);assumptionsByEstimate.set(id,list);
+  }
+  const productionByWorkOrder=new Map<string,any[]>();
+  for(const row of input.production||[]){
+    const id=String(row?.work_order_id||'');if(!id)continue;
+    const list=productionByWorkOrder.get(id)||[];list.push(row);productionByWorkOrder.set(id,list);
+  }
+  const changesByWorkOrder=new Map<string,any[]>();
+  const changesByEstimate=new Map<string,any[]>();
+  for(const row of input.changeOrders||[]){
+    const wid=String(row?.work_order_id||'');if(wid){const list=changesByWorkOrder.get(wid)||[];list.push(row);changesByWorkOrder.set(wid,list);}
+    const eid=String(row?.estimate_id||'');if(eid){const list=changesByEstimate.get(eid)||[];list.push(row);changesByEstimate.set(eid,list);}
+  }
+
+  const records=(input.workflows||[]).filter(isAccepted).map((w)=>{
+    const estimateId=String(w?.estimate_id||'');
+    const workOrderId=String(w?.work_order_id||'');
+    const legacyJobId=String(w?.legacy_job_id||'');
+    const variance=workOrderId?varianceByWorkOrder.get(workOrderId)||null:null;
+    const job=legacyJobId?jobById.get(legacyJobId)||null:null;
+    const jobCost=legacyJobId?jobCostById.get(legacyJobId)||null:null;
+    const productionRows=workOrderId?(productionByWorkOrder.get(workOrderId)||[]):[];
+    const assumptionRows=estimateId?(assumptionsByEstimate.get(estimateId)||[]):[];
+    const relatedChanges=[...(workOrderId?(changesByWorkOrder.get(workOrderId)||[]):[]),...(estimateId?(changesByEstimate.get(estimateId)||[]):[])]
+      .filter((row,index,all)=>all.findIndex((x)=>String(x?.id||'')===String(row?.id||''))===index);
+    const approvedChanges=relatedChanges.filter(isApprovedChange);
+    const appliedApprovedChanges=approvedChanges.filter(isAppliedChange);
+
+    const baselineByType:any=variance?.baseline_by_type&&typeof variance.baseline_by_type==='object'?variance.baseline_by_type:{};
+    const plannedCostByType:{[key:string]:number}={};
+    for(const [rawType,bucket] of Object.entries(baselineByType)){
+      const type=normalizeType(rawType);
+      const cost=numberOrNull((bucket as any)?.baseline_cost);
+      if(cost!==null) plannedCostByType[type]=round2((plannedCostByType[type]||0)+cost);
+    }
+    if(Object.keys(plannedCostByType).length===0){
+      for(const row of assumptionRows){
+        const type=normalizeType(row?.assumption_type);
+        const cost=numberOrNull(row?.estimated_cost);
+        if(cost!==null) plannedCostByType[type]=round2((plannedCostByType[type]||0)+cost);
+      }
+    }
+
+    const unitEvidence=['labour','material','equipment'].map((type)=>{
+      const rows=assumptionRows.filter((r)=>normalizeType(r?.assumption_type)===type);
+      const units=[...new Set(rows.map((r)=>String(r?.unit_label||'').trim()).filter(Boolean))];
+      const quantities=rows.map((r)=>numberOrNull(r?.quantity)).filter((v)=>v!==null) as number[];
+      return {
+        assumption_type:type,source_unit_labels:units,
+        source_quantity_total:units.length===1&&quantities.length===rows.length?round2(quantities.reduce((sum,v)=>sum+v,0)):null,
+        quantity_aggregation_state:units.length===1&&quantities.length===rows.length?'same_recorded_unit':'not_aggregated_due_to_missing_or_mixed_units'
+      };
+    });
+
+    const productionLabourRows=productionRows.map((r)=>numberOrNull(r?.total_labour_hours)).filter((v)=>v!==null) as number[];
+    const productionLabourHours=productionLabourRows.length?round2(productionLabourRows.reduce((sum,v)=>sum+v,0)):null;
+    const estimatedLabourHours=numberOrNull(w?.estimated_labour_hours);
+    const jobLabourCost=job&&((Number(job?.labor_entry_count||0)>0)||numberOrNull(job?.actual_labor_cost_total)!==null)?numberOrNull(job?.actual_labor_cost_total):null;
+
+    const productionMaterialCostRows=productionRows.map((r)=>numberOrNull(r?.material_cost_total)).filter((v)=>v!==null) as number[];
+    const productionMaterialIssueCount=productionRows.reduce((sum,r)=>sum+Math.max(0,Number(r?.material_issue_count||0)),0);
+    const jobMaterialCost=jobCost&&((Number(jobCost?.material_cost_total||0)!==0)||productionMaterialIssueCount>0)
+      ?numberOrNull(jobCost?.material_cost_total)
+      :(productionMaterialCostRows.length?round2(productionMaterialCostRows.reduce((sum,v)=>sum+v,0)):null);
+
+    const productionEquipmentEvidenceCount=productionRows.reduce((sum,r)=>sum+Math.max(0,Number(r?.equipment_signout_count||0)),0);
+    const jobEquipmentCost=jobCost&&((Number(jobCost?.equipment_usage_cost_total||0)!==0)||productionEquipmentEvidenceCount>0)
+      ?numberOrNull(jobCost?.equipment_usage_cost_total):null;
+
+    const components=[
+      {component:'labour',estimated_cost:numberOrNull(plannedCostByType.labour),actual_cost:jobLabourCost},
+      {component:'material',estimated_cost:numberOrNull(plannedCostByType.material),actual_cost:jobMaterialCost},
+      {component:'equipment',estimated_cost:numberOrNull(plannedCostByType.equipment),actual_cost:jobEquipmentCost}
+    ].map((row)=>{
+      const comparable=row.estimated_cost!==null&&row.actual_cost!==null;
+      const varianceCost=comparable?round2(Number(row.actual_cost)-Number(row.estimated_cost)):null;
+      const variancePercent=comparable&&Number(row.estimated_cost)!==0?round2((Number(varianceCost)/Math.abs(Number(row.estimated_cost)))*100):null;
+      return {...row,comparable,cost_variance:varianceCost,cost_variance_percent:variancePercent};
+    });
+
+    const approvedEstimatedCostDelta=round2(appliedApprovedChanges.reduce((sum,ch)=>sum+Number(ch?.estimated_cost_delta||0),0));
+    const approvedEstimatedChargeDelta=round2(appliedApprovedChanges.reduce((sum,ch)=>sum+Number(ch?.estimated_charge_delta||0),0));
+    const actualChangeCostValues=appliedApprovedChanges.map((ch)=>numberOrNull(ch?.actual_cost_delta)).filter((v)=>v!==null) as number[];
+    const actualChangeChargeValues=appliedApprovedChanges.map((ch)=>numberOrNull(ch?.actual_charge_delta)).filter((v)=>v!==null) as number[];
+
+    const baselineCost=numberOrNull(variance?.baseline_assumption_cost_total??w?.estimate_baseline_cost_total??w?.estimate_total_cost);
+    const adjustedBaselineCost=baselineCost===null?null:round2(baselineCost+approvedEstimatedCostDelta);
+    const jobCostEvidence=jobCost&&(
+      Number(jobCost?.cost_event_count||0)>0||
+      Number(jobCost?.actual_cost_total||0)!==0||
+      Number(jobCost?.material_cost_total||0)!==0||
+      Number(jobCost?.equipment_usage_cost_total||0)!==0||
+      (job&&Number(job?.labor_entry_count||0)>0)
+    );
+    const actualKnownCost=jobCostEvidence?numberOrNull(jobCost?.total_known_cost):null;
+    const totalCostVariance=adjustedBaselineCost!==null&&actualKnownCost!==null?round2(actualKnownCost-adjustedBaselineCost):null;
+
+    const estimatedMargin=numberOrNull(w?.estimate_margin_percent);
+    const actualMargin=numberOrNull(job?.actual_margin_rollup_percent??job?.actual_margin_percent);
+    const marginVariancePp=estimatedMargin!==null&&actualMargin!==null?round2(actualMargin-estimatedMargin):null;
+    const labourHourVariance=estimatedLabourHours!==null&&productionLabourHours!==null?round2(productionLabourHours-estimatedLabourHours):null;
+    const templateKey=String(w?.template_code||w?.template_name||w?.quote_title||'Unclassified estimate');
+    const completed=productionRows.some((r)=>/(^complete$|completed)/i.test(String(r?.completion_state||r?.production_state||r?.session_status||'')))||w?.completion_ready_for_accounting===true;
+
+    return {
+      estimate_id:w?.estimate_id||null,estimate_number:w?.estimate_number||null,work_order_id:w?.work_order_id||null,work_order_number:w?.work_order_number||null,
+      legacy_job_id:w?.legacy_job_id||null,client_name:w?.client_name||null,site_name:w?.site_name||null,
+      template_key:templateKey,template_code:w?.template_code||null,template_name:w?.template_name||null,
+      baseline_snapshot_version:variance?.estimate_assumption_snapshot_version??w?.estimate_assumption_snapshot_version??null,
+      baseline_source:variance?'accepted_work_order_assumption_snapshot':assumptionRows.length?'current_estimate_assumption_directory':'estimate_total_fallback',
+      baseline_cost_total:baselineCost,approved_applied_change_order_count:appliedApprovedChanges.length,approved_change_order_count:approvedChanges.length,
+      approved_applied_estimated_cost_delta:approvedEstimatedCostDelta,approved_applied_estimated_charge_delta:approvedEstimatedChargeDelta,
+      approved_applied_actual_cost_delta:actualChangeCostValues.length?round2(actualChangeCostValues.reduce((sum,v)=>sum+v,0)):null,
+      approved_applied_actual_charge_delta:actualChangeChargeValues.length?round2(actualChangeChargeValues.reduce((sum,v)=>sum+v,0)):null,
+      adjusted_baseline_cost_total:adjustedBaselineCost,actual_known_cost_total:actualKnownCost,total_cost_variance:totalCostVariance,
+      estimated_margin_percent:estimatedMargin,actual_margin_percent:actualMargin,margin_variance_percentage_points:marginVariancePp,
+      estimated_labour_hours:estimatedLabourHours,recorded_production_labour_hours:productionLabourHours,labour_hours_variance:labourHourVariance,
+      component_cost_variance:components,assumption_unit_evidence:unitEvidence,
+      production_session_count:productionRows.length,completion_evidence_recorded:completed,
+      production_material_issue_count:productionMaterialIssueCount,production_equipment_signout_count:productionEquipmentEvidenceCount,
+      finance_cost_event_count:Number(jobCost?.cost_event_count||0),comparison_ready:adjustedBaselineCost!==null&&actualKnownCost!==null
+    };
+  });
+
+  const componentSummary=['labour','material','equipment'].map((component)=>{
+    const rows=records.map((r)=>r.component_cost_variance.find((c:any)=>c.component===component)).filter((c)=>c?.comparable);
+    return {
+      component,comparable_jobs:rows.length,
+      estimated_cost_total:round2(rows.reduce((sum,c)=>sum+Number(c.estimated_cost||0),0)),
+      actual_cost_total:round2(rows.reduce((sum,c)=>sum+Number(c.actual_cost||0),0)),
+      cost_variance_total:round2(rows.reduce((sum,c)=>sum+Number(c.cost_variance||0),0)),
+      adverse_jobs:rows.filter((c)=>Number(c.cost_variance)>0).length,
+      favorable_jobs:rows.filter((c)=>Number(c.cost_variance)<0).length,
+      exact_jobs:rows.filter((c)=>Number(c.cost_variance)===0).length
+    };
+  });
+
+  const byTemplate=new Map<string,any[]>();
+  for(const row of records){
+    const list=byTemplate.get(row.template_key)||[];list.push(row);byTemplate.set(row.template_key,list);
+  }
+  const recurringPatterns:any[]=[];
+  for(const [templateKey,rows] of byTemplate.entries()){
+    if(rows.length<2) continue;
+    for(const component of ['labour','material','equipment']){
+      const values=rows.map((r)=>r.component_cost_variance.find((c:any)=>c.component===component)).filter((c)=>c?.comparable);
+      const adverse=values.filter((c)=>Number(c.cost_variance)>0);
+      const favorable=values.filter((c)=>Number(c.cost_variance)<0);
+      if(adverse.length>=2||favorable.length>=2){
+        const selected=adverse.length>=2?adverse:favorable;
+        recurringPatterns.push({
+          template_key:templateKey,pattern_type:'component_cost_variance',component,
+          direction:adverse.length>=2?'actual_cost_above_estimate':'actual_cost_below_estimate',
+          occurrence_count:selected.length,comparable_count:values.length,
+          recorded_variance_total:round2(selected.reduce((sum,c)=>sum+Number(c.cost_variance||0),0)),
+          review_note:'Repeated recorded variance is a calibration review signal only; estimate assumptions are not changed automatically.'
+        });
+      }
+    }
+    const marginRows=rows.filter((r)=>r.margin_variance_percentage_points!==null);
+    const lower=marginRows.filter((r)=>Number(r.margin_variance_percentage_points)<0);
+    const higher=marginRows.filter((r)=>Number(r.margin_variance_percentage_points)>0);
+    if(lower.length>=2||higher.length>=2){
+      const selected=lower.length>=2?lower:higher;
+      recurringPatterns.push({
+        template_key:templateKey,pattern_type:'recorded_margin_variance',component:'margin',
+        direction:lower.length>=2?'actual_margin_below_recorded_estimate_margin':'actual_margin_above_recorded_estimate_margin',
+        occurrence_count:selected.length,comparable_count:marginRows.length,
+        recorded_variance_total:round2(selected.reduce((sum,r)=>sum+Number(r.margin_variance_percentage_points||0),0)),
+        review_note:'This compares recorded estimate margin with recorded actual margin; it is not a target-margin recommendation.'
+      });
+    }
+    const totalRows=rows.filter((r)=>r.total_cost_variance!==null);
+    const adverseTotal=totalRows.filter((r)=>Number(r.total_cost_variance)>0);
+    const favorableTotal=totalRows.filter((r)=>Number(r.total_cost_variance)<0);
+    if(adverseTotal.length>=2||favorableTotal.length>=2){
+      const selected=adverseTotal.length>=2?adverseTotal:favorableTotal;
+      recurringPatterns.push({
+        template_key:templateKey,pattern_type:'adjusted_total_cost_variance',component:'total_cost',
+        direction:adverseTotal.length>=2?'actual_known_cost_above_adjusted_baseline':'actual_known_cost_below_adjusted_baseline',
+        occurrence_count:selected.length,comparable_count:totalRows.length,
+        recorded_variance_total:round2(selected.reduce((sum,r)=>sum+Number(r.total_cost_variance||0),0)),
+        review_note:'Adjusted baseline includes only recorded approved/applied estimated change-order cost deltas.'
+      });
+    }
+  }
+  recurringPatterns.sort((a,b)=>b.occurrence_count-a.occurrence_count||String(a.template_key).localeCompare(String(b.template_key)));
+
+  const comparisonReady=records.filter((r)=>r.comparison_ready);
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk!==false,
+    jobs_visible:input.jobsVisible,finance_visible:input.financeVisible,
+    summary:{
+      accepted_estimates_reviewed:records.length,
+      work_orders_with_accepted_baseline_snapshot:records.filter((r)=>r.baseline_source==='accepted_work_order_assumption_snapshot').length,
+      comparison_ready_jobs:comparisonReady.length,
+      approved_change_orders:records.reduce((sum,r)=>sum+Number(r.approved_change_order_count||0),0),
+      approved_applied_change_orders:records.reduce((sum,r)=>sum+Number(r.approved_applied_change_order_count||0),0),
+      comparable_labour_cost_jobs:componentSummary.find((r)=>r.component==='labour')?.comparable_jobs||0,
+      comparable_material_cost_jobs:componentSummary.find((r)=>r.component==='material')?.comparable_jobs||0,
+      comparable_equipment_cost_jobs:componentSummary.find((r)=>r.component==='equipment')?.comparable_jobs||0,
+      labour_hours_comparable_jobs:records.filter((r)=>r.labour_hours_variance!==null).length,
+      margin_comparable_jobs:records.filter((r)=>r.margin_variance_percentage_points!==null).length,
+      recurring_calibration_pattern_count:recurringPatterns.length
+    },
+    component_summary:componentSummary,
+    recurring_calibration_patterns:recurringPatterns.slice(0,60),
+    calibration_records:records.sort((a,b)=>Math.abs(Number(b.total_cost_variance||0))-Math.abs(Number(a.total_cost_variance||0))||String(a.estimate_number||'').localeCompare(String(b.estimate_number||''))).slice(0,250),
+    baseline_boundary:'Accepted work-order assumption snapshots are preferred for baseline cost by type. Current estimate assumptions are only a fallback when no accepted snapshot exists, and the source is disclosed on each record.',
+    unit_boundary:'Recorded assumption unit labels are preserved exactly. Labour quantity variance is calculated only between recorded estimate labour hours and recorded Production labour hours; material and equipment quantities are not converted or compared across mixed or missing units.',
+    change_order_boundary:'Adjusted baseline cost includes only recorded customer-approved and applied change-order estimated cost deltas. Approved but unapplied changes remain visible in counts and do not silently alter the baseline.',
+    margin_boundary:'Margin calibration compares recorded estimate margin percent with recorded actual job margin percent only. It does not invent a target margin, required markup, price change or profitability threshold.',
+    actuals_boundary:'Actual labour, material and equipment comparisons use recorded job/Production cost evidence. Missing cost evidence remains unavailable; zero is not inferred from a missing source.',
+    authority_boundary:'Read-only calibration only. Estimate assumptions, customer approvals, change-order approvals/application, job-cost closeout and Finance posting remain under their existing source authorities; this layer cannot edit estimates, approve extras, change pricing or post accounting.'
+  };
+}
+
 function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
   timekeeping:any[];production:any[];dispatch:any[];equipment:any[];equipmentUse:any[];maintenance:any[];fleet:any[];
   jobsVisible:boolean;adminVisible:boolean;sourceQueriesOk:boolean;
@@ -2136,7 +2381,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
       routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
-      estimateWorkflowRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,materialStockRead,materialPlansRead,
+      estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,jobCostDepthRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,materialStockRead,materialPlansRead,
       crmFollowupsRead,customerDirectoryRead,notificationQueueRead,closeoutsRead,propertyDirectoryRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -2168,6 +2413,9 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       canFinanceView ? safeListEvidence(supabase,'v_service_agreement_profitability_summary','*','agreement_code',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       canJobsView ? safeListEvidence(supabase,'v_seasonal_operations_rollover_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'v_estimate_job_invoice_workflow','*','estimate_number',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
+      (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'v_estimate_workflow_assumption_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'v_estimate_assumption_variance','*','work_order_number',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
+      (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'v_job_cost_depth_directory','*','job_code',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       canJobsView ? safeListEvidence(supabase,'v_change_order_extras_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       canFinanceView ? safeListEvidence(supabase,'v_ar_payment_application_directory','*','application_date',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_equipment_signout_history','*','checked_out_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
@@ -2188,7 +2436,8 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       closeDashboard=closeDashboardRead.rows,workability=workabilityRead.rows,routes=routesRead.rows,timekeepingDetail=timekeepingDetailRead.rows,
       recurringEvents=recurringEventsRead.rows,crmRenewals=crmRenewalsRead.rows,crmInteractions=crmInteractionsRead.rows,
       agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows,
-      estimateWorkflow=estimateWorkflowRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
+      estimateWorkflow=estimateWorkflowRead.rows,estimateAssumptions=estimateAssumptionsRead.rows,estimateAssumptionVariance=estimateAssumptionVarianceRead.rows,
+      jobCostDepth=jobCostDepthRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
       equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,
       crmFollowups=crmFollowupsRead.rows,customerDirectory=customerDirectoryRead.rows,notificationQueue=notificationQueueRead.rows,closeouts=closeoutsRead.rows,
       propertyDirectory=propertyDirectoryRead.rows;
@@ -2225,6 +2474,9 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
     addFresh(agreementProfitabilityRead,'agreement_profitability','finance','v_service_agreement_profitability_summary',canFinanceView,168);
     addFresh(seasonalRolloverRead,'seasonal_rollover','jobs','v_seasonal_operations_rollover_directory',canJobsView,168);
     addFresh(estimateWorkflowRead,'estimate_workflow','jobs+finance','v_estimate_job_invoice_workflow',canJobsView&&canFinanceView,168);
+    addFresh(estimateAssumptionsRead,'estimate_assumptions','jobs+finance','v_estimate_workflow_assumption_directory',canJobsView&&canFinanceView,168);
+    addFresh(estimateAssumptionVarianceRead,'estimate_assumption_variance','jobs+finance','v_estimate_assumption_variance',canJobsView&&canFinanceView,168);
+    addFresh(jobCostDepthRead,'job_cost_depth','finance','v_job_cost_depth_directory',canJobsView&&canFinanceView,168);
     addFresh(changeOrdersRead,'change_orders','jobs','v_change_order_extras_directory',canJobsView,168);
     addFresh(paymentApplicationsRead,'payment_applications','finance','v_ar_payment_application_directory',canFinanceView,168);
     addFresh(equipmentUseRead,'equipment_use','jobs','v_equipment_signout_history',canJobsView,168);
@@ -2258,6 +2510,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover']),
       recurring_outcomes:buildManagementMetricConfidence(sourceFreshness,['recurring','crm_renewals','crm_interactions','seasonal_rollover']),
       estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability']),
+      estimate_accuracy_calibration:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','estimate_assumptions','estimate_assumption_variance','production','change_orders','job_cost_depth','jobs']),
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
@@ -2288,6 +2541,11 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       workflows:estimateWorkflow,dispatch,production,changeOrders,receivables,paymentApplications,
       profitability,jobs,jobsVisible:canJobsView,financeVisible:canFinanceView,
       sourceQueriesOk:[estimateWorkflowRead,dispatchRead,productionRead,changeOrdersRead,receivablesRead,paymentApplicationsRead,profitabilityRead].every((r)=>r.query_ok!==false)
+    });
+    const estimateAccuracyChangeOrderMarginCalibration=buildEstimateAccuracyChangeOrderCalibration({
+      workflows:estimateWorkflow,assumptions:estimateAssumptions,assumptionVariance:estimateAssumptionVariance,
+      production,changeOrders,jobCosts:jobCostDepth,jobs,jobsVisible:canJobsView,financeVisible:canFinanceView,
+      sourceQueriesOk:[estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,productionRead,changeOrdersRead,jobCostDepthRead,jobsRead].every((r)=>r.query_ok!==false)
     });
     const labourEquipmentFleetUtilizationSupport=buildLabourEquipmentFleetUtilizationDecisionSupport({
       timekeeping:timekeepingDetail,production,dispatch,equipment,equipmentUse,maintenance,fleet,
@@ -2331,6 +2589,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,
       recurring_renewal_conversion_churn_outcomes:recurringRenewalConversionChurnOutcomes,
       estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
+      estimate_accuracy_change_order_margin_calibration:estimateAccuracyChangeOrderMarginCalibration,
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
