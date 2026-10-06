@@ -543,7 +543,7 @@ The Owner / Management Command Centre now compares accepted estimate assumption 
 
 Customer-approved and applied change-order estimated cost deltas can adjust the comparison baseline without rewriting the accepted estimate. Approved but unapplied changes remain visible without changing that baseline. Recorded estimate margin can be compared with recorded actual job margin, but no target margin, markup recommendation, pricing threshold or automatic calibration is invented.
 
-Recurring calibration patterns require the same recorded variance direction on at least two comparable estimates within the same recorded template/group. Build 367 is read-only and cannot edit estimates, approve extras, change pricing, mutate job-cost closeout or post Finance.
+Recurring calibration patterns require the same recorded variance direction on at least two comparable estimates within the same recorded template/group. This calibration layer is read-only and cannot edit estimates, approve extras, change pricing, mutate job-cost closeout or post Finance.
 
 The next planned autonomous item is **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion**.
 
