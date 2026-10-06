@@ -534,11 +534,18 @@ Held outcomes require recorded pause/hold evidence. Expired outcomes require rec
 
 Finance evidence remains optional and permission-scoped. The outcome layer does not invent target profitability or retention value and cannot renew/cancel agreements, change prices, contact customers, resolve complaints or mutate CRM, recurring-service, rollover or Finance records.
 
-The next planned autonomous item is **367 — Estimate Accuracy & Change-Order Margin Calibration**.
+<!-- Historical item 366 handoff marker retained for regression provenance: The next planned autonomous item is **367 — Estimate Accuracy & Change-Order Margin Calibration**. -->
+<!-- Historical item 362 queue marker retained for regression provenance: #### 367 — Estimate Accuracy & Change-Order Margin Calibration -->
 
-#### 367 — Estimate Accuracy & Change-Order Margin Calibration
+#### **367 — Estimate Accuracy & Change-Order Margin Calibration** is implemented
 
-Compare accepted estimate assumptions with recorded production, approved extras/change orders and job-cost closeout to identify recurring labour/material/equipment estimation variance. Preserve source units and recorded costing, avoid fabricated target margins, and keep estimate/customer approval and Finance posting authorities unchanged.
+The Owner / Management Command Centre now compares accepted estimate assumption baselines with recorded Production and job-cost evidence. The accepted work-order assumption snapshot is preferred; current estimate assumptions are an explicitly disclosed fallback only when no accepted snapshot is available. Labour, material and equipment cost variance remains source-bounded, and labour hours are compared only where both estimate and Production evidence are recorded in hours.
+
+Customer-approved and applied change-order estimated cost deltas can adjust the comparison baseline without rewriting the accepted estimate. Approved but unapplied changes remain visible without changing that baseline. Recorded estimate margin can be compared with recorded actual job margin, but no target margin, markup recommendation, pricing threshold or automatic calibration is invented.
+
+Recurring calibration patterns require the same recorded variance direction on at least two comparable estimates within the same recorded template/group. Build 367 is read-only and cannot edit estimates, approve extras, change pricing, mutate job-cost closeout or post Finance.
+
+The next planned autonomous item is **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion**.
 
 #### 368 — Completed-to-Invoiced Cycle-Time & Cash Conversion
 
