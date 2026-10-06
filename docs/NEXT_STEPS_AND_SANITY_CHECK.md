@@ -545,11 +545,18 @@ Customer-approved and applied change-order estimated cost deltas can adjust the 
 
 Recurring calibration patterns require the same recorded variance direction on at least two comparable estimates within the same recorded template/group. This calibration layer is read-only and cannot edit estimates, approve extras, change pricing, mutate job-cost closeout or post Finance.
 
-The next planned autonomous item is **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion**.
+<!-- Historical item 367 handoff marker retained for regression provenance: The next planned autonomous item is **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion**. -->
+<!-- Historical item 362 queue marker retained for regression provenance: #### 368 — Completed-to-Invoiced Cycle-Time & Cash Conversion -->
 
-#### 368 — Completed-to-Invoiced Cycle-Time & Cash Conversion
+#### **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion** is implemented
 
-Measure elapsed time from recorded work completion/approved closeout to invoice readiness, A/R invoice creation and recorded payment application/collection evidence. Surface bottlenecks and aging cohorts without creating invoices, applying payments, sending collection messages, posting journals or mutating payment providers.
+The Owner / Management Command Centre now measures recorded elapsed time from explicit completed Production evidence or approved closeout through invoice-candidate readiness, A/R invoice creation, payment application and full collection. Completion, closeout approval, invoice readiness and invoice creation use their recorded milestone timestamps rather than generic status or update times.
+
+Cash collection requires both recorded payment-application evidence and a recorded A/R balance at or below zero. Missing milestone evidence remains unavailable rather than becoming zero elapsed time. Open lifecycle stages are grouped into descriptive 0–1, 2–3, 4–7 and 8+ day cohorts without turning those buckets into service-level targets or automatic collection rules.
+
+The timing layer is read-only and cannot create invoices, apply payments, send collection messages, post journals, change closeout approvals or mutate payment/provider state.
+
+The next planned autonomous item is **369 — Labour Capture Completeness & Payroll Exception Reduction**.
 
 #### 369 — Labour Capture Completeness & Payroll Exception Reduction
 
