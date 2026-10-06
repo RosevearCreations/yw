@@ -198,6 +198,8 @@
     "test:browser:estimate-to-cash-leakage-margin-recovery": "playwright test --config=playwright.config.mjs tests/browser/estimate-to-cash-leakage-margin-recovery.spec.mjs",
     "test:estimate-accuracy-change-order-margin-calibration": "node scripts/estimate-accuracy-change-order-margin-calibration-check.mjs",
     "test:browser:estimate-accuracy-change-order-margin-calibration": "playwright test --config=playwright.config.mjs tests/browser/estimate-accuracy-change-order-margin-calibration.spec.mjs",
+    "test:completed-invoiced-cycle-time-cash-conversion": "node scripts/completed-invoiced-cycle-time-cash-conversion-check.mjs",
+    "test:browser:completed-invoiced-cycle-time-cash-conversion": "playwright test --config=playwright.config.mjs tests/browser/completed-invoiced-cycle-time-cash-conversion.spec.mjs",
     "test:labour-equipment-fleet-utilization-decision-support": "node scripts/labour-equipment-fleet-utilization-decision-support-check.mjs",
     "test:browser:labour-equipment-fleet-utilization-decision-support": "playwright test --config=playwright.config.mjs tests/browser/labour-equipment-fleet-utilization-decision-support.spec.mjs",
     "test:materials-consumables-seasonal-stock-readiness": "node scripts/materials-consumables-seasonal-stock-readiness-check.mjs",
