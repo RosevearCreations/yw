@@ -1418,6 +1418,189 @@ function buildEstimateAccuracyChangeOrderCalibration(input:{
   };
 }
 
+
+function buildCompletedToInvoicedCashConversion(input:{
+  workflows:any[];production:any[];closeouts:any[];invoiceCandidates:any[];receivables:any[];paymentApplications:any[];
+  jobsVisible:boolean;financeVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const now=new Date();
+  const stamp=(value:any)=>{
+    if(!value) return null;
+    const d=new Date(value);return Number.isFinite(d.getTime())?d:null;
+  };
+  const iso=(value:any)=>{const d=stamp(value);return d?d.toISOString():null;};
+  const round1=(value:number)=>Math.round(value*10)/10;
+  const hoursBetween=(a:any,b:any)=>{
+    const start=stamp(a),end=stamp(b);if(!start||!end||end.getTime()<start.getTime())return null;
+    return round1((end.getTime()-start.getTime())/3600000);
+  };
+  const daysBetween=(a:any,b:any)=>{
+    const h=hoursBetween(a,b);return h===null?null:round1(h/24);
+  };
+  const ageDays=(a:any)=>daysBetween(a,now.toISOString());
+  const average=(values:any[])=>{
+    const nums=values.filter((v)=>v!==null&&v!==undefined&&Number.isFinite(Number(v))).map(Number);
+    return nums.length?round1(nums.reduce((sum,v)=>sum+v,0)/nums.length):null;
+  };
+  const bucket=(days:any)=>{
+    if(days===null||days===undefined||!Number.isFinite(Number(days))) return 'age_unavailable';
+    const n=Number(days);if(n<2)return '0_1_days';if(n<4)return '2_3_days';if(n<8)return '4_7_days';return '8_plus_days';
+  };
+  const completedState=(r:any)=>/(^complete$|completed)/i.test(String(r?.completion_state||r?.production_state||r?.session_status||''));
+
+  const workflowsByWorkOrder=new Map((input.workflows||[]).filter((r)=>r?.work_order_id).map((r)=>[String(r.work_order_id),r]));
+  const productionByWorkOrder=new Map<string,any[]>();
+  for(const r of input.production||[]){
+    const id=String(r?.work_order_id||'');if(!id)continue;
+    const list=productionByWorkOrder.get(id)||[];list.push(r);productionByWorkOrder.set(id,list);
+  }
+  const closeoutByWorkOrder=new Map<string,any>();
+  for(const r of input.closeouts||[]){
+    const id=String(r?.work_order_id||'');if(!id)continue;
+    const prev=closeoutByWorkOrder.get(id);
+    const t=stamp(r?.approved_at||r?.submitted_at||r?.created_at)?.getTime()||0;
+    const pt=stamp(prev?.approved_at||prev?.submitted_at||prev?.created_at)?.getTime()||0;
+    if(!prev||t>=pt)closeoutByWorkOrder.set(id,r);
+  }
+  const candidatesByWorkOrder=new Map<string,any[]>();
+  for(const r of input.invoiceCandidates||[]){
+    const id=String(r?.work_order_id||'');if(!id)continue;
+    const list=candidatesByWorkOrder.get(id)||[];list.push(r);candidatesByWorkOrder.set(id,list);
+  }
+  const receivablesByWorkOrder=new Map<string,any[]>();
+  const receivableById=new Map<string,any>();
+  for(const r of input.receivables||[]){
+    const id=String(r?.id||'');if(id)receivableById.set(id,r);
+    const wid=String(r?.work_order_id||'');if(!wid)continue;
+    const list=receivablesByWorkOrder.get(wid)||[];list.push(r);receivablesByWorkOrder.set(wid,list);
+  }
+  const paymentsByInvoice=new Map<string,any[]>();
+  for(const r of input.paymentApplications||[]){
+    const id=String(r?.invoice_id||'');if(!id)continue;
+    const list=paymentsByInvoice.get(id)||[];list.push(r);paymentsByInvoice.set(id,list);
+  }
+
+  const workOrderIds=new Set<string>();
+  for(const [id,rows] of productionByWorkOrder.entries())if(rows.some(completedState))workOrderIds.add(id);
+  for(const [id,r] of closeoutByWorkOrder.entries())if(r?.approved_at||String(r?.closeout_status||'').toLowerCase()==='approved')workOrderIds.add(id);
+  for(const [id,w] of workflowsByWorkOrder.entries())if(w?.completion_ready_for_accounting===true)workOrderIds.add(id);
+
+  const records=[...workOrderIds].map((workOrderId)=>{
+    const workflow=workflowsByWorkOrder.get(workOrderId)||null;
+    const productionRows=productionByWorkOrder.get(workOrderId)||[];
+    const completedRows=productionRows.filter(completedState);
+    const completionTimes=completedRows.map((r)=>r?.ended_at||r?.site_supervisor_signed_off_at||r?.production_recorded_at)
+      .map(stamp).filter(Boolean) as Date[];
+    const completionAt=completionTimes.length?new Date(Math.max(...completionTimes.map((d)=>d.getTime()))).toISOString():null;
+    const closeout=closeoutByWorkOrder.get(workOrderId)||null;
+    const closeoutApprovedAt=iso(closeout?.approved_at);
+    const candidates=(candidatesByWorkOrder.get(workOrderId)||[]).slice().sort((a,b)=>(stamp(a?.created_at)?.getTime()||0)-(stamp(b?.created_at)?.getTime()||0));
+    const candidate=candidates[0]||null;
+    const invoiceReadyAt=iso(candidate?.created_at);
+
+    const workflowInvoiceId=String(workflow?.ar_invoice_id||'');
+    const linkedReceivables=(receivablesByWorkOrder.get(workOrderId)||[]).slice().sort((a,b)=>(stamp(a?.created_at)?.getTime()||0)-(stamp(b?.created_at)?.getTime()||0));
+    const invoice=(workflowInvoiceId&&receivableById.get(workflowInvoiceId))||linkedReceivables[0]||null;
+    const invoiceCreatedAt=iso(invoice?.created_at||invoice?.invoice_date);
+    const invoiceId=String(invoice?.id||workflow?.ar_invoice_id||'');
+    const payments=invoiceId?(paymentsByInvoice.get(invoiceId)||[]):[];
+    const sortedPayments=payments.slice().sort((a,b)=>(stamp(a?.application_date||a?.created_at)?.getTime()||0)-(stamp(b?.application_date||b?.created_at)?.getTime()||0));
+    const firstPayment=sortedPayments[0]||null;
+    const latestPayment=sortedPayments[sortedPayments.length-1]||null;
+    const firstPaymentAt=iso(firstPayment?.application_date||firstPayment?.created_at);
+    const latestPaymentAt=iso(latestPayment?.application_date||latestPayment?.created_at);
+    const appliedTotal=round1(payments.reduce((sum,r)=>sum+Number(r?.applied_amount||0),0));
+    const invoiceTotal=invoice?.total_amount==null?null:Number(invoice.total_amount);
+    const balanceDue=invoice?.balance_due==null?null:Number(invoice.balance_due);
+    const fullyCollected=Boolean(invoice&&latestPaymentAt&&Number.isFinite(balanceDue)&&balanceDue<=0&&appliedTotal>0);
+    const collectionAt=fullyCollected?latestPaymentAt:null;
+
+    const anchorAt=closeoutApprovedAt||completionAt;
+    let currentStage='completion_or_closeout_only';
+    let stageStartedAt=anchorAt;
+    if(invoiceReadyAt&&!invoiceCreatedAt){currentStage='invoice_ready_not_invoiced';stageStartedAt=invoiceReadyAt;}
+    else if(invoiceCreatedAt&&!fullyCollected){currentStage='invoiced_open';stageStartedAt=invoiceCreatedAt;}
+    else if(fullyCollected){currentStage='collected';stageStartedAt=collectionAt;}
+    else if(anchorAt&&!invoiceReadyAt){currentStage='completed_not_invoice_ready';}
+    const currentAgeDays=currentStage==='collected'?0:ageDays(stageStartedAt);
+
+    return {
+      work_order_id:workOrderId,
+      work_order_number:workflow?.work_order_number||closeout?.work_order_number||completedRows[0]?.work_order_number||null,
+      estimate_number:workflow?.estimate_number||null,
+      client_name:workflow?.client_name||closeout?.client_name||completedRows[0]?.client_name||invoice?.client_name||null,
+      site_name:workflow?.site_name||completedRows[0]?.site_name||null,
+      completion_at:completionAt,completion_source:completionAt?'latest_recorded_completed_production_session':null,
+      closeout_approved_at:closeoutApprovedAt,closeout_status:closeout?.closeout_status||null,
+      invoice_readiness_status:closeout?.invoice_readiness_status||null,
+      invoice_candidate_id:candidate?.id||workflow?.invoice_candidate_id||null,
+      invoice_candidate_number:candidate?.candidate_number||workflow?.invoice_candidate_number||null,
+      invoice_ready_at:invoiceReadyAt,invoice_ready_source:invoiceReadyAt?'job_invoice_candidates.created_at':null,
+      invoice_id:invoice?.id||workflow?.ar_invoice_id||null,invoice_number:invoice?.invoice_number||workflow?.ar_invoice_number||null,
+      invoice_status:invoice?.invoice_status||workflow?.ar_invoice_status||null,invoice_created_at:invoiceCreatedAt,
+      invoice_total_amount:Number.isFinite(invoiceTotal)?invoiceTotal:null,invoice_balance_due:Number.isFinite(balanceDue)?balanceDue:null,
+      payment_application_count:payments.length,payment_applied_total:appliedTotal,first_payment_at:firstPaymentAt,latest_payment_at:latestPaymentAt,
+      collection_at:collectionAt,fully_collected_with_payment_evidence:fullyCollected,
+      completion_to_closeout_hours:hoursBetween(completionAt,closeoutApprovedAt),
+      completion_to_invoice_ready_hours:hoursBetween(completionAt,invoiceReadyAt),
+      closeout_to_invoice_ready_hours:hoursBetween(closeoutApprovedAt,invoiceReadyAt),
+      invoice_ready_to_invoice_hours:hoursBetween(invoiceReadyAt,invoiceCreatedAt),
+      completion_to_invoice_hours:hoursBetween(completionAt,invoiceCreatedAt),
+      closeout_to_invoice_hours:hoursBetween(closeoutApprovedAt,invoiceCreatedAt),
+      invoice_to_first_payment_days:daysBetween(invoiceCreatedAt,firstPaymentAt),
+      invoice_to_collection_days:daysBetween(invoiceCreatedAt,collectionAt),
+      completion_to_collection_days:daysBetween(completionAt,collectionAt),
+      current_stage:currentStage,current_stage_age_days:currentAgeDays,current_stage_age_bucket:bucket(currentAgeDays)
+    };
+  }).sort((a,b)=>{
+    const av=Number(a.current_stage_age_days??-1),bv=Number(b.current_stage_age_days??-1);
+    return bv-av||String(a.work_order_number||'').localeCompare(String(b.work_order_number||''));
+  });
+
+  const agingStages=['completed_not_invoice_ready','invoice_ready_not_invoiced','invoiced_open'];
+  const agingCohorts=agingStages.flatMap((stage)=>['0_1_days','2_3_days','4_7_days','8_plus_days'].map((ageBucket)=>{
+    const rows=records.filter((r)=>r.current_stage===stage&&r.current_stage_age_bucket===ageBucket);
+    return {
+      stage,age_bucket:ageBucket,count:rows.length,
+      invoice_value_total:round1(rows.reduce((sum,r)=>sum+Number(r.invoice_total_amount||0),0)),
+      open_balance_total:round1(rows.reduce((sum,r)=>sum+Number(r.invoice_balance_due||0),0))
+    };
+  }));
+
+  const invoiced=records.filter((r)=>r.invoice_created_at);
+  const collected=records.filter((r)=>r.fully_collected_with_payment_evidence);
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk!==false,
+    jobs_visible:input.jobsVisible,finance_visible:input.financeVisible,
+    summary:{
+      completed_or_approved_closeouts:records.length,
+      invoice_ready_count:records.filter((r)=>r.invoice_ready_at).length,
+      invoiced_count:invoiced.length,
+      fully_collected_with_payment_evidence_count:collected.length,
+      completed_not_invoice_ready_count:records.filter((r)=>r.current_stage==='completed_not_invoice_ready').length,
+      invoice_ready_not_invoiced_count:records.filter((r)=>r.current_stage==='invoice_ready_not_invoiced').length,
+      invoiced_open_count:records.filter((r)=>r.current_stage==='invoiced_open').length,
+      average_completion_to_invoice_hours:average(records.map((r)=>r.completion_to_invoice_hours)),
+      average_closeout_to_invoice_hours:average(records.map((r)=>r.closeout_to_invoice_hours)),
+      average_invoice_to_first_payment_days:average(records.map((r)=>r.invoice_to_first_payment_days)),
+      average_invoice_to_collection_days:average(records.map((r)=>r.invoice_to_collection_days)),
+      average_completion_to_collection_days:average(records.map((r)=>r.completion_to_collection_days)),
+      recorded_invoiced_value_total:round1(invoiced.reduce((sum,r)=>sum+Number(r.invoice_total_amount||0),0)),
+      recorded_open_balance_total:round1(invoiced.reduce((sum,r)=>sum+Math.max(0,Number(r.invoice_balance_due||0)),0)),
+      recorded_fully_collected_invoice_value_total:round1(collected.reduce((sum,r)=>sum+Number(r.invoice_total_amount||0),0))
+    },
+    aging_cohorts:agingCohorts,
+    cycle_records:records.slice(0,250),
+    completion_boundary:'Completion time uses the latest recorded Production session explicitly carrying completed evidence. Completion is not inferred from a work-order status alone.',
+    closeout_boundary:'Approved closeout time uses recorded closeout approved_at only. Generic closeout updated_at is not treated as approval or invoice-readiness time.',
+    invoice_readiness_boundary:'Invoice readiness time uses the recorded job_invoice_candidates created_at event. A readiness status without a candidate timestamp is not assigned a synthetic time.',
+    invoice_boundary:'Invoice creation time uses recorded A/R invoice created_at, with invoice_date only as a source fallback when creation time is absent.',
+    payment_boundary:'Payment timing uses recorded payment-application evidence. Full collection requires an A/R balance at or below zero plus at least one recorded applied payment; a paid-looking status alone is not treated as cash collection.',
+    aging_boundary:'Aging buckets are descriptive elapsed-time cohorts (0–1, 2–3, 4–7 and 8+ days), not service-level targets or collection thresholds.',
+    authority_boundary:'Read-only cash-conversion evidence only. This layer cannot create invoices, apply payments, send collection messages, post journals, alter closeout approvals or mutate payment/provider state.'
+  };
+}
+
 function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
   timekeeping:any[];production:any[];dispatch:any[];equipment:any[];equipmentUse:any[];maintenance:any[];fleet:any[];
   jobsVisible:boolean;adminVisible:boolean;sourceQueriesOk:boolean;
@@ -2381,7 +2564,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
       routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
-      estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,jobCostDepthRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,materialStockRead,materialPlansRead,
+      estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,jobCostDepthRead,invoiceCandidatesRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,materialStockRead,materialPlansRead,
       crmFollowupsRead,customerDirectoryRead,notificationQueueRead,closeoutsRead,propertyDirectoryRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -2416,6 +2599,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'v_estimate_workflow_assumption_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
       (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'v_estimate_assumption_variance','*','work_order_number',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'v_job_cost_depth_directory','*','job_code',750,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
+      (canJobsView&&canFinanceView) ? safeListEvidence(supabase,'job_invoice_candidates','*','created_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_change_order_extras_directory','*','updated_at',750,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:750}),
       canFinanceView ? safeListEvidence(supabase,'v_ar_payment_application_directory','*','application_date',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_equipment_signout_history','*','checked_out_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
@@ -2437,7 +2621,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       recurringEvents=recurringEventsRead.rows,crmRenewals=crmRenewalsRead.rows,crmInteractions=crmInteractionsRead.rows,
       agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows,
       estimateWorkflow=estimateWorkflowRead.rows,estimateAssumptions=estimateAssumptionsRead.rows,estimateAssumptionVariance=estimateAssumptionVarianceRead.rows,
-      jobCostDepth=jobCostDepthRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
+      jobCostDepth=jobCostDepthRead.rows,invoiceCandidates=invoiceCandidatesRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
       equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,
       crmFollowups=crmFollowupsRead.rows,customerDirectory=customerDirectoryRead.rows,notificationQueue=notificationQueueRead.rows,closeouts=closeoutsRead.rows,
       propertyDirectory=propertyDirectoryRead.rows;
@@ -2477,6 +2661,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
     addFresh(estimateAssumptionsRead,'estimate_assumptions','jobs+finance','v_estimate_workflow_assumption_directory',canJobsView&&canFinanceView,168);
     addFresh(estimateAssumptionVarianceRead,'estimate_assumption_variance','jobs+finance','v_estimate_assumption_variance',canJobsView&&canFinanceView,168);
     addFresh(jobCostDepthRead,'job_cost_depth','finance','v_job_cost_depth_directory',canJobsView&&canFinanceView,168);
+    addFresh(invoiceCandidatesRead,'invoice_candidates','jobs+finance','job_invoice_candidates',canJobsView&&canFinanceView,168);
     addFresh(changeOrdersRead,'change_orders','jobs','v_change_order_extras_directory',canJobsView,168);
     addFresh(paymentApplicationsRead,'payment_applications','finance','v_ar_payment_application_directory',canFinanceView,168);
     addFresh(equipmentUseRead,'equipment_use','jobs','v_equipment_signout_history',canJobsView,168);
@@ -2511,6 +2696,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       recurring_outcomes:buildManagementMetricConfidence(sourceFreshness,['recurring','crm_renewals','crm_interactions','seasonal_rollover']),
       estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability']),
       estimate_accuracy_calibration:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','estimate_assumptions','estimate_assumption_variance','production','change_orders','job_cost_depth','jobs']),
+      completed_invoiced_cash_conversion:buildManagementMetricConfidence(sourceFreshness,['production','closeouts','invoice_candidates','receivables','payment_applications']),
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
@@ -2546,6 +2732,11 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       workflows:estimateWorkflow,assumptions:estimateAssumptions,assumptionVariance:estimateAssumptionVariance,
       production,changeOrders,jobCosts:jobCostDepth,jobs,jobsVisible:canJobsView,financeVisible:canFinanceView,
       sourceQueriesOk:[estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,productionRead,changeOrdersRead,jobCostDepthRead,jobsRead].every((r)=>r.query_ok!==false)
+    });
+    const completedToInvoicedCashConversion=buildCompletedToInvoicedCashConversion({
+      workflows:estimateWorkflow,production,closeouts,invoiceCandidates,receivables,paymentApplications,
+      jobsVisible:canJobsView,financeVisible:canFinanceView,
+      sourceQueriesOk:[estimateWorkflowRead,productionRead,closeoutsRead,invoiceCandidatesRead,receivablesRead,paymentApplicationsRead].every((r)=>r.query_ok!==false)
     });
     const labourEquipmentFleetUtilizationSupport=buildLabourEquipmentFleetUtilizationDecisionSupport({
       timekeeping:timekeepingDetail,production,dispatch,equipment,equipmentUse,maintenance,fleet,
@@ -2590,6 +2781,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       recurring_renewal_conversion_churn_outcomes:recurringRenewalConversionChurnOutcomes,
       estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
       estimate_accuracy_change_order_margin_calibration:estimateAccuracyChangeOrderMarginCalibration,
+      completed_to_invoiced_cycle_time_cash_conversion:completedToInvoicedCashConversion,
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
