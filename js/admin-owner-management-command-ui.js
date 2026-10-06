@@ -32,6 +32,7 @@
       '<section class="admin-panel-block owner366-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring renewal conversion &amp; churn outcomes</h4><p class="section-subtitle">Build 366 · recorded renewed, declined, held, expired and unresolved outcomes from recurring agreements, CRM decisions, seasonal rollover and permission-scoped Finance evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Recorded outcomes only:</strong> active or overdue status is not treated as a renewal. This view does not renew/cancel agreements, change pricing, contact customers or resolve complaints.</div><div id="owner366Outcomes"></div></section>',
       '<section class="admin-panel-block owner356-cash" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate-to-cash leakage &amp; margin recovery</h4><p class="section-subtitle">Build 356 · accepted estimate → scheduling → production → approved extras → invoice readiness → invoicing → payment application → collection.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Analytical only:</strong> this workbench does not create invoices, post accounting, apply payments, send collection messages or charge customers.</div><div id="owner356EstimateCash"></div></section>',
       '<section class="admin-panel-block owner367-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate accuracy &amp; change-order margin calibration</h4><p class="section-subtitle">Build 367 · accepted estimate baselines versus recorded labour, material, equipment, approved/applied change-order and job-cost closeout evidence.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Calibration evidence only:</strong> recorded variances can identify repeated estimate patterns, but this view never edits assumptions, invents target margins, changes prices, approves extras or posts accounting.</div><div id="owner367Calibration"></div></section>',
+      '<section class="admin-panel-block owner368-cash-cycle" style="margin-top:12px;"><div class="owner350-head"><div><h4>Completed-to-invoiced cycle-time &amp; cash conversion</h4><p class="section-subtitle">Build 368 · recorded completion/approved closeout → invoice readiness → A/R invoice creation → payment application and full-collection evidence.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Timing evidence only:</strong> this view measures recorded milestones and aging cohorts. It never creates invoices, applies payments, sends collection messages, posts journals or mutates payment-provider state.</div><div id="owner368CashCycle"></div></section>',
       '<section class="admin-panel-block owner357-utilization" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour, equipment &amp; fleet utilization decision support</h4><p class="section-subtitle">Build 357 · 30-day paid-time, crew assignment, production labour, equipment-use, maintenance, lockout/downtime and fleet availability evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Decision support only:</strong> this view does not score employees, clear Safety restrictions, change crew/equipment assignments, complete maintenance, replace assets or create purchases.</div><div id="owner357Utilization"></div></section>',
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
@@ -361,6 +362,60 @@
         '<details style="margin-top:8px;"><summary>Evidence, units and authority boundaries</summary><p class="muted">'+esc(c.baseline_boundary||'')+'</p><p class="muted">'+esc(c.unit_boundary||'')+'</p><p class="muted">'+esc(c.change_order_boundary||'')+'</p><p class="muted">'+esc(c.margin_boundary||'')+'</p><p class="muted">'+esc(c.actuals_boundary||'')+'</p><p class="muted">'+esc(c.authority_boundary||'')+'</p></details>';
     }
 
+
+    function renderCompletedCashConversion(){
+      const host=$('owner368CashCycle');if(!host)return;
+      const c=state.data?.completed_to_invoiced_cycle_time_cash_conversion;
+      const meta=metricMeta('completed_invoiced_cash_conversion');
+      if(!allowed('jobs')||!allowed('finance')){host.innerHTML='<p class="muted">Completed-to-invoiced cash-conversion evidence requires both Jobs and Finance visibility for this profile.</p>';return}
+      if(!c||!c.summary){host.innerHTML='<p class="muted">Completed-to-invoiced cash-conversion evidence is unavailable from this response.</p>';return}
+      if(c.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical cash-conversion source queries failed. Cycle-time values are withheld rather than converted into zero-valued facts.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required cash-conversion evidence is unavailable.')+'</p>';return}
+
+      const x=c.summary||{};
+      const measure=(v,suffix)=>v==null?'Unavailable':num(v)+(suffix||'');
+      const summary='<div class="owner351-summary">'+[
+        card('Completed / approved',num(x.completed_or_approved_closeouts),'recorded lifecycle starts','completed_invoiced_cash_conversion'),
+        card('Invoice ready',num(x.invoice_ready_count),num(x.invoice_ready_not_invoiced_count)+' ready but not invoiced','completed_invoiced_cash_conversion'),
+        card('Invoiced',num(x.invoiced_count),money(x.recorded_invoiced_value_total)+' recorded invoice value','completed_invoiced_cash_conversion'),
+        card('Collected',num(x.fully_collected_with_payment_evidence_count),money(x.recorded_fully_collected_invoice_value_total)+' with payment evidence','completed_invoiced_cash_conversion'),
+        card('Completion → invoice',measure(x.average_completion_to_invoice_hours,' h'),'average only where both timestamps exist','completed_invoiced_cash_conversion'),
+        card('Invoice → collection',measure(x.average_invoice_to_collection_days,' d'),money(x.recorded_open_balance_total)+' recorded open balance','completed_invoiced_cash_conversion')
+      ].join('')+'</div>';
+
+      const stageLabel={completed_not_invoice_ready:'Completed / closeout, not invoice ready',invoice_ready_not_invoiced:'Invoice ready, not invoiced',invoiced_open:'Invoiced, balance open'};
+      const bucketLabel={'0_1_days':'0–1 days','2_3_days':'2–3 days','4_7_days':'4–7 days','8_plus_days':'8+ days'};
+      const cohorts=(c.aging_cohorts||[]).filter(r=>Number(r.count||0)>0).map(r=>
+        '<div class="owner350-row" data-owner368-cohort="'+esc((r.stage||'')+':'+(r.age_bucket||''))+'"><strong>'+esc((stageLabel[r.stage]||String(r.stage||'stage').replaceAll('_',' '))+' · '+(bucketLabel[r.age_bucket]||r.age_bucket||'age unavailable'))+'</strong><small>'+esc(num(r.count)+' record(s) · invoice value '+money(r.invoice_value_total)+' · open balance '+money(r.open_balance_total))+'</small></div>'
+      ).join('');
+
+      const records=(c.cycle_records||[]).slice(0,36).map(r=>{
+        const stage=String(r.current_stage||'recorded').replaceAll('_',' ');
+        const age=r.current_stage==='collected'?'collected':(r.current_stage_age_days==null?'age unavailable':num(r.current_stage_age_days)+' day(s) in stage');
+        const cycle=[
+          r.completion_to_closeout_hours==null?'completion → closeout unavailable':'completion → closeout '+num(r.completion_to_closeout_hours)+' h',
+          r.completion_to_invoice_ready_hours==null?'completion → invoice ready unavailable':'completion → invoice ready '+num(r.completion_to_invoice_ready_hours)+' h',
+          r.invoice_ready_to_invoice_hours==null?'ready → invoice unavailable':'ready → invoice '+num(r.invoice_ready_to_invoice_hours)+' h',
+          r.invoice_to_first_payment_days==null?'invoice → first payment unavailable':'invoice → first payment '+num(r.invoice_to_first_payment_days)+' d',
+          r.invoice_to_collection_days==null?'invoice → collection unavailable':'invoice → collection '+num(r.invoice_to_collection_days)+' d'
+        ].join(' · ');
+        const milestones=[
+          'completion '+when(r.completion_at),
+          'closeout '+when(r.closeout_approved_at),
+          'ready '+when(r.invoice_ready_at),
+          'invoice '+when(r.invoice_created_at),
+          'first payment '+when(r.first_payment_at),
+          'collection '+when(r.collection_at)
+        ].join(' · ');
+        return '<div class="owner350-row" data-owner368-record="'+esc(String(r.work_order_id||''))+'"><strong>'+esc((r.work_order_number||'Work order')+' · '+(r.invoice_number||'No A/R invoice'))+'</strong><small>'+esc((r.client_name||'Client unavailable')+(r.site_name?' · '+r.site_name:'')+' · '+stage+' · '+age)+'</small><small>'+esc(cycle)+'</small><small>'+esc(milestones)+'</small><small>'+esc('payments '+num(r.payment_application_count)+' · applied '+money(r.payment_applied_total)+' · balance '+(r.invoice_balance_due==null?'unavailable':money(r.invoice_balance_due)))+'</small></div>';
+      }).join('');
+
+      host.innerHTML=summary+
+        '<details open><summary>Aging cohorts</summary><div class="owner350-list" style="margin-top:8px;">'+(cohorts||'<p class="muted">No open completed-to-cash aging cohort is visible in the loaded evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Recorded cycle traces</summary><div class="owner350-list" style="margin-top:8px;">'+(records||'<p class="muted">No completed or approved-closeout cash-conversion record is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Timing and authority boundaries</summary><p class="muted">'+esc(c.completion_boundary||'')+'</p><p class="muted">'+esc(c.closeout_boundary||'')+'</p><p class="muted">'+esc(c.invoice_readiness_boundary||'')+'</p><p class="muted">'+esc(c.invoice_boundary||'')+'</p><p class="muted">'+esc(c.payment_boundary||'')+'</p><p class="muted">'+esc(c.aging_boundary||'')+'</p><p class="muted">'+esc(c.authority_boundary||'')+'</p></details>';
+    }
+
     function renderUtilizationSupport(){
       const host=$('owner357Utilization');if(!host)return;
       const w=state.data?.labour_equipment_fleet_utilization_support;
@@ -565,6 +620,7 @@
       renderRecurringOutcomes();
       renderEstimateToCash();
       renderEstimateCalibration();
+      renderCompletedCashConversion();
       renderUtilizationSupport();
       renderStockReadiness();
       renderCommunicationReadiness();
