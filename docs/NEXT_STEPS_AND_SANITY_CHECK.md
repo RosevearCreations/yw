@@ -591,6 +591,8 @@ Estimator assumptions, actual-use events, inventory quantities, reorder settings
 
 <!-- Historical item 371 handoff marker retained for regression provenance: The next planned autonomous item is **372 — Customer Communication Outcome & Follow-Up Effectiveness**. -->
 
+<!-- Historical item 362 queue marker retained for regression provenance: #### 372 — Customer Communication Outcome & Follow-Up Effectiveness -->
+
 #### **372 — Customer Communication Outcome & Follow-Up Effectiveness** is implemented
 
 The Owner / Management Command Centre now measures recorded communication outcomes from canonical CRM interactions, CRM follow-ups, approved/invoice-ready closeouts and protected notification-delivery evidence. A recorded customer response requires a later inbound CRM interaction on the same work order; missing linkage or missing inbound evidence remains unknown rather than being inferred as silence, failure or success.
