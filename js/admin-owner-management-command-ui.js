@@ -34,6 +34,7 @@
       '<section class="admin-panel-block owner367-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate accuracy &amp; change-order margin calibration</h4><p class="section-subtitle">Build 367 · accepted estimate baselines versus recorded labour, material, equipment, approved/applied change-order and job-cost closeout evidence.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Calibration evidence only:</strong> recorded variances can identify repeated estimate patterns, but this view never edits assumptions, invents target margins, changes prices, approves extras or posts accounting.</div><div id="owner367Calibration"></div></section>',
       '<section class="admin-panel-block owner368-cash-cycle" style="margin-top:12px;"><div class="owner350-head"><div><h4>Completed-to-invoiced cycle-time &amp; cash conversion</h4><p class="section-subtitle">Build 368 · recorded completion/approved closeout → invoice readiness → A/R invoice creation → payment application and full-collection evidence.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Timing evidence only:</strong> this view measures recorded milestones and aging cohorts. It never creates invoices, applies payments, sends collection messages, posts journals or mutates payment-provider state.</div><div id="owner368CashCycle"></div></section>',
       '<section class="admin-panel-block owner357-utilization" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour, equipment &amp; fleet utilization decision support</h4><p class="section-subtitle">Build 357 · 30-day paid-time, crew assignment, production labour, equipment-use, maintenance, lockout/downtime and fleet availability evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Decision support only:</strong> this view does not score employees, clear Safety restrictions, change crew/equipment assignments, complete maintenance, replace assets or create purchases.</div><div id="owner357Utilization"></div></section>',
+      '<section class="admin-panel-block owner370-equipment-lifecycle" style="margin-top:12px;"><div class="owner350-head"><div><h4>Equipment downtime cost &amp; replacement readiness</h4><p class="section-subtitle">Build 370 · 365-day recorded downtime, maintenance/service burden, signout evidence, lifecycle costs and existing replacement-state context.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Lifecycle review only:</strong> repeated downtime/maintenance are evidence signals, not replacement recommendations. This view cannot clear lockouts, return assets to service, replace/buy equipment, create vendor commitments or post Finance.</div><div id="owner370EquipmentLifecycle"></div></section>',
       '<section class="admin-panel-block owner369-labour-capture" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour capture completeness &amp; payroll exception reduction</h4><p class="section-subtitle">Build 369 · 30 completed days of crew/job work evidence matched to canonical timekeeping and payroll-readiness evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Evidence quality, not employee scoring:</strong> this view surfaces missing/exception payroll evidence at crew/job level. It never ranks workers, approves payroll or corrections, changes pay codes, makes employment decisions or overrides Safety restrictions.</div><div id="owner369LabourCapture"></div></section>',
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
@@ -466,6 +467,79 @@
 
 
 
+
+    function renderEquipmentDowntimeReplacementReadiness(){
+      const host=$('owner370EquipmentLifecycle');if(!host)return;
+      const w=state.data?.equipment_downtime_cost_replacement_readiness;
+      const meta=metricMeta('equipment_downtime_replacement_readiness');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Equipment lifecycle evidence requires Jobs visibility for this profile.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Equipment downtime, cost and replacement-readiness evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical equipment lifecycle source queries failed. Downtime/cost results are withheld rather than converted into zero-valued facts.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required equipment lifecycle evidence is unavailable.')+'</p>';return}
+
+      const x=w.summary||{};
+      const financeContext=allowed('finance')?num(x.assets_with_finance_job_cost_context):'Unavailable';
+      const summary='<div class="owner351-summary">'+[
+        card('Equipment assets',num(x.equipment_assets),num(x.lifecycle_attention_assets)+' lifecycle attention','equipment_downtime_replacement_readiness'),
+        card('Lockout / downtime',num(x.locked_out_assets)+' / '+num(x.current_fleet_downtime_assets),'current recorded constraints','equipment_downtime_replacement_readiness'),
+        card('Downtime, 365d',num(x.recorded_downtime_hours_365)+' h',num(x.repeated_downtime_assets)+' asset(s) with repeated events','equipment_downtime_replacement_readiness'),
+        card('Repeated maintenance',num(x.repeated_maintenance_assets),num(x.open_service_task_assets)+' asset(s) with open service tasks','equipment_downtime_replacement_readiness'),
+        card('Replacement state',num(x.recorded_replacement_plan_assets)+' plan / '+num(x.recorded_replacement_hold_assets)+' hold','existing registry state only','equipment_downtime_replacement_readiness'),
+        card('Recorded service cost',money(x.recorded_service_cost_total_all_time),'registry all-time service rollup','equipment_downtime_replacement_readiness'),
+        card('Recorded replacement estimate',money(x.recorded_replacement_estimated_cost_total),'only assets already carrying plan/replace state','equipment_downtime_replacement_readiness'),
+        card('Finance job context',financeContext,allowed('finance')?'linked job-level context; not asset-attributed':'Finance module unavailable.','equipment_downtime_replacement_readiness')
+      ].join('')+'</div>';
+
+      const attention=(w.lifecycle_attention||[]).slice(0,50).map(r=>{
+        const state=String(r.lifecycle_review_state||'recorded').replaceAll('_',' ');
+        const signals=(r.lifecycle_review_signals||[]).join(' · ')||'no recorded lifecycle attention signal';
+        const downtime=[
+          num(r.downtime_event_count_365)+' downtime event(s)',
+          num(r.recorded_downtime_hours_365)+' recorded h',
+          r.current_fleet_downtime?'current fleet downtime '+(r.current_fleet_downtime_hours==null?'age unavailable':num(r.current_fleet_downtime_hours)+' h'):'',
+          r.locked_out?'locked out '+(r.lockout_age_days==null?'age unavailable':num(r.lockout_age_days)+' d'):''
+        ].filter(Boolean).join(' · ');
+        const maintenance=[
+          num(r.maintenance_history_count_365)+' maintenance history event(s) / '+money(r.maintenance_history_cost_365),
+          num(r.service_task_count_365)+' service task(s) / '+money(r.service_task_actual_cost_365)+' actual',
+          num(r.open_service_task_count_365)+' open task(s) / '+money(r.open_service_estimated_cost_365)+' recorded estimate'
+        ].join(' · ');
+        const lifecycle=[
+          'acquisition '+(r.acquisition_cost==null?'unavailable':money(r.acquisition_cost)),
+          'recorded service '+(r.recorded_service_cost_total_all_time==null?'unavailable':money(r.recorded_service_cost_total_all_time)),
+          'recorded lifecycle '+(r.recorded_lifecycle_cost_total==null?'unavailable':money(r.recorded_lifecycle_cost_total)),
+          r.service_cost_to_acquisition_percent==null?'service/acquisition ratio unavailable':'service/acquisition '+pct(r.service_cost_to_acquisition_percent)
+        ].join(' · ');
+        const replacement=[
+          'replacement state '+(r.replacement_state||'not recorded'),
+          r.replacement_target_date?'target '+r.replacement_target_date:'',
+          r.replacement_estimated_cost==null?'':'recorded estimate '+money(r.replacement_estimated_cost)
+        ].filter(Boolean).join(' · ');
+        const jobs=allowed('finance')&&(r.linked_job_cost_context||[]).length
+          ?(r.linked_job_cost_context||[]).slice(0,5).map(j=>{
+              const bits=[
+                j.job_equipment_repair_cost_total==null?'':'job repair '+money(j.job_equipment_repair_cost_total),
+                j.equipment_repair_event_cost_total==null?'':'repair events '+money(j.equipment_repair_event_cost_total),
+                j.equipment_replacement_cost_total==null?'':'replacement '+money(j.equipment_replacement_cost_total),
+                j.job_delay_cost_total==null?'':'delay '+money(j.job_delay_cost_total)
+              ].filter(Boolean).join(' · ');
+              return (j.job_code||j.job_name||'Linked job')+(bits?' · '+bits:'');
+            }).join(' | ')
+          :(allowed('finance')?'no linked job-level Finance cost context':'Finance context unavailable');
+        return '<div class="owner350-row" data-owner370-asset="'+esc(String(r.equipment_item_id||r.equipment_code||''))+'"><strong>'+esc((r.equipment_code||'Equipment')+' · '+(r.equipment_name||'')+' · '+state)+'</strong><small>'+esc(signals)+'</small><small>'+esc(downtime)+'</small><small>'+esc(maintenance)+'</small><small>'+esc(lifecycle)+'</small><small>'+esc(replacement)+'</small><small>'+esc('Job-cost context: '+jobs)+'</small></div>';
+      }).join('');
+
+      const assets=(w.asset_evidence||[]).slice(0,60).map(r=>{
+        const state=String(r.lifecycle_review_state||'recorded').replaceAll('_',' ');
+        return '<div class="owner350-row" data-owner370-evidence="'+esc(String(r.equipment_item_id||r.equipment_code||''))+'"><strong>'+esc((r.equipment_code||'Equipment')+' · '+(r.equipment_name||''))+'</strong><small>'+esc(state+' · downtime events '+num(r.downtime_event_count_365)+' · maintenance/service '+num(Number(r.maintenance_history_count_365||0)+Number(r.service_task_count_365||0))+' · signouts '+num(r.signout_count_365))+'</small><small>'+esc('readiness '+(r.registry_readiness_status||'not recorded')+' · replacement '+(r.replacement_state||'not recorded')+' · last use '+(r.last_recorded_use_at?when(r.last_recorded_use_at):'not recorded'))+'</small></div>';
+      }).join('');
+
+      host.innerHTML=summary+
+        '<details open style="margin-top:8px;"><summary>Lifecycle attention evidence</summary><div class="owner350-list" style="margin-top:8px;">'+(attention||'<p class="muted">No recorded lifecycle attention signal is visible in the loaded equipment evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>All loaded equipment evidence</summary><div class="owner350-list" style="margin-top:8px;">'+(assets||'<p class="muted">No equipment registry evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Downtime, cost, replacement &amp; authority boundaries</summary><p class="muted">'+esc(w.downtime_boundary||'')+'</p><p class="muted">'+esc(w.maintenance_boundary||'')+'</p><p class="muted">'+esc(w.cost_boundary||'')+'</p><p class="muted">'+esc(w.replacement_boundary||'')+'</p><p class="muted">'+esc(w.safety_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
     function renderLabourCapturePayrollExceptions(){
       const host=$('owner369LabourCapture');if(!host)return;
       const w=state.data?.labour_capture_completeness_payroll_exception_reduction;
@@ -668,6 +742,7 @@
       renderEstimateCalibration();
       renderCompletedCashConversion();
       renderUtilizationSupport();
+      renderEquipmentDowntimeReplacementReadiness();
       renderLabourCapturePayrollExceptions();
       renderStockReadiness();
       renderCommunicationReadiness();

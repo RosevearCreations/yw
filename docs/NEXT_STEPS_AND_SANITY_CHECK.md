@@ -567,11 +567,18 @@ Late capture is counted only from explicitly recorded late/missed/untimely payro
 
 The management response remains aggregated to crew/job/service-date and repeated crew/job patterns. It excludes individual employee names, employee numbers, explanations, supervisor notes and approver identities, and cannot edit time entries, approve payroll/corrections, change pay codes, rank workers, make employment decisions or override Safety restrictions.
 
-The next planned autonomous item is **370 — Equipment Downtime Cost & Replacement Readiness**.
+<!-- Historical item 369 handoff marker retained for regression provenance: The next planned autonomous item is **370 — Equipment Downtime Cost & Replacement Readiness**. -->
+<!-- Historical item 362 queue marker retained for regression provenance: #### 370 — Equipment Downtime Cost & Replacement Readiness -->
 
-#### 370 — Equipment Downtime Cost & Replacement Readiness
+#### **370 — Equipment Downtime Cost & Replacement Readiness** is implemented
 
-Connect recorded lockout, maintenance, fleet downtime, signout/use and job-cost evidence into lifecycle decision support. Measure downtime exposure and repeated maintenance burden where source costing exists; do not clear lockouts, return assets to service, buy/replace equipment or create vendor commitments.
+The Owner / Management Command Centre now combines equipment registry state with 365-day historical fleet downtime, recorded maintenance history, service tasks, signout/use evidence and optional linked job-level Finance context. Downtime exposure uses recorded event start/end timestamps; open downtime is measured only from its recorded start through evidence-generation time.
+
+Registry all-time service/lifecycle cost rollups remain separate from 365-day maintenance-history and service-task costs so the layer does not add overlapping sources together. Linked job repair/replacement/delay totals remain explicitly job-level context and are not attributed to an asset unless the Finance source already provides asset attribution.
+
+Replacement readiness preserves the existing replacement state, target date, reason and estimated cost. Repeated downtime means at least two recorded downtime events and repeated maintenance means at least two recorded maintenance/service events; these are lifecycle-review signals rather than replacement or purchasing recommendations. Lockout/return-to-service, maintenance execution, equipment purchasing/replacement, vendor commitments and Finance posting remain under their existing authorities.
+
+The next planned autonomous item is **371 — Material Usage Variance & Reorder Calibration**.
 
 #### 371 — Material Usage Variance & Reorder Calibration
 
