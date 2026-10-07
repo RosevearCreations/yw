@@ -589,11 +589,17 @@ Repeated over-use or under-use requires at least two comparable estimator lines 
 
 Estimator assumptions, actual-use events, inventory quantities, reorder settings and purchasing remain under their existing authorities. This calibration layer cannot create purchase orders, contact suppliers, reserve stock or create vendor commitments.
 
-The next planned autonomous item is **372 — Customer Communication Outcome & Follow-Up Effectiveness**.
+<!-- Historical item 371 handoff marker retained for regression provenance: The next planned autonomous item is **372 — Customer Communication Outcome & Follow-Up Effectiveness**. -->
 
-#### 372 — Customer Communication Outcome & Follow-Up Effectiveness
+#### **372 — Customer Communication Outcome & Follow-Up Effectiveness** is implemented
 
-Measure recorded outcomes after communication-readiness candidates using canonical CRM interactions, schedule/completion state and consent/provider-safe delivery evidence. Distinguish completed follow-up, unresolved follow-up and recurrence without sending messages, exposing contact secrets, retrying provider delivery or changing customer preferences.
+The Owner / Management Command Centre now measures recorded communication outcomes from canonical CRM interactions, CRM follow-ups, approved/invoice-ready closeouts and protected notification-delivery evidence. A recorded customer response requires a later inbound CRM interaction on the same work order; missing linkage or missing inbound evidence remains unknown rather than being inferred as silence, failure or success.
+
+Follow-up effectiveness keeps completion status and timing explicit by comparing recorded completed_at with due_at. Cancelled work is not counted as completed, overdue open follow-up stays open, and CRM outcome/status remains separate from response evidence. Provider sent state is delivery evidence only and is never treated as customer read/reply proof.
+
+Repeated unresolved outreach means at least two recorded outbound CRM interactions for the same work order with no later recorded inbound interaction after the first outbound. It is an operational review signal only, never a customer-quality score or staff-performance rating. This layer cannot send or retry messages, create/close CRM records, change customer consent/preferences, publish customer updates, reschedule work, collect payment or contact a provider.
+
+The next planned autonomous item is **373 — Data Quality Remediation Outcome & Recurrence Prevention**.
 
 #### 373 — Data Quality Remediation Outcome & Recurrence Prevention
 
