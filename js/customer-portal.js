@@ -43,7 +43,7 @@
       <header class="customer-portal-header">
         <a class="customer-portal-brand" href="/" aria-label="YWI home">
           <span class="customer-portal-mark" aria-hidden="true">YWI</span>
-          <span><strong>Yard Weasels Inc.</strong><small>Secure customer quote portal</small></span>
+          <span><strong>Yard Workers Inc.</strong><small>Secure customer quote portal</small></span>
         </a>
         <span class="customer-portal-security">Token-protected link</span>
       </header>
@@ -248,7 +248,7 @@
     const notificationPreference = row.notification_preferences || {};
     const executionProofs = Array.isArray(row.execution_proofs) ? row.execution_proofs : [];
     const closeouts = Array.isArray(row.closeouts) ? row.closeouts : [];
-    document.title = `${row.rendered_title || row.estimate?.number || 'Customer quote'} | Yard Weasels Inc.`;
+    document.title = `${row.rendered_title || row.estimate?.number || 'Customer quote'} | Yard Workers Inc.`;
 
     content.innerHTML = `
       <section class="customer-portal-hero">
@@ -449,7 +449,7 @@
     } catch (error) {
       portalNotice(error?.message || 'This portal link is unavailable.', 'error');
       const content = byId('customerPortalContent');
-      if (content) content.innerHTML = '<section class="customer-portal-error"><span aria-hidden="true">!</span><h1>Portal link unavailable</h1><p>The link may be expired, disabled, or incomplete. Use a recent quote email or contact Yard Weasels Inc. for a replacement link.</p></section>';
+      if (content) content.innerHTML = '<section class="customer-portal-error"><span aria-hidden="true">!</span><h1>Portal link unavailable</h1><p>The link may be expired, disabled, or incomplete. Use a recent quote email or contact Yard Workers Inc. for a replacement link.</p></section>';
     }
   }
 
