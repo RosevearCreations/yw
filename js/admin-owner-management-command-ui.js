@@ -41,6 +41,7 @@
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
       '<section class="admin-panel-block owner372-communication-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication outcome &amp; follow-up effectiveness</h4><p class="section-subtitle">Build 372 · recorded CRM outreach/response evidence, follow-up completion and timeliness, completion follow-up outcomes, repeated unresolved outreach and protected provider-delivery state.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome evidence only — no customer score:</strong> sent means provider-delivery evidence, not read/reply proof. Missing responses stay unknown; this view never sends, retries, changes consent or auto-closes CRM work.</div><div id="owner372CommunicationOutcomes"></div></section>',
       '<section class="admin-panel-block owner360-data-quality" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality, duplicate &amp; orphan reconciliation workbench</h4><p class="section-subtitle">Build 360 · duplicate customer/property candidates, broken canonical references, cross-module mismatches, stale crew/equipment assignments, and conflicting four-season service tags.</p></div><button class="secondary" data-owner360-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>No destructive auto-fix:</strong> this workbench preserves source IDs and audit history. It cannot merge/delete records, rewrite foreign keys, reassign crews/equipment or clear lockouts.</div><div id="owner360DataQuality"></div></section>',
+      '<section class="admin-panel-block owner373-data-quality-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality remediation outcome &amp; recurrence prevention</h4><p class="section-subtitle">Build 373 · stable source-key outcome history for duplicate/orphan, reference, assignment and four-season tag defects using the private management-learning journal.</p></div><button class="secondary" data-owner360-open="operations">Open Management Journal</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome tracking only — no auto-fix:</strong> confirmed resolution requires complete current source coverage; recurring means the same stable quality source key is present after prior resolution or carries recorded recurrence evidence.</div><div id="owner373DataQualityOutcomes"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -799,6 +800,52 @@
         '<details style="margin-top:8px;"><summary>Reconciliation boundaries</summary><p class="muted">'+esc(w.duplicate_boundary||'')+'</p><p class="muted">'+esc(w.reference_boundary||'')+'</p><p class="muted">'+esc(w.assignment_boundary||'')+'</p><p class="muted">'+esc(w.season_boundary||'')+'</p><p class="muted">'+esc(w.destructive_boundary||'')+'</p><p class="muted">'+esc(w.audit_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
 
+    function renderDataQualityRemediationOutcomes(){
+      const host=$('owner373DataQualityOutcomes');if(!host)return;
+      const w=state.data?.data_quality_remediation_outcome_recurrence;
+      const meta=metricMeta('data_quality_remediation_outcomes');
+      if(!allowed('admin')){host.innerHTML='<p class="muted">Data-quality remediation outcome history requires Admin-manage visibility for this profile.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Data-quality remediation outcome evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more current-scan or management-journal evidence reads failed. Remediation outcomes are withheld rather than inferred.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required remediation outcome evidence is unavailable.')+'</p>';return}
+      const s=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Current signals',num(s.current_signals),'stable source-key findings','data_quality_remediation_outcomes'),
+        card('Open · tracked',num(s.still_open_tracked),'journal history exists','data_quality_remediation_outcomes'),
+        card('Open · untracked',num(s.still_open_untracked),'no journal outcome yet','data_quality_remediation_outcomes'),
+        card('Recurring',num(s.recurring_current),'same source key after prior remediation','data_quality_remediation_outcomes'),
+        card('Confirmed resolved',w.coverage_complete?num(s.confirmed_resolved):'Withheld',w.coverage_complete?'absent from complete current scan + resolved/improved journal outcome':'current scan coverage is partial/capped','data_quality_remediation_outcomes'),
+        card('Journal rows',num(s.journal_rows),'data-quality source-key decisions/outcomes','data_quality_remediation_outcomes')
+      ].join('')+'</div>';
+
+      const current=(w.current_outcomes||[]).slice(0,80).map(r=>{
+        const stateText=String(r.outcome_state||'unknown').replaceAll('_',' ');
+        const latest=r.latest_outcome_status?('latest journal outcome '+String(r.latest_outcome_status).replaceAll('_',' ')):'no journal outcome yet';
+        const recurrence=r.recurrence_basis?(' · recurrence basis '+String(r.recurrence_basis).replaceAll('_',' ')):'';
+        return '<div class="owner350-row" data-owner373-source="'+esc(String(r.source_key||''))+'"><strong>'+esc((r.reference||r.title||r.source_id||'Quality signal')+' · '+stateText)+'</strong><small>'+esc(String(r.signal_type||'quality signal').replaceAll('_',' ')+' · '+latest+recurrence)+'</small><small>'+esc('source key '+(r.source_key||'unavailable')+' · decisions '+num(r.decision_count)+' · recurrence records '+num(r.recurrence_count))+'</small><small>'+esc(r.suggested_action||'Review the canonical source workflow deliberately.')+'</small></div>';
+      }).join('');
+
+      const resolved=(w.confirmed_resolved||[]).slice(0,60).map(r=>
+        '<div class="owner350-row" data-owner373-resolved="'+esc(String(r.source_key||''))+'"><strong>'+esc((r.source_id||r.source_key||'Historical quality signal')+' · confirmed resolved')+'</strong><small>'+esc('latest outcome '+(r.latest_outcome_status||'resolved')+' · decisions '+num(r.decision_count)+' · recurrence records '+num(r.recurrence_count))+'</small><small>'+esc('source key '+(r.source_key||''))+'</small></div>'
+      ).join('');
+
+      const prevention=(w.recurrence_prevention_candidates||[]).slice(0,30).map(r=>
+        '<div class="owner350-row" data-owner373-prevention="'+esc(String(r.signal_type||''))+'"><strong>'+esc(String(r.signal_type||'quality signal').replaceAll('_',' ').toUpperCase()+' · '+num(r.recurring_source_count)+' recurring source(s)')+'</strong><small>'+esc(r.preventive_review||'Review the repeated source condition and authoritative workflow.')+'</small></div>'
+      ).join('');
+
+      const groups=(w.signal_type_summary||[]).slice(0,30).map(r=>
+        '<div class="owner350-row"><strong>'+esc(String(r.signal_type||'quality signal').replaceAll('_',' '))+'</strong><small>'+esc(num(r.current_count)+' current · '+num(r.tracked_count)+' tracked · '+num(r.recurring_count)+' recurring')+'</small></div>'
+      ).join('');
+
+      host.innerHTML=summary+
+        (!w.coverage_complete?'<div class="notice" style="margin:8px 0;"><strong>Resolution by absence withheld:</strong> at least one source needed by the data-quality scan failed or reached its row cap. Historical keys that are not visible now are not called resolved.</div>':'')+
+        '<details open style="margin-top:8px;"><summary>Current remediation outcomes</summary><div class="owner350-list" style="margin-top:8px;">'+(current||'<p class="muted">No current data-quality signal is visible in the loaded scan.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Confirmed resolved history</summary><div class="owner350-list" style="margin-top:8px;">'+(resolved||'<p class="muted">No source key is confirmed resolved from complete current coverage plus a resolved/improved journal outcome.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Recurring defects &amp; prevention review</summary><div class="owner350-list" style="margin-top:8px;">'+(prevention||'<p class="muted">No recurring data-quality source key is visible in the current evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Signal-type outcome coverage</summary><div class="owner350-list" style="margin-top:8px;">'+(groups||'<p class="muted">No signal-type outcome coverage is available.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Source-key, resolution, recurrence &amp; authority boundaries</summary><p class="muted">'+esc(w.source_key_boundary||'')+'</p><p class="muted">'+esc(w.resolution_boundary||'')+'</p><p class="muted">'+esc(w.recurrence_boundary||'')+'</p><p class="muted">'+esc(w.prevention_boundary||'')+'</p><p class="muted">'+esc(w.journal_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -862,6 +909,7 @@
       renderCommunicationReadiness();
       renderCommunicationOutcomes();
       renderDataQualityReconciliation();
+      renderDataQualityRemediationOutcomes();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
@@ -916,7 +964,7 @@
       setTimeout(()=>window.YWIAdminHub?.open?.(group),0);
     }
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 360 data-quality duplicate/orphan reconciliation evidence refreshed. Build 364 workability-to-schedule recovery outcomes refreshed. Source records were not changed.')}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 373 data-quality remediation outcome/recurrence evidence refreshed. Build 360 reconciliation and Build 364 recovery evidence refreshed. Source records were not changed.')}
       catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null,labour_equipment_fleet_utilization_support:null,materials_consumables_seasonal_stock_readiness:null,customer_communication_readiness_queue:null,data_quality_duplicate_orphan_reconciliation:null,workability_schedule_recovery_outcomes:null};render();note('Unable to load Build 364 workability schedule-recovery outcomes. Unable to load Build 360 data-quality duplicate/orphan reconciliation evidence: '+(e?.message||e),true)}
     }
     el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open],[data-owner359-open],[data-owner360-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open')||b.getAttribute('data-owner359-open')||b.getAttribute('data-owner360-open'))});
