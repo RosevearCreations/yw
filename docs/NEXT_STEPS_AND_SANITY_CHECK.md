@@ -601,11 +601,19 @@ Follow-up effectiveness keeps completion status and timing explicit by comparing
 
 Repeated unresolved outreach means at least two recorded outbound CRM interactions for the same work order with no later recorded inbound interaction after the first outbound. It is an operational review signal only, never a customer-quality score or staff-performance rating. This layer cannot send or retry messages, create/close CRM records, change customer consent/preferences, publish customer updates, reschedule work, collect payment or contact a provider.
 
-The next planned autonomous item is **373 — Data Quality Remediation Outcome & Recurrence Prevention**.
+<!-- Historical item 372 handoff marker retained for regression provenance: The next planned autonomous item is **373 — Data Quality Remediation Outcome & Recurrence Prevention**. -->
 
-#### 373 — Data Quality Remediation Outcome & Recurrence Prevention
+<!-- Historical item 362 queue marker retained for regression provenance: #### 373 — Data Quality Remediation Outcome & Recurrence Prevention -->
 
-Add source-key outcome tracking for duplicate/orphan/stale-assignment/season-tag review items so management can see resolved, still-open and recurring quality defects. Preserve original record identity and audit history; do not auto-merge/delete records, rewrite foreign keys, reassign equipment/crews or clear lockouts.
+#### **373 — Data Quality Remediation Outcome & Recurrence Prevention** is implemented
+
+The Owner / Management Command Centre now gives every Build 360 data-quality signal a stable <code>admin:data_quality_signal</code> source identity and joins current findings to the existing private Management Decision Outcome Journal. Current findings are separated into tracked open, untracked open and recurring states without changing the canonical source record.
+
+A prior resolved/improved journal outcome is counted as confirmed resolved by absence only when every source required by the current data-quality scan completed successfully and remained below its configured query cap. Partial or capped source coverage therefore withholds resolution instead of treating an unseen row as repaired.
+
+A current source key becomes recurring when recurrence was explicitly recorded or when the same key reappears after a resolved/improved outcome. Duplicate, broken-reference, stale-assignment and four-season-tag recurrence receives advisory prevention review guidance only. The layer cannot auto-merge/delete identities, rewrite foreign keys, reassign crews/equipment, clear lockouts, rewrite historical tags or automatically mutate management-journal rows.
+
+The next planned autonomous item is **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes**.
 
 #### 374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes
 
