@@ -108,7 +108,7 @@ test('Build 372 withholds outcome facts when canonical source reads fail',async(
   const d=fixture();d.customer_communication_outcome_followup_effectiveness.source_queries_ok=false;
   await boot(page,d);
   const host=page.locator('#owner372CommunicationOutcomes');
-  await expect(host).toContainText('source reads failed');
+  await expect(host).toContainText('evidence reads failed');
   await expect(host).not.toContainText('WO-372-A');
   await expect(host).not.toContainText('Maple Customer');
 });
