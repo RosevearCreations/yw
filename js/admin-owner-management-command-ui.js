@@ -531,7 +531,7 @@
 
       const assets=(w.asset_evidence||[]).slice(0,60).map(r=>{
         const state=String(r.lifecycle_review_state||'recorded').replaceAll('_',' ');
-        return '<div class="owner350-row" data-owner370-evidence="'+esc(String(r.equipment_item_id||r.equipment_code||''))+'"><strong>'+esc((r.equipment_code||'Equipment')+' · '+(r.equipment_name||'')+'</strong><small>'+esc(state+' · downtime events '+num(r.downtime_event_count_365)+' · maintenance/service '+num(Number(r.maintenance_history_count_365||0)+Number(r.service_task_count_365||0))+' · signouts '+num(r.signout_count_365))+'</small><small>'+esc('readiness '+(r.registry_readiness_status||'not recorded')+' · replacement '+(r.replacement_state||'not recorded')+' · last use '+(r.last_recorded_use_at?when(r.last_recorded_use_at):'not recorded'))+'</small></div>';
+        return '<div class="owner350-row" data-owner370-evidence="'+esc(String(r.equipment_item_id||r.equipment_code||''))+'"><strong>'+esc((r.equipment_code||'Equipment')+' · '+(r.equipment_name||''))+'</strong><small>'+esc(state+' · downtime events '+num(r.downtime_event_count_365)+' · maintenance/service '+num(Number(r.maintenance_history_count_365||0)+Number(r.service_task_count_365||0))+' · signouts '+num(r.signout_count_365))+'</small><small>'+esc('readiness '+(r.registry_readiness_status||'not recorded')+' · replacement '+(r.replacement_state||'not recorded')+' · last use '+(r.last_recorded_use_at?when(r.last_recorded_use_at):'not recorded'))+'</small></div>';
       }).join('');
 
       host.innerHTML=summary+
