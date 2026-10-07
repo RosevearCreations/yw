@@ -193,7 +193,22 @@ jobs:
           if [ -f /etc/apt/sources.list ]; then
             sudo sed -i '\|dl.google.com/linux/chrome-stable/deb|s|^|# YWI CI disabled: |' /etc/apt/sources.list
           fi
-          npx playwright install --with-deps chromium
+          install_ok=false
+          for attempt in 1 2 3; do
+            echo "Chromium install attempt ${attempt}/3"
+            if timeout --kill-after=15s 300s npx playwright install --with-deps chromium; then
+              install_ok=true
+              break
+            fi
+            if [ "${attempt}" -lt 3 ]; then
+              echo "Chromium install attempt ${attempt} did not complete; retrying after a short cooldown."
+              sleep 10
+            fi
+          done
+          if [ "${install_ok}" != "true" ]; then
+            echo "Chromium install did not complete after 3 bounded attempts."
+            exit 1
+          fi
       - run: npm run test:browser
       - run: npm run test:browser:three-surface
       - run: npm run test:browser:field-ux
