@@ -198,6 +198,17 @@
           <p><strong>Authority remains separate:</strong> this layer cannot edit time entries, approve payroll or corrections, change pay codes, rank employees, make employment decisions or override Safety restrictions.</p>
         </section>
 
+        <section class="help-section" id="equipment-downtime-cost-replacement-readiness">
+          <h2>Build 370 — Equipment Downtime Cost &amp; Replacement Readiness</h2>
+          <p>Build 370 adds <strong>read-only lifecycle evidence</strong> across the equipment registry, historical fleet downtime, maintenance history, service tasks, signout/use records and optional linked job-level Finance context.</p>
+          <p><strong>Downtime uses recorded events:</strong> 365-day downtime exposure comes from recorded <code>fleet_downtime_events</code> start/end timestamps. An open event is measured from its recorded start to evidence-generation time; no earlier downtime is inferred.</p>
+          <p><strong>Costs are not double-counted:</strong> the registry’s all-time service/lifecycle cost rollups remain separate from 365-day maintenance-history and service-task costs. Job repair/replacement/delay totals are shown only as job-level Finance context and are not attributed to an individual asset unless the Finance source already does so.</p>
+          <p><strong>Replacement readiness is descriptive:</strong> existing replacement state, target date, reason and estimated cost are shown alongside recorded burden. “Repeated downtime” means at least two recorded downtime events; “repeated maintenance” means at least two recorded maintenance/service events. Neither is an automatic replacement recommendation.</p>
+          <p><strong>Current lockout stays authoritative:</strong> lockout, fleet readiness and return-to-service remain controlled Equipment/Safety authorities. This management layer cannot clear a lockout or mark equipment ready.</p>
+          <p><strong>No purchasing authority:</strong> the layer cannot create/complete service tasks, replace or buy equipment, create vendor commitments, alter fleet downtime, change assignments or post Finance.</p>
+        </section>
+
+
 
         <section class="help-section" id="materials-consumables-seasonal-stock-readiness">
           <h2>Build 358 — Materials, Consumables &amp; Seasonal Stock Readiness</h2>
