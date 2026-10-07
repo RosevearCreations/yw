@@ -139,7 +139,7 @@ Item 363 implements that rule with a private Admin-manage decision/outcome journ
 
 When another AI system takes over YW, treat this handbook and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` as the durable project authority. Resolve the live `dev` and `main` heads from GitHub at task start rather than trusting copied commit identifiers.
 
-**351 — Management Metric Freshness & Confidence** is implemented. **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented. **353 — Four-Season Capacity & Workability Forecast** is implemented. **354 — Route & Crew Efficiency Evidence** is implemented. **355 — Recurring Service Renewal & Retention Workbench** is implemented. **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented. **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented. **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented. **359 — Customer Communication Readiness & Queue Quality** is implemented. **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented. **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented. **362 — Production Learning & Autonomous Roadmap Renewal** is implemented. **363 — Management Decision Outcome Journal & Learning Loop** is implemented. **364 — Workability-to-Schedule Recovery Outcomes** is implemented. **365 — Route Plan-vs-Actual & Stop-Sequence Learning** is implemented. **366 — Recurring Renewal Conversion & Churn Outcomes** is implemented. **367 — Estimate Accuracy & Change-Order Margin Calibration** is implemented. **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion** is implemented. **369 — Labour Capture Completeness & Payroll Exception Reduction** is implemented. **370 — Equipment Downtime Cost & Replacement Readiness** is implemented.
+**351 — Management Metric Freshness & Confidence** is implemented. **352 — Autonomous Exception Triage & Next-Safe-Action** is implemented. **353 — Four-Season Capacity & Workability Forecast** is implemented. **354 — Route & Crew Efficiency Evidence** is implemented. **355 — Recurring Service Renewal & Retention Workbench** is implemented. **356 — Estimate-to-Cash Leakage & Margin Recovery** is implemented. **357 — Labour, Equipment & Fleet Utilization Decision Support** is implemented. **358 — Materials, Consumables & Seasonal Stock Readiness** is implemented. **359 — Customer Communication Readiness & Queue Quality** is implemented. **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench** is implemented. **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented. **362 — Production Learning & Autonomous Roadmap Renewal** is implemented. **363 — Management Decision Outcome Journal & Learning Loop** is implemented. **364 — Workability-to-Schedule Recovery Outcomes** is implemented. **365 — Route Plan-vs-Actual & Stop-Sequence Learning** is implemented. **366 — Recurring Renewal Conversion & Churn Outcomes** is implemented. **367 — Estimate Accuracy & Change-Order Margin Calibration** is implemented. **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion** is implemented. **369 — Labour Capture Completeness & Payroll Exception Reduction** is implemented. **370 — Equipment Downtime Cost & Replacement Readiness** is implemented. **371 — Material Usage Variance & Reorder Calibration** is implemented.
 
 Recently completed:
 - **364 — Workability-to-Schedule Recovery Outcomes** (implemented)
@@ -149,10 +149,11 @@ Recently completed:
 - **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion** (implemented)
 - **369 — Labour Capture Completeness & Payroll Exception Reduction** (implemented)
 - **370 — Equipment Downtime Cost & Replacement Readiness** (implemented)
+- **371 — Material Usage Variance & Reorder Calibration** (implemented)
 
 The current autonomous queue continues with:
 
-- **371 — Material Usage Variance & Reorder Calibration**
+<!-- Historical item 370 queue marker retained for regression provenance: - **371 — Material Usage Variance & Reorder Calibration** -->
 - **372 — Customer Communication Outcome & Follow-Up Effectiveness**
 - **373 — Data Quality Remediation Outcome & Recurrence Prevention**
 - **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes**
@@ -169,7 +170,8 @@ Current direction: After item 366, that item is 367 — Estimate Accuracy & Chan
 Current direction: After item 367, that item is 368 — Completed-to-Invoiced Cycle-Time & Cash Conversion.
 Current direction: After item 368, that item is 369 — Labour Capture Completeness & Payroll Exception Reduction.
 Current direction: After item 369, that item is 370 — Equipment Downtime Cost & Replacement Readiness.
-Current direction: After item 370, that item is 371 — Material Usage Variance & Reorder Calibration. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+Current direction: After item 370, that item is 371 — Material Usage Variance & Reorder Calibration.
+Current direction: After item 371, that item is 372 — Customer Communication Outcome & Follow-Up Effectiveness. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 
 For every ordinary release, use this sequence:
 
