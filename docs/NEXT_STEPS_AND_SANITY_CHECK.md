@@ -607,7 +607,7 @@ Repeated unresolved outreach means at least two recorded outbound CRM interactio
 
 #### **373 — Data Quality Remediation Outcome & Recurrence Prevention** is implemented
 
-The Owner / Management Command Centre now gives every Build 360 data-quality signal a stable <code>admin:data_quality_signal</code> source identity and joins current findings to the existing private Management Decision Outcome Journal. Current findings are separated into tracked open, untracked open and recurring states without changing the canonical source record.
+The Owner / Management Command Centre now gives every current data-quality reconciliation signal a stable <code>admin:data_quality_signal</code> source identity and joins current findings to the existing private Management Decision Outcome Journal. Current findings are separated into tracked open, untracked open and recurring states without changing the canonical source record.
 
 A prior resolved/improved journal outcome is counted as confirmed resolved by absence only when every source required by the current data-quality scan completed successfully and remained below its configured query cap. Partial or capped source coverage therefore withholds resolution instead of treating an unseen row as repaired.
 
