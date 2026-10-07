@@ -586,7 +586,7 @@ The Owner / Management Command Centre now compares canonical Landscape Material 
 
 Repeated over-use or under-use requires at least two comparable estimator lines for the same material, service context and season with the same direction. The calibration view keeps current Materials Control stock-on-hand, reorder-required state, reorder point, reorder quantity and target stock beside those patterns, including recorded stockout evidence, but does not invent a replacement reorder value.
 
-Estimator assumptions, actual-use events, inventory quantities, reorder settings and purchasing remain under their existing authorities. Build 371 cannot create purchase orders, contact suppliers, reserve stock or create vendor commitments.
+Estimator assumptions, actual-use events, inventory quantities, reorder settings and purchasing remain under their existing authorities. This calibration layer cannot create purchase orders, contact suppliers, reserve stock or create vendor commitments.
 
 The next planned autonomous item is **372 — Customer Communication Outcome & Follow-Up Effectiveness**.
 
