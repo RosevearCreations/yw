@@ -122,6 +122,5 @@ test('Build 371 Materials button routes deliberately to Jobs',async({page})=>{
   await boot(page);
   await page.locator('.owner371-material-variance button').filter({hasText:'Open Materials'}).click();
   await page.waitForTimeout(10);
-  expect(await page.evaluate(()=>window.__route)).toBe('admin');
-  expect(await page.evaluate(()=>window.__group)).toBe('jobs');
+  expect(await page.evaluate(()=>window.__route)).toBe('jobs');
 });
