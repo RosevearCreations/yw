@@ -2851,12 +2851,17 @@ function buildDataQualityDuplicateOrphanReconciliation(input:{
   const routeById=new Map<string,any>((input.routes||[]).filter(r=>r?.id).map(r=>[String(r.id),r]));
   const jobById=new Map<string,any>((input.jobs||[]).filter(r=>r?.id).map(r=>[String(r.id),r]));
   const signals:any[]=[];
-  const add=(r:any)=>signals.push({
-    severity:r.severity||'review',signal_type:r.signal_type,entity_type:r.entity_type||null,entity_id:r.entity_id||null,
-    reference:r.reference||null,title:r.title||null,detail:r.detail||null,match_basis:r.match_basis||[],
-    related_entities:r.related_entities||[],source_links:r.source_links||[],suggested_action:r.suggested_action||'Review the canonical source records before making any correction.',
-    navigation_target:r.navigation_target||'jobs',destructive_action_allowed:false
-  });
+  const add=(r:any)=>{
+    const entityIdentity=String(r.entity_id||r.reference||'unknown').trim();
+    const sourceId=[String(r.signal_type||'quality_signal'),String(r.entity_type||'entity'),entityIdentity].join(':').slice(0,180);
+    signals.push({
+      severity:r.severity||'review',signal_type:r.signal_type,entity_type:r.entity_type||null,entity_id:r.entity_id||null,
+      reference:r.reference||null,title:r.title||null,detail:r.detail||null,match_basis:r.match_basis||[],
+      related_entities:r.related_entities||[],source_links:r.source_links||[],suggested_action:r.suggested_action||'Review the canonical source records before making any correction.',
+      navigation_target:r.navigation_target||'jobs',destructive_action_allowed:false,
+      source_module:'admin',source_type:'data_quality_signal',source_id:sourceId,source_key:'admin:data_quality_signal:'+sourceId
+    });
+  };
 
   const pairMap=new Map<string,any>();
   const customerRows=(input.customers||[]).filter(r=>r?.client_id&&r?.is_active!==false);
@@ -3104,6 +3109,100 @@ function buildDataQualityDuplicateOrphanReconciliation(input:{
 }
 
 
+function buildDataQualityRemediationOutcomeRecurrence(input:{
+  reconciliation:any;journal:any[];sourceQueriesOk:boolean;coverageComplete:boolean;adminVisible:boolean;
+}) {
+  const norm=(v:any)=>String(v??'').trim().toLowerCase();
+  const ts=(v:any)=>{const n=Date.parse(String(v||''));return Number.isFinite(n)?n:0;};
+  const currentSignals=Array.isArray(input.reconciliation?.reconciliation_queue)?input.reconciliation.reconciliation_queue:[];
+  const journalRows=(input.journal||[]).filter((r:any)=>norm(r?.source_module)==='admin'&&norm(r?.source_type)==='data_quality_signal');
+  const byKey=new Map<string,any[]>();
+  for(const row of journalRows){
+    const key=String(row?.source_key||''); if(!key) continue;
+    const rows=byKey.get(key)||[]; rows.push(row); byKey.set(key,rows);
+  }
+  for(const rows of byKey.values()) rows.sort((a:any,b:any)=>ts(b?.decision_at||b?.updated_at)-ts(a?.decision_at||a?.updated_at));
+  const currentKeys=new Set(currentSignals.map((r:any)=>String(r?.source_key||'')).filter(Boolean));
+  const current_outcomes=currentSignals.map((signal:any)=>{
+    const key=String(signal?.source_key||'');
+    const history=byKey.get(key)||[];
+    const latest=history[0]||null;
+    const priorResolved=history.some((r:any)=>['resolved','improved'].includes(norm(r?.outcome_status)));
+    const explicitRecurring=history.some((r:any)=>r?.recurrence_signal===true||norm(r?.outcome_status)==='recurring');
+    const recurring=explicitRecurring||priorResolved;
+    const outcome_state=recurring?'recurring':latest?'still_open_tracked':'still_open_untracked';
+    return {
+      source_key:key,source_id:signal?.source_id||null,signal_type:signal?.signal_type||null,entity_type:signal?.entity_type||null,
+      entity_id:signal?.entity_id||null,reference:signal?.reference||null,title:signal?.title||null,severity:signal?.severity||null,
+      navigation_target:signal?.navigation_target||'operations',outcome_state,
+      decision_count:history.length,recurrence_count:history.filter((r:any)=>r?.recurrence_signal===true||norm(r?.outcome_status)==='recurring').length,
+      latest_outcome_status:latest?.outcome_status||null,latest_decision_at:latest?.decision_at||null,latest_outcome_recorded_at:latest?.outcome_recorded_at||null,
+      latest_followup_due_at:latest?.followup_due_at||null,latest_followup_evidence_reference:latest?.followup_evidence_reference||null,
+      recurrence_basis:recurring?(explicitRecurring?'recorded_recurrence_signal':'current_signal_after_recorded_resolution'):null,
+      suggested_action:signal?.suggested_action||'Review the canonical source record deliberately.'
+    };
+  });
+  const historical_outcomes=[...byKey.entries()].filter(([key])=>!currentKeys.has(key)).map(([key,history])=>{
+    const latest=history[0]||null;
+    const status=norm(latest?.outcome_status);
+    const confirmedResolved=input.coverageComplete&&['resolved','improved'].includes(status);
+    return {
+      source_key:key,source_id:latest?.source_id||null,latest_outcome_status:latest?.outcome_status||null,
+      latest_decision_at:latest?.decision_at||null,latest_outcome_recorded_at:latest?.outcome_recorded_at||null,
+      decision_count:history.length,recurrence_count:history.filter((r:any)=>r?.recurrence_signal===true||norm(r?.outcome_status)==='recurring').length,
+      outcome_state:confirmedResolved?'resolved':input.coverageComplete?'not_currently_detected_unresolved_history':'coverage_withheld',
+      outcome_note:latest?.outcome_note||null,followup_evidence_reference:latest?.followup_evidence_reference||null
+    };
+  });
+  const confirmed_resolved=historical_outcomes.filter((r:any)=>r.outcome_state==='resolved');
+  const recurrenceRows=current_outcomes.filter((r:any)=>r.outcome_state==='recurring');
+  const preventionMap=new Map<string,any>();
+  const preventionInstruction=(signalType:string)=>{
+    if(signalType==='duplicate_customer_candidate'||signalType==='duplicate_property_candidate') return 'Review the upstream identity-entry and duplicate-detection workflow before future record creation; do not auto-merge existing identities.';
+    if(signalType==='broken_canonical_reference'||signalType==='cross_module_link_mismatch') return 'Review source-selection and reference-validation steps at the owning workflow before future saves; do not rewrite foreign keys automatically.';
+    if(signalType==='stale_assignment') return 'Review assignment validation against current crew/equipment availability before future scheduling; do not clear lockouts or reassign automatically.';
+    if(signalType==='conflicting_season_service_tag') return 'Review service/season selection guidance at the authoritative source workflow before future saves; do not rewrite historical tags automatically.';
+    return 'Review the repeated source condition and strengthen the authoritative workflow without destructive automatic reconciliation.';
+  };
+  for(const row of recurrenceRows){
+    const key=String(row.signal_type||'other');
+    const group=preventionMap.get(key)||{signal_type:key,recurring_source_count:0,source_keys:[],preventive_review:preventionInstruction(key)};
+    group.recurring_source_count++; group.source_keys.push(row.source_key); preventionMap.set(key,group);
+  }
+  const signalTypes=[...new Set(current_outcomes.map((r:any)=>String(r.signal_type||'other')))];
+  const signal_type_summary=signalTypes.map((signal_type)=>({
+    signal_type,
+    current_count:current_outcomes.filter((r:any)=>String(r.signal_type||'other')===signal_type).length,
+    tracked_count:current_outcomes.filter((r:any)=>String(r.signal_type||'other')===signal_type&&r.decision_count>0).length,
+    recurring_count:current_outcomes.filter((r:any)=>String(r.signal_type||'other')===signal_type&&r.outcome_state==='recurring').length
+  }));
+  return {
+    generated_at:new Date().toISOString(),source_queries_ok:input.sourceQueriesOk,coverage_complete:input.coverageComplete,admin_visible:input.adminVisible,
+    summary:{
+      current_signals:current_outcomes.length,
+      still_open_tracked:current_outcomes.filter((r:any)=>r.outcome_state==='still_open_tracked').length,
+      still_open_untracked:current_outcomes.filter((r:any)=>r.outcome_state==='still_open_untracked').length,
+      recurring_current:recurrenceRows.length,
+      confirmed_resolved:confirmed_resolved.length,
+      historical_not_currently_detected:historical_outcomes.filter((r:any)=>r.outcome_state==='not_currently_detected_unresolved_history').length,
+      coverage_withheld_history:historical_outcomes.filter((r:any)=>r.outcome_state==='coverage_withheld').length,
+      journal_rows:journalRows.length
+    },
+    current_outcomes:current_outcomes.slice(0,300),
+    confirmed_resolved:confirmed_resolved.slice(0,200),
+    historical_outcomes:historical_outcomes.slice(0,250),
+    recurrence_prevention_candidates:[...preventionMap.values()].sort((a:any,b:any)=>b.recurring_source_count-a.recurring_source_count||String(a.signal_type).localeCompare(String(b.signal_type))),
+    signal_type_summary,
+    source_key_boundary:'Each Build 360 signal uses a stable admin:data_quality_signal source key built from signal type, entity type and retained source identity so journal history can follow the same defect without replacing canonical record IDs.',
+    resolution_boundary:'A journal row is shown as confirmed resolved by absence only when every source required by the data-quality scan completed successfully and remained below its configured row cap. Partial/capped coverage never proves resolution.',
+    recurrence_boundary:'A currently detected signal is recurring when the same source key has recorded recurrence evidence or reappears after a recorded resolved/improved outcome. Recurrence is a data-quality pattern, not an employee or customer score.',
+    prevention_boundary:'Recurrence-prevention guidance is advisory root-cause review only. It does not auto-merge/delete identities, rewrite foreign keys, reassign crews/equipment, clear lockouts or rewrite season/service history.',
+    journal_boundary:'The existing private Management Decision Outcome Journal stores bounded decision/outcome metadata only. Build 373 reads that journal but does not create, update or close journal rows automatically.',
+    authority_boundary:'Read-only remediation outcome evidence. Canonical CRM, Jobs, Dispatch, Recurring Service, Crew, Equipment, Route, Workability and Material Estimator workflows remain the only source-mutation authorities.'
+  };
+}
+
+
 function buildWorkabilityScheduleRecoveryOutcomes(input:{
   workability:any[];dispatch:any[];production:any[];jobsVisible:boolean;sourceQueriesOk:boolean;
 }) {
@@ -3229,7 +3328,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
       routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
       estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,jobCostDepthRead,invoiceCandidatesRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,maintenanceHistoryRead,serviceTasksRead,fleetDowntimeEventsRead,materialStockRead,materialPlansRead,materialActualUseRead,
-      crmFollowupsRead,customerDirectoryRead,notificationQueueRead,closeoutsRead,propertyDirectoryRead
+      crmFollowupsRead,customerDirectoryRead,notificationQueueRead,closeoutsRead,propertyDirectoryRead,managementDecisionOutcomesRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
       canJobsView ? safeListEvidence(supabase,'v_crew_dispatch_schedule','*','scheduled_start',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -3278,7 +3377,8 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       canJobsView ? safeListEvidence(supabase,'v_crm_customer_directory','*','last_crm_activity_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_customer_notification_delivery_queue','*','created_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_work_order_closeout_queue','*','updated_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
-      canJobsView ? safeListEvidence(supabase,'v_crm_property_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500})
+      canJobsView ? safeListEvidence(supabase,'v_crm_property_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      canAdminManage ? safeListEvidence(supabase,'v_management_decision_outcome_journal','*','decision_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500})
     ]);
     const jobs=jobsRead.rows,dispatch=dispatchRead.rows,production=productionRead.rows,profitability=profitabilityRead.rows,
       timekeeping=timekeepingRead.rows,recurring=recurringRead.rows,recurringVisits=recurringVisitsRead.rows,crews=crewsRead.rows,storms=stormsRead.rows,
@@ -3293,7 +3393,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,maintenanceHistory=maintenanceHistoryRead.rows,serviceTasks=serviceTasksRead.rows,fleetDowntimeEvents=fleetDowntimeEventsRead.rows,
       materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,materialActualUse=materialActualUseRead.rows,
       crmFollowups=crmFollowupsRead.rows,customerDirectory=customerDirectoryRead.rows,notificationQueue=notificationQueueRead.rows,closeouts=closeoutsRead.rows,
-      propertyDirectory=propertyDirectoryRead.rows;
+      propertyDirectory=propertyDirectoryRead.rows,managementDecisionOutcomes=managementDecisionOutcomesRead.rows;
     const sourceFreshness:Record<string,any> = {};
     const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
       sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
@@ -3346,6 +3446,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
     addFresh(notificationQueueRead,'notification_delivery','jobs','v_customer_notification_delivery_queue',canJobsView,72);
     addFresh(closeoutsRead,'closeouts','jobs','v_work_order_closeout_queue',canJobsView,168);
     addFresh(propertyDirectoryRead,'crm_properties','jobs','v_crm_property_directory',canJobsView,168);
+    addFresh(managementDecisionOutcomesRead,'management_decision_outcomes','admin','v_management_decision_outcome_journal',canAdminManage,336);
     const metricConfidence = {
       crews_today:buildManagementMetricConfidence(sourceFreshness,['dispatch']),
       completion_today:buildManagementMetricConfidence(sourceFreshness,['dispatch','production']),
@@ -3378,6 +3479,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
       communication_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_interactions','crm_followups','notification_delivery','closeouts']),
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
+      data_quality_remediation_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans','management_decision_outcomes']),
       workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
@@ -3453,6 +3555,13 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       sourceQueriesOk:[...dataQualityReferenceReads,workabilityRead,materialPlansRead].every((r)=>r.query_ok!==false),
       referenceCoverageComplete:dataQualityReferenceReads.every((r)=>r.query_ok!==false&&Number(r.row_count||0)<Number(r.limit||1))
     });
+    const dataQualityOutcomeReads=[...dataQualityReferenceReads,workabilityRead,materialPlansRead];
+    const dataQualityRemediationOutcomeRecurrence=buildDataQualityRemediationOutcomeRecurrence({
+      reconciliation:dataQualityDuplicateOrphanReconciliation,journal:managementDecisionOutcomes,
+      sourceQueriesOk:dataQualityOutcomeReads.every((r)=>r.query_ok!==false)&&managementDecisionOutcomesRead.query_ok!==false,
+      coverageComplete:dataQualityOutcomeReads.every((r)=>r.query_ok!==false&&Number(r.row_count||0)<Number(r.limit||1)),
+      adminVisible:canAdminManage
+    });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
       evidence_generated_at:new Date().toISOString(),
@@ -3484,6 +3593,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
       customer_communication_outcome_followup_effectiveness:customerCommunicationOutcomeFollowUpEffectiveness,
       data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
+      data_quality_remediation_outcome_recurrence:dataQualityRemediationOutcomeRecurrence,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
