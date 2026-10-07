@@ -822,11 +822,11 @@
         const stateText=String(r.outcome_state||'unknown').replaceAll('_',' ');
         const latest=r.latest_outcome_status?('latest journal outcome '+String(r.latest_outcome_status).replaceAll('_',' ')):'no journal outcome yet';
         const recurrence=r.recurrence_basis?(' · recurrence basis '+String(r.recurrence_basis).replaceAll('_',' ')):'';
-        return '<div class="owner350-row" data-owner373-source="'+esc(String(r.source_key||''))+'"><strong>'+esc((r.reference||r.title||r.source_id||'Quality signal')+' · '+stateText)+'</strong><small>'+esc(String(r.signal_type||'quality signal').replaceAll('_',' ')+' · '+latest+recurrence)+'</small><small>'+esc('source key '+(r.source_key||'unavailable')+' · decisions '+num(r.decision_count)+' · recurrence records '+num(r.recurrence_count))+'</small><small>'+esc(r.suggested_action||'Review the canonical source workflow deliberately.')+'</small></div>';
+        return '<div class="owner350-row" data-owner373-source="'+esc(String(r.source_key||''))+'"><strong>'+esc((r.reference||r.title||r.source_id||'Quality signal')+' · '+stateText)+'</strong><small>'+esc(String(r.signal_type||'quality signal').replaceAll('_',' ')+' · '+latest+recurrence)+'</small><small>'+esc('decisions '+num(r.decision_count)+' · recurrence records '+num(r.recurrence_count))+'</small><small style="overflow-wrap:anywhere;word-break:break-word;">'+esc('source key '+(r.source_key||'unavailable'))+'</small><small>'+esc(r.suggested_action||'Review the canonical source workflow deliberately.')+'</small></div>';
       }).join('');
 
       const resolved=(w.confirmed_resolved||[]).slice(0,60).map(r=>
-        '<div class="owner350-row" data-owner373-resolved="'+esc(String(r.source_key||''))+'"><strong>'+esc((r.source_id||r.source_key||'Historical quality signal')+' · confirmed resolved')+'</strong><small>'+esc('latest outcome '+(r.latest_outcome_status||'resolved')+' · decisions '+num(r.decision_count)+' · recurrence records '+num(r.recurrence_count))+'</small><small>'+esc('source key '+(r.source_key||''))+'</small></div>'
+        '<div class="owner350-row" data-owner373-resolved="'+esc(String(r.source_key||''))+'"><strong>'+esc((r.source_id||r.source_key||'Historical quality signal')+' · confirmed resolved')+'</strong><small>'+esc('latest outcome '+(r.latest_outcome_status||'resolved')+' · decisions '+num(r.decision_count)+' · recurrence records '+num(r.recurrence_count))+'</small><small style="overflow-wrap:anywhere;word-break:break-word;">'+esc('source key '+(r.source_key||''))+'</small></div>'
       ).join('');
 
       const prevention=(w.recurrence_prevention_candidates||[]).slice(0,30).map(r=>
