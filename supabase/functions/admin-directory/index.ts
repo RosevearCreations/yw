@@ -1777,6 +1777,208 @@ function buildLabourEquipmentFleetUtilizationDecisionSupport(input:{
 
 
 
+
+function buildEquipmentDowntimeCostReplacementReadiness(input:{
+  equipment:any[];maintenance:any[];maintenanceHistory:any[];serviceTasks:any[];equipmentUse:any[];fleet:any[];downtimeEvents:any[];jobCosts:any[];
+  jobsVisible:boolean;financeVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const now=new Date();
+  const today=ontarioDateKey(now)!;
+  const lookbackDays=365;
+  const lookbackStart=addCalendarDays(today,-lookbackDays);
+  const dateKey=(value:any)=>ontarioDateKey(value);
+  const inWindow=(value:any)=>{
+    const d=dateKey(value);return !!d&&d>=lookbackStart&&d<=today;
+  };
+  const round2=(value:number)=>Math.round(value*100)/100;
+  const numberOrNull=(value:any)=>{
+    if(value===null||value===undefined||value==='')return null;
+    const n=Number(value);return Number.isFinite(n)?n:null;
+  };
+  const stamp=(value:any)=>{
+    if(!value)return null;
+    const d=new Date(value);return Number.isFinite(d.getTime())?d:null;
+  };
+  const hoursBetween=(start:any,end:any)=>{
+    const a=stamp(start),b=stamp(end);if(!a||!b||b.getTime()<a.getTime())return null;
+    return round2((b.getTime()-a.getTime())/3600000);
+  };
+  const ageDays=(value:any)=>{
+    const d=stamp(value);if(!d)return null;
+    return round2(Math.max(0,(now.getTime()-d.getTime())/86400000));
+  };
+  const activeStatus=(value:any)=>!['resolved','closed','cancelled','complete','completed'].includes(String(value||'').toLowerCase());
+
+  const historyByAsset=new Map<string,any[]>();
+  for(const row of input.maintenanceHistory||[]){
+    const id=String(row?.equipment_item_id||'');if(!id)continue;
+    const list=historyByAsset.get(id)||[];list.push(row);historyByAsset.set(id,list);
+  }
+  const tasksByAsset=new Map<string,any[]>();
+  for(const row of input.serviceTasks||[]){
+    const id=String(row?.equipment_item_id||'');if(!id)continue;
+    const list=tasksByAsset.get(id)||[];list.push(row);tasksByAsset.set(id,list);
+  }
+  const downtimeByAsset=new Map<string,any[]>();
+  for(const row of input.downtimeEvents||[]){
+    const id=String(row?.equipment_item_id||'');if(!id)continue;
+    const list=downtimeByAsset.get(id)||[];list.push(row);downtimeByAsset.set(id,list);
+  }
+  const useByAsset=new Map<string,any[]>();
+  for(const row of input.equipmentUse||[]){
+    const id=String(row?.equipment_item_id||'');if(!id)continue;
+    const list=useByAsset.get(id)||[];list.push(row);useByAsset.set(id,list);
+  }
+  const preventiveByAsset=new Map<string,any[]>();
+  for(const row of input.maintenance||[]){
+    const id=String(row?.equipment_item_id||'');if(!id)continue;
+    const list=preventiveByAsset.get(id)||[];list.push(row);preventiveByAsset.set(id,list);
+  }
+  const fleetByAsset=new Map<string,any>();
+  for(const row of input.fleet||[])if(row?.equipment_item_id)fleetByAsset.set(String(row.equipment_item_id),row);
+  const jobCostById=new Map((input.jobCosts||[]).map((row)=>[String(row?.job_id||''),row]));
+
+  const assets=(input.equipment||[]).map((asset)=>{
+    const id=String(asset?.id||asset?.equipment_item_id||'');
+    const history=(historyByAsset.get(id)||[]).filter((r)=>inWindow(r?.performed_at));
+    const tasks=(tasksByAsset.get(id)||[]).filter((r)=>inWindow(r?.created_at||r?.updated_at||r?.resolved_at));
+    const downtime=(downtimeByAsset.get(id)||[]).filter((r)=>inWindow(r?.started_at||r?.created_at));
+    const uses=(useByAsset.get(id)||[]).filter((r)=>inWindow(r?.checked_out_at));
+    const preventive=preventiveByAsset.get(id)||[];
+    const fleet=fleetByAsset.get(id)||null;
+
+    const downtimeHours=downtime.map((r)=>{
+      const end=r?.ended_at||now.toISOString();
+      return hoursBetween(r?.started_at,end);
+    }).filter((v)=>v!==null) as number[];
+    const openDowntime=downtime.filter((r)=>!r?.ended_at);
+    const historyCosts=history.map((r)=>numberOrNull(r?.cost_amount)).filter((v)=>v!==null) as number[];
+    const taskActualCosts=tasks.map((r)=>numberOrNull(r?.actual_cost)).filter((v)=>v!==null) as number[];
+    const taskEstimatedCosts=tasks.filter((r)=>activeStatus(r?.task_status)).map((r)=>numberOrNull(r?.estimated_cost)).filter((v)=>v!==null) as number[];
+    const openTasks=tasks.filter((r)=>activeStatus(r?.task_status));
+    const overduePlans=preventive.filter((r)=>String(r?.due_status||'').toLowerCase()==='overdue');
+    const duePlans=preventive.filter((r)=>['due','due_soon'].includes(String(r?.due_status||'').toLowerCase()));
+    const damageUses=uses.filter((r)=>r?.damage_reported===true);
+    const recentUse=uses.slice().sort((a,b)=>String(b?.checked_out_at||'').localeCompare(String(a?.checked_out_at||'')))[0]||null;
+
+    const locked=asset?.is_locked_out===true||String(asset?.registry_readiness_status||'').toLowerCase()==='locked_out';
+    const fleetDowntime=!!fleet&&(String(fleet?.operational_status||'').toLowerCase()==='downtime'||Number(fleet?.open_downtime_count||0)>0);
+    const replacementState=String(asset?.replacement_state||'').toLowerCase();
+    const replacementAttention=['plan_replacement','replace','retired'].includes(replacementState);
+    const repeatedDowntime=downtime.length>=2;
+    const repeatedMaintenance=history.length>=2||tasks.length>=2;
+    const acquisitionCost=numberOrNull(asset?.acquisition_cost??asset?.purchase_price);
+    const recordedServiceCost=numberOrNull(asset?.recorded_service_cost_total);
+    const recordedLifecycleCost=numberOrNull(asset?.recorded_lifecycle_cost_total);
+    const serviceCostToAcquisitionPercent=acquisitionCost!==null&&acquisitionCost>0&&recordedServiceCost!==null
+      ?round2((recordedServiceCost/acquisitionCost)*100):null;
+
+    const linkedJobIds=[...new Set([
+      ...downtime.map((r)=>r?.job_id),
+      ...tasks.map((r)=>r?.job_id),
+      ...uses.map((r)=>r?.job_id)
+    ].filter(Boolean).map(String))];
+    const linkedJobCostContext=linkedJobIds.map((jobId)=>{
+      const row=jobCostById.get(jobId);if(!row)return null;
+      return {
+        job_id:row?.job_id||null,job_code:row?.job_code||null,job_name:row?.job_name||null,
+        job_equipment_repair_cost_total:numberOrNull(row?.job_equipment_repair_cost_total),
+        equipment_repair_event_cost_total:numberOrNull(row?.equipment_repair_event_cost_total),
+        equipment_replacement_cost_total:numberOrNull(row?.equipment_replacement_cost_total),
+        job_delay_cost_total:numberOrNull(row?.job_delay_cost_total),
+        cost_context_boundary:'Job-level cost context only; these amounts are not attributed to this asset unless the underlying Finance source explicitly does so.'
+      };
+    }).filter(Boolean);
+
+    const signals:string[]=[];
+    if(locked)signals.push('current equipment lockout');
+    if(fleetDowntime)signals.push('current fleet downtime');
+    if(repeatedDowntime)signals.push('repeated recorded downtime in 365 days');
+    if(repeatedMaintenance)signals.push('repeated recorded maintenance/service activity in 365 days');
+    if(overduePlans.length)signals.push('preventive maintenance overdue');
+    else if(duePlans.length)signals.push('preventive maintenance due / due soon');
+    if(openTasks.length)signals.push('open service task');
+    if(damageUses.length)signals.push('recorded signout damage report');
+    if(replacementAttention)signals.push('recorded replacement state '+replacementState);
+
+    let reviewState='recorded_no_lifecycle_attention';
+    if(['replace','retired'].includes(replacementState))reviewState='recorded_replacement_hold';
+    else if(replacementState==='plan_replacement')reviewState='recorded_replacement_plan';
+    else if(repeatedDowntime||repeatedMaintenance)reviewState='lifecycle_burden_review';
+    else if(locked||fleetDowntime||overduePlans.length||openTasks.length)reviewState='operational_attention';
+
+    return {
+      equipment_item_id:asset?.id||asset?.equipment_item_id||null,equipment_code:asset?.equipment_code||null,
+      equipment_name:asset?.equipment_name||null,category:asset?.category||null,status:asset?.status||null,
+      condition_status:asset?.condition_status||null,registry_readiness_status:asset?.registry_readiness_status||null,
+      purchase_year:asset?.purchase_year||null,purchase_date:asset?.purchase_date||null,year_of_manufacture:asset?.year_of_manufacture||null,
+      acquisition_cost:acquisitionCost,warranty_expiry_date:asset?.warranty_expiry_date||null,
+      locked_out:locked,locked_out_at:asset?.locked_out_at||null,lockout_age_days:locked?ageDays(asset?.locked_out_at):null,
+      fleet_asset:!!fleet,fleet_operational_status:fleet?.operational_status||null,fleet_readiness_status:fleet?.latest_readiness_status||null,
+      fleet_downtime:fleetDowntime,current_fleet_downtime_started_at:fleet?.downtime_started_at||null,
+      current_fleet_downtime_hours:fleetDowntime?hoursBetween(fleet?.downtime_started_at,now.toISOString()):null,
+      downtime_event_count_365:downtime.length,open_downtime_event_count:openDowntime.length,
+      recorded_downtime_hours_365:round2(downtimeHours.reduce((sum,v)=>sum+v,0)),
+      repeated_downtime:repeatedDowntime,
+      maintenance_history_count_365:history.length,maintenance_history_cost_365:round2(historyCosts.reduce((sum,v)=>sum+v,0)),
+      service_task_count_365:tasks.length,open_service_task_count_365:openTasks.length,
+      service_task_actual_cost_365:round2(taskActualCosts.reduce((sum,v)=>sum+v,0)),
+      open_service_estimated_cost_365:round2(taskEstimatedCosts.reduce((sum,v)=>sum+v,0)),
+      repeated_maintenance_or_service:repeatedMaintenance,
+      preventive_overdue_count:overduePlans.length,preventive_due_count:duePlans.length,
+      signout_count_365:uses.length,damage_report_count_365:damageUses.length,last_recorded_use_at:recentUse?.checked_out_at||null,
+      recorded_service_event_count_all_time:Number(asset?.recorded_service_event_count||0),
+      recorded_service_cost_total_all_time:recordedServiceCost,
+      service_task_actual_cost_total_all_time:numberOrNull(asset?.service_task_actual_cost_total),
+      recorded_lifecycle_cost_total:recordedLifecycleCost,
+      service_cost_to_acquisition_percent:serviceCostToAcquisitionPercent,
+      replacement_state:asset?.replacement_state||null,replacement_target_date:asset?.replacement_target_date||null,
+      replacement_reason:asset?.replacement_reason||null,replacement_estimated_cost:numberOrNull(asset?.replacement_estimated_cost),
+      lifecycle_review_state:reviewState,lifecycle_review_signals:signals,
+      linked_job_cost_context:input.financeVisible?linkedJobCostContext:[],
+      linked_job_cost_context_count:input.financeVisible?linkedJobCostContext.length:0
+    };
+  }).sort((a,b)=>{
+    const priority:Record<string,number>={recorded_replacement_hold:10,recorded_replacement_plan:20,lifecycle_burden_review:30,operational_attention:40,recorded_no_lifecycle_attention:50};
+    return (priority[a.lifecycle_review_state]||99)-(priority[b.lifecycle_review_state]||99)||String(a.equipment_code||a.equipment_name||'').localeCompare(String(b.equipment_code||b.equipment_name||''));
+  });
+
+  const attention=assets.filter((a)=>a.lifecycle_review_state!=='recorded_no_lifecycle_attention');
+  const knownServiceCosts=assets.map((a)=>a.recorded_service_cost_total_all_time).filter((v)=>v!==null) as number[];
+  const knownLifecycleCosts=assets.map((a)=>a.recorded_lifecycle_cost_total).filter((v)=>v!==null) as number[];
+  const replacementCosts=assets.filter((a)=>a.replacement_estimated_cost!==null&&['plan_replacement','replace'].includes(String(a.replacement_state||'').toLowerCase()))
+    .map((a)=>Number(a.replacement_estimated_cost));
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',lookback_days:lookbackDays,lookback_start:lookbackStart,lookback_end:today,
+    source_queries_ok:input.sourceQueriesOk!==false,jobs_visible:input.jobsVisible,finance_visible:input.financeVisible,
+    summary:{
+      equipment_assets:assets.length,locked_out_assets:assets.filter((a)=>a.locked_out).length,
+      current_fleet_downtime_assets:assets.filter((a)=>a.fleet_downtime).length,
+      assets_with_downtime_history_365:assets.filter((a)=>a.downtime_event_count_365>0).length,
+      repeated_downtime_assets:assets.filter((a)=>a.repeated_downtime).length,
+      recorded_downtime_hours_365:round2(assets.reduce((sum,a)=>sum+Number(a.recorded_downtime_hours_365||0),0)),
+      repeated_maintenance_assets:assets.filter((a)=>a.repeated_maintenance_or_service).length,
+      open_service_task_assets:assets.filter((a)=>a.open_service_task_count_365>0).length,
+      preventive_overdue_assets:assets.filter((a)=>a.preventive_overdue_count>0).length,
+      recorded_replacement_plan_assets:assets.filter((a)=>String(a.replacement_state||'').toLowerCase()==='plan_replacement').length,
+      recorded_replacement_hold_assets:assets.filter((a)=>['replace','retired'].includes(String(a.replacement_state||'').toLowerCase())).length,
+      lifecycle_attention_assets:attention.length,
+      recorded_service_cost_total_all_time:round2(knownServiceCosts.reduce((sum,v)=>sum+v,0)),
+      recorded_lifecycle_cost_total:round2(knownLifecycleCosts.reduce((sum,v)=>sum+v,0)),
+      recorded_replacement_estimated_cost_total:round2(replacementCosts.reduce((sum,v)=>sum+v,0)),
+      assets_with_finance_job_cost_context:input.financeVisible?assets.filter((a)=>a.linked_job_cost_context_count>0).length:0
+    },
+    lifecycle_attention:attention.slice(0,150),
+    asset_evidence:assets.slice(0,300),
+    downtime_boundary:'Downtime exposure uses recorded fleet_downtime_events started_at/ended_at. Open events are measured only from their recorded start through the evidence-generation time; no downtime before the recorded start is inferred.',
+    maintenance_boundary:'Maintenance burden uses recorded maintenance history and service-task events. Registry all-time cost rollups are shown separately and are not added again to 365-day history/task costs, avoiding double counting.',
+    cost_boundary:'Equipment-specific recorded service/lifecycle costs remain separate from linked job-level Finance context. Job repair, replacement or delay totals are shown as context only and are never attributed to an asset unless the Finance source already provides that attribution.',
+    replacement_boundary:'Replacement readiness reports the existing replacement_state, target date, reason and estimated cost plus recorded lifecycle signals. Repeated downtime means at least two recorded downtime events; repeated maintenance means at least two recorded maintenance/service events. These are review signals, not replacement recommendations or cost thresholds.',
+    safety_boundary:'Lockout and return-to-service remain controlled Equipment/Safety authorities. This layer cannot clear a lockout, mark an asset ready or override an inspection/readiness restriction.',
+    authority_boundary:'Read-only lifecycle evidence. This layer cannot create/complete service tasks, purchase or replace equipment, create vendor commitments, alter fleet downtime, post Finance, or mutate equipment assignments.'
+  };
+}
+
 function buildLabourCapturePayrollExceptionReduction(input:{
   timekeeping:any[];dispatch:any[];production:any[];jobsVisible:boolean;adminVisible:boolean;sourceQueriesOk:boolean;
 }) {
@@ -2722,7 +2924,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
       routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
-      estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,jobCostDepthRead,invoiceCandidatesRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,materialStockRead,materialPlansRead,
+      estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,jobCostDepthRead,invoiceCandidatesRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,maintenanceHistoryRead,serviceTasksRead,fleetDowntimeEventsRead,materialStockRead,materialPlansRead,
       crmFollowupsRead,customerDirectoryRead,notificationQueueRead,closeoutsRead,propertyDirectoryRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -2762,6 +2964,9 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       canFinanceView ? safeListEvidence(supabase,'v_ar_payment_application_directory','*','application_date',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_equipment_signout_history','*','checked_out_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
       canJobsView ? safeListEvidence(supabase,'v_fleet_vehicle_operations','*','equipment_code',500,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
+      canJobsView ? safeListEvidence(supabase,'v_equipment_maintenance_history','*','performed_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      canJobsView ? safeListEvidence(supabase,'v_equipment_service_task_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      canJobsView ? safeListEvidence(supabase,'fleet_downtime_events','*','started_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
       canJobsView ? safeListEvidence(supabase,'v_material_stock_control','*','sku',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_landscape_material_line_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
       canJobsView ? safeListEvidence(supabase,'v_crm_followup_queue','*','due_at',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
@@ -2780,7 +2985,8 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       agreementProfitability=agreementProfitabilityRead.rows,seasonalRollover=seasonalRolloverRead.rows,
       estimateWorkflow=estimateWorkflowRead.rows,estimateAssumptions=estimateAssumptionsRead.rows,estimateAssumptionVariance=estimateAssumptionVarianceRead.rows,
       jobCostDepth=jobCostDepthRead.rows,invoiceCandidates=invoiceCandidatesRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
-      equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,
+      equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,maintenanceHistory=maintenanceHistoryRead.rows,serviceTasks=serviceTasksRead.rows,fleetDowntimeEvents=fleetDowntimeEventsRead.rows,
+      materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,
       crmFollowups=crmFollowupsRead.rows,customerDirectory=customerDirectoryRead.rows,notificationQueue=notificationQueueRead.rows,closeouts=closeoutsRead.rows,
       propertyDirectory=propertyDirectoryRead.rows;
     const sourceFreshness:Record<string,any> = {};
@@ -2824,6 +3030,9 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
     addFresh(paymentApplicationsRead,'payment_applications','finance','v_ar_payment_application_directory',canFinanceView,168);
     addFresh(equipmentUseRead,'equipment_use','jobs','v_equipment_signout_history',canJobsView,168);
     addFresh(fleetRead,'fleet','jobs','v_fleet_vehicle_operations',canJobsView,168);
+    addFresh(maintenanceHistoryRead,'maintenance_history','jobs','v_equipment_maintenance_history',canJobsView,168);
+    addFresh(serviceTasksRead,'equipment_service_tasks','jobs','v_equipment_service_task_directory',canJobsView,168);
+    addFresh(fleetDowntimeEventsRead,'fleet_downtime_events','jobs','fleet_downtime_events',canJobsView,168);
     addFresh(materialStockRead,'material_stock','jobs','v_material_stock_control',canJobsView,168);
     addFresh(materialPlansRead,'material_plans','jobs','v_landscape_material_line_directory',canJobsView,168);
     addFresh(crmFollowupsRead,'crm_followups','jobs','v_crm_followup_queue',canJobsView,168);
@@ -2857,6 +3066,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       completed_invoiced_cash_conversion:buildManagementMetricConfidence(sourceFreshness,['production','closeouts','invoice_candidates','receivables','payment_applications']),
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
       labour_capture_payroll_exceptions:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch']),
+      equipment_downtime_replacement_readiness:buildManagementMetricConfidence(sourceFreshness,['equipment','maintenance','equipment_use','fleet','maintenance_history','equipment_service_tasks','fleet_downtime_events']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
@@ -2901,6 +3111,11 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       timekeeping:timekeepingDetail,production,dispatch,equipment,equipmentUse,maintenance,fleet,
       jobsVisible:canJobsView,adminVisible:canAdminManage,
       sourceQueriesOk:[timekeepingDetailRead,productionRead,dispatchRead,equipmentRead,equipmentUseRead,maintenanceRead,fleetRead].every((r)=>r.query_ok!==false)
+    });
+    const equipmentDowntimeCostReplacementReadiness=buildEquipmentDowntimeCostReplacementReadiness({
+      equipment,maintenance,maintenanceHistory,serviceTasks,equipmentUse,fleet,downtimeEvents:fleetDowntimeEvents,jobCosts:jobCostDepth,
+      jobsVisible:canJobsView,financeVisible:canFinanceView,
+      sourceQueriesOk:[equipmentRead,maintenanceRead,maintenanceHistoryRead,serviceTasksRead,equipmentUseRead,fleetRead,fleetDowntimeEventsRead].every((r)=>r.query_ok!==false)&&(!canFinanceView||jobCostDepthRead.query_ok!==false)
     });
     const labourCapturePayrollExceptionReduction=buildLabourCapturePayrollExceptionReduction({
       timekeeping:timekeepingDetail,dispatch,production,jobsVisible:canJobsView,adminVisible:canAdminManage,
@@ -2947,6 +3162,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       completed_to_invoiced_cycle_time_cash_conversion:completedToInvoicedCashConversion,
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
       labour_capture_completeness_payroll_exception_reduction:labourCapturePayrollExceptionReduction,
+      equipment_downtime_cost_replacement_readiness:equipmentDowntimeCostReplacementReadiness,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
       data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
