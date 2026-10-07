@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This is the durable operating handbook for the Yard Weasels Inc. application. It describes current architecture and release rules only. Historical release narration belongs in Git/database history, not in this file.
+This is the durable operating handbook for the Yard Workers Inc. application. It describes current architecture and release rules only. Historical release narration belongs in Git/database history, not in this file.
 
 ## Application architecture
 
