@@ -579,6 +579,7 @@ Registry all-time service/lifecycle cost rollups remain separate from 365-day ma
 Replacement readiness preserves the existing replacement state, target date, reason and estimated cost. Repeated downtime means at least two recorded downtime events and repeated maintenance means at least two recorded maintenance/service events; these are lifecycle-review signals rather than replacement or purchasing recommendations. Lockout/return-to-service, maintenance execution, equipment purchasing/replacement, vendor commitments and Finance posting remain under their existing authorities.
 
 <!-- Historical item 370 handoff marker retained for regression provenance: The next planned autonomous item is **371 — Material Usage Variance & Reorder Calibration**. -->
+<!-- Historical item 362 queue marker retained for regression provenance: #### 371 — Material Usage Variance & Reorder Calibration -->
 
 #### **371 — Material Usage Variance & Reorder Calibration** is implemented
 
