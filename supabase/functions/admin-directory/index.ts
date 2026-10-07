@@ -2693,6 +2693,143 @@ function buildCustomerCommunicationReadinessQueue(input:{
 }
 
 
+function buildCustomerCommunicationOutcomeFollowUpEffectiveness(input:{
+  interactions:any[];followups:any[];notificationQueue:any[];closeouts:any[];jobsVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const norm=(v:any)=>String(v??'').trim().toLowerCase();
+  const ts=(v:any)=>{const n=new Date(String(v||'')).getTime();return Number.isFinite(n)?n:null;};
+  const workOrderById=new Map<string,any>();
+  for(const r of input.closeouts||[]) if(r?.work_order_id) workOrderById.set(String(r.work_order_id),r);
+  const inbound=(input.interactions||[]).filter((r)=>norm(r?.direction)==='inbound').sort((a,b)=>(ts(a?.occurred_at)||0)-(ts(b?.occurred_at)||0));
+  const outbound=(input.interactions||[]).filter((r)=>norm(r?.direction)==='outbound').sort((a,b)=>(ts(a?.occurred_at)||0)-(ts(b?.occurred_at)||0));
+  const followupsByInteraction=new Map<string,any[]>();
+  for(const r of input.followups||[]){
+    const id=String(r?.interaction_id||''); if(!id) continue;
+    const rows=followupsByInteraction.get(id)||[]; rows.push(r); followupsByInteraction.set(id,rows);
+  }
+  const responseAfter=(row:any)=>{
+    const workOrderId=String(row?.work_order_id||''); const occurred=ts(row?.occurred_at);
+    if(!workOrderId||occurred===null) return null;
+    return inbound.find((candidate:any)=>String(candidate?.work_order_id||'')===workOrderId&&(ts(candidate?.occurred_at)||0)>=occurred)||null;
+  };
+  const outreachEvidence=outbound.map((r:any)=>{
+    const response=responseAfter(r),linked=followupsByInteraction.get(String(r?.id||''))||[];
+    const completed=linked.filter((f:any)=>norm(f?.followup_status)==='completed');
+    const unresolved=linked.filter((f:any)=>['pending','in_progress','deferred'].includes(norm(f?.followup_status)));
+    const overdue=unresolved.filter((f:any)=>f?.overdue===true);
+    const closeout=r?.work_order_id?workOrderById.get(String(r.work_order_id)):null;
+    return {
+      interaction_id:r?.id||null,client_id:r?.client_id||null,client_name:r?.client_name||null,
+      work_order_id:r?.work_order_id||null,work_order_number:closeout?.work_order_number||null,
+      channel:r?.channel||null,interaction_type:r?.interaction_type||null,interaction_status:r?.interaction_status||null,
+      season_context:r?.season_context||null,service_type:r?.service_type||null,occurred_at:r?.occurred_at||null,
+      outcome_recorded:!!String(r?.outcome||'').trim()||['resolved','closed'].includes(norm(r?.interaction_status)),
+      recorded_outcome:String(r?.outcome||'').trim()||null,
+      response_state:response?'recorded_inbound_response':r?.work_order_id?'no_recorded_inbound_response':'not_linkable_without_work_order',
+      response_at:response?.occurred_at||null,response_channel:response?.channel||null,
+      linked_followup_count:linked.length,completed_followup_count:completed.length,
+      unresolved_followup_count:unresolved.length,overdue_followup_count:overdue.length
+    };
+  });
+  const interactionById=new Map<string,any>();
+  for(const r of input.interactions||[]) if(r?.id) interactionById.set(String(r.id),r);
+  const followupEvidence=(input.followups||[]).map((r:any)=>{
+    const status=norm(r?.followup_status),completedAt=ts(r?.completed_at),dueAt=ts(r?.due_at);
+    const completed=status==='completed';
+    const timeliness=completed
+      ?(completedAt!==null&&dueAt!==null?(completedAt<=dueAt?'completed_on_time':'completed_late'):'completed_timing_unavailable')
+      :(status==='cancelled'?'cancelled':r?.overdue===true?'open_overdue':'open_not_overdue');
+    const source=r?.interaction_id?interactionById.get(String(r.interaction_id)):null;
+    return {
+      followup_id:r?.id||null,client_id:r?.client_id||null,client_name:r?.client_name||null,
+      interaction_id:r?.interaction_id||null,source_direction:source?.direction||null,source_channel:source?.channel||null,
+      followup_type:r?.followup_type||null,followup_status:r?.followup_status||null,priority:r?.priority||null,
+      season_context:r?.season_context||null,service_type:r?.service_type||null,due_at:r?.due_at||null,
+      completed_at:r?.completed_at||null,timeliness,resolution_recorded:!!String(r?.resolution_note||'').trim()
+    };
+  });
+  const completionFollowupOutcomes=(input.closeouts||[]).filter((r:any)=>['approved','invoice_ready'].includes(norm(r?.closeout_status))&&(r?.signed_off_at||r?.approved_at)).map((r:any)=>{
+    const base=r?.signed_off_at||r?.approved_at; const baseTs=ts(base)||0;
+    const workOrderId=String(r?.work_order_id||'');
+    const after=outbound.filter((i:any)=>workOrderId&&String(i?.work_order_id||'')===workOrderId&&(ts(i?.occurred_at)||0)>=baseTs);
+    const first=after[0]||null; const response=first?responseAfter(first):null;
+    return {
+      closeout_id:r?.id||null,work_order_id:r?.work_order_id||null,work_order_number:r?.work_order_number||null,
+      client_id:r?.client_id||null,client_name:r?.client_name||null,closeout_at:base,
+      outbound_count_after_closeout:after.length,first_outbound_at:first?.occurred_at||null,
+      response_at:response?.occurred_at||null,
+      outcome_state:!first?'no_recorded_outbound_followup':response?'recorded_inbound_response':'outbound_without_recorded_response'
+    };
+  });
+  const workOrderGroups=new Map<string,any[]>();
+  for(const r of outreachEvidence){
+    const id=String(r?.work_order_id||''); if(!id) continue;
+    const rows=workOrderGroups.get(id)||[]; rows.push(r); workOrderGroups.set(id,rows);
+  }
+  const repeatedUnresolvedOutreach=[...workOrderGroups.entries()].map(([workOrderId,rows])=>{
+    const ordered=[...rows].sort((a:any,b:any)=>(ts(a?.occurred_at)||0)-(ts(b?.occurred_at)||0));
+    const first=ordered[0],last=ordered[ordered.length-1];
+    const firstTs=ts(first?.occurred_at)||0;
+    const response=inbound.find((i:any)=>String(i?.work_order_id||'')===workOrderId&&(ts(i?.occurred_at)||0)>=firstTs)||null;
+    return {
+      work_order_id:workOrderId,work_order_number:first?.work_order_number||last?.work_order_number||null,
+      client_id:first?.client_id||last?.client_id||null,client_name:first?.client_name||last?.client_name||null,
+      outbound_count:ordered.length,first_outbound_at:first?.occurred_at||null,last_outbound_at:last?.occurred_at||null,
+      response_at:response?.occurred_at||null
+    };
+  }).filter((r:any)=>r.outbound_count>=2&&!r.response_at);
+  const aggregate=(field:string,rows:any[])=>{
+    const groups=new Map<string,any>();
+    for(const r of rows){
+      const key=String(r?.[field]||'other');
+      const g=groups.get(key)||{key,outbound_count:0,response_recorded_count:0,outcome_recorded_count:0};
+      g.outbound_count++; if(r?.response_state==='recorded_inbound_response') g.response_recorded_count++;
+      if(r?.outcome_recorded) g.outcome_recorded_count++; groups.set(key,g);
+    }
+    return [...groups.values()].sort((a,b)=>b.outbound_count-a.outbound_count||String(a.key).localeCompare(String(b.key)));
+  };
+  const completedFollowups=followupEvidence.filter((r:any)=>r.followup_status&&norm(r.followup_status)==='completed');
+  const openFollowups=followupEvidence.filter((r:any)=>['pending','in_progress','deferred'].includes(norm(r?.followup_status)));
+  const delivery=(input.notificationQueue||[]).map((r:any)=>({
+    outbox_id:r?.id||null,work_order_id:r?.work_order_id||null,work_order_number:r?.work_order_number||null,
+    client_id:r?.client_id||null,client_name:r?.client_name||null,delivery_status:r?.delivery_status||null,
+    sent_at:r?.sent_at||null,attempt_count:Number(r?.attempt_count||0),last_attempt_at:r?.last_attempt_at||null,
+    live_update_title:r?.live_update_title||null
+  }));
+  const deliveryAttention=delivery.filter((r:any)=>['manual_review','failed','retry_scheduled','blocked'].includes(norm(r?.delivery_status)));
+  return {
+    generated_at:new Date().toISOString(),source_queries_ok:input.sourceQueriesOk,jobs_visible:input.jobsVisible,
+    summary:{
+      outbound_interactions:outreachEvidence.length,
+      recorded_inbound_responses:outreachEvidence.filter((r:any)=>r.response_state==='recorded_inbound_response').length,
+      outbound_outcomes_recorded:outreachEvidence.filter((r:any)=>r.outcome_recorded).length,
+      followups_total:followupEvidence.length,followups_completed:completedFollowups.length,
+      followups_completed_on_time:completedFollowups.filter((r:any)=>r.timeliness==='completed_on_time').length,
+      followups_completed_late:completedFollowups.filter((r:any)=>r.timeliness==='completed_late').length,
+      followups_open:openFollowups.length,followups_overdue:openFollowups.filter((r:any)=>r.timeliness==='open_overdue').length,
+      repeated_unresolved_work_orders:repeatedUnresolvedOutreach.length,
+      notification_sent:delivery.filter((r:any)=>norm(r?.delivery_status)==='sent').length,
+      notification_delivery_attention:deliveryAttention.length,
+      completion_followups_with_outbound:completionFollowupOutcomes.filter((r:any)=>r.outbound_count_after_closeout>0).length,
+      completion_followups_with_recorded_response:completionFollowupOutcomes.filter((r:any)=>r.outcome_state==='recorded_inbound_response').length
+    },
+    outreach_evidence:outreachEvidence.slice(0,250),
+    followup_evidence:followupEvidence.sort((a:any,b:any)=>String(a?.due_at||'').localeCompare(String(b?.due_at||''))).slice(0,250),
+    completion_followup_outcomes:completionFollowupOutcomes.slice(0,150),
+    repeated_unresolved_outreach:repeatedUnresolvedOutreach.slice(0,100),
+    delivery_outcomes:delivery.slice(0,150),delivery_attention:deliveryAttention.slice(0,100),
+    channel_summary:aggregate('channel',outreachEvidence),season_summary:aggregate('season_context',outreachEvidence),
+    response_boundary:'A recorded customer response requires a later inbound CRM interaction linked to the same work order as the outbound CRM interaction. Customer silence is not inferred when that linkage is unavailable.',
+    outcome_boundary:'CRM interaction outcome/status is reported separately from response evidence. A resolved/closed interaction or recorded outcome text is not treated as proof that the customer replied.',
+    followup_boundary:'Follow-up timeliness compares canonical completed_at with due_at. Cancelled follow-ups are not counted as completed; open overdue evidence remains open until CRM authority records completion or cancellation.',
+    delivery_boundary:'Notification status sent is provider delivery evidence only. It is not proof that a customer read, understood or replied to the message; retry/failed/manual-review/blocked states remain provider-authority evidence.',
+    recurrence_boundary:'Repeated unresolved outreach means at least two recorded outbound CRM interactions for the same work order with no later recorded inbound interaction after the first outbound. It is a review signal, not a customer-quality or staff-performance score.',
+    coverage_boundary:'This view is bounded by the loaded canonical CRM interaction, follow-up, closeout and protected notification-delivery evidence. Missing or failed source reads are never converted into successful outcomes.',
+    authority_boundary:'Read-only communication-outcome evidence. This layer cannot send email/text, retry providers, create or close CRM follow-ups/interactions, change consent/preferences, reschedule work, publish customer updates, collect payment or contact a provider.'
+  };
+}
+
+
 function buildDataQualityDuplicateOrphanReconciliation(input:{
   customers:any[];properties:any[];jobs:any[];dispatch:any[];recurring:any[];crews:any[];equipment:any[];routes:any[];
   workability:any[];materialPlans:any[];jobsVisible:boolean;sourceQueriesOk:boolean;referenceCoverageComplete:boolean;
@@ -3239,6 +3376,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
       material_usage_variance_reorder_calibration:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','material_actual_use']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
+      communication_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_interactions','crm_followups','notification_delivery','closeouts']),
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
       workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production'])
     };
@@ -3304,6 +3442,10 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       jobsVisible:canJobsView,financeVisible:canFinanceView,
       sourceQueriesOk:[workabilityRead,dispatchRead,recurringVisitsRead,closeoutsRead,crmFollowupsRead,crmInteractionsRead,customerDirectoryRead,notificationQueueRead,receivablesRead].every((r)=>r.query_ok!==false)
     });
+    const customerCommunicationOutcomeFollowUpEffectiveness=buildCustomerCommunicationOutcomeFollowUpEffectiveness({
+      interactions:crmInteractions,followups:crmFollowups,notificationQueue,closeouts,jobsVisible:canJobsView,
+      sourceQueriesOk:[crmInteractionsRead,crmFollowupsRead,notificationQueueRead,closeoutsRead].every((r)=>r.query_ok!==false)
+    });
     const dataQualityReferenceReads=[customerDirectoryRead,propertyDirectoryRead,jobsRead,dispatchRead,recurringRead,crewsRead,equipmentRead,routesRead];
     const dataQualityDuplicateOrphanReconciliation=buildDataQualityDuplicateOrphanReconciliation({
       customers:customerDirectory,properties:propertyDirectory,jobs,dispatch,recurring,crews,equipment,routes,workability,materialPlans,
@@ -3340,6 +3482,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
       material_usage_variance_reorder_calibration:materialUsageVarianceReorderCalibration,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
+      customer_communication_outcome_followup_effectiveness:customerCommunicationOutcomeFollowUpEffectiveness,
       data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
