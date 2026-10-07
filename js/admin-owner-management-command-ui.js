@@ -39,6 +39,7 @@
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
       '<section class="admin-panel-block owner371-material-variance" style="margin-top:12px;"><div class="owner350-head"><div><h4>Material usage variance &amp; reorder calibration</h4><p class="section-subtitle">Build 371 · planned estimator quantity versus recorded issue-linked/production actual use, repeated service/season variance and current stock/reorder evidence.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>Calibration evidence only:</strong> unit mismatches stay explicit. This view never changes estimator assumptions, stock, reorder points/quantities or target stock and never creates purchases.</div><div id="owner371MaterialVariance"></div></section>',
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
+      '<section class="admin-panel-block owner372-communication-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication outcome &amp; follow-up effectiveness</h4><p class="section-subtitle">Build 372 · recorded CRM outreach/response evidence, follow-up completion and timeliness, completion follow-up outcomes, repeated unresolved outreach and protected provider-delivery state.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome evidence only — no customer score:</strong> sent means provider-delivery evidence, not read/reply proof. Missing responses stay unknown; this view never sends, retries, changes consent or auto-closes CRM work.</div><div id="owner372CommunicationOutcomes"></div></section>',
       '<section class="admin-panel-block owner360-data-quality" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality, duplicate &amp; orphan reconciliation workbench</h4><p class="section-subtitle">Build 360 · duplicate customer/property candidates, broken canonical references, cross-module mismatches, stale crew/equipment assignments, and conflicting four-season service tags.</p></div><button class="secondary" data-owner360-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>No destructive auto-fix:</strong> this workbench preserves source IDs and audit history. It cannot merge/delete records, rewrite foreign keys, reassign crews/equipment or clear lockouts.</div><div id="owner360DataQuality"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
@@ -701,6 +702,64 @@
     }
 
 
+    function renderCommunicationOutcomes(){
+      const host=$('owner372CommunicationOutcomes');if(!host)return;
+      const w=state.data?.customer_communication_outcome_followup_effectiveness;
+      const meta=metricMeta('communication_outcomes');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Communication outcome evidence requires Jobs visibility for this profile.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Customer communication outcome and follow-up evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical CRM/notification/closeout evidence reads failed. Outcome counts are withheld rather than converted into successful or zero-valued facts.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required communication outcome evidence is unavailable.')+'</p>';return}
+      const s=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Outbound CRM',num(s.outbound_interactions),'recorded outbound interactions','communication_outcomes'),
+        card('Recorded responses',num(s.recorded_inbound_responses),'later inbound interaction on same work order','communication_outcomes'),
+        card('Outcome recorded',num(s.outbound_outcomes_recorded),'CRM outcome/status evidence; not response proof','communication_outcomes'),
+        card('Follow-ups completed',num(s.followups_completed),num(s.followups_total)+' loaded follow-up(s)','communication_outcomes'),
+        card('Completed on time',num(s.followups_completed_on_time),num(s.followups_completed_late)+' completed late','communication_outcomes'),
+        card('Open overdue',num(s.followups_overdue),num(s.followups_open)+' open follow-up(s)','communication_outcomes'),
+        card('Provider sent',num(s.notification_sent),'delivery evidence only','communication_outcomes'),
+        card('Delivery attention',num(s.notification_delivery_attention),'retry/failed/manual-review/blocked','communication_outcomes'),
+        card('Repeated unresolved',num(s.repeated_unresolved_work_orders),'2+ outbound, no later recorded inbound','communication_outcomes')
+      ].join('')+'</div>';
+
+      const outreach=(w.outreach_evidence||[]).slice(0,60).map(r=>{
+        const response=String(r.response_state||'unknown').replaceAll('_',' ');
+        const outcome=r.outcome_recorded?'outcome recorded':'outcome not recorded';
+        const follow='follow-ups '+num(r.linked_followup_count)+' · completed '+num(r.completed_followup_count)+' · unresolved '+num(r.unresolved_followup_count)+' · overdue '+num(r.overdue_followup_count);
+        return '<div class="owner350-row" data-owner372-outreach="'+esc(String(r.interaction_id||''))+'"><strong>'+esc((r.client_name||'Customer')+' · '+(r.channel||'channel')+' · '+response)+'</strong><small>'+esc((r.work_order_number||r.work_order_id||'no work-order link')+' · '+(r.service_type||'service unspecified')+' · '+(r.season_context||'other'))+'</small><small>'+esc((r.occurred_at||'time unavailable')+' · '+outcome)+'</small><small>'+esc(follow)+'</small></div>';
+      }).join('');
+
+      const followups=(w.followup_evidence||[]).slice(0,60).map(r=>
+        '<div class="owner350-row" data-owner372-followup="'+esc(String(r.followup_id||''))+'"><strong>'+esc((r.client_name||'Customer')+' · '+String(r.followup_type||'general').replaceAll('_',' ')+' · '+String(r.timeliness||'unknown').replaceAll('_',' '))+'</strong><small>'+esc('status '+(r.followup_status||'unknown')+' · priority '+(r.priority||'normal')+' · due '+(r.due_at||'unavailable'))+'</small><small>'+esc((r.completed_at?'completed '+r.completed_at:'not completed')+' · resolution '+(r.resolution_recorded?'recorded':'not recorded'))+'</small></div>'
+      ).join('');
+
+      const closeouts=(w.completion_followup_outcomes||[]).slice(0,40).map(r=>
+        '<div class="owner350-row"><strong>'+esc((r.work_order_number||r.work_order_id||'Work order')+' · '+String(r.outcome_state||'unknown').replaceAll('_',' '))+'</strong><small>'+esc((r.client_name||'Customer')+' · closeout '+(r.closeout_at||'time unavailable'))+'</small><small>'+esc(num(r.outbound_count_after_closeout)+' outbound after closeout · response '+(r.response_at||'not recorded'))+'</small></div>'
+      ).join('');
+
+      const repeated=(w.repeated_unresolved_outreach||[]).slice(0,30).map(r=>
+        '<div class="owner350-row"><strong>'+esc((r.work_order_number||r.work_order_id||'Work order')+' · '+num(r.outbound_count)+' outbound interaction(s)')+'</strong><small>'+esc((r.client_name||'Customer')+' · first '+(r.first_outbound_at||'unavailable')+' · last '+(r.last_outbound_at||'unavailable'))+'</small><small>No later recorded inbound CRM interaction on this work order.</small></div>'
+      ).join('');
+
+      const delivery=(w.delivery_outcomes||[]).slice(0,40).map(r=>
+        '<div class="owner350-row"><strong>'+esc((r.work_order_number||'Work order')+' · '+String(r.delivery_status||'unknown').replaceAll('_',' '))+'</strong><small>'+esc((r.client_name||'Customer')+' · '+(r.live_update_title||'customer-visible update'))+'</small><small>'+esc('attempts '+num(r.attempt_count)+' · sent '+(r.sent_at||'not recorded')+' · last attempt '+(r.last_attempt_at||'not recorded'))+'</small></div>'
+      ).join('');
+
+      const channels=(w.channel_summary||[]).map(r=>'<div class="owner350-row"><strong>'+esc(String(r.key||'other').replaceAll('_',' '))+'</strong><small>'+esc(num(r.outbound_count)+' outbound · '+num(r.response_recorded_count)+' same-work-order recorded response · '+num(r.outcome_recorded_count)+' outcome recorded')+'</small></div>').join('');
+      const seasons=(w.season_summary||[]).map(r=>'<div class="owner350-row"><strong>'+esc(String(r.key||'other').replaceAll('_',' / '))+'</strong><small>'+esc(num(r.outbound_count)+' outbound · '+num(r.response_recorded_count)+' same-work-order recorded response · '+num(r.outcome_recorded_count)+' outcome recorded')+'</small></div>').join('');
+
+      host.innerHTML=summary+
+        '<details open style="margin-top:8px;"><summary>Recorded outreach outcome evidence</summary><div class="owner350-list" style="margin-top:8px;">'+(outreach||'<p class="muted">No outbound CRM interaction evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;" open><summary>Follow-up completion &amp; timeliness</summary><div class="owner350-list" style="margin-top:8px;">'+(followups||'<p class="muted">No canonical CRM follow-up evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Completion follow-up outcomes</summary><div class="owner350-list" style="margin-top:8px;">'+(closeouts||'<p class="muted">No approved/invoice-ready closeout follow-up evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Repeated outreach needing review</summary><div class="owner350-list" style="margin-top:8px;">'+(repeated||'<p class="muted">No work order has 2+ recorded outbound interactions without a later recorded inbound interaction.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Protected provider delivery outcomes</summary><div class="owner350-list" style="margin-top:8px;">'+(delivery||'<p class="muted">No protected notification-delivery evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Channel &amp; four-season context</summary><div class="grid"><div><h5>Channels</h5><div class="owner350-list">'+(channels||'<p class="muted">No channel evidence.</p>')+'</div></div><div><h5>Seasons</h5><div class="owner350-list">'+(seasons||'<p class="muted">No season evidence.</p>')+'</div></div></div></details>'+
+        '<details style="margin-top:8px;"><summary>Response, outcome, follow-up &amp; authority boundaries</summary><p class="muted">'+esc(w.response_boundary||'')+'</p><p class="muted">'+esc(w.outcome_boundary||'')+'</p><p class="muted">'+esc(w.followup_boundary||'')+'</p><p class="muted">'+esc(w.delivery_boundary||'')+'</p><p class="muted">'+esc(w.recurrence_boundary||'')+'</p><p class="muted">'+esc(w.coverage_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
+
     function renderDataQualityReconciliation(){
       const host=$('owner360DataQuality');if(!host)return;
       const w=state.data?.data_quality_duplicate_orphan_reconciliation;
@@ -801,6 +860,7 @@
       renderStockReadiness();
       renderMaterialUsageVarianceCalibration();
       renderCommunicationReadiness();
+      renderCommunicationOutcomes();
       renderDataQualityReconciliation();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),

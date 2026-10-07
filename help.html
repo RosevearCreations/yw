@@ -241,6 +241,17 @@
           <p><strong>No automatic sending:</strong> the queue cannot email/text, publish a live update, reschedule work, retry notification delivery, collect payment or contact a provider. Existing consent, provider delivery, Jobs, CRM and Finance authorities remain canonical.</p>
         </section>
 
+        <section class="help-section" id="customer-communication-outcome-followup-effectiveness">
+          <h2>Build 372 — Customer Communication Outcome &amp; Follow-Up Effectiveness</h2>
+          <p>Build 372 adds a permission-aware, read-only outcome layer over the canonical CRM interaction timeline, CRM follow-up queue, approved/invoice-ready closeouts and protected customer-notification delivery evidence.</p>
+          <p><strong>Recorded response is explicit:</strong> a customer response is counted only when a later inbound CRM interaction is recorded against the same work order as the outbound interaction. Missing linkage or missing inbound evidence stays unknown rather than being treated as silence, failure or success.</p>
+          <p><strong>CRM outcome is separate from response:</strong> resolved/closed interaction status or recorded outcome text is useful operational evidence, but it is not treated as proof that the customer replied.</p>
+          <p><strong>Follow-up timeliness stays evidence-based:</strong> completed follow-ups compare the canonical <code>completed_at</code> time with <code>due_at</code>. Cancelled follow-ups are not counted as completed, and open overdue work remains open until CRM authority records a completion or cancellation.</p>
+          <p><strong>Provider sent is not customer engagement:</strong> protected notification <code>sent</code> state is provider-delivery evidence only. It does not prove that a customer read, understood or replied to the message; retry, failed, blocked and manual-review states remain visible.</p>
+          <p><strong>Repeated unresolved outreach is a review signal:</strong> two or more recorded outbound CRM interactions for the same work order without a later recorded inbound interaction are surfaced for review. This is not a customer-quality score and is never used as a staff-performance rating.</p>
+          <p><strong>No automatic customer contact:</strong> this layer cannot email/text, retry a provider, create/close CRM interactions or follow-ups, change consent/preferences, publish customer updates, reschedule work, collect payment or contact a provider.</p>
+        </section>
+
         <section class="help-section" id="data-quality-duplicate-orphan-reconciliation">
           <h2>Build 360 — Data Quality, Duplicate &amp; Orphan Reconciliation Workbench</h2>
           <p>Build 360 adds read-only data-quality reconciliation across canonical CRM, Property, Jobs, Dispatch, Recurring Service, Crew, Equipment, Route, Workability and Material Estimator evidence.</p>
