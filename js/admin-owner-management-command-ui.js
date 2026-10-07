@@ -37,6 +37,7 @@
       '<section class="admin-panel-block owner370-equipment-lifecycle" style="margin-top:12px;"><div class="owner350-head"><div><h4>Equipment downtime cost &amp; replacement readiness</h4><p class="section-subtitle">Build 370 · 365-day recorded downtime, maintenance/service burden, signout evidence, lifecycle costs and existing replacement-state context.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Lifecycle review only:</strong> repeated downtime/maintenance are evidence signals, not replacement recommendations. This view cannot clear lockouts, return assets to service, replace/buy equipment, create vendor commitments or post Finance.</div><div id="owner370EquipmentLifecycle"></div></section>',
       '<section class="admin-panel-block owner369-labour-capture" style="margin-top:12px;"><div class="owner350-head"><div><h4>Labour capture completeness &amp; payroll exception reduction</h4><p class="section-subtitle">Build 369 · 30 completed days of crew/job work evidence matched to canonical timekeeping and payroll-readiness evidence.</p></div><button class="secondary" data-owner357-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Evidence quality, not employee scoring:</strong> this view surfaces missing/exception payroll evidence at crew/job level. It never ranks workers, approves payroll or corrections, changes pay codes, makes employment decisions or overrides Safety restrictions.</div><div id="owner369LabourCapture"></div></section>',
       '<section class="admin-panel-block owner358-stock" style="margin-top:12px;"><div class="owner350-head"><div><h4>Materials, consumables &amp; seasonal stock readiness</h4><p class="section-subtitle">Build 358 · 7/14-day planned material demand, on-hand stock, recurring-demand coverage, reorder risk and spring/summer, fall and winter readiness.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>No automatic purchasing:</strong> this view uses recorded stock, planned material estimates and schedule evidence. It does not create purchase orders, contact suppliers, reserve stock or create vendor commitments.</div><div id="owner358Stock"></div></section>',
+      '<section class="admin-panel-block owner371-material-variance" style="margin-top:12px;"><div class="owner350-head"><div><h4>Material usage variance &amp; reorder calibration</h4><p class="section-subtitle">Build 371 · planned estimator quantity versus recorded issue-linked/production actual use, repeated service/season variance and current stock/reorder evidence.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>Calibration evidence only:</strong> unit mismatches stay explicit. This view never changes estimator assumptions, stock, reorder points/quantities or target stock and never creates purchases.</div><div id="owner371MaterialVariance"></div></section>',
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
       '<section class="admin-panel-block owner360-data-quality" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality, duplicate &amp; orphan reconciliation workbench</h4><p class="section-subtitle">Build 360 · duplicate customer/property candidates, broken canonical references, cross-module mismatches, stale crew/equipment assignments, and conflicting four-season service tags.</p></div><button class="secondary" data-owner360-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>No destructive auto-fix:</strong> this workbench preserves source IDs and audit history. It cannot merge/delete records, rewrite foreign keys, reassign crews/equipment or clear lockouts.</div><div id="owner360DataQuality"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
@@ -616,6 +617,59 @@
     }
 
 
+
+    function renderMaterialUsageVarianceCalibration(){
+      const host=$('owner371MaterialVariance');if(!host)return;
+      const w=state.data?.material_usage_variance_reorder_calibration;
+      const meta=metricMeta('material_usage_variance_reorder_calibration');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Material-usage calibration evidence requires Jobs visibility for this profile.</p>';return}
+      if(!w||!w.summary){host.innerHTML='<p class="muted">Material usage variance and reorder-calibration evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more canonical material evidence queries failed. Variance and reorder-calibration results are withheld rather than converted into zero-valued facts.</p>';return}
+      if(meta&&['unavailable','missing'].includes(String(meta.state||''))){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required material calibration evidence is unavailable.')+'</p>';return}
+
+      const x=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Comparable planned/actual',num(x.comparable_lines),num(x.planned_lines_with_actual_evidence)+' line(s) with actual evidence','material_usage_variance_reorder_calibration'),
+        card('Unit mismatch lines',num(x.unit_mismatch_lines),'variance withheld until units/conversion evidence agrees','material_usage_variance_reorder_calibration'),
+        card('Over-use lines',num(x.over_use_lines),num(x.repeated_over_use_patterns)+' repeated pattern(s)','material_usage_variance_reorder_calibration'),
+        card('Under-use lines',num(x.under_use_lines),num(x.repeated_under_use_patterns)+' repeated pattern(s)','material_usage_variance_reorder_calibration'),
+        card('Stockout evidence',num(x.stockout_materials),'materials represented in recorded actual-use evidence','material_usage_variance_reorder_calibration'),
+        card('Reorder review',num(x.reorder_review_materials),'current recorded reorder evidence only','material_usage_variance_reorder_calibration'),
+        card('Issue-linked actual use',num(x.issue_linked_actual_events),'actual-use events linked to material issues','material_usage_variance_reorder_calibration'),
+        card('Production actual use',num(x.production_actual_events),'recorded actual-use events without a material issue link','material_usage_variance_reorder_calibration')
+      ].join('')+'</div>';
+
+      const patterns=(w.calibration_attention||[]).slice(0,60).map(r=>{
+        const label=(r.material_sku?String(r.material_sku)+' · ':'')+(r.material_label||'Material');
+        const variance=r.variance_quantity_total==null?'variance unavailable':num(r.variance_quantity_total)+' '+(r.stock_unit||'planned unit')+' ('+pct(r.variance_percent)+')';
+        const stock=[
+          'stock '+(r.stock_on_hand==null?'unavailable':num(r.stock_on_hand)+' '+(r.stock_unit||'')),
+          r.reorder_point==null?'reorder point unavailable':'reorder point '+num(r.reorder_point),
+          r.reorder_quantity==null?'reorder qty unavailable':'reorder qty '+num(r.reorder_quantity),
+          r.target_stock_quantity==null?'target unavailable':'target '+num(r.target_stock_quantity)
+        ].join(' · ');
+        return '<div class="owner350-row" data-owner371-pattern="'+esc(String(r.material_id||r.material_sku||r.material_label||''))+'"><strong>'+esc(label+' · '+String(r.review_state||'recorded variance').replaceAll('_',' '))+'</strong><small>'+esc((r.service_context||'unspecified')+' · '+(r.season_context||'four_season')+' · '+num(r.compared_line_count)+' comparable line(s)')+'</small><small>'+esc('planned '+num(r.planned_quantity_total)+' · actual '+num(r.actual_quantity_total)+' · '+variance)+'</small><small>'+esc('over '+num(r.over_use_line_count)+' · under '+num(r.under_use_line_count)+' · on plan '+num(r.on_plan_line_count))+'</small><small>'+esc(stock)+'</small><small>'+esc(r.suggested_next_action||'')+'</small></div>';
+      }).join('');
+
+      const serviceSeason=(w.service_season_summary||[]).slice(0,40).map(r=>
+        '<div class="owner350-row"><strong>'+esc((r.season_context||'four_season')+' · '+(r.service_context||'unspecified'))+'</strong><small>'+esc(num(r.lines_with_actual_evidence)+' line(s) with actual evidence · '+num(r.comparable_lines)+' comparable · '+num(r.unit_mismatch_lines)+' unit mismatch')+'</small><small>'+esc('over '+num(r.over_use_lines)+' · under '+num(r.under_use_lines)+' · on plan '+num(r.on_plan_lines))+'</small></div>'
+      ).join('');
+
+      const lines=(w.line_variance_evidence||[]).slice(0,80).map(r=>{
+        const label=(r.material_sku?String(r.material_sku)+' · ':'')+(r.material_label||'Material');
+        const variance=r.comparison_complete
+          ?'planned '+num(r.planned_quantity)+' '+(r.planned_unit||'')+' · actual '+num(r.actual_quantity_planned_unit)+' · variance '+num(r.variance_quantity)+' ('+pct(r.variance_percent)+') · '+String(r.variance_direction||'').replaceAll('_',' ')
+          :'planned '+num(r.planned_quantity)+' '+(r.planned_unit||'')+' · variance withheld · '+num(r.unit_mismatch_event_count)+' unit-mismatch event(s)';
+        return '<div class="owner350-row" data-owner371-line="'+esc(String(r.material_estimate_line_id||''))+'"><strong>'+esc(label+' · '+(r.estimator_code||'estimator line'))+'</strong><small>'+esc((r.service_context||'unspecified')+' · '+(r.season_context||'four_season'))+'</small><small>'+esc(variance)+'</small><small>'+esc(num(r.issue_linked_event_count)+' issue-linked actual event(s) · '+num(r.production_actual_event_count)+' production actual event(s)')+'</small></div>';
+      }).join('');
+
+      host.innerHTML=summary+
+        '<details open style="margin-top:8px;"><summary>Calibration attention by material, service &amp; season</summary><div class="owner350-list" style="margin-top:8px;">'+(patterns||'<p class="muted">No repeated variance, stockout or reorder-review pattern is visible in the loaded comparable evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Service / season variance coverage</summary><div class="owner350-list" style="margin-top:8px;">'+(serviceSeason||'<p class="muted">No material actual-use evidence is loaded.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Line-level planned vs recorded actual evidence</summary><div class="owner350-list" style="margin-top:8px;">'+(lines||'<p class="muted">No material estimator line has recorded actual-use evidence.</p>')+'</div></details>'+
+        '<details style="margin-top:8px;"><summary>Comparison, repeat, stock &amp; authority boundaries</summary><p class="muted">'+esc(w.comparison_boundary||'')+'</p><p class="muted">'+esc(w.repeat_boundary||'')+'</p><p class="muted">'+esc(w.stock_boundary||'')+'</p><p class="muted">'+esc(w.source_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
+
     function renderCommunicationReadiness(){
       const host=$('owner359Communications');if(!host)return;
       const w=state.data?.customer_communication_readiness_queue;
@@ -745,6 +799,7 @@
       renderEquipmentDowntimeReplacementReadiness();
       renderLabourCapturePayrollExceptions();
       renderStockReadiness();
+      renderMaterialUsageVarianceCalibration();
       renderCommunicationReadiness();
       renderDataQualityReconciliation();
       $('owner350Kpis').innerHTML=[

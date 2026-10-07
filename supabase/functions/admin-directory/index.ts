@@ -2335,6 +2335,173 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
 }
 
 
+
+function buildMaterialUsageVarianceReorderCalibration(input:{
+  materialPlans:any[];actualUse:any[];materials:any[];jobsVisible:boolean;sourceQueriesOk:boolean;
+}) {
+  const norm=(v:any)=>String(v??'').trim().toLowerCase().replace(/\s+/g,'_');
+  const round4=(v:number)=>Math.round(v*10000)/10000;
+  const numberOrNull=(v:any)=>{
+    if(v===null||v===undefined||v==='')return null;
+    const n=Number(v);return Number.isFinite(n)?n:null;
+  };
+  const materialsById=new Map<string,any>();
+  for(const row of input.materials||[])if(row?.id)materialsById.set(String(row.id),row);
+
+  const actualByLine=new Map<string,any[]>();
+  for(const event of input.actualUse||[]){
+    const lineId=String(event?.material_estimate_line_id||'');if(!lineId)continue;
+    const list=actualByLine.get(lineId)||[];list.push(event);actualByLine.set(lineId,list);
+  }
+
+  const lineEvidence=(input.materialPlans||[]).filter((row)=>Number(row?.planned_quantity||0)>0).map((row)=>{
+    const lineId=String(row?.id||'');
+    const events=actualByLine.get(lineId)||[];
+    const plannedQuantity=Number(row?.planned_quantity||0);
+    const plannedUnit=norm(row?.planned_unit);
+    const compatible:any[]=[];
+    const mismatched:any[]=[];
+    for(const event of events){
+      const actualUnit=norm(event?.actual_unit);
+      const factor=numberOrNull(event?.conversion_factor_to_planned);
+      const exactUnit=!!plannedUnit&&!!actualUnit&&plannedUnit===actualUnit;
+      const explicitConversion=!!plannedUnit&&!!actualUnit&&plannedUnit!==actualUnit&&factor!==null&&factor>0&&Math.abs(factor-1)>0.000000001;
+      (exactUnit||explicitConversion?compatible:mismatched).push(event);
+    }
+    const comparisonComplete=events.length>0&&mismatched.length===0&&compatible.length===events.length;
+    const actualPlannedUnit=comparisonComplete
+      ?round4(compatible.reduce((sum,event)=>sum+Number(event?.actual_quantity_planned_unit??event?.actual_quantity??0),0))
+      :null;
+    const varianceQuantity=comparisonComplete&&actualPlannedUnit!==null?round4(actualPlannedUnit-plannedQuantity):null;
+    const variancePercent=varianceQuantity===null||plannedQuantity<=0?null:round4((varianceQuantity/plannedQuantity)*100);
+    const varianceDirection=varianceQuantity===null?'not_comparable':varianceQuantity>0?'over_use':varianceQuantity<0?'under_use':'on_plan';
+    const materialId=String(row?.material_id||'');
+    const material=materialId?materialsById.get(materialId)||null:null;
+    const tracked=material?.inventory_tracked!==false;
+    const stockOnHand=tracked?numberOrNull(material?.stock_on_hand):null;
+    const reorderPoint=numberOrNull(material?.reorder_point);
+    const stockoutEvidence=tracked&&stockOnHand!==null&&stockOnHand<=0;
+    const reorderEvidence=tracked&&(
+      material?.reorder_required===true||
+      norm(material?.stock_status)==='reorder'||
+      (stockOnHand!==null&&reorderPoint!==null&&stockOnHand<=reorderPoint)
+    );
+    return {
+      material_estimate_line_id:row?.id||null,material_estimate_id:row?.material_estimate_id||row?.estimate_id||null,
+      estimator_code:row?.estimator_code||null,work_order_id:row?.work_order_id||null,
+      material_id:row?.material_id||null,material_sku:row?.material_sku||material?.sku||null,
+      material_label:row?.material_label||row?.catalog_material_name||material?.item_name||null,
+      material_category:row?.material_category||material?.material_category||null,
+      service_context:row?.service_context||'unspecified',season_context:row?.season_context||'four_season',
+      planned_quantity:plannedQuantity,planned_unit:row?.planned_unit||null,
+      recorded_actual_event_count:events.length,compatible_actual_event_count:compatible.length,
+      unit_mismatch_event_count:mismatched.length,comparison_complete:comparisonComplete,
+      actual_quantity_planned_unit:actualPlannedUnit,variance_quantity:varianceQuantity,
+      variance_percent:variancePercent,variance_direction:varianceDirection,
+      issue_linked_event_count:events.filter((event)=>!!event?.material_issue_id).length,
+      production_actual_event_count:events.filter((event)=>!event?.material_issue_id).length,
+      stock_on_hand:stockOnHand,stock_unit:material?.unit_code||null,reorder_point:material?.reorder_point??null,
+      reorder_quantity:material?.reorder_quantity??null,target_stock_quantity:material?.target_stock_quantity??null,
+      stock_status:material?.stock_status||null,stockout_evidence:stockoutEvidence,reorder_evidence:reorderEvidence
+    };
+  });
+
+  const withActual=lineEvidence.filter((row)=>row.recorded_actual_event_count>0);
+  const comparable=withActual.filter((row)=>row.comparison_complete);
+  const patterns=new Map<string,any>();
+  for(const row of comparable){
+    const materialKey=String(row.material_id||row.material_label||'uncatalogued');
+    const key=[norm(row.service_context),norm(row.season_context),materialKey].join('|');
+    let group=patterns.get(key);
+    if(!group){
+      group={
+        service_context:row.service_context,season_context:row.season_context,material_id:row.material_id,
+        material_sku:row.material_sku,material_label:row.material_label,material_category:row.material_category,
+        compared_line_count:0,planned_quantity_total:0,actual_quantity_total:0,
+        over_use_line_count:0,under_use_line_count:0,on_plan_line_count:0,
+        issue_linked_event_count:0,production_actual_event_count:0,
+        stock_on_hand:row.stock_on_hand,stock_unit:row.stock_unit,reorder_point:row.reorder_point,
+        reorder_quantity:row.reorder_quantity,target_stock_quantity:row.target_stock_quantity,
+        stock_status:row.stock_status,stockout_evidence:row.stockout_evidence,reorder_evidence:row.reorder_evidence
+      };
+      patterns.set(key,group);
+    }
+    group.compared_line_count+=1;
+    group.planned_quantity_total+=Number(row.planned_quantity||0);
+    group.actual_quantity_total+=Number(row.actual_quantity_planned_unit||0);
+    group.issue_linked_event_count+=Number(row.issue_linked_event_count||0);
+    group.production_actual_event_count+=Number(row.production_actual_event_count||0);
+    if(row.variance_direction==='over_use')group.over_use_line_count+=1;
+    else if(row.variance_direction==='under_use')group.under_use_line_count+=1;
+    else group.on_plan_line_count+=1;
+  }
+
+  const calibrationPatterns=[...patterns.values()].map((group)=>{
+    group.planned_quantity_total=round4(group.planned_quantity_total);
+    group.actual_quantity_total=round4(group.actual_quantity_total);
+    group.variance_quantity_total=round4(group.actual_quantity_total-group.planned_quantity_total);
+    group.variance_percent=group.planned_quantity_total>0?round4((group.variance_quantity_total/group.planned_quantity_total)*100):null;
+    group.repeated_over_use=group.over_use_line_count>=2;
+    group.repeated_under_use=group.under_use_line_count>=2;
+    group.review_state=group.repeated_over_use&&(group.stockout_evidence||group.reorder_evidence)?'repeated_over_use_with_stock_pressure':
+      group.repeated_under_use&&group.reorder_evidence?'repeated_under_use_with_reorder_review':
+      group.repeated_over_use?'repeated_over_use':
+      group.repeated_under_use?'repeated_under_use':
+      group.stockout_evidence?'stockout_evidence':
+      group.reorder_evidence?'reorder_review':'recorded_variance';
+    group.suggested_next_action='Review the recorded estimator assumptions, actual-use evidence and current Materials Control reorder/target settings. No setting is changed by this evidence layer.';
+    return group;
+  }).sort((a,b)=>{
+    const rank:Record<string,number>={repeated_over_use_with_stock_pressure:10,repeated_under_use_with_reorder_review:20,repeated_over_use:30,repeated_under_use:40,stockout_evidence:50,reorder_review:60,recorded_variance:90};
+    return (rank[a.review_state]||99)-(rank[b.review_state]||99)||String(a.material_sku||a.material_label||'').localeCompare(String(b.material_sku||b.material_label||''));
+  });
+
+  const serviceSeason=new Map<string,any>();
+  for(const row of withActual){
+    const key=[norm(row.service_context),norm(row.season_context)].join('|');
+    let group=serviceSeason.get(key);
+    if(!group){
+      group={service_context:row.service_context,season_context:row.season_context,lines_with_actual_evidence:0,comparable_lines:0,unit_mismatch_lines:0,over_use_lines:0,under_use_lines:0,on_plan_lines:0};
+      serviceSeason.set(key,group);
+    }
+    group.lines_with_actual_evidence+=1;
+    if(!row.comparison_complete)group.unit_mismatch_lines+=1;
+    else{
+      group.comparable_lines+=1;
+      if(row.variance_direction==='over_use')group.over_use_lines+=1;
+      else if(row.variance_direction==='under_use')group.under_use_lines+=1;
+      else group.on_plan_lines+=1;
+    }
+  }
+
+  const uniqueMaterialCount=(predicate:(row:any)=>boolean)=>new Set(withActual.filter(predicate).map((row)=>String(row.material_id||row.material_label||''))).size;
+  return {
+    generated_at:new Date().toISOString(),source_queries_ok:input.sourceQueriesOk,jobs_visible:input.jobsVisible,
+    summary:{
+      planned_lines_with_actual_evidence:withActual.length,comparable_lines:comparable.length,
+      unit_mismatch_lines:withActual.filter((row)=>!row.comparison_complete).length,
+      over_use_lines:comparable.filter((row)=>row.variance_direction==='over_use').length,
+      under_use_lines:comparable.filter((row)=>row.variance_direction==='under_use').length,
+      on_plan_lines:comparable.filter((row)=>row.variance_direction==='on_plan').length,
+      repeated_over_use_patterns:calibrationPatterns.filter((row)=>row.repeated_over_use).length,
+      repeated_under_use_patterns:calibrationPatterns.filter((row)=>row.repeated_under_use).length,
+      stockout_materials:uniqueMaterialCount((row)=>row.stockout_evidence),
+      reorder_review_materials:uniqueMaterialCount((row)=>row.reorder_evidence),
+      issue_linked_actual_events:withActual.reduce((sum,row)=>sum+Number(row.issue_linked_event_count||0),0),
+      production_actual_events:withActual.reduce((sum,row)=>sum+Number(row.production_actual_event_count||0),0)
+    },
+    service_season_summary:[...serviceSeason.values()].sort((a,b)=>String(a.season_context||'').localeCompare(String(b.season_context||''))||String(a.service_context||'').localeCompare(String(b.service_context||''))),
+    calibration_attention:calibrationPatterns.filter((row)=>row.review_state!=='recorded_variance').slice(0,100),
+    pattern_evidence:calibrationPatterns.slice(0,150),
+    line_variance_evidence:withActual.slice(0,200),
+    comparison_boundary:'Planned quantity comes from canonical Landscape Material Estimator lines. Actual use comes only from recorded actual-use events; variance is calculated only when every recorded event on the line uses the planned unit or carries a non-default explicit conversion factor to the planned unit. Any unresolved unit mismatch withholds that line variance.',
+    repeat_boundary:'Repeated over-use or under-use means at least two comparable estimator lines for the same material, service context and season with the same variance direction. No hidden percentage threshold or target usage rate is invented.',
+    stock_boundary:'Stockout and reorder evidence reuses current canonical Materials Control stock_on_hand, reorder_required, reorder_point, reorder_quantity and target_stock_quantity. Missing settings stay missing and no replacement reorder value is calculated.',
+    source_boundary:'Issue-linked actual-use events are counted separately from production actual-use events that have no material_issue_id so recorded inventory issues and production consumption evidence remain distinguishable.',
+    authority_boundary:'Read-only calibration evidence. This layer cannot edit estimator assumptions, actual-use events, inventory quantities, reorder points, reorder quantities or target stock; it cannot create purchase orders, contact suppliers, reserve stock or create vendor commitments.'
+  };
+}
+
 function buildCustomerCommunicationReadinessQueue(input:{
   workability:any[];dispatch:any[];recurringVisits:any[];closeouts:any[];crmFollowups:any[];crmInteractions:any[];
   customerDirectory:any[];notificationQueue:any[];receivables:any[];jobsVisible:boolean;financeVisible:boolean;sourceQueriesOk:boolean;
@@ -2924,7 +3091,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       jobsRead,dispatchRead,productionRead,profitabilityRead,timekeepingRead,recurringRead,recurringVisitsRead,crewsRead,stormsRead,stormRoutesRead,seasonalWorkRead,
       safetyRead,equipmentRead,maintenanceRead,trainingSummaryRead,workforceSummaryRead,receivablesRead,bankRead,financeExceptionsRead,closeDashboardRead,workabilityRead,
       routesRead,timekeepingDetailRead,recurringEventsRead,crmRenewalsRead,crmInteractionsRead,agreementProfitabilityRead,seasonalRolloverRead,
-      estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,jobCostDepthRead,invoiceCandidatesRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,maintenanceHistoryRead,serviceTasksRead,fleetDowntimeEventsRead,materialStockRead,materialPlansRead,
+      estimateWorkflowRead,estimateAssumptionsRead,estimateAssumptionVarianceRead,jobCostDepthRead,invoiceCandidatesRead,changeOrdersRead,paymentApplicationsRead,equipmentUseRead,fleetRead,maintenanceHistoryRead,serviceTasksRead,fleetDowntimeEventsRead,materialStockRead,materialPlansRead,materialActualUseRead,
       crmFollowupsRead,customerDirectoryRead,notificationQueueRead,closeoutsRead,propertyDirectoryRead
     ] = await Promise.all([
       canJobsView ? safeListEvidence(supabase,'v_jobs_directory','*','updated_at',500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:500}),
@@ -2969,6 +3136,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       canJobsView ? safeListEvidence(supabase,'fleet_downtime_events','*','started_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
       canJobsView ? safeListEvidence(supabase,'v_material_stock_control','*','sku',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_landscape_material_line_directory','*','updated_at',1500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1500}),
+      canJobsView ? safeListEvidence(supabase,'v_landscape_material_actual_use_directory','*','recorded_at',2500,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:2500}),
       canJobsView ? safeListEvidence(supabase,'v_crm_followup_queue','*','due_at',1000,true) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_crm_customer_directory','*','last_crm_activity_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
       canJobsView ? safeListEvidence(supabase,'v_customer_notification_delivery_queue','*','created_at',1000,false) : Promise.resolve({rows:[],query_ok:true,retrieved_at:new Date().toISOString(),row_count:0,limit:1000}),
@@ -2986,7 +3154,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       estimateWorkflow=estimateWorkflowRead.rows,estimateAssumptions=estimateAssumptionsRead.rows,estimateAssumptionVariance=estimateAssumptionVarianceRead.rows,
       jobCostDepth=jobCostDepthRead.rows,invoiceCandidates=invoiceCandidatesRead.rows,changeOrders=changeOrdersRead.rows,paymentApplications=paymentApplicationsRead.rows,
       equipmentUse=equipmentUseRead.rows,fleet=fleetRead.rows,maintenanceHistory=maintenanceHistoryRead.rows,serviceTasks=serviceTasksRead.rows,fleetDowntimeEvents=fleetDowntimeEventsRead.rows,
-      materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,
+      materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,materialActualUse=materialActualUseRead.rows,
       crmFollowups=crmFollowupsRead.rows,customerDirectory=customerDirectoryRead.rows,notificationQueue=notificationQueueRead.rows,closeouts=closeoutsRead.rows,
       propertyDirectory=propertyDirectoryRead.rows;
     const sourceFreshness:Record<string,any> = {};
@@ -3035,6 +3203,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
     addFresh(fleetDowntimeEventsRead,'fleet_downtime_events','jobs','fleet_downtime_events',canJobsView,168);
     addFresh(materialStockRead,'material_stock','jobs','v_material_stock_control',canJobsView,168);
     addFresh(materialPlansRead,'material_plans','jobs','v_landscape_material_line_directory',canJobsView,168);
+    addFresh(materialActualUseRead,'material_actual_use','jobs','v_landscape_material_actual_use_directory',canJobsView,168);
     addFresh(crmFollowupsRead,'crm_followups','jobs','v_crm_followup_queue',canJobsView,168);
     addFresh(customerDirectoryRead,'crm_customers','jobs','v_crm_customer_directory',canJobsView,168);
     addFresh(notificationQueueRead,'notification_delivery','jobs','v_customer_notification_delivery_queue',canJobsView,72);
@@ -3068,6 +3237,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       labour_capture_payroll_exceptions:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch']),
       equipment_downtime_replacement_readiness:buildManagementMetricConfidence(sourceFreshness,['equipment','maintenance','equipment_use','fleet','maintenance_history','equipment_service_tasks','fleet_downtime_events']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
+      material_usage_variance_reorder_calibration:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','material_actual_use']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
       workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production'])
@@ -3125,6 +3295,10 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       materials:materialStock,materialPlans,dispatch,recurringVisits,seasonalWork,jobsVisible:canJobsView,
       sourceQueriesOk:[materialStockRead,materialPlansRead,dispatchRead,recurringVisitsRead,seasonalWorkRead].every((r)=>r.query_ok!==false)
     });
+    const materialUsageVarianceReorderCalibration=buildMaterialUsageVarianceReorderCalibration({
+      materialPlans,actualUse:materialActualUse,materials:materialStock,jobsVisible:canJobsView,
+      sourceQueriesOk:[materialStockRead,materialPlansRead,materialActualUseRead].every((r)=>r.query_ok!==false)
+    });
     const customerCommunicationReadinessQueue=buildCustomerCommunicationReadinessQueue({
       workability,dispatch,recurringVisits,closeouts,crmFollowups,crmInteractions,customerDirectory,notificationQueue,receivables,
       jobsVisible:canJobsView,financeVisible:canFinanceView,
@@ -3164,6 +3338,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       labour_capture_completeness_payroll_exception_reduction:labourCapturePayrollExceptionReduction,
       equipment_downtime_cost_replacement_readiness:equipmentDowntimeCostReplacementReadiness,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
+      material_usage_variance_reorder_calibration:materialUsageVarianceReorderCalibration,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
       data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',

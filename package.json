@@ -206,6 +206,8 @@
     "test:browser:labour-capture-payroll-exception-reduction": "playwright test --config=playwright.config.mjs tests/browser/labour-capture-payroll-exception-reduction.spec.mjs",
     "test:equipment-downtime-cost-replacement-readiness": "node scripts/equipment-downtime-cost-replacement-readiness-check.mjs",
     "test:browser:equipment-downtime-cost-replacement-readiness": "playwright test --config=playwright.config.mjs tests/browser/equipment-downtime-cost-replacement-readiness.spec.mjs",
+    "test:material-usage-variance-reorder-calibration": "node scripts/material-usage-variance-reorder-calibration-check.mjs",
+    "test:browser:material-usage-variance-reorder-calibration": "playwright test --config=playwright.config.mjs tests/browser/material-usage-variance-reorder-calibration.spec.mjs",
     "test:materials-consumables-seasonal-stock-readiness": "node scripts/materials-consumables-seasonal-stock-readiness-check.mjs",
     "test:browser:materials-consumables-seasonal-stock-readiness": "playwright test --config=playwright.config.mjs tests/browser/materials-consumables-seasonal-stock-readiness.spec.mjs",
     "test:customer-communication-readiness-queue-quality": "node scripts/customer-communication-readiness-queue-quality-check.mjs",
