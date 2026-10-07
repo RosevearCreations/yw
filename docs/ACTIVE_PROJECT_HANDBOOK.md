@@ -153,7 +153,7 @@ Recently completed:
 
 The current autonomous queue continues with:
 
-<!-- Historical Build 370 queue marker retained for regression provenance: - **371 — Material Usage Variance & Reorder Calibration** -->
+<!-- Historical item 370 queue marker retained for regression provenance: - **371 — Material Usage Variance & Reorder Calibration** -->
 - **372 — Customer Communication Outcome & Follow-Up Effectiveness**
 - **373 — Data Quality Remediation Outcome & Recurrence Prevention**
 - **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes**
