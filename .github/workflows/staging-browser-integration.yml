@@ -155,6 +155,7 @@ jobs:
       - run: npm run test:material-usage-variance-reorder-calibration
       - run: npm run test:materials-consumables-seasonal-stock-readiness
       - run: npm run test:customer-communication-readiness-queue-quality
+      - run: npm run test:customer-communication-outcome-followup-effectiveness
       - run: npm run test:data-quality-duplicate-orphan-reconciliation
       - run: npm run test:mobile-offline-read-budget-reliability
       - run: npm run test:production-learning-roadmap-renewal
@@ -259,6 +260,7 @@ jobs:
       - run: npm run test:browser:material-usage-variance-reorder-calibration
       - run: npm run test:browser:materials-consumables-seasonal-stock-readiness
       - run: npm run test:browser:customer-communication-readiness-queue-quality
+      - run: npm run test:browser:customer-communication-outcome-followup-effectiveness
       - run: npm run test:browser:data-quality-duplicate-orphan-reconciliation
       - run: npm run test:browser:mobile-offline-read-budget-reliability
       - run: npm run test:browser:production-learning-roadmap-renewal
