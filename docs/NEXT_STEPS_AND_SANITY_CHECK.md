@@ -578,11 +578,17 @@ Registry all-time service/lifecycle cost rollups remain separate from 365-day ma
 
 Replacement readiness preserves the existing replacement state, target date, reason and estimated cost. Repeated downtime means at least two recorded downtime events and repeated maintenance means at least two recorded maintenance/service events; these are lifecycle-review signals rather than replacement or purchasing recommendations. Lockout/return-to-service, maintenance execution, equipment purchasing/replacement, vendor commitments and Finance posting remain under their existing authorities.
 
-The next planned autonomous item is **371 — Material Usage Variance & Reorder Calibration**.
+<!-- Historical item 370 handoff marker retained for regression provenance: The next planned autonomous item is **371 — Material Usage Variance & Reorder Calibration**. -->
 
-#### 371 — Material Usage Variance & Reorder Calibration
+#### **371 — Material Usage Variance & Reorder Calibration** is implemented
 
-Compare planned material-estimator quantities with recorded issues/production consumption where units are compatible. Track repeated over/under-use and stockout/reorder evidence by service/season while keeping unit mismatches explicit and never auto-adjusting reorder points or placing purchases.
+The Owner / Management Command Centre now compares canonical Landscape Material Estimator planned quantities with recorded actual-use evidence, distinguishing material-issue-linked usage from production actual-use evidence without an issue link. A line is comparable only when all recorded actual-use events use the planned unit or carry a non-default explicit conversion factor to the planned unit; unresolved unit mismatches withhold variance rather than guessing.
+
+Repeated over-use or under-use requires at least two comparable estimator lines for the same material, service context and season with the same direction. The calibration view keeps current Materials Control stock-on-hand, reorder-required state, reorder point, reorder quantity and target stock beside those patterns, including recorded stockout evidence, but does not invent a replacement reorder value.
+
+Estimator assumptions, actual-use events, inventory quantities, reorder settings and purchasing remain under their existing authorities. Build 371 cannot create purchase orders, contact suppliers, reserve stock or create vendor commitments.
+
+The next planned autonomous item is **372 — Customer Communication Outcome & Follow-Up Effectiveness**.
 
 #### 372 — Customer Communication Outcome & Follow-Up Effectiveness
 

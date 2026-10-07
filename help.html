@@ -210,6 +210,16 @@
 
 
 
+        <section class="help-section" id="material-usage-variance-reorder-calibration">
+          <h2>Build 371 — Material Usage Variance &amp; Reorder Calibration</h2>
+          <p>Build 371 adds <strong>read-only material calibration evidence</strong> from canonical Landscape Material Estimator plans, recorded actual-use events and Materials Control stock/reorder state.</p>
+          <p><strong>Units stay explicit:</strong> planned-vs-actual variance is calculated only when every recorded actual-use event on an estimator line uses the planned unit or carries a non-default explicit conversion factor to the planned unit. An unresolved mismatch withholds that line variance instead of guessing.</p>
+          <p><strong>Repeated means recorded repetition:</strong> an over-use or under-use pattern requires at least two comparable estimator lines for the same material, service context and season with the same variance direction. No hidden percentage threshold or target usage rate is invented.</p>
+          <p><strong>Issue and production evidence remain distinguishable:</strong> actual-use events linked to a material issue are counted separately from recorded production actual-use events that do not carry a material-issue link.</p>
+          <p><strong>Reorder calibration is review-only:</strong> stockout/reorder attention reuses the current recorded stock, reorder point, reorder quantity and target stock. The view does not calculate or write a replacement reorder value.</p>
+          <p><strong>No purchasing authority:</strong> this layer cannot edit estimator assumptions or actual-use events, change stock/reorder settings, create purchase orders, contact suppliers, reserve stock or create vendor commitments.</p>
+        </section>
+
         <section class="help-section" id="materials-consumables-seasonal-stock-readiness">
           <h2>Build 358 — Materials, Consumables &amp; Seasonal Stock Readiness</h2>
           <p>Build 358 adds a read-only 7- and 14-day stock-readiness view using the existing Materials Control, Landscape Material Estimator, dispatch, recurring-service and Seasonal Operations authorities.</p>
