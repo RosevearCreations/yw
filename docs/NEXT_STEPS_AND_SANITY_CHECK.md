@@ -613,11 +613,15 @@ A prior resolved/improved journal outcome is counted as confirmed resolved by ab
 
 A current source key becomes recurring when recurrence was explicitly recorded or when the same key reappears after a resolved/improved outcome. Duplicate, broken-reference, stale-assignment and four-season-tag recurrence receives advisory prevention review guidance only. The layer cannot auto-merge/delete identities, rewrite foreign keys, reassign crews/equipment, clear lockouts, rewrite historical tags or automatically mutate management-journal rows.
 
-The next planned autonomous item is **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes**.
+#### **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** is implemented
 
-#### 374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes
+The Mobile Crew reliability card now compares the retained item 361 release contract with the current release for the business-read ceiling, payload budget, live-refresh interval, signed-in-session cache window, offline replay batch and Admin read-coalescing window. The rendered outcome also classifies the current payload-size band and reports a local offline-action conflict rate from aggregate queue counts only.
 
-Turn item 361 point-in-time budgets into release-over-release reliability evidence: Mobile Crew read ceiling, payload-size band, refresh triggers, replay batch behavior, conflict rate and cache/coalescing contracts. Use repository/runtime evidence that does not capture customer secrets or private payload bodies, and fail closed on regressions rather than silently raising budgets.
+The release gate fails closed when a later change raises the business-read or payload ceiling, increases replay batch size, makes automatic refresh more aggressive, extends the stale-cache window, shortens Admin read coalescing, or produces an over-budget Mobile Crew payload. Clearing a regression requires repairing the source behavior; the gate does not silently accept a larger budget.
+
+Runtime evidence is privacy-bounded: no customer names, addresses, notes, queued payload bodies, server payload bodies or device identifiers are retained by the trend view. Existing Jobs, Safety, Auth, offline-recovery and release-source authorities remain canonical, and the evidence layer cannot replay, merge, discard or mutate queued work.
+
+The next planned autonomous item is **375 — Four-Season Capacity Mix & Profitability Scenario Evidence**.
 
 #### 375 — Four-Season Capacity Mix & Profitability Scenario Evidence
 
