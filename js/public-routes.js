@@ -179,7 +179,7 @@
 
     main.innerHTML = `
       <header class="public-route-header">
-        <a href="/" class="public-route-brand"><span aria-hidden="true">YWI</span><strong>Yard Weasels Inc.</strong></a>
+        <a href="/" class="public-route-brand"><span aria-hidden="true">YWI</span><strong>Yard Workers Inc.</strong></a>
         <a class="secondary" href="${esc(cta)}">Request a quote</a>
       </header>
       <article class="public-route-article">
@@ -192,7 +192,7 @@
         <section class="public-route-content">${body}</section>
         <section class="public-route-cta"><div><span>Ready to discuss the work?</span><h2>Request a clear quote and next-step plan</h2><p>Share the location, service need, timing, and any safety or access constraints.</p></div><a class="primary" href="${esc(cta)}">Start a request</a></section>
       </article>
-      <footer class="public-route-footer"><span>Yard Weasels Inc. · Southern Ontario</span><a href="/">Home</a></footer>`;
+      <footer class="public-route-footer"><span>Yard Workers Inc. · Southern Ontario</span><a href="/">Home</a></footer>`;
   }
 
   async function load() {
@@ -206,7 +206,7 @@
       if (!response?.ok) throw new Error(response?.error || 'Published page not found.');
       render(response.route, response.visual);
     } catch (error) {
-      document.title = 'Page not found | Yard Weasels Inc.';
+      document.title = 'Page not found | Yard Workers Inc.';
       ensureMeta('robots', 'noindex,follow');
       main.innerHTML = `<section class="public-route-error"><span aria-hidden="true">404</span><h1>Published page not found</h1><p>${esc(error?.message || 'This page is not available.')}</p><a class="primary" href="/">Return home</a></section>`;
     }

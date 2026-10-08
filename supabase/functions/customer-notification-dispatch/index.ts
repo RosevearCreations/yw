@@ -91,7 +91,7 @@ serve(async (req) => {
         else summary.skipped++;
         continue;
       }
-      const subject = `Yard Weasels Inc. service update: ${clean(claim.title || 'Service update',180)}`;
+      const subject = `Yard Workers Inc. service update: ${clean(claim.title || 'Service update',180)}`;
       const secureUrl = `${origin}/?portal=${encodeURIComponent(String(claim.public_token || ''))}`;
       const message = clean(claim.message || '',4000);
       const text = [

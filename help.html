@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Online Help | Yard Weasels Inc.</title>
-  <meta name="description" content="Current operator help for the Yard Weasels Inc. Safety / OHSA, Finance, Jobs, Admin and mobile workflows.">
+  <title>Online Help | Yard Workers Inc.</title>
+  <meta name="description" content="Current operator help for the Yard Workers Inc. Safety / OHSA, Finance, Jobs, Admin and mobile workflows.">
   <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
   <meta name="theme-color" content="#0f172a">
   <link rel="icon" href="/favicon.ico" sizes="any">
@@ -32,7 +32,7 @@
 <body class="help-page">
   <main class="help-shell">
     <header class="help-header">
-      <div><span class="module-kicker">Current operator guide</span><h1>Yard Weasels Inc. Online Help</h1><p>Use this guide for the current application. Access still follows your account and module permissions, so a screen may be intentionally unavailable if your role does not include it.</p></div>
+      <div><span class="module-kicker">Current operator guide</span><h1>Yard Workers Inc. Online Help</h1><p>Use this guide for the current application. Access still follows your account and module permissions, so a screen may be intentionally unavailable if your role does not include it.</p></div>
       <div class="help-actions"><a class="primary" href="/">Return to app</a><a class="secondary" href="/#quote-intake">Public contact</a></div>
     </header>
     <nav class="help-nav" aria-label="Help topics"><a class="secondary" href="#start">Quick start</a><a class="secondary" href="#mobile">Mobile</a><a class="secondary" href="#modules">Modules</a><a class="secondary" href="#troubleshooting">Troubleshooting</a></nav>
@@ -261,6 +261,16 @@
           <p><strong>Four-season tag conflicts:</strong> spring/summer mowing/landscaping, fall cleanup/leaf work and winter snow/ice service tags are compared with recorded season context. Four-season and other/unknown context are not forced into a conflict.</p>
           <p><strong>Coverage safety:</strong> broken-reference findings are withheld when a required canonical source reaches its configured row cap. Missing loaded rows are never assumed to mean missing business records.</p>
           <p><strong>No destructive automatic reconciliation:</strong> the workbench cannot merge/delete customer or property records, delete history, rewrite foreign keys, reassign crews/equipment or clear lockouts. Every suggested correction routes back to the existing authoritative workflow while preserving source identity and audit history.</p>
+        </section>
+
+        <section class="help-section" id="data-quality-remediation-outcome-recurrence">
+          <h2>Build 373 — Data Quality Remediation Outcome &amp; Recurrence Prevention</h2>
+          <p>Build 373 adds a read-only remediation-outcome layer over Build 360 data-quality signals and the existing private Management Decision Outcome Journal. Canonical CRM, Jobs, Dispatch, Recurring Service, Crew, Equipment, Route, Workability and Material Estimator records remain authoritative.</p>
+          <p><strong>Stable source-key history:</strong> each current data-quality signal carries a deterministic <code>admin:data_quality_signal</code> source key derived from its signal type, entity type and retained source identity. That lets later outcome evidence follow the same defect without replacing or collapsing canonical source IDs.</p>
+          <p><strong>Resolution by absence fails closed:</strong> a previously resolved/improved journal key is counted as confirmed resolved by absence only when every source needed by the current data-quality scan succeeded and remained below its row cap. Failed, hidden or capped coverage never proves resolution.</p>
+          <p><strong>Recurring after remediation:</strong> a current signal is recurring when the same stable source key has explicit recurrence evidence or reappears after a recorded resolved/improved outcome. Recurrence describes a data-quality pattern, not customer quality or employee performance.</p>
+          <p><strong>Prevention is advisory:</strong> repeated duplicate, reference, assignment and four-season tagging conditions receive bounded root-cause review guidance for the owning workflow. The guidance does not modify the source record.</p>
+          <p><strong>No destructive reconciliation authority:</strong> this layer cannot merge/delete customer or property identities, rewrite foreign keys, reassign crews/equipment, clear lockouts, rewrite historical season/service tags or automatically create/update/close management-journal rows.</p>
         </section>
 
         <section class="help-section" id="mobile-offline-read-budget-reliability">

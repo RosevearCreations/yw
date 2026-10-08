@@ -1,6 +1,6 @@
-# Yard Weasels Inc. Operations Platform
+# Yard Workers Inc. Operations Platform
 
-This repository contains the Yard Weasels Inc. staff operations application, customer portal, and approved public service-page publishing layer.
+This repository contains the Yard Workers Inc. staff operations application, customer portal, and approved public service-page publishing layer.
 
 ## Current product boundary
 
