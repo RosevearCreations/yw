@@ -159,6 +159,7 @@ jobs:
       - run: npm run test:data-quality-duplicate-orphan-reconciliation
       - run: npm run test:data-quality-remediation-outcome-recurrence
       - run: npm run test:mobile-offline-read-budget-reliability
+      - run: npm run test:mobile-offline-reliability-trend-outcomes
       - run: npm run test:production-learning-roadmap-renewal
       - run: npm run test:management-decision-outcome-journal
       - run: npm run test:workability-schedule-recovery-outcomes
@@ -280,6 +281,7 @@ jobs:
       - run: npm run test:browser:data-quality-duplicate-orphan-reconciliation
       - run: npm run test:browser:data-quality-remediation-outcome-recurrence
       - run: npm run test:browser:mobile-offline-read-budget-reliability
+      - run: npm run test:browser:mobile-offline-reliability-trend-outcomes
       - run: npm run test:browser:production-learning-roadmap-renewal
       - run: npm run test:browser:management-decision-outcome-journal
       - run: npm run test:browser:workability-schedule-recovery-outcomes
