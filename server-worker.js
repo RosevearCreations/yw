@@ -8,7 +8,8 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-09-30b361';
+// Build 361 cache provenance: const CACHE_NAME = 'ywi-shell-v2026-09-30b361';
+const CACHE_NAME = 'ywi-shell-v2026-10-08b374';
 const APP_SHELL = [
   '/',
   '/index.html',
