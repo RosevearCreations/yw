@@ -135,6 +135,8 @@ The outcome-learning layer is never permission to mutate its source authority. A
 
 Item 363 implements that rule with a private Admin-manage decision/outcome journal keyed to canonical source identity. It stores recommendation/decision/outcome/recurrence/follow-up evidence only; source business payloads and source mutation remain outside the journal. Item 364 adds read-only Workability-to-Schedule recovery outcomes from existing Workability, Dispatch and Production evidence; missing recovery evidence remains unresolved, recorded Production duration is the only completed-capacity measure, and Workability/dispatch authority is unchanged.
 
+Build 376 is implemented. The capability-level 363–375 review and the 14-item 377–390 queue are in `docs/production_learning_review_376.json`. Source-contract proof is not equivalent to measured Production improvement. Follow the revised active queue (starting 377) with real-denominator/missing-data gates and without new source-record write authority.
+
 ## Cross-AI autonomous handoff
 
 When another AI system takes over YW, treat this handbook and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` as the durable project authority. Resolve the live `dev` and `main` heads from GitHub at task start rather than trusting copied commit identifiers.
@@ -154,6 +156,7 @@ Recently completed:
 - **373 — Data Quality Remediation Outcome & Recurrence Prevention** (implemented)
 - **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** (implemented)
 - **375 — Four-Season Capacity Mix & Profitability Scenario Evidence** (implemented)
+- **376 — Production Learning & Autonomous Roadmap Renewal II** (implemented)
 
 The current autonomous queue continues with:
 
@@ -162,7 +165,21 @@ The current autonomous queue continues with:
 <!-- Historical item 372 queue marker retained for regression provenance: - **373 — Data Quality Remediation Outcome & Recurrence Prevention** -->
 <!-- Historical item 373 queue marker retained for regression provenance: - **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** -->
 <!-- Historical item 374 queue marker retained for regression provenance: - **375 — Four-Season Capacity Mix & Profitability Scenario Evidence** -->
-- **376 — Production Learning & Autonomous Roadmap Renewal II**
+<!-- Historical Build 362 queue marker: - **376 — Production Learning & Autonomous Roadmap Renewal II** -->
+- **377 — Management Outcome Confidence & Cohort Trend**
+- **378 — Workability Forecast-vs-Recovery Calibration**
+- **379 — Route Stop-Sequence Friction Hotspots by Season**
+- **380 — Recurring Retention Cohort & Renewal Lag**
+- **381 — Estimate Margin Drift & Change-Order Follow-through**
+- **382 — Invoice Aging Handoff & Receivables Leakage**
+- **383 — Labour Capture Exception Closure & Shift Readiness**
+- **384 — Fleet Maintenance Cost Trend & Downtime Concentration**
+- **385 — Material Demand vs Stockout Trend & Season Transition**
+- **386 — Communication Follow-Up Coverage & Consent-Safe Queue Aging**
+- **387 — Data-Quality Fix Recurrence & Source Freshness**
+- **388 — Offline Conflict Closure & Device-Safe Reliability Cohorts**
+- **389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting**
+- **390 — Production Learning & Autonomous Roadmap Renewal III**
 
 The last queue item must again write at least ten further bounded autonomous items before promotion so the queue does not run out.
 
@@ -180,6 +197,7 @@ Current direction: After item 372, that item is 373 — Data Quality Remediation
 Current direction: After item 373, that item is 374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 Current direction: After item 374, that item is 375 — Four-Season Capacity Mix & Profitability Scenario Evidence. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 Current direction: After item 375, that item is 376 — Production Learning & Autonomous Roadmap Renewal II. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+Current direction: After item 376, that item is 377 — Management Outcome Confidence & Cohort Trend. The 14-item renewal runs through item 390; missing Production outcome evidence is not success evidence.
 
 For every ordinary release, use this sequence:
 

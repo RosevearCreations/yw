@@ -638,9 +638,71 @@ The scenario layer is read-only and cannot auto-price, dispatch, hire, schedule,
 
 The next planned autonomous item is **376 — Production Learning & Autonomous Roadmap Renewal II**.
 
-#### 376 — Production Learning & Autonomous Roadmap Renewal II
+<!-- Historical Build 362 roadmap marker: #### 376 — Production Learning & Autonomous Roadmap Renewal II -->
+#### **376 — Production Learning & Autonomous Roadmap Renewal II** is implemented
 
-Review the measured outcomes from items 363–375, identify remaining operator friction, reliability gaps, seasonal gaps and economic opportunities, and write at least ten further bounded autonomous releases before promotion. Preserve the non-interactive release rule and keep external provider/human acceptance from becoming the next ordinary build.
+Build 376 closes the capability-level review of Builds 363–375 in `docs/production_learning_review_376.json`. This is **not** proof that live Production recovery, margins, response rates, performance or reliability improved; no live measured sample was supplied. The review records 13 source-backed capabilities and the missing denominator, coverage, recency, consent, permission, sample and seasonal comparisons needed for trustworthy outcome trends.
+
+The renewed queue contains **377–390** (14 further bounded items). It prioritizes decision-outcome confidence, workability recovery, stop-sequence friction, retention cohorts, estimate/invoice handoffs, labour/equipment/material outcomes, consent-safe communications, data-quality recurrence, device-safe offline reliability, and four-season scenario backtesting. Build 390 repeats the roadmap renewal. All items remain advisory, source-backed, privacy- and permission-preserving, and executable without real customer messages, payments, provider credentials, external staging or manual signoff. No Finance posting, Auth/provider mutation, operational scheduling, destructive reconciliation or automatic customer/vendor commitment is authorized.
+
+The next planned autonomous item is **377 — Management Outcome Confidence & Cohort Trend**.
+
+#### 377 — Management Outcome Confidence & Cohort Trend
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 378 — Workability Forecast-vs-Recovery Calibration
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 379 — Route Stop-Sequence Friction Hotspots by Season
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 380 — Recurring Retention Cohort & Renewal Lag
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 381 — Estimate Margin Drift & Change-Order Follow-through
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 382 — Invoice Aging Handoff & Receivables Leakage
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 383 — Labour Capture Exception Closure & Shift Readiness
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 384 — Fleet Maintenance Cost Trend & Downtime Concentration
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 385 — Material Demand vs Stockout Trend & Season Transition
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 386 — Communication Follow-Up Coverage & Consent-Safe Queue Aging
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 387 — Data-Quality Fix Recurrence & Source Freshness
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 388 — Offline Conflict Closure & Device-Safe Reliability Cohorts
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting
+
+Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+
+#### 390 — Production Learning & Autonomous Roadmap Renewal III
+
+Review the 377–389 measured source-backed outcomes and write at least ten further bounded autonomous releases.
+
 
 Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, **354 — Route & Crew Efficiency Evidence**, **355 — Recurring Service Renewal & Retention Workbench**, **356 — Estimate-to-Cash Leakage & Margin Recovery**, **357 — Labour, Equipment & Fleet Utilization Decision Support**, **358 — Materials, Consumables & Seasonal Stock Readiness**, **359 — Customer Communication Readiness & Queue Quality**, **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**, **361 — Mobile, Offline & Read-Budget Reliability Optimization**, and **362 — Production Learning & Autonomous Roadmap Renewal**, **363 — Management Decision Outcome Journal & Learning Loop**, and **364 — Workability-to-Schedule Recovery Outcomes** are implemented by the current release. The renewed autonomous queue now continues with **365–376**, beginning with **365 — Route Plan-vs-Actual & Stop-Sequence Learning**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
 

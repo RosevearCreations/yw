@@ -225,6 +225,8 @@
     "test:four-season-capacity-profitability-scenario-evidence": "node scripts/four-season-capacity-profitability-scenario-evidence-check.mjs",
     "test:browser:four-season-capacity-profitability-scenario-evidence": "playwright test --config=playwright.config.mjs tests/browser/four-season-capacity-profitability-scenario-evidence.spec.mjs",
     "test:production-learning-roadmap-renewal": "node scripts/production-learning-roadmap-renewal-check.mjs",
+    "test:production-learning-roadmap-renewal-ii": "node scripts/production-learning-roadmap-renewal-ii-check.mjs",
+    "test:browser:production-learning-roadmap-renewal-ii": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-ii.spec.mjs",
     "test:browser:production-learning-roadmap-renewal": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal.spec.mjs",
     "test:management-decision-outcome-journal": "node scripts/management-decision-outcome-journal-check.mjs",
     "test:browser:management-decision-outcome-journal": "playwright test --config=playwright.config.mjs tests/browser/management-decision-outcome-journal.spec.mjs",
