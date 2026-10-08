@@ -86,7 +86,7 @@
     const password = state.temporaryPassword || generateTemporaryPassword();
     state.temporaryPassword = password;
     return `<div class="notice"><strong>Set temporary password for ${esc(row.full_name || row.username || row.email || row.profile_id)}</strong>
-      <p style="margin-top:6px">The current password is not required and cannot be retrieved. Give this temporary password to the user through an appropriate private channel. It is not stored in the Yard Weasels database.</p>
+      <p style="margin-top:6px">The current password is not required and cannot be retrieved. Give this temporary password to the user through an appropriate private channel. It is not stored in the Yard Workers database.</p>
       <div class="form-grid">
         <label>Temporary password<input id="adminTemporaryPassword" type="password" data-ywi-password-field="1" autocomplete="new-password" value="${esc(password)}" /></label>
         <label>Audit reason<input id="adminTemporaryPasswordReason" type="text" maxlength="240" placeholder="Example: user forgot password" /></label>

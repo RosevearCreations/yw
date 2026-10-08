@@ -166,7 +166,7 @@ async function mountActualCustomerCloseoutPortal(page) {
   await page.route('https://portal.test/**', (route) => route.fulfill({
     status:200,
     contentType:'text/html',
-    body:`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body><header class="app-header"><h1>Yard Weasels</h1></header></body></html>`
+    body:`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body><header class="app-header"><h1>Yard Workers</h1></header></body></html>`
   }));
   await page.goto(portalUrl);
   await page.evaluate(() => {

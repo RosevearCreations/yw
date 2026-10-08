@@ -13,7 +13,7 @@ async function mountPortal(page, viewport) {
     </head><body class="customer-portal-mode">
     <main id="customerPortalView" class="customer-portal-shell">
       <header class="customer-portal-header">
-        <a class="customer-portal-brand" href="/"><span class="customer-portal-mark">YWI</span><span><strong>Yard Weasels Inc.</strong><small>Secure customer quote portal</small></span></a>
+        <a class="customer-portal-brand" href="/"><span class="customer-portal-mark">YWI</span><span><strong>Yard Workers Inc.</strong><small>Secure customer quote portal</small></span></a>
         <span class="customer-portal-security">Token-protected link</span>
       </header>
       <section class="customer-portal-status customer-portal-status-success">Quote loaded securely.</section>
@@ -99,7 +99,7 @@ async function mountBuild255RealPortal(page, { query='', state=build255PortalSta
   await page.route('https://portal.test/**', (route) => route.fulfill({
     status:200,
     contentType:'text/html',
-    body:`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body><header class="app-header"><h1>Yard Weasels</h1></header></body></html>`
+    body:`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body><header class="app-header"><h1>Yard Workers</h1></header></body></html>`
   }));
   await page.goto(`https://portal.test/?portal=${portalToken}${query}`);
   await page.evaluate(({ state, checkoutResponse }) => {
