@@ -135,7 +135,7 @@ The outcome-learning layer is never permission to mutate its source authority. A
 
 Item 363 implements that rule with a private Admin-manage decision/outcome journal keyed to canonical source identity. It stores recommendation/decision/outcome/recurrence/follow-up evidence only; source business payloads and source mutation remain outside the journal. Item 364 adds read-only Workability-to-Schedule recovery outcomes from existing Workability, Dispatch and Production evidence; missing recovery evidence remains unresolved, recorded Production duration is the only completed-capacity measure, and Workability/dispatch authority is unchanged.
 
-Build 376 is implemented. The capability-level 363–375 review and the 14-item 377–390 queue are in `docs/production_learning_review_376.json`. Source-contract proof is not equivalent to measured Production improvement. Follow the revised active queue (starting 377) with real-denominator/missing-data gates and without new source-record write authority.
+Item 376 is implemented. The capability-level 363–375 review and the 14-item 377–390 queue are in `docs/production_learning_review_376.json`. Source-contract proof is not equivalent to measured Production improvement. Follow the revised active queue (starting 377) with real-denominator/missing-data gates and without new source-record write authority.
 
 ## Cross-AI autonomous handoff
 
@@ -165,7 +165,7 @@ The current autonomous queue continues with:
 <!-- Historical item 372 queue marker retained for regression provenance: - **373 — Data Quality Remediation Outcome & Recurrence Prevention** -->
 <!-- Historical item 373 queue marker retained for regression provenance: - **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** -->
 <!-- Historical item 374 queue marker retained for regression provenance: - **375 — Four-Season Capacity Mix & Profitability Scenario Evidence** -->
-<!-- Historical Build 362 queue marker: - **376 — Production Learning & Autonomous Roadmap Renewal II** -->
+<!-- Historical item 362 queue marker: - **376 — Production Learning & Autonomous Roadmap Renewal II** -->
 - **377 — Management Outcome Confidence & Cohort Trend**
 - **378 — Workability Forecast-vs-Recovery Calibration**
 - **379 — Route Stop-Sequence Friction Hotspots by Season**

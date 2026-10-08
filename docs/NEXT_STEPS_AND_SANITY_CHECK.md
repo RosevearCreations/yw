@@ -638,12 +638,12 @@ The scenario layer is read-only and cannot auto-price, dispatch, hire, schedule,
 
 The next planned autonomous item is **376 — Production Learning & Autonomous Roadmap Renewal II**.
 
-<!-- Historical Build 362 roadmap marker: #### 376 — Production Learning & Autonomous Roadmap Renewal II -->
+<!-- Historical item 362 roadmap marker: #### 376 — Production Learning & Autonomous Roadmap Renewal II -->
 #### **376 — Production Learning & Autonomous Roadmap Renewal II** is implemented
 
-Build 376 closes the capability-level review of Builds 363–375 in `docs/production_learning_review_376.json`. This is **not** proof that live Production recovery, margins, response rates, performance or reliability improved; no live measured sample was supplied. The review records 13 source-backed capabilities and the missing denominator, coverage, recency, consent, permission, sample and seasonal comparisons needed for trustworthy outcome trends.
+Item 376 closes the capability-level review of Builds 363–375 in `docs/production_learning_review_376.json`. This is **not** proof that live Production recovery, margins, response rates, performance or reliability improved; no live measured sample was supplied. The review records 13 source-backed capabilities and the missing denominator, coverage, recency, consent, permission, sample and seasonal comparisons needed for trustworthy outcome trends.
 
-The renewed queue contains **377–390** (14 further bounded items). It prioritizes decision-outcome confidence, workability recovery, stop-sequence friction, retention cohorts, estimate/invoice handoffs, labour/equipment/material outcomes, consent-safe communications, data-quality recurrence, device-safe offline reliability, and four-season scenario backtesting. Build 390 repeats the roadmap renewal. All items remain advisory, source-backed, privacy- and permission-preserving, and executable without real customer messages, payments, provider credentials, external staging or manual signoff. No Finance posting, Auth/provider mutation, operational scheduling, destructive reconciliation or automatic customer/vendor commitment is authorized.
+The renewed queue contains **377–390** (14 further bounded items). It prioritizes decision-outcome confidence, workability recovery, stop-sequence friction, retention cohorts, estimate/invoice handoffs, labour/equipment/material outcomes, consent-safe communications, data-quality recurrence, device-safe offline reliability, and four-season scenario backtesting. Item 390 repeats the roadmap renewal. All items remain advisory, source-backed, privacy- and permission-preserving, and executable without real customer messages, payments, provider credentials, external staging or manual signoff. No Finance posting, Auth/provider mutation, operational scheduling, destructive reconciliation or automatic customer/vendor commitment is authorized.
 
 The next planned autonomous item is **377 — Management Outcome Confidence & Cohort Trend**.
 
