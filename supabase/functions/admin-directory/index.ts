@@ -358,6 +358,142 @@ function mergeRowsById(baseRows: any[], extraRows: any[]) {
   return Array.from(map.values());
 }
 
+
+function buildFourSeasonCapacityProfitabilityScenarioEvidence(input:{
+  dispatch:any[];recurringVisits:any[];profitability:any[];
+  capacityForecast:any;routeEfficiency:any;workabilityRecovery:any;stockReadiness:any;recurringWorkbench:any;
+  jobsVisible:boolean;financeVisible:boolean;sourceQueriesOk:boolean;coverageComplete:boolean;
+}) {
+  const today=ontarioDateKey(new Date())!;
+  const horizon=addCalendarDays(today,13);
+  const seasons=['spring_summer','fall','winter','four_season'];
+  const label=(season:string)=>({
+    spring_summer:'Spring / summer landscaping & lawn',
+    fall:'Fall cleanup & leaf',
+    winter:'Winter snow / storm / ice',
+    four_season:'General four-season operations'
+  } as Record<string,string>)[season]||season;
+  const activeDispatch=(input.dispatch||[]).filter((row)=>{
+    const date=ontarioDateKey(row?.scheduled_start||row?.service_date);
+    return !!date&&date>=today&&date<=horizon&&!['cancelled','canceled','superseded','completed'].includes(String(row?.schedule_status||'').toLowerCase());
+  });
+  const activeVisits=(input.recurringVisits||[]).filter((row)=>{
+    const date=String(row?.service_date||'').slice(0,10);
+    return !!date&&date>=today&&date<=horizon&&!['cancelled','canceled','skipped','held','completed'].includes(String(row?.visit_status||'').toLowerCase());
+  });
+  const jobProfitRows=(input.profitability||[]).filter((row)=>String(row?.group_type||'').toLowerCase()==='job_family');
+  const recurringAgreements=input.recurringWorkbench?.agreements||[];
+  const capacityDays=input.capacityForecast?.days||[];
+  const routeDays=input.routeEfficiency?.route_days||[];
+  const recoveryBySeason=new Map((input.workabilityRecovery?.season_outcomes||[]).map((row:any)=>[String(row?.season_context||'four_season'),row]));
+  const stockBySeason=new Map((input.stockReadiness?.seasonal_summary||[]).map((row:any)=>[String(row?.season||'four_season'),row]));
+  const recurringMaterialCoverage=input.stockReadiness?.recurring_demand_coverage||[];
+
+  const plannedMinutes=(row:any)=>{
+    const estimated=Math.max(0,Number(row?.estimated_duration_minutes||0));
+    const windowMinutes=minutesBetween(row?.scheduled_start,row?.scheduled_end);
+    return (estimated||windowMinutes)+Math.max(0,Number(row?.travel_allowance_minutes||0));
+  };
+  const recurringMinutes=(row:any)=>Math.max(0,Number(row?.visit_estimated_minutes||0))+Math.max(0,Number(row?.default_travel_allowance_minutes||0));
+
+  const base=seasons.map((season)=>{
+    const dispatchRows=activeDispatch.filter((row)=>forecastSeason(row)===season);
+    const visitRows=activeVisits.filter((row)=>forecastSeason(row)===season);
+    const plannedItems=dispatchRows.length+visitRows.length;
+    const demandMinutes=dispatchRows.reduce((sum,row)=>sum+plannedMinutes(row),0)+visitRows.reduce((sum,row)=>sum+recurringMinutes(row),0);
+
+    const seasonDays=capacityDays.filter((row:any)=>Number(row?.season_load?.[season]||0)>0);
+    const sharedActiveCrewDays=seasonDays.reduce((sum:number,row:any)=>sum+Math.max(0,Number(row?.active_crew_count||0)),0);
+    const sharedScheduledCrewDays=seasonDays.reduce((sum:number,row:any)=>sum+Math.max(0,Number(row?.scheduled_crew_count||0)),0);
+    const constrainedForecastDays=seasonDays.filter((row:any)=>['blocked','attention','review'].includes(String(row?.readiness_state||''))).length;
+
+    const seasonRouteDays=routeDays.filter((row:any)=>String(row?.season_context||'four_season')===season);
+    const routeCapacityRows=seasonRouteDays.filter((row:any)=>row?.configured_capacity_headroom_minutes!=null);
+    const routeCapacityHeadroom=routeCapacityRows.length
+      ? routeCapacityRows.reduce((sum:number,row:any)=>sum+Number(row?.configured_capacity_headroom_minutes||0),0)
+      : null;
+    const overConfiguredMinutes=seasonRouteDays.reduce((sum:number,row:any)=>sum+Math.max(0,Number(row?.over_configured_capacity_minutes||0)),0);
+
+    const recovery:any=recoveryBySeason.get(season)||null;
+    const stock:any=stockBySeason.get(season)||null;
+    const unquantifiedRecurringMaterials=recurringMaterialCoverage.filter((row:any)=>
+      row?.material_plan_coverage!=='quantified'&&forecastSeason({service_name:row?.service_name,service_program_type:row?.service_program_type})===season
+    ).length;
+
+    const seasonJobProfit=jobProfitRows.filter((row)=>forecastSeason({job_name:row?.group_label||row?.group_key})===season);
+    const jobRevenue=seasonJobProfit.reduce((sum,row)=>sum+Number(row?.actual_revenue_total||0),0);
+    const jobCost=seasonJobProfit.reduce((sum,row)=>sum+Number(row?.actual_cost_total||0),0);
+    const jobProfit=seasonJobProfit.reduce((sum,row)=>sum+Number(row?.actual_profit_total||0),0);
+    const jobMargin=jobRevenue>0?Number(((jobProfit/jobRevenue)*100).toFixed(1)):null;
+
+    const seasonAgreements=recurringAgreements.filter((row:any)=>String(row?.season_context||'four_season')===season);
+    const recurringProfitRows=seasonAgreements.filter((row:any)=>row?.actual_profit_total!=null&&Number.isFinite(Number(row.actual_profit_total)));
+    const recurringProfit=recurringProfitRows.reduce((sum:number,row:any)=>sum+Number(row.actual_profit_total||0),0);
+
+    const missing:string[]=[];
+    if(!input.coverageComplete) missing.push('One or more source reads reached a configured query limit; seasonal evidence may be partial.');
+    if(plannedItems===0) missing.push('No scheduled dispatch or recurring-visit demand is recorded in the current 14-day horizon; demand is not invented.');
+    if(routeCapacityRows.length===0) missing.push('No configured route daily-capacity headroom evidence is recorded for this season; capacity headroom is not assumed.');
+    if(!recovery||Number(recovery?.constraint_episodes||0)===0) missing.push('No recorded workability constraint/recovery history is available for this season; recovery performance is not assumed.');
+    if(!stock||Number(stock?.material_count||0)===0) missing.push('No season-classified material readiness evidence is recorded; stock requirements are not invented.');
+    if(unquantifiedRecurringMaterials>0) missing.push(unquantifiedRecurringMaterials+' upcoming recurring visit(s) lack a linked quantified material plan.');
+    if(!input.financeVisible) missing.push('Finance profitability evidence is hidden by permission; no margin or profit assumption is substituted.');
+    else if(seasonJobProfit.length===0&&recurringProfitRows.length===0) missing.push('No recorded job-family or recurring-agreement profitability evidence is available for this season.');
+
+    return {
+      scenario_key:season,scenario_label:label(season),scenario_state:missing.length?'partial_recorded_evidence':'recorded_evidence_complete',
+      horizon_start:today,horizon_end:horizon,planned_dispatch_count:dispatchRows.length,planned_recurring_visit_count:visitRows.length,
+      planned_item_count:plannedItems,recorded_demand_minutes:demandMinutes,
+      forecast_days_with_season_load:seasonDays.length,shared_active_crew_day_evidence:sharedActiveCrewDays,
+      shared_scheduled_crew_day_evidence:sharedScheduledCrewDays,constrained_forecast_day_count:constrainedForecastDays,
+      configured_route_capacity_day_count:routeCapacityRows.length,configured_route_capacity_headroom_minutes:routeCapacityHeadroom,
+      over_configured_capacity_minutes:overConfiguredMinutes,
+      workability_constraint_episodes:Number(recovery?.constraint_episodes||0),
+      workability_full_completion_recovery_count:Number(recovery?.full_completion_recovery_count||0),
+      workability_recovery_rate_percent:recovery?.recovery_rate_percent??null,
+      material_count:Number(stock?.material_count||0),material_attention_count:Number(stock?.attention_count||0),
+      material_shortage_count:Number(stock?.shortage_count||0),material_reorder_review_count:Number(stock?.reorder_review_count||0),
+      recurring_visits_without_quantified_material_plan:unquantifiedRecurringMaterials,
+      finance_evidence_state:input.financeVisible?'visible':'not_visible',
+      recorded_job_profitability_group_count:seasonJobProfit.length,recorded_job_revenue_total:input.financeVisible?Number(jobRevenue.toFixed(2)):null,
+      recorded_job_cost_total:input.financeVisible?Number(jobCost.toFixed(2)):null,recorded_job_profit_total:input.financeVisible?Number(jobProfit.toFixed(2)):null,
+      recorded_job_margin_percent:input.financeVisible?jobMargin:null,
+      recorded_recurring_profit_agreement_count:input.financeVisible?recurringProfitRows.length:0,
+      recorded_recurring_profit_total:input.financeVisible?Number(recurringProfit.toFixed(2)):null,
+      missing_assumptions:missing,
+      review_note:'Compare recorded seasonal demand, shared crew-day evidence, configured route capacity, workability recovery, materials and permission-scoped profitability before making an operator decision.'
+    };
+  });
+
+  const totalPlanned=base.reduce((sum,row)=>sum+Number(row.planned_item_count||0),0);
+  const scenarios=base.map((row)=>({
+    ...row,
+    planned_mix_share_percent:totalPlanned?Number(((Number(row.planned_item_count||0)/totalPlanned)*100).toFixed(1)):null
+  }));
+  const financeScenarioCount=scenarios.filter((row)=>Number(row.recorded_job_profitability_group_count||0)>0||Number(row.recorded_recurring_profit_agreement_count||0)>0).length;
+  return {
+    generated_at:new Date().toISOString(),timezone:'America/Toronto',source_queries_ok:input.sourceQueriesOk,coverage_complete:input.coverageComplete,
+    jobs_visible:input.jobsVisible,finance_visible:input.financeVisible,horizon_start:today,horizon_end:horizon,
+    summary:{
+      planned_items_14_days:totalPlanned,
+      recorded_demand_minutes_14_days:scenarios.reduce((sum,row)=>sum+Number(row.recorded_demand_minutes||0),0),
+      seasons_with_planned_work:scenarios.filter((row)=>Number(row.planned_item_count||0)>0).length,
+      seasons_with_configured_route_capacity:scenarios.filter((row)=>Number(row.configured_route_capacity_day_count||0)>0).length,
+      seasons_with_material_attention:scenarios.filter((row)=>Number(row.material_attention_count||0)>0).length,
+      seasons_with_recorded_profitability:input.financeVisible?financeScenarioCount:0,
+      scenarios_with_missing_assumptions:scenarios.filter((row)=>row.missing_assumptions.length>0).length
+    },
+    scenarios,
+    mix_boundary:'Seasonal mix share is the share of recorded dispatch plus recurring-visit items inside the current 14-day horizon. No sales target, jobs-per-crew target, growth rate or missing workload is invented.',
+    capacity_boundary:'Crew counts are shared crew-day evidence on dates carrying that season, not dedicated seasonal capacity. Route headroom is shown only where a configured daily route capacity exists; missing headroom is never inferred.',
+    profitability_boundary:'Job-family profitability and recurring-agreement profitability are displayed as separate recorded sources and are not added together because their populations can overlap. No target margin, price, wage, utilization rate or revenue assumption is invented.',
+    materials_boundary:'Material readiness reuses current stock and quantified planned demand. Missing units or recurring material plans remain explicit gaps; no unit conversion, reorder quantity or purchase requirement is invented.',
+    scenario_boundary:'These are evidence scenarios for comparing current recorded seasonal mix and constraints, not forecasts of customer demand or committed operating plans.',
+    authority_boundary:'Read-only decision support only. This layer cannot auto-price, dispatch, hire, schedule, purchase, contact suppliers/customers, create estimates/invoices, or commit customer/vendor work.'
+  };
+}
+
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -3480,7 +3616,8 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       communication_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_interactions','crm_followups','notification_delivery','closeouts']),
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
       data_quality_remediation_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans','management_decision_outcomes']),
-      workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production'])
+      workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production']),
+      four_season_capacity_profitability_scenarios:buildManagementMetricConfidence(sourceFreshness,canFinanceView?['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work','routes','production','material_stock','material_plans','profitability','agreement_profitability']:['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work','routes','production','material_stock','material_plans'])
     };
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
@@ -3548,6 +3685,15 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       interactions:crmInteractions,followups:crmFollowups,notificationQueue,closeouts,jobsVisible:canJobsView,
       sourceQueriesOk:[crmInteractionsRead,crmFollowupsRead,notificationQueueRead,closeoutsRead].every((r)=>r.query_ok!==false)
     });
+    const fourSeasonScenarioReads=[dispatchRead,recurringVisitsRead,crewsRead,equipmentRead,workabilityRead,stormsRead,stormRoutesRead,seasonalWorkRead,routesRead,productionRead,materialStockRead,materialPlansRead,recurringRead];
+    if(canFinanceView){fourSeasonScenarioReads.push(profitabilityRead,agreementProfitabilityRead)}
+    const fourSeasonCapacityProfitabilityScenarioEvidence=buildFourSeasonCapacityProfitabilityScenarioEvidence({
+      dispatch,recurringVisits,profitability,capacityForecast:fourSeasonCapacityForecast,routeEfficiency:routeCrewEfficiencyEvidence,
+      workabilityRecovery:workabilityScheduleRecoveryOutcomes,stockReadiness:materialsConsumablesSeasonalStockReadiness,
+      recurringWorkbench:recurringRenewalRetentionWorkbench,jobsVisible:canJobsView,financeVisible:canFinanceView,
+      sourceQueriesOk:fourSeasonScenarioReads.every((r)=>r.query_ok!==false),
+      coverageComplete:fourSeasonScenarioReads.every((r)=>r.query_ok!==false&&Number(r.row_count||0)<Number(r.limit||1))
+    });
     const dataQualityReferenceReads=[customerDirectoryRead,propertyDirectoryRead,jobsRead,dispatchRead,recurringRead,crewsRead,equipmentRead,routesRead];
     const dataQualityDuplicateOrphanReconciliation=buildDataQualityDuplicateOrphanReconciliation({
       customers:customerDirectory,properties:propertyDirectory,jobs,dispatch,recurring,crews,equipment,routes,workability,materialPlans,
@@ -3594,6 +3740,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       customer_communication_outcome_followup_effectiveness:customerCommunicationOutcomeFollowUpEffectiveness,
       data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
       data_quality_remediation_outcome_recurrence:dataQualityRemediationOutcomeRecurrence,
+      four_season_capacity_profitability_scenario_evidence:fourSeasonCapacityProfitabilityScenarioEvidence,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
