@@ -8,6 +8,12 @@
 (function () {
   const CREW_LIVE_TTL_MS = 5 * 60 * 1000;
   const CREW_CACHE_STALE_MS = 4 * 60 * 60 * 1000;
+  const MOBILE_RELIABILITY_RELEASE_HISTORY = Object.freeze([
+    Object.freeze({ build:361, business_read_ceiling:13, payload_budget_bytes:180000, live_ttl_ms:300000, cache_stale_ms:14400000, replay_batch_max:12, admin_read_coalesce_ms:3000 }),
+    Object.freeze({ build:374, business_read_ceiling:13, payload_budget_bytes:180000, live_ttl_ms:300000, cache_stale_ms:14400000, replay_batch_max:12, admin_read_coalesce_ms:3000 })
+  ]);
+  const MOBILE_RELIABILITY_BASELINE = MOBILE_RELIABILITY_RELEASE_HISTORY[0];
+  const MOBILE_RELIABILITY_CURRENT = MOBILE_RELIABILITY_RELEASE_HISTORY[MOBILE_RELIABILITY_RELEASE_HISTORY.length - 1];
 
   const state = {
     bound: false,
@@ -80,6 +86,70 @@
 
   function countConflictItems() {
     return Number(actionSummary().conflicts || 0);
+  }
+
+  function mobileReliabilityEvidence(payload = state.crewContext, snapshot = syncSnapshot()) {
+    const readBudget = payload?.meta?.read_budget || {};
+    const baseline = MOBILE_RELIABILITY_BASELINE;
+    const current = MOBILE_RELIABILITY_CURRENT;
+    const readCeiling = Number(readBudget.business_read_budget_max ?? current.business_read_ceiling);
+    const payloadBudgetBytes = Number(readBudget.payload_budget_bytes ?? current.payload_budget_bytes);
+    const payloadBytes = Math.max(0, Number(readBudget.payload_bytes_estimate || 0));
+    const actions = Math.max(0, Number(snapshot?.actions || 0));
+    const conflicts = Math.max(0, Number(snapshot?.conflicts || 0));
+    const conflictRatePercent = actions ? Math.round((conflicts / actions) * 1000) / 10 : 0;
+    const payloadRatio = payloadBudgetBytes > 0 ? payloadBytes / payloadBudgetBytes : null;
+    const payloadBand = payloadBytes <= 0 ? 'not_sampled'
+      : payloadRatio <= 0.6 ? 'healthy'
+      : payloadRatio <= 0.8 ? 'watch'
+      : payloadRatio <= 1 ? 'near_ceiling'
+      : 'over_budget';
+    const regressions = [];
+    if (readCeiling > baseline.business_read_ceiling) regressions.push('business read ceiling increased');
+    if (payloadBudgetBytes > baseline.payload_budget_bytes) regressions.push('payload budget ceiling increased');
+    if (payloadBytes > baseline.payload_budget_bytes) regressions.push('observed payload exceeded the retained release budget');
+    if (current.live_ttl_ms < baseline.live_ttl_ms) regressions.push('automatic live refresh became more frequent');
+    if (current.cache_stale_ms > baseline.cache_stale_ms) regressions.push('signed-in session cache stale window increased');
+    if (current.replay_batch_max > baseline.replay_batch_max) regressions.push('offline replay batch ceiling increased');
+    if (current.admin_read_coalesce_ms < baseline.admin_read_coalesce_ms) regressions.push('admin read coalescing window decreased');
+    return {
+      state: regressions.length ? 'regression_hold' : 'within_guardrails',
+      baseline_build: baseline.build,
+      current_build: current.build,
+      business_read_ceiling: readCeiling,
+      payload_budget_bytes: payloadBudgetBytes,
+      payload_bytes_estimate: payloadBytes,
+      payload_band: payloadBand,
+      live_ttl_ms: current.live_ttl_ms,
+      cache_stale_ms: current.cache_stale_ms,
+      replay_batch_max: current.replay_batch_max,
+      admin_read_coalesce_ms: current.admin_read_coalesce_ms,
+      queued_action_count: actions,
+      conflict_count: conflicts,
+      conflict_rate_percent: conflictRatePercent,
+      refresh_contract: 'auth/route/visibility/reconnect or explicit Refresh after the five-minute live TTL; the 30-second local render loop never performs a server read',
+      privacy_contract: 'aggregate counts and release contracts only; no customer data, notes, queued payload bodies or device identifiers are retained by this evidence view',
+      regressions
+    };
+  }
+
+  function mobileReliabilityEvidenceMarkup(payload = state.crewContext, snapshot = syncSnapshot()) {
+    const r = mobileReliabilityEvidence(payload, snapshot);
+    const stateLabel = r.state === 'regression_hold' ? 'REGRESSION / RELEASE HOLD' : 'Within retained guardrails';
+    const regressionCopy = r.regressions.length
+      ? '<p><strong>Release hold:</strong> ' + crewEscape(r.regressions.join('; ')) + '. Fix the regression; do not raise the retained budgets to clear this signal.</p>'
+      : '<p><strong>Outcome:</strong> the current release stays at or inside the retained mobile/offline guardrails.</p>';
+    return '<details class="mobile-reliability-v374"' + (r.state === 'regression_hold' ? ' open' : '') + '>' +
+      '<summary><strong>Reliability evidence · ' + crewEscape('item ' + r.baseline_build + ' → ' + r.current_build + ' · ' + stateLabel) + '</strong></summary>' +
+      '<div style="display:grid;gap:4px;margin-top:8px;">' +
+        '<span>' + crewEscape('Read ceiling: ' + MOBILE_RELIABILITY_BASELINE.business_read_ceiling + ' → ' + r.business_read_ceiling + ' business reads') + '</span>' +
+        '<span>' + crewEscape('Payload: ' + (r.payload_bytes_estimate ? Math.max(1, Math.round(r.payload_bytes_estimate / 1024)) + ' KB' : 'not sampled') + ' · band ' + r.payload_band.replaceAll('_',' ') + ' · retained ceiling ' + Math.round(r.payload_budget_bytes / 1024) + ' KB') + '</span>' +
+        '<span>' + crewEscape('Refresh: ≥' + Math.round(r.live_ttl_ms / 60000) + ' min live TTL · local 30-second renders do not reread') + '</span>' +
+        '<span>' + crewEscape('Offline replay: ≤' + r.replay_batch_max + ' actions/batch · local conflict rate ' + r.conflict_rate_percent.toFixed(1) + '% (' + r.conflict_count + '/' + r.queued_action_count + ')') + '</span>' +
+        '<span>' + crewEscape('Cache/coalescing: signed-in session snapshot ≤' + Math.round(r.cache_stale_ms / 3600000) + ' h · Admin duplicate reads coalesce ≥' + (r.admin_read_coalesce_ms / 1000).toFixed(0) + ' s') + '</span>' +
+        regressionCopy +
+        '<p class="muted">' + crewEscape(r.privacy_contract) + '</p>' +
+      '</div></details>';
   }
 
   function countDraftForms() {
@@ -542,6 +612,7 @@
     const rows = state.crewTab === 'jobs' ? (payload?.my_jobs || []) : (payload?.my_route || []);
     const snapshot = syncSnapshot();
     const readBudget = payload?.meta?.read_budget || null;
+    const reliabilityMarkup = mobileReliabilityEvidenceMarkup(payload, snapshot);
     const budgetCopy = readBudget && snapshot.online
       ? ` Read budget ≤${Number(readBudget.business_read_budget_max || 0)} business reads; payload ≈${Math.max(1, Math.round(Number(readBudget.payload_bytes_estimate || 0) / 1024))} KB.`
       : '';
@@ -550,6 +621,7 @@
       '<div class="mobile-crew-v2-head"><div><h2>Mobile Crew App v2</h2><p>My Jobs, My Route and field actions for 390/430-width phones.</p></div><span class="field-sync-state">' + crewEscape(syncLabel(snapshot)) + '</span></div>' +
       '<div class="mobile-crew-v2-tabs"><button type="button" class="secondary" data-crew-tab="route" aria-selected="' + (state.crewTab === 'route') + '">My Route</button><button type="button" class="secondary" data-crew-tab="jobs" aria-selected="' + (state.crewTab === 'jobs') + '">My Jobs</button><button type="button" class="secondary" data-crew-refresh="1"' + (state.crewLoading || !snapshot.online ? ' disabled' : '') + '>' + (state.crewLoading ? 'Refreshing…' : 'Refresh') + '</button></div>' +
       '<p class="field-sync-note">' + crewEscape(syncCopy) + '</p>' +
+      reliabilityMarkup +
       '<div class="mobile-crew-v2-list">' + (state.crewLoading && !payload ? '<div class="mobile-crew-v2-empty">Loading assigned field work…</div>' : rows.length ? rows.map(crewCard).join('') : '<div class="mobile-crew-v2-empty">No assigned work is in the current seven-day crew window.</div>') + '</div>';
     panel.querySelectorAll('[data-crew-tab]').forEach((button) => button.addEventListener('click', () => { state.crewTab = button.dataset.crewTab || 'route'; renderMobileCrewApp(); }));
     panel.querySelector('[data-crew-refresh]')?.addEventListener('click', () => loadMobileCrewContext(true));
@@ -727,7 +799,8 @@
 
   window.YWIMobileToday = {
     bind, render, countOutboxItems, countActionItems, countConflictItems, countDraftForms,
-    syncSnapshot, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery
+    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery,
+    reliabilityReleaseHistory: () => MOBILE_RELIABILITY_RELEASE_HISTORY.map((row) => ({ ...row }))
   };
   document.addEventListener('DOMContentLoaded', bind);
 })();
