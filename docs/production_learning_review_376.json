@@ -1,0 +1,178 @@
+{
+  "item": 376,
+  "title": "Production Learning & Autonomous Roadmap Renewal II",
+  "purpose": "Review recorded 363–375 outcome instrumentation, name what remains unverified, and publish a bounded 377–390 queue without making new business, Finance, Auth or provider authority.",
+  "review_basis": {
+    "source": "Repository acceptance contracts and canonical management/workability/route/CRM/Finance/equipment/material/mobile read models; not a measured live Production sample",
+    "data_quality": "No live customer, payment, provider, payroll or production metrics were accessed to establish aggregate improvements",
+    "confidence": "Capability-level review only. Any missing, stale, permission-hidden, capped or sample-insufficient outcome remains unknown; never substitute zero or a claimed production effect."
+  },
+  "learning_review": [
+    {
+      "item": 363,
+      "capability": "Management decisions",
+      "learning": "Private source-keyed journal records review and outcome without rewriting the source item.",
+      "remaining_gap": "Assess follow-up completeness, late review, and recurrence with source coverage."
+    },
+    {
+      "item": 364,
+      "capability": "Workability schedule recovery",
+      "learning": "Read-only constraint-to-dispatch/production correlation separates recorded recovery from missing evidence.",
+      "remaining_gap": "Compare seasonal recovery rates over equivalent evidence windows."
+    },
+    {
+      "item": 365,
+      "capability": "Route stop-sequence",
+      "learning": "Planned-vs-actual execution and stop-order evidence capture scheduling friction.",
+      "remaining_gap": "Aggregate repeated seasonal friction without assigning employee scores."
+    },
+    {
+      "item": 366,
+      "capability": "Recurring renewal conversion",
+      "learning": "Recorded renewal/hold/churn outcomes are separated from pending or unobserved outcomes.",
+      "remaining_gap": "Track cohort retention and renewal lag with denominator confidence."
+    },
+    {
+      "item": 367,
+      "capability": "Estimate accuracy and margin",
+      "learning": "Recorded estimate-vs-actual and change-order evidence enables bounded variance review.",
+      "remaining_gap": "Separate mix changes from true estimate bias and unapproved extras."
+    },
+    {
+      "item": 368,
+      "capability": "Completion-to-invoice and cash",
+      "learning": "Recorded completed, invoiced, and paid timestamps distinguish commercial handoff stages.",
+      "remaining_gap": "Identify aging bottlenecks without issuing invoices or collecting funds."
+    },
+    {
+      "item": 369,
+      "capability": "Labour capture",
+      "learning": "Payroll exception and work-hour capture evidence distinguish incomplete capture from zeros.",
+      "remaining_gap": "Measure exception closure and shift coverage without employee ranking."
+    },
+    {
+      "item": 370,
+      "capability": "Equipment downtime",
+      "learning": "Maintenance/downtime events and replacement context are source-backed and non-committal.",
+      "remaining_gap": "Identify repeated high-cost asset gaps without invented replacement ROI."
+    },
+    {
+      "item": 371,
+      "capability": "Material calibration",
+      "learning": "Planned vs actual use is comparable only with explicit compatible units.",
+      "remaining_gap": "Track stockout/overuse trends and unit-conversion evidence across seasons."
+    },
+    {
+      "item": 372,
+      "capability": "Communication outcomes",
+      "learning": "CRM follow-up completion, recorded replies and provider delivery are explicitly separate.",
+      "remaining_gap": "Measure queue aging without inferring customer intent or violating consent."
+    },
+    {
+      "item": 373,
+      "capability": "Data quality recurrence",
+      "learning": "Data-quality signals join journal outcomes; capped/partial scans withhold absence-based closure.",
+      "remaining_gap": "Measure reappearance and evidence freshness by canonical signal."
+    },
+    {
+      "item": 374,
+      "capability": "Mobile reliability",
+      "learning": "Mobile read/payload/replay/refresh ceilings and local conflict-rate signals are guarded.",
+      "remaining_gap": "Compare privacy-safe release cohorts and safe resolution, never queued payloads."
+    },
+    {
+      "item": 375,
+      "capability": "Seasonal mix and profitability",
+      "learning": "Recorded 14-day season mix, shared crew-day, route headroom and permission-scoped profitability expose gaps.",
+      "remaining_gap": "Backtest mix constraints without mixing overlapping job and agreement profit populations."
+    }
+  ],
+  "prioritization": {
+    "method": "Prioritize verifiable operational outcome, canonical-source reuse, permission safety and low external dependency; preserve four-season applicability and mobile/offline bounds.",
+    "first_release": 377,
+    "renewal_release": 390
+  },
+  "renewal_principles": [
+    "Use only existing canonical Jobs, Safety, Equipment, Employment, CRM, Finance, Dispatch, Workability, Inventory and release-evidence authorities.",
+    "Spring/summer landscaping and lawn work, fall cleanup and leaf collection, winter snow/storm/ice work, and general four-season operations must stay visible.",
+    "Distinguish capability/source-contract evidence from real Production measured outcomes; no invented counts, improvement percentages, demand, prices, profits, or staff scores.",
+    "Keep missing, stale, capped, hidden and insufficient sample evidence explicitly unknown; preserve traceable denominators and windows.",
+    "Read-only/advisory learning cannot mutate Jobs, Safety, Equipment, Employment, CRM, Finance, scheduling, inventory or customer/provider commitments.",
+    "No ordinary item may depend on live payments, real customer messages, provider credentials, staging acceptance, or manual signoff.",
+    "Finance posting, external Auth changes, provider delivery, purchases, and destructive reconciliation remain fail-closed absent independent explicit authorization.",
+    "Every release must retain exact-source GitHub release proof, privacy, permissions, phone accessibility, offline conflict authority and production reconciliation.",
+    "By the final queued item, publish at least ten further autonomous bounded releases before promoting again."
+  ],
+  "renewed_queue": [
+    {
+      "item": 377,
+      "title": "Management Outcome Confidence & Cohort Trend",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 378,
+      "title": "Workability Forecast-vs-Recovery Calibration",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 379,
+      "title": "Route Stop-Sequence Friction Hotspots by Season",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 380,
+      "title": "Recurring Retention Cohort & Renewal Lag",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 381,
+      "title": "Estimate Margin Drift & Change-Order Follow-through",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 382,
+      "title": "Invoice Aging Handoff & Receivables Leakage",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 383,
+      "title": "Labour Capture Exception Closure & Shift Readiness",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 384,
+      "title": "Fleet Maintenance Cost Trend & Downtime Concentration",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 385,
+      "title": "Material Demand vs Stockout Trend & Season Transition",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 386,
+      "title": "Communication Follow-Up Coverage & Consent-Safe Queue Aging",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 387,
+      "title": "Data-Quality Fix Recurrence & Source Freshness",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 388,
+      "title": "Offline Conflict Closure & Device-Safe Reliability Cohorts",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 389,
+      "title": "Four-Season Crew-Day Mix Constraint & Scenario Backtesting",
+      "boundary": "Canonical-source observational/advisory analysis only; no automatic financial, provider, customer, staffing or source-record mutation."
+    },
+    {
+      "item": 390,
+      "title": "Production Learning & Autonomous Roadmap Renewal III",
+      "boundary": "Next capability-level review and minimum-ten roadmap renewal; no autonomous operational writes."
+    }
+  ]
+}
