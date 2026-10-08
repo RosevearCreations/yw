@@ -112,10 +112,11 @@
   </style>
 
   <script>
+    // Build 361 service-worker provenance: /server-worker.js?v=2026-09-30b361
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-09-30b361');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-10-08b374');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -433,7 +434,8 @@
   <script src="/js/router.js?v=2026-09-03a"></script>
   <script src="/js/module-nav.js?v=2026-09-03a"></script>
   <script src="/js/mobile-menu.js?v=2026-09-03a"></script>
-  <script src="/js/mobile-today.js?v=2026-09-30b361"></script>
+  <!-- Build 361 asset provenance: /js/mobile-today.js?v=2026-09-30b361 -->
+  <script src="/js/mobile-today.js?v=2026-10-08b374"></script>
   <script src="/js/mobile-form-helper.js?v=2026-09-03a"></script>
   <script src="/js/bootstrap.js?v=2026-09-03a"></script>
   <script src="/js/auth.js?v=2026-09-03a"></script>

@@ -152,13 +152,14 @@ Recently completed:
 - **371 — Material Usage Variance & Reorder Calibration** (implemented)
 - **372 — Customer Communication Outcome & Follow-Up Effectiveness** (implemented)
 - **373 — Data Quality Remediation Outcome & Recurrence Prevention** (implemented)
+- **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** (implemented)
 
 The current autonomous queue continues with:
 
 <!-- Historical item 370 queue marker retained for regression provenance: - **371 — Material Usage Variance & Reorder Calibration** -->
 <!-- Historical item 371 queue marker retained for regression provenance: - **372 — Customer Communication Outcome & Follow-Up Effectiveness** -->
 <!-- Historical item 372 queue marker retained for regression provenance: - **373 — Data Quality Remediation Outcome & Recurrence Prevention** -->
-- **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes**
+<!-- Historical item 373 queue marker retained for regression provenance: - **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** -->
 - **375 — Four-Season Capacity Mix & Profitability Scenario Evidence**
 - **376 — Production Learning & Autonomous Roadmap Renewal II**
 
@@ -176,6 +177,7 @@ Current direction: After item 370, that item is 371 — Material Usage Variance 
 Current direction: After item 371, that item is 372 — Customer Communication Outcome & Follow-Up Effectiveness.
 Current direction: After item 372, that item is 373 — Data Quality Remediation Outcome & Recurrence Prevention.
 Current direction: After item 373, that item is 374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+Current direction: After item 374, that item is 375 — Four-Season Capacity Mix & Profitability Scenario Evidence. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 
 For every ordinary release, use this sequence:
 
