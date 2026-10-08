@@ -615,6 +615,7 @@ A current source key becomes recurring when recurrence was explicitly recorded o
 
 <!-- Historical item 373 handoff retained for regression provenance: The next planned autonomous item is **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes**. -->
 
+<!-- Historical item 362 queue heading retained for regression provenance: #### 374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes -->
 #### **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** is implemented
 
 The Mobile Crew reliability card now compares the retained item 361 release contract with the current release for the business-read ceiling, payload budget, live-refresh interval, signed-in-session cache window, offline replay batch and Admin read-coalescing window. The rendered outcome also classifies the current payload-size band and reports a local offline-action conflict rate from aggregate queue counts only.
