@@ -613,6 +613,8 @@ A prior resolved/improved journal outcome is counted as confirmed resolved by ab
 
 A current source key becomes recurring when recurrence was explicitly recorded or when the same key reappears after a resolved/improved outcome. Duplicate, broken-reference, stale-assignment and four-season-tag recurrence receives advisory prevention review guidance only. The layer cannot auto-merge/delete identities, rewrite foreign keys, reassign crews/equipment, clear lockouts, rewrite historical tags or automatically mutate management-journal rows.
 
+<!-- Historical item 373 handoff retained for regression provenance: The next planned autonomous item is **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes**. -->
+
 #### **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** is implemented
 
 The Mobile Crew reliability card now compares the retained item 361 release contract with the current release for the business-read ceiling, payload budget, live-refresh interval, signed-in-session cache window, offline replay batch and Admin read-coalescing window. The rendered outcome also classifies the current payload-size band and reports a local offline-action conflict rate from aggregate queue counts only.
