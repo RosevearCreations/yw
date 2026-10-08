@@ -283,6 +283,15 @@
           <p><strong>Regression budgets:</strong> CI now verifies the Mobile Crew business-read, permission-evaluation, refresh, payload, replay-batch and cache contracts together with rendered 390px acceptance. Build 361 does not relax module authorization, exact-source release evidence, Finance/provider guards or offline conflict ownership.</p>
         </section>
 
+        <section class="help-section" id="mobile-offline-reliability-trend-outcomes">
+          <h2>Build 374 — Mobile Offline Reliability Trend &amp; Read-Budget Guardrail Outcomes</h2>
+          <p>Build 374 turns the point-in-time mobile/offline limits from Build 361 into release-over-release evidence. The Mobile Crew card compares the retained release baseline with the current read ceiling, payload budget, live-refresh interval, signed-in-session cache window, offline replay batch and Admin read-coalescing contract.</p>
+          <p><strong>Runtime outcome evidence:</strong> the current Mobile Crew response contributes only its aggregate read-budget metadata and payload byte estimate. The local offline queue contributes only total queued actions and conflict count, allowing a local conflict-rate indicator without centralizing queued work.</p>
+          <p><strong>No private payload retention:</strong> reliability evidence does not store customer names, addresses, notes, queued payload bodies, server payloads or device identifiers. Canonical Jobs, Safety and offline recovery records remain in their existing authorities.</p>
+          <p><strong>Fail-closed release guardrails:</strong> a higher business-read ceiling, larger payload ceiling, more aggressive automatic refresh, longer stale-cache window, larger replay batch, shorter Admin coalescing window or an observed over-budget payload produces a regression/release-hold state. The fix is to repair the regression, not silently raise the retained budget.</p>
+          <p><strong>Refresh and replay outcomes:</strong> the five-minute live TTL remains demand-driven; the 30-second presentation loop remains local-only. Offline conflicts remain explicitly recoverable and profile-isolated, while the reliability card reports only aggregate counts and never replays, merges or discards work.</p>
+        </section>
+
         <section class="help-section" id="production-learning-roadmap-renewal">
           <h2>Build 362 — Production Learning &amp; Autonomous Roadmap Renewal</h2>
           <p>Build 362 reviews what Builds 351–361 can now measure and turns the remaining gaps into the next bounded autonomous queue.</p>
