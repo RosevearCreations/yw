@@ -624,11 +624,19 @@ The release gate fails closed when a later change raises the business-read or pa
 
 Runtime evidence is privacy-bounded: no customer names, addresses, notes, queued payload bodies, server payload bodies or device identifiers are retained by the trend view. Existing Jobs, Safety, Auth, offline-recovery and release-source authorities remain canonical, and the evidence layer cannot replay, merge, discard or mutate queued work.
 
-The next planned autonomous item is **375 — Four-Season Capacity Mix & Profitability Scenario Evidence**.
+<!-- Historical item 374 handoff retained for regression provenance: The next planned autonomous item is **375 — Four-Season Capacity Mix & Profitability Scenario Evidence**. -->
+<!-- Historical item 362 queue heading retained for regression provenance: #### 375 — Four-Season Capacity Mix & Profitability Scenario Evidence -->
+#### **375 — Four-Season Capacity Mix & Profitability Scenario Evidence** is implemented
 
-#### 375 — Four-Season Capacity Mix & Profitability Scenario Evidence
+The Owner / Management Command Centre now combines recorded 14-day dispatch and recurring-visit demand with shared crew-day evidence, configured route-capacity history, recorded Workability recovery, seasonal material readiness and permission-scoped profitability for spring/summer landscaping and lawn work, fall cleanup and leaf work, winter snow/storm/ice work and general four-season operations.
 
-Combine permission-scoped capacity, recurring work, route efficiency, workability, material readiness and recorded profitability into read-only scenario evidence for spring/summer landscaping/lawn work, fall cleanup/leaf work, winter snow/storm/ice work and general four-season operations. Scenarios must use recorded capacity/cost evidence, clearly label missing assumptions, and never auto-price, dispatch, hire, purchase or commit customer/vendor work.
+Seasonal mix is calculated only from recorded items in the current 14-day horizon. Crew evidence remains shared across mixed-season days instead of being falsely assigned as dedicated seasonal capacity. Route headroom appears only when a configured route daily-capacity value exists. Missing route capacity, recovery history, material evidence, recurring material plans, source coverage, Finance visibility or profitability remains an explicit assumption/evidence gap.
+
+Job-family profitability and recurring-agreement profitability stay separate because their populations may overlap. No target margin, synthetic profit-per-capacity metric, automatic price, wage, growth rate, demand forecast or hidden Finance substitute is invented.
+
+The scenario layer is read-only and cannot auto-price, dispatch, hire, schedule, purchase, contact suppliers/customers, create estimates/invoices or commit customer/vendor work.
+
+The next planned autonomous item is **376 — Production Learning & Autonomous Roadmap Renewal II**.
 
 #### 376 — Production Learning & Autonomous Roadmap Renewal II
 

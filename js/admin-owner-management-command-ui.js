@@ -25,6 +25,7 @@
       '<div id="owner350Status" class="notice" style="margin-top:10px;"></div>',
       '<section class="admin-panel-block owner351-evidence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management metric freshness &amp; confidence</h4><p class="section-subtitle">Build 351 · authoritative source age, coverage, visibility and confidence. Missing evidence is never converted into a zero-valued business fact.</p></div></div><div id="owner351Freshness"></div></section>',
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
+      '<section class="admin-panel-block owner375-scenarios" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity mix &amp; profitability scenario evidence</h4><p class="section-subtitle">Build 375 · recorded 14-day seasonal workload mix, shared crew-day evidence, configured route-capacity history, workability recovery, material readiness and permission-scoped profitability.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Evidence scenarios only — no automatic commitments:</strong> missing assumptions stay visible. This view cannot auto-price, dispatch, hire, schedule, purchase, contact suppliers/customers or commit customer/vendor work.</div><div id="owner375Scenarios"></div></section>',
       '<section class="admin-panel-block owner364-recovery" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability-to-schedule recovery outcomes</h4><p class="section-subtitle">Build 364 · 90-day comparison of recorded Workability constraints with later Dispatch and Production evidence, including same-day recovery, rescheduled completion, partial/return visits and unresolved work.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome learning only:</strong> missing schedule or production evidence remains unresolved. This view cannot change a Workability decision, move a schedule item, dispatch crews, complete work or send a customer message.</div><div id="owner364Recovery"></div></section>',
       '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
       '<section class="admin-panel-block owner365-sequence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route plan-vs-actual &amp; stop-sequence learning</h4><p class="section-subtitle">Build 365 · repeated route-day learning from planned stop order, recorded production-start order, service duration, recorded delays, return visits and travel evidence already held by YW.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Learning only:</strong> repeated differences become review candidates, never automatic route changes. No worker scoring, GPS inference, stop reordering or dispatch mutation is performed.</div><div id="owner365Sequence"></div></section>',
@@ -58,7 +59,7 @@
       '</div>'
     ].join('');
     admin.appendChild(el);
-    if(!$('owner350Style')){const st=document.createElement('style');st.id='owner350Style';st.textContent='.owner350-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.owner350-kpi{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.46)}.owner350-kpi span{display:block;font-size:.76rem;color:#c4d1e2}.owner350-kpi strong{display:block;font-size:1.15rem;margin-top:4px}.owner350-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.owner350-list{display:grid;gap:7px}.owner350-row{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.45)}.owner350-row small{display:block;color:#c4d1e2;margin-top:2px}.owner351-meta{display:block;margin-top:5px;font-size:.72rem;color:#aebed2}.owner351-source{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.36);border:1px solid rgba(148,163,184,.16)}.owner351-source strong{display:block}.owner351-source small{display:block;color:#c4d1e2;margin-top:2px}.owner351-state{font-weight:700;letter-spacing:.02em}.owner351-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-bottom:10px}.owner353-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.owner353-day{padding:10px;border:1px solid rgba(148,163,184,.22);border-radius:10px;background:rgba(15,23,42,.4)}.owner353-day strong,.owner353-day small{display:block}.owner353-day small{color:#c4d1e2;margin-top:3px}.owner353-season{font-size:.72rem;color:#aebed2;margin-top:5px}@media(max-width:700px){.owner350-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.owner350-head button{width:100%;min-height:44px}}';document.head.appendChild(st)}
+    if(!$('owner350Style')){const st=document.createElement('style');st.id='owner350Style';st.textContent='.owner350-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.owner350-kpi{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.46)}.owner350-kpi span{display:block;font-size:.76rem;color:#c4d1e2}.owner350-kpi strong{display:block;font-size:1.15rem;margin-top:4px}.owner350-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.owner350-list{display:grid;gap:7px}.owner350-row{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.45)}.owner350-row small{display:block;color:#c4d1e2;margin-top:2px}.owner351-meta{display:block;margin-top:5px;font-size:.72rem;color:#aebed2}.owner351-source{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.36);border:1px solid rgba(148,163,184,.16)}.owner351-source strong{display:block}.owner351-source small{display:block;color:#c4d1e2;margin-top:2px}.owner351-state{font-weight:700;letter-spacing:.02em}.owner351-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-bottom:10px}.owner353-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.owner353-day{padding:10px;border:1px solid rgba(148,163,184,.22);border-radius:10px;background:rgba(15,23,42,.4)}.owner353-day strong,.owner353-day small{display:block}.owner353-day small{color:#c4d1e2;margin-top:3px}.owner353-season{font-size:.72rem;color:#aebed2;margin-top:5px}.owner375-scenarios .owner350-row{min-width:0;overflow-wrap:anywhere;word-break:break-word}.owner375-scenario-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}@media(max-width:700px){.owner350-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.owner350-head button{width:100%;min-height:44px}}';document.head.appendChild(st)}
     return el;
   }
   function mount(config={}){
@@ -113,6 +114,51 @@
       host.innerHTML=summary+'<p class="muted">'+esc(f.capacity_method||'')+'</p>'+days+'<details style="margin-top:8px;"><summary>Forecast authority &amp; weather boundary</summary><p class="muted">'+esc(f.weather_boundary||'')+'</p><p class="muted">'+esc(f.authority_boundary||'')+'</p></details>';
     }
 
+
+    function renderFourSeasonCapacityProfitabilityScenarios(){
+      const host=$('owner375Scenarios');if(!host)return;
+      const w=state.data?.four_season_capacity_profitability_scenario_evidence;
+      const meta=metricMeta('four_season_capacity_profitability_scenarios');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Four-season scenario evidence requires Jobs / Business &amp; Operations visibility for this profile.</p>';return}
+      if(!w||!Array.isArray(w.scenarios)){host.innerHTML='<p class="muted">Four-season capacity/profitability scenario evidence is unavailable from this response.</p>';return}
+      if(w.source_queries_ok===false){host.innerHTML='<p class="muted">One or more required scenario source reads failed. Seasonal scenario evidence is withheld rather than inferred.</p>';return}
+      if(meta&&String(meta.state||'')==='unavailable'){host.innerHTML='<p class="muted">'+esc(meta.reason||'Required scenario source evidence is unavailable.')+'</p>';return}
+      const s=w.summary||{};
+      const minToHours=v=>(num(v)/60).toFixed(1)+' h';
+      const summary='<div class="owner351-summary">'+[
+        card('14-day planned',num(s.planned_items_14_days),minToHours(s.recorded_demand_minutes_14_days)+' recorded demand','four_season_capacity_profitability_scenarios'),
+        card('Seasons with planned work',num(s.seasons_with_planned_work),'of 4 operating contexts'),
+        card('Configured route capacity',num(s.seasons_with_configured_route_capacity),'season(s) with recorded headroom history'),
+        card('Material attention',num(s.seasons_with_material_attention),'season(s) with recorded stock attention'),
+        card('Recorded profitability',w.finance_visible?num(s.seasons_with_recorded_profitability):'Hidden',w.finance_visible?'season(s) with job/agreement profit evidence':'Finance visibility unavailable'),
+        card('Missing assumptions',num(s.scenarios_with_missing_assumptions),'scenario(s) explicitly partial')
+      ].join('')+'</div>';
+      const labelState=v=>String(v||'partial_recorded_evidence').replaceAll('_',' ').toUpperCase();
+      const scenarios=(w.scenarios||[]).map(r=>{
+        const mix=r.planned_mix_share_percent==null?'mix share n/a':pct(r.planned_mix_share_percent);
+        const routeCapacity=r.configured_route_capacity_headroom_minutes==null
+          ? 'configured route capacity not recorded'
+          : minToHours(r.configured_route_capacity_headroom_minutes)+' recorded configured headroom across '+num(r.configured_route_capacity_day_count)+' route-day(s)';
+        const recovery=r.workability_constraint_episodes
+          ? num(r.workability_full_completion_recovery_count)+' / '+num(r.workability_constraint_episodes)+' full recovery · '+(r.workability_recovery_rate_percent==null?'rate n/a':pct(r.workability_recovery_rate_percent))
+          : 'workability recovery history not recorded';
+        const materials=num(r.material_count)+' material(s) · '+num(r.material_attention_count)+' attention · '+num(r.material_shortage_count)+' shortage · '+num(r.recurring_visits_without_quantified_material_plan)+' recurring material-plan gap(s)';
+        const profit=w.finance_visible
+          ? (num(r.recorded_job_profitability_group_count)+' job-family profit group(s): revenue '+money(r.recorded_job_revenue_total)+' · cost '+money(r.recorded_job_cost_total)+' · profit '+money(r.recorded_job_profit_total)+' · margin '+(r.recorded_job_margin_percent==null?'n/a':pct(r.recorded_job_margin_percent))+'; '+num(r.recorded_recurring_profit_agreement_count)+' recurring agreement(s) with recorded profit: '+money(r.recorded_recurring_profit_total))
+          : 'Finance profitability hidden by permission; no substitute assumption used.';
+        const missing=(r.missing_assumptions||[]).map(x=>'<li>'+esc(x)+'</li>').join('');
+        return '<div class="owner350-row" data-owner375-season="'+esc(r.scenario_key||'four_season')+'"><strong>'+esc(r.scenario_label||r.scenario_key||'Season scenario')+' · '+esc(labelState(r.scenario_state))+'</strong>'+
+          '<small>'+esc(num(r.planned_item_count)+' planned item(s) · '+minToHours(r.recorded_demand_minutes)+' recorded demand · '+mix)+'</small>'+
+          '<small>'+esc(num(r.forecast_days_with_season_load)+' forecast day(s) carrying this season · '+num(r.shared_scheduled_crew_day_evidence)+' scheduled / '+num(r.shared_active_crew_day_evidence)+' active shared crew-day evidence · '+num(r.constrained_forecast_day_count)+' constrained day(s)')+'</small>'+
+          '<small>'+esc(routeCapacity+' · '+minToHours(r.over_configured_capacity_minutes)+' recorded over-capacity evidence')+'</small>'+
+          '<small>'+esc(recovery)+'</small><small>'+esc(materials)+'</small><small>'+esc(profit)+'</small>'+
+          (missing?'<details style="margin-top:6px;"><summary>Missing assumptions / evidence gaps</summary><ul>'+missing+'</ul></details>':'<small>No missing assumption is required for the displayed evidence fields.</small>')+
+          '</div>';
+      }).join('');
+      host.innerHTML=summary+
+        '<div class="owner375-scenario-grid">'+scenarios+'</div>'+
+        '<details style="margin-top:10px;"><summary>Mix, capacity, profitability, materials &amp; authority boundaries</summary><p class="muted">'+esc(w.mix_boundary||'')+'</p><p class="muted">'+esc(w.capacity_boundary||'')+'</p><p class="muted">'+esc(w.profitability_boundary||'')+'</p><p class="muted">'+esc(w.materials_boundary||'')+'</p><p class="muted">'+esc(w.scenario_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
+    }
 
     function renderWorkabilityRecovery(){
       const host=$('owner364Recovery');if(!host)return;
@@ -893,6 +939,7 @@
       const m=metrics();
       renderFreshness();
       renderCapacityForecast();
+      renderFourSeasonCapacityProfitabilityScenarios();
       renderWorkabilityRecovery();
       renderRouteCrewEfficiency();
       renderRouteSequenceLearning();

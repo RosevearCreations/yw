@@ -153,6 +153,7 @@ Recently completed:
 - **372 — Customer Communication Outcome & Follow-Up Effectiveness** (implemented)
 - **373 — Data Quality Remediation Outcome & Recurrence Prevention** (implemented)
 - **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** (implemented)
+- **375 — Four-Season Capacity Mix & Profitability Scenario Evidence** (implemented)
 
 The current autonomous queue continues with:
 
@@ -160,7 +161,7 @@ The current autonomous queue continues with:
 <!-- Historical item 371 queue marker retained for regression provenance: - **372 — Customer Communication Outcome & Follow-Up Effectiveness** -->
 <!-- Historical item 372 queue marker retained for regression provenance: - **373 — Data Quality Remediation Outcome & Recurrence Prevention** -->
 <!-- Historical item 373 queue marker retained for regression provenance: - **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** -->
-- **375 — Four-Season Capacity Mix & Profitability Scenario Evidence**
+<!-- Historical item 374 queue marker retained for regression provenance: - **375 — Four-Season Capacity Mix & Profitability Scenario Evidence** -->
 - **376 — Production Learning & Autonomous Roadmap Renewal II**
 
 The last queue item must again write at least ten further bounded autonomous items before promotion so the queue does not run out.
@@ -178,6 +179,7 @@ Current direction: After item 371, that item is 372 — Customer Communication O
 Current direction: After item 372, that item is 373 — Data Quality Remediation Outcome & Recurrence Prevention.
 Current direction: After item 373, that item is 374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 Current direction: After item 374, that item is 375 — Four-Season Capacity Mix & Profitability Scenario Evidence. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
+Current direction: After item 375, that item is 376 — Production Learning & Autonomous Roadmap Renewal II. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 
 For every ordinary release, use this sequence:
 

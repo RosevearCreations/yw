@@ -222,6 +222,8 @@
     "test:browser:mobile-offline-read-budget-reliability": "playwright test --config=playwright.config.mjs tests/browser/mobile-offline-read-budget-reliability.spec.mjs",
     "test:mobile-offline-reliability-trend-outcomes": "node scripts/mobile-offline-reliability-trend-outcomes-check.mjs",
     "test:browser:mobile-offline-reliability-trend-outcomes": "playwright test --config=playwright.config.mjs tests/browser/mobile-offline-reliability-trend-outcomes.spec.mjs",
+    "test:four-season-capacity-profitability-scenario-evidence": "node scripts/four-season-capacity-profitability-scenario-evidence-check.mjs",
+    "test:browser:four-season-capacity-profitability-scenario-evidence": "playwright test --config=playwright.config.mjs tests/browser/four-season-capacity-profitability-scenario-evidence.spec.mjs",
     "test:production-learning-roadmap-renewal": "node scripts/production-learning-roadmap-renewal-check.mjs",
     "test:browser:production-learning-roadmap-renewal": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal.spec.mjs",
     "test:management-decision-outcome-journal": "node scripts/management-decision-outcome-journal-check.mjs",
