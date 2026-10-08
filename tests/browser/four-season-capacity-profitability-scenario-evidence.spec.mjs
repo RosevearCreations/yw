@@ -96,7 +96,7 @@ test('Build 375 renders all four recorded seasonal scenarios without invented co
   await expect(host.locator('[data-owner375-season="fall"]')).toContainText('Fall cleanup & leaf');
   await expect(host.locator('[data-owner375-season="winter"]')).toContainText('Winter snow / storm / ice');
   await expect(host.locator('[data-owner375-season="four_season"]')).toContainText('General four-season operations');
-  await expect(host).toContainText('revenue $2,400.00 · cost $1,600.00 · profit $800.00 · margin 33.3%');
+  await expect(host).toContainText('revenue $2,400 · cost $1,600 · profit $800 · margin 33.3%');
   await host.locator('[data-owner375-season="fall"] summary').click();
   await expect(host.locator('[data-owner375-season="fall"]')).toContainText('recovery performance is not assumed');
   await host.getByText('Mix, capacity, profitability, materials & authority boundaries').click();
