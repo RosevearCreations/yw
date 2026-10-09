@@ -24,6 +24,7 @@
       '<div class="notice" style="margin-top:8px;"><strong>Four-season Ontario model:</strong> spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class operating contexts. Missing module access is shown as unavailable rather than inferred.</div>',
       '<div id="owner350Status" class="notice" style="margin-top:10px;"></div>',
       '<section class="admin-panel-block owner351-evidence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management metric freshness &amp; confidence</h4><p class="section-subtitle">Build 351 · authoritative source age, coverage, visibility and confidence. Missing evidence is never converted into a zero-valued business fact.</p></div></div><div id="owner351Freshness"></div></section>',
+      '<section class="admin-panel-block owner377-cohorts" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management outcome confidence &amp; cohort trend</h4><p class="section-subtitle">Build 377 · source-key-level decision outcomes in separate 30-day and preceding 60-day windows; incomplete evidence never becomes a performance claim.</p></div><a class="secondary" href="/help.html#management-outcome-confidence-cohort-trend" aria-label="Info: management outcome cohort help" title="Help for management outcome cohorts">ⓘ Help</a></div><div id="owner377Cohorts"></div></section>',
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
       '<section class="admin-panel-block owner375-scenarios" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity mix &amp; profitability scenario evidence</h4><p class="section-subtitle">Build 375 · recorded 14-day seasonal workload mix, shared crew-day evidence, configured route-capacity history, workability recovery, material readiness and permission-scoped profitability.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Evidence scenarios only — no automatic commitments:</strong> missing assumptions stay visible. This view cannot auto-price, dispatch, hire, schedule, purchase, contact suppliers/customers or commit customer/vendor work.</div><div id="owner375Scenarios"></div></section>',
       '<section class="admin-panel-block owner364-recovery" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability-to-schedule recovery outcomes</h4><p class="section-subtitle">Build 364 · 90-day comparison of recorded Workability constraints with later Dispatch and Production evidence, including same-day recovery, rescheduled completion, partial/return visits and unresolved work.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome learning only:</strong> missing schedule or production evidence remains unresolved. This view cannot change a Workability decision, move a schedule item, dispatch crews, complete work or send a customer message.</div><div id="owner364Recovery"></div></section>',
@@ -92,6 +93,23 @@
       const rows='<div class="owner350-list">'+ordered.map(s=>'<div class="owner351-source"><strong>'+esc(s.source_module||'source')+' · '+esc(s.source_view||s.source_key||'unknown')+'</strong><small><span class="owner351-state">'+esc(String(s.freshness_state||'unknown').toUpperCase())+'</span> · confidence '+esc(String(s.confidence||'unknown').toUpperCase())+' · '+esc(String(s.row_count??0))+' row(s) · updated '+esc(when(s.last_authoritative_update))+'</small><small>'+esc(s.reason||'No freshness explanation supplied.')+'</small></div>').join('')+'</div>';
       host.innerHTML=summary+'<details><summary>Authoritative source details</summary>'+rows+'</details>';
     }
+
+    function renderManagementOutcomeConfidenceCohorts(){
+      const host=$('owner377Cohorts');if(!host)return;
+      const w=state.data?.management_outcome_confidence_cohort_trend;
+      if(!allowed('admin') || w?.state==='permission_hidden'){
+        host.innerHTML='<p class="muted">Admin manage permission is required; decision outcomes remain private.</p>';return;
+      }
+      if(!w){host.innerHTML='<p class="muted">Cohort evidence has not been returned by the canonical server.</p>';return;}
+      if(w.state!=='current'){
+        host.innerHTML='<p class="muted" data-owner377-state="'+esc(w.state||'unknown')+'">'+esc(w.reason||'Complete authoritative outcome evidence is unavailable.')+'</p>';return;
+      }
+      const c=Array.isArray(w.cohorts)?w.cohorts:[];
+      host.innerHTML='<div class="owner351-summary">'+c.map(row=>'<div class="owner350-kpi" data-owner377-cohort="'+esc(row.key||'')+'"><span>'+esc(row.key==='latest_30_days'?'Latest 30 days':'Previous 60 days')+'</span><strong>'+esc(row.resolved_or_improved_percent==null?'Not enough evidence':String(row.resolved_or_improved_percent)+'%')+'</strong><small>'+esc(String(row.source_key_denominator??0))+' distinct source keys · '+esc(String(row.recorded_outcomes??0))+' recorded outcomes</small><small>Pending '+esc(String(row.pending??0))+' · recurring '+esc(String(row.recurring??0))+' · overdue follow-ups '+esc(String(row.open_followups_overdue??0))+'</small></div>').join('')+'</div>'+
+        '<p class="muted" data-owner377-trend="'+esc(w.trend_state||'withheld')+'"><strong>Trend:</strong> '+esc(w.trend_state==='comparable'?(w.trend_direction+' by '+Math.abs(Number(w.trend_change_percentage_points||0)).toFixed(1)+' percentage points'):'Not comparable — '+String(w.reason||'insufficient sample'))+'</p>'+
+        '<details><summary>Evidence confidence and authority</summary><p>'+esc(w.cohort_basis||'')+'</p><p>'+esc(w.privacy_boundary||'')+'</p><p>'+esc(w.authority_boundary||'')+'</p><p>Read coverage: '+esc(w.source_coverage_state||'unknown')+' · freshness: '+esc(w.source_freshness_state||'unknown')+'. Counts never rank individual staff or customers.</p></details>';
+    }
+
     function renderCapacityForecast(){
       const host=$('owner353Forecast');if(!host)return;
       const f=state.data?.four_season_capacity_forecast;
@@ -938,6 +956,7 @@
     function render(){
       const m=metrics();
       renderFreshness();
+      renderManagementOutcomeConfidenceCohorts();
       renderCapacityForecast();
       renderFourSeasonCapacityProfitabilityScenarios();
       renderWorkabilityRecovery();

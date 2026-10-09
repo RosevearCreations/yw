@@ -1,0 +1,148 @@
+{
+  "demo_only": true,
+  "disclaimer": "Illustrative service definitions, effort units, and placeholder rate placeholders only. NOT market prices, signed quotes, or approved rate cards.",
+  "currency": "CAD",
+  "rate_source": "Unset; every tenant supplies approved rates, tax rules and cost factors.",
+  "service_families": [
+    {
+      "code": "lawn-mow",
+      "name": "Lawn mowing and edging",
+      "unit": "visit",
+      "seasons": [
+        "spring_summer"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "garden-care",
+      "name": "Garden beds, pruning and weeding",
+      "unit": "hour",
+      "seasons": [
+        "spring_summer",
+        "fall"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "mulch",
+      "name": "Mulch/soil installation",
+      "unit": "cubic_yard",
+      "seasons": [
+        "spring_summer",
+        "fall"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "fall-cleanup",
+      "name": "Fall cleanup and leaf removal",
+      "unit": "visit",
+      "seasons": [
+        "fall"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "snow-plow",
+      "name": "Snow clearing / winter callout",
+      "unit": "visit",
+      "seasons": [
+        "winter"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "ice",
+      "name": "De-icing and salt treatment",
+      "unit": "application",
+      "seasons": [
+        "winter"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "grading",
+      "name": "Small grading/site preparation",
+      "unit": "hour",
+      "seasons": [
+        "spring_summer",
+        "fall"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "patio",
+      "name": "Patios and pavers/hardscaping",
+      "unit": "square_foot",
+      "seasons": [
+        "spring_summer",
+        "fall"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "retaining",
+      "name": "Small retaining wall and masonry work",
+      "unit": "linear_foot",
+      "seasons": [
+        "spring_summer",
+        "fall"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "fencing",
+      "name": "Fencing and light construction",
+      "unit": "linear_foot",
+      "seasons": [
+        "spring_summer",
+        "fall"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    },
+    {
+      "code": "irrigation",
+      "name": "Irrigation diagnosis and repair",
+      "unit": "hour",
+      "seasons": [
+        "spring_summer",
+        "fall"
+      ],
+      "price_cad": null,
+      "estimated_labor_hours": null
+    }
+  ],
+  "price_calculation_plan": "Direct labor burden + materials + equipment + subcontract + disposal + allocated overhead + risk + desired margin; taxes and deposit rules handled by Finance.",
+  "availability_rules": [
+    "No booking on blocked calendars",
+    "Crew skills/certification and shifts must match",
+    "Equipment must not be locked out",
+    "Time off and holidays reserve unavailable capacity",
+    "Workability and service season rules stay authoritative"
+  ],
+  "supported_contract_templates": [
+    "one_time",
+    "weekly",
+    "biweekly",
+    "monthly",
+    "quarterly",
+    "semiannual",
+    "annual",
+    "multi_year",
+    "seasonal",
+    "per_storm",
+    "time_and_materials",
+    "fixed_bid",
+    "milestone"
+  ]
+}
