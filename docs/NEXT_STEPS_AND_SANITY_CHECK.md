@@ -654,7 +654,7 @@ The Owner / Management Command Centre now displays permission-restricted, read-o
 
 Hidden/failed/stale/capped/unknown/insufficient outcome evidence withholds trend claims. Follow-up overdue evidence and recurrence remain recorded source facts, not judgments of employees, customers or the effectiveness of the operation. The view adds no mutation path or new schema and cannot change Jobs, Safety, Equipment, Employment or Finance.
 
-The enlarged Yard Workers / future multi-company landscaping and small-construction platform specification is `docs/LANDSCAPING_SAAS_EXPANSION_377.md` with a non-production demonstration catalog `docs/demo_service_catalog_377.json`. Future tenant provisioning, recurring contract execution, employee compensation, billing, entitlements and accounting posting remain disabled until their respective isolated, reviewed, tested releases.
+The enlarged Yard Workers / future multi-company landscaping and small-construction platform specification is `docs/LANDSCAPING_SAAS_EXPANSION_377.txt` with a non-production demonstration catalog `docs/demo_service_catalog_377.json`. Future tenant provisioning, recurring contract execution, employee compensation, billing, entitlements and accounting posting remain disabled until their respective isolated, reviewed, tested releases.
 
 The next planned autonomous item is **378 — Workability Forecast-vs-Recovery Calibration**.
 
