@@ -68,3 +68,6 @@ Honor already committed items **378–390** from the prior renewal. Do not skip/
 - For accounting: choose external QuickBooks/Xero vs native GL authority and accountant-reviewed tax and payroll compliance model.
 - For email/SMS: explicit verified sender domains/phone numbers, service provider and region-specific consent templates.
 **No manual setup is required to complete item 377.**
+
+## Current section-level Help shell (item 377)
+The main application shell now automatically adds an accessible circled-information Help link alongside section headings, including sections rendered after login. Where a known topic maps to a detailed article it deep-links to that article; otherwise it opens searchable Help. This does not imply that every field-level screenshot or tutorial is complete. Full field-level coverage and role-specific walkthroughs remain in planned item 409.

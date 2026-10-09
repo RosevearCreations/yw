@@ -16,7 +16,7 @@ must(ts,['function buildManagementOutcomeConfidenceCohortTrend','if(!adminVisibl
 const pure=ts.slice(ts.indexOf('function buildManagementOutcomeConfidenceCohortTrend'),ts.indexOf('\nfunction ontarioDateKey',ts.indexOf('function buildManagementOutcomeConfidenceCohortTrend')));
 assert.ok(!/\.(insert|upsert|delete|update)\s*\(/.test(pure),'Cohort must not mutate business records.');
 must(ui,['id="owner377Cohorts"','function renderManagementOutcomeConfidenceCohorts','renderManagementOutcomeConfidenceCohorts();','No improvement claim','Not comparable','data-owner377-trend','/help.html#management-outcome-confidence-cohort-trend'],'owner cohort UI');
-must(help,['id="management-outcome-confidence-cohort-trend"','Both period denominators','capped 500-row source reads','no individual employee ratings','Admin → Owner / Management Command Centre'],'Help');
+must(help,['id="management-outcome-confidence-cohort-trend"','Both period denominators','capped 500-row source reads','No individual employee ratings','Admin → Owner / Management Command Centre'],'Help');
 must(roadmap,['#### **377 — Management Outcome Confidence & Cohort Trend** is implemented','The next planned autonomous item is **378 — Workability Forecast-vs-Recovery Calibration**.','docs/LANDSCAPING_SAAS_EXPANSION_377.md'],'roadmap');
 must(hand,['**377 — Management Outcome Confidence & Cohort Trend** (implemented)','After item 377, that item is 378'],'handoff');
 assert.ok(catalog.demo_only);assert.equal(catalog.currency,'CAD');assert.ok(catalog.service_families.length>=10);

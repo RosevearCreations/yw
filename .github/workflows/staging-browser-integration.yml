@@ -289,6 +289,7 @@ jobs:
       - run: npm run test:browser:production-learning-roadmap-renewal
       - run: npm run test:browser:production-learning-roadmap-renewal-ii
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
+      - run: npm run test:browser:contextual-help
       - run: npm run test:browser:management-decision-outcome-journal
       - run: npm run test:browser:workability-schedule-recovery-outcomes
       - run: npm run test:browser:profile-reference-lifecycle
