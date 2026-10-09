@@ -149,6 +149,85 @@ function buildManagementMetricConfidence(sourceFreshness:Record<string,any>, sou
   return { source_keys:sourceKeys, state:'current', confidence:'high', last_authoritative_update:latest, reason:'All required authoritative sources are current and within their configured query limits.' };
 }
 
+
+function buildManagementOutcomeConfidenceCohortTrend(rows:any[], evidence:any, adminVisible:boolean, nowValue=Date.now()) {
+  // Build 377: source-key-level counts, never people, notes or business payloads.
+  const foundation = {
+    source_key:'management_decision_outcomes',
+    observation_window_days:90,
+    source_coverage_state:String(evidence?.coverage_state||'unknown'),
+    source_freshness_state:String(evidence?.freshness_state||'unknown'),
+    source_row_count:Number(evidence?.row_count||0),
+    query_limit:Number(evidence?.query_limit||0),
+    cohort_basis:'Most recent decision for each canonical source key within each non-overlapping decision_at window',
+    privacy_boundary:'Aggregate source-key outcomes only; no employee ratings, customer names, decision notes or raw source records.',
+    authority_boundary:'Read-only advisory learning; no source mutation, Finance posting, provider delivery, employee evaluation or automatic commitments.'
+  };
+  if(!adminVisible || String(evidence?.freshness_state||'')==='hidden') {
+    return {...foundation,state:'permission_hidden',trend_state:'withheld',reason:'Admin manage permission is required.',cohorts:[]};
+  }
+  if(['source_error','unknown'].includes(String(evidence?.freshness_state||'')) || !evidence) {
+    return {...foundation,state:'source_unavailable',trend_state:'withheld',reason:'Canonical outcome source evidence is unavailable or failed.',cohorts:[]};
+  }
+  if(evidence.coverage_gap===true || Number(evidence.row_count||0)>=Number(evidence.query_limit||Infinity)) {
+    return {...foundation,state:'partial_coverage',trend_state:'withheld',reason:'The journal read reached its query limit; cohort denominators would be incomplete.',cohorts:[]};
+  }
+  if(['stale','timestamp_unavailable'].includes(String(evidence.freshness_state||''))) {
+    return {...foundation,state:'stale_evidence',trend_state:'withheld',reason:'Recorded outcome updates are stale or lack a reliable timestamp.',cohorts:[]};
+  }
+  const now=Number(nowValue);
+  const windows=[
+    {key:'latest_30_days',minDaysAgo:0,maxDaysAgo:30},
+    {key:'prior_60_days',minDaysAgo:30,maxDaysAgo:90}
+  ];
+  const cohorts=windows.map(window=>{
+    const bySource=new Map<string,any>();
+    for(const row of Array.isArray(rows)?rows:[]) {
+      const key=String(row?.source_key||'');
+      const date=Date.parse(String(row?.decision_at||''));
+      const age=(now-date)/86400000;
+      if(!key || !Number.isFinite(date) || age<window.minDaysAgo || age>=window.maxDaysAgo)continue;
+      const prior=bySource.get(key);
+      if(!prior || date>Date.parse(String(prior.decision_at||''))) bySource.set(key,row);
+    }
+    const entries=[...bySource.values()];
+    const counts={pending:0,resolved:0,improved:0,recurring:0,no_change:0,superseded:0,unknown:0};
+    let explicitRecurrence=0,followupOverdue=0,followupScheduled=0;
+    for(const row of entries) {
+      const status=String(row.outcome_status||'unknown');
+      if(Object.prototype.hasOwnProperty.call(counts,status)) counts[status as keyof typeof counts]++;
+      else counts.unknown++;
+      if(row.recurrence_signal===true)explicitRecurrence++;
+      if(status==='pending' && row.followup_due_at) {
+        const due=Date.parse(String(row.followup_due_at));
+        if(Number.isFinite(due)){followupScheduled++;if(due<now)followupOverdue++;}
+      }
+    }
+    const denominator=entries.length;
+    const recorded=denominator-counts.pending-counts.unknown;
+    return {
+      ...window,source_key_denominator:denominator,recorded_outcomes:recorded,
+      ...counts,explicit_recurrence_sources:explicitRecurrence,
+      open_followups_with_due_date:followupScheduled,open_followups_overdue:followupOverdue,
+      resolved_or_improved_percent:denominator>=5?Number(((counts.resolved+counts.improved)*100/denominator).toFixed(1)):null,
+      sufficient_sample:denominator>=5,
+      denominator_note:'Distinct canonical source keys with a decision in this cohort; the most recent decision status is counted once.'
+    };
+  });
+  const [recent,previous]=cohorts;
+  const comparable=recent.sufficient_sample&&previous.sufficient_sample && recent.unknown===0 && previous.unknown===0;
+  const direction=comparable
+    ? (recent.resolved_or_improved_percent! > previous.resolved_or_improved_percent! ? 'higher'
+      : recent.resolved_or_improved_percent! < previous.resolved_or_improved_percent! ? 'lower':'unchanged')
+    : 'withheld';
+  return {...foundation,state:cohorts.every(c=>c.source_key_denominator===0)?'no_recorded_decisions':'current',
+    trend_state:comparable?'comparable':'insufficient_sample',
+    trend_direction:direction,
+    trend_change_percentage_points:comparable?Number((recent.resolved_or_improved_percent!-previous.resolved_or_improved_percent!).toFixed(1)):null,
+    reason:comparable?'Comparable non-overlapping decision cohorts with complete authoritative source coverage.':'No improvement claim: both cohorts need at least five unique source keys, recognized statuses and complete fresh coverage.',
+    cohorts};
+}
+
 function ontarioDateKey(value:unknown) {
   if (!value) return null;
   const raw=String(value);
@@ -3617,8 +3696,12 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
       data_quality_remediation_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans','management_decision_outcomes']),
       workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production']),
+      management_outcome_confidence_cohort_trend:buildManagementMetricConfidence(sourceFreshness,['management_decision_outcomes']),
       four_season_capacity_profitability_scenarios:buildManagementMetricConfidence(sourceFreshness,canFinanceView?['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work','routes','production','material_stock','material_plans','profitability','agreement_profitability']:['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work','routes','production','material_stock','material_plans'])
     };
+    const managementOutcomeConfidenceCohortTrend=buildManagementOutcomeConfidenceCohortTrend(
+      managementDecisionOutcomes,sourceFreshness.management_decision_outcomes,canAdminManage
+    );
     const fourSeasonCapacityForecast=buildFourSeasonCapacityForecast({
       dispatch,visits:recurringVisits,crews,equipment,workability,storms,stormRoutes,seasonalWork
     });
@@ -3722,6 +3805,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       source_visibility:{jobs:canJobsView,finance:canFinanceView,safety:canSafetyView,admin:canAdminManage},
       source_freshness:sourceFreshness,
       management_metric_confidence:metricConfidence,
+      management_outcome_confidence_cohort_trend:managementOutcomeConfidenceCohortTrend,
       four_season_capacity_forecast:fourSeasonCapacityForecast,
       workability_schedule_recovery_outcomes:workabilityScheduleRecoveryOutcomes,
       route_crew_efficiency_evidence:routeCrewEfficiencyEvidence,
