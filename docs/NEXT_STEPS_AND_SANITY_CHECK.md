@@ -647,7 +647,16 @@ The renewed queue contains **377–390** (14 further bounded items). It prioriti
 
 The next planned autonomous item is **377 — Management Outcome Confidence & Cohort Trend**.
 
-#### 377 — Management Outcome Confidence & Cohort Trend
+<!-- Historical item 376 queue marker: #### 377 — Management Outcome Confidence & Cohort Trend -->
+#### **377 — Management Outcome Confidence & Cohort Trend** is implemented
+
+The Owner / Management Command Centre now displays permission-restricted, read-only outcomes from the canonical private management decision journal. It uses the latest decision per distinct source key in non-overlapping latest 30-day and previous 60-day windows. Both period denominators require at least five distinct source keys before a percentage or comparative trend is shown.
+
+Hidden/failed/stale/capped/unknown/insufficient outcome evidence withholds trend claims. Follow-up overdue evidence and recurrence remain recorded source facts, not judgments of employees, customers or the effectiveness of the operation. The view adds no mutation path or new schema and cannot change Jobs, Safety, Equipment, Employment or Finance.
+
+The enlarged Yard Workers / future multi-company landscaping and small-construction platform specification is `docs/LANDSCAPING_SAAS_EXPANSION_377.txt` with a non-production demonstration catalog `docs/demo_service_catalog_377.json`. Future tenant provisioning, recurring contract execution, employee compensation, billing, entitlements and accounting posting remain disabled until their respective isolated, reviewed, tested releases.
+
+The next planned autonomous item is **378 — Workability Forecast-vs-Recovery Calibration**.
 
 Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
 

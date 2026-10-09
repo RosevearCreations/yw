@@ -311,6 +311,16 @@
         </section>
 
 
+
+        <section class="help-section" id="management-outcome-confidence-cohort-trend">
+          <h2>Build 377 — Management Outcome Confidence &amp; Cohort Trend</h2>
+          <p><strong>What we measure:</strong> Admin-only source-key-level management decisions from the canonical private outcome journal. Each source key counts once per window using its latest decision. The latest 30 days and the preceding 60 days never overlap.</p>
+          <p><strong>How to read the numbers:</strong> Both period denominators count distinct source keys, each only once within its window. Resolved or improved percent appears only with at least five source keys in the period, and comparisons need both periods plus complete, fresh, permission-authorized evidence. A larger recorded percentage is not proof of business improvement.</p>
+          <p><strong>Reasons a trend can be withheld:</strong> Source read failures, stale timestamps, hidden Admin permissions, capped 500-row source reads, unknown statuses or too few records. Blank or missing data is not zero.</p>
+          <p><strong>Privacy and authority:</strong> No individual employee ratings, raw decision notes, names or customer details enter this aggregate. Reviewing the metric cannot resolve a Job, authorize Finance posting, send a message or change any business record.</p>
+          <p><strong>Where to find it:</strong> Admin → Owner / Management Command Centre → Management outcome confidence &amp; cohort trend. The circled information link in that section opens this guidance.</p>
+        </section>
+
         <section class="help-section" id="production-learning-roadmap-renewal-ii">
           <h2>Build 376 — Production Learning &amp; Autonomous Roadmap Renewal II</h2>
           <p>Build 376 reviews the 13 capability and outcome-evidence layers delivered in Builds 363–375 and renews the autonomous queue through Build 390. The durable review is <code>docs/production_learning_review_376.json</code>.</p>

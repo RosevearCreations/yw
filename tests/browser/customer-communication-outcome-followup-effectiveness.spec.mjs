@@ -116,7 +116,6 @@ test('Build 372 withholds outcome facts when canonical source reads fail',async(
 test('Build 372 Operations button keeps navigation deliberate',async({page})=>{
   await boot(page);
   await page.locator('.owner372-communication-outcomes button').filter({hasText:'Open Operations'}).click();
-  await page.waitForTimeout(10);
-  expect(await page.evaluate(()=>window.__route)).toBe('admin');
-  expect(await page.evaluate(()=>window.__group)).toBe('operations');
+  await expect.poll(()=>page.evaluate(()=>window.__route)).toBe('admin');
+  await expect.poll(()=>page.evaluate(()=>window.__group)).toBe('operations');
 });
