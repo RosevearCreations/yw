@@ -164,6 +164,7 @@ jobs:
       - run: npm run test:production-learning-roadmap-renewal
       - run: npm run test:production-learning-roadmap-renewal-ii
       - run: npm run test:management-outcome-confidence-cohort-trend
+      - run: npm run test:workability-forecast-recovery-calibration
       - run: npm run test:management-decision-outcome-journal
       - run: npm run test:workability-schedule-recovery-outcomes
       - run: npm run test:help-seo
@@ -289,6 +290,7 @@ jobs:
       - run: npm run test:browser:production-learning-roadmap-renewal
       - run: npm run test:browser:production-learning-roadmap-renewal-ii
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
+      - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
       - run: npm run test:browser:management-decision-outcome-journal
       - run: npm run test:browser:workability-schedule-recovery-outcomes
