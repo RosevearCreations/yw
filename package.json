@@ -189,6 +189,8 @@
     "test:route-crew-efficiency-evidence": "node scripts/route-crew-efficiency-evidence-check.mjs",
     "test:browser:route-crew-efficiency-evidence": "playwright test --config=playwright.config.mjs tests/browser/route-crew-efficiency-evidence.spec.mjs",
     "test:route-plan-actual-stop-sequence-learning": "node scripts/route-plan-actual-stop-sequence-learning-check.mjs",
+    "test:route-stop-sequence-friction-hotspots": "node scripts/route-stop-sequence-friction-hotspots-check.mjs",
+    "test:browser:route-stop-sequence-friction-hotspots": "playwright test --config=playwright.config.mjs tests/browser/route-stop-sequence-friction-hotspots.spec.mjs",
     "test:browser:route-plan-actual-stop-sequence-learning": "playwright test --config=playwright.config.mjs tests/browser/route-plan-actual-stop-sequence-learning.spec.mjs",
     "test:recurring-service-renewal-retention": "node scripts/recurring-service-renewal-retention-check.mjs",
     "test:browser:recurring-service-renewal-retention": "playwright test --config=playwright.config.mjs tests/browser/recurring-service-renewal-retention.spec.mjs",
