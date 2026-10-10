@@ -657,7 +657,8 @@ Hidden/failed/stale/capped/unknown/insufficient outcome evidence withholds trend
 The enlarged Yard Workers / future multi-company landscaping and small-construction platform specification is `docs/LANDSCAPING_SAAS_EXPANSION_377.txt` with a non-production demonstration catalog `docs/demo_service_catalog_377.json`. Future tenant provisioning, recurring contract execution, employee compensation, billing, entitlements and accounting posting remain disabled until their respective isolated, reviewed, tested releases.
 
 <!-- Historical completed-item handoff: The next planned autonomous item is **378 — Workability Forecast-vs-Recovery Calibration**. -->
-The next planned autonomous item is **379 — Route Stop-Sequence Friction Hotspots by Season**.
+<!-- Previous-item handoff: The next planned autonomous item is **379 — Route Stop-Sequence Friction Hotspots by Season**. -->
+The next planned autonomous item is **380 — Recurring Retention Cohort & Renewal Lag**.
 
 Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
 
@@ -669,9 +670,15 @@ The current seven/fourteen-day capacity forecast remains a **forward-looking sna
 
 The next planned autonomous item is **379 — Route Stop-Sequence Friction Hotspots by Season**.
 
-#### 379 — Route Stop-Sequence Friction Hotspots by Season
+#### **379 — Route Stop-Sequence Friction Hotspots by Season** is implemented
 
-Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+The Owner / Management Command Centre now summarizes a 90-day, season-aware read-only route friction review. It groups canonical Dispatch, Route, Production, Timekeeping and Workability observations by distinct route-service day, deduplicating dispatch records. Sequence deviations require full sets of unique planned stop positions and distinct recorded Production start times; incomplete orders are unscored, not assumed exact. Service overruns, recorded delays, return visits and Workability effects retain individual eligible-evidence denominators.
+
+Hotspots require the same friction type on at least two distinct dates for a route and season. Percentages are withheld below five eligible route-days. Source-query errors, capped reads, missing permissions and unreliable freshness withhold the aggregates entirely. Season summaries include separate spring/summer, fall, winter and four-season categories, plus missing-sequence coverage.
+
+The view does not use external routing providers or GPS, infer individual employee performance, mutate scheduled stops or override Safety/Workability decisions. Admin → Owner / Management Command Centre includes a circled-i Help link to the explanation.
+
+The next planned autonomous item is **380 — Recurring Retention Cohort & Renewal Lag**.
 
 #### 380 — Recurring Retention Cohort & Renewal Lag
 

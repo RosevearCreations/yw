@@ -117,6 +117,17 @@
           <p><strong>No employee performance inference:</strong> route and crew evidence may show recorded crew hours, delays, return visits, workability effects and repeated route friction, but it does not score, rank or infer individual employee performance.</p>
         </section>
 
+        <section class="help-section" id="route-stop-sequence-friction-hotspots">
+          <h2>Build 379 — Route Stop-Sequence Friction Hotspots by Season</h2>
+          <p><strong>Where:</strong> Admin → Owner / Management Command Centre → Route stop-sequence friction hotspots by season. Select the circled i Help link in the section.</p>
+          <p><strong>Source and time:</strong> the last 90 days of existing permitted Dispatch, Route, Production, Timekeeping and Workability evidence. Each dispatch item counts once per route-service date. Winter snow/storm, fall cleanup, spring/summer and four-season contexts remain separate.</p>
+          <p><strong>Complete stop sequence only:</strong> at least two stops are required. Every stop must have a unique planned order and distinct recorded Production start time. A partial, tied or missing start is not classified as an exact order or a deviation; its route-day appears in the incomplete evidence count.</p>
+          <p><strong>Hotspot threshold:</strong> the same recorded friction type must recur on two or more distinct service dates for the same route and season. Friction includes recorded stop-order differences, service duration overruns, delays, return visits and Workability effects. These are observations, not explanations for the cause.</p>
+          <p><strong>Eligibility and denominator:</strong> sequence comparison requires a complete route day; duration overrun requires planned and recorded durations; delays/return visits require Production evidence. A rate is withheld until five eligible route-days exist for that friction type. Workability is reported from existing Workability observations. Zero recorded cases is never a claim that a missing source is problem-free.</p>
+          <p><strong>Evidence safeguards:</strong> missing Jobs permission, failed/capped source reads or stale and unreliable sources cause results to be withheld. Only season and route aggregates are shown. There are no customer, property or employee performance ratings in the hotspot view.</p>
+          <p><strong>Human authority:</strong> review the patterns with dispatch operators before making route changes. This view does not change routes, stop order, schedules, Workability or Safety decisions, send messages, or post Finance entries; no GPS or paid route provider is used.</p>
+        </section>
+
         <section class="help-section" id="route-plan-actual-stop-sequence-learning">
           <h2>Build 365 — Route Plan-vs-Actual &amp; Stop-Sequence Learning</h2>
           <p>Build 365 extends the existing route evidence into <strong>repeated plan-versus-actual learning</strong>. It compares planned stop position with the order supported by recorded Production start times, while carrying forward recorded service duration, delay, return-visit, Workability and travel context.</p>
