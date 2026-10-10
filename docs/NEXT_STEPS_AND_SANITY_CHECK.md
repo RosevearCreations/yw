@@ -656,13 +656,18 @@ Hidden/failed/stale/capped/unknown/insufficient outcome evidence withholds trend
 
 The enlarged Yard Workers / future multi-company landscaping and small-construction platform specification is `docs/LANDSCAPING_SAAS_EXPANSION_377.txt` with a non-production demonstration catalog `docs/demo_service_catalog_377.json`. Future tenant provisioning, recurring contract execution, employee compensation, billing, entitlements and accounting posting remain disabled until their respective isolated, reviewed, tested releases.
 
-The next planned autonomous item is **378 — Workability Forecast-vs-Recovery Calibration**.
+<!-- Historical Build 377 handoff: The next planned autonomous item is **378 — Workability Forecast-vs-Recovery Calibration**. -->
+The next planned autonomous item is **379 — Route Stop-Sequence Friction Hotspots by Season**.
 
 Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
 
-#### 378 — Workability Forecast-vs-Recovery Calibration
+#### **378 — Workability Forecast-vs-Recovery Calibration** is implemented
 
-Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+Build 378 adds a read-only 90-day retrospective comparison of recorded proposed reschedule dates and linked full Production completion. It reports explicit denominators and missing/invalid proposals, full completion missing, same-day/earlier/later alignment, and season-level cohorts. Mean absolute day gap and same-day proposal alignment are shown only for five or more complete pairs. Missing, stale, unauthorized or capped Workability/Dispatch/Production sources fail closed.
+
+The current seven/fourteen-day capacity forecast remains a **forward-looking snapshot**, not an immutable historical forecast. Recorded proposed dates may have been revised; these are descriptive plan-alignment proxies, never a true forecast-accuracy or improved-business-performance claim. It cannot automatically change dispatch, workability, safety, finance or customer communication. Accessible Help is under Admin → Owner / Management Command Centre.
+
+The next planned autonomous item is **379 — Route Stop-Sequence Friction Hotspots by Season**.
 
 #### 379 — Route Stop-Sequence Friction Hotspots by Season
 
