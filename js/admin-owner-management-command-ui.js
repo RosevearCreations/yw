@@ -28,6 +28,7 @@
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
       '<section class="admin-panel-block owner375-scenarios" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity mix &amp; profitability scenario evidence</h4><p class="section-subtitle">Build 375 · recorded 14-day seasonal workload mix, shared crew-day evidence, configured route-capacity history, workability recovery, material readiness and permission-scoped profitability.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Evidence scenarios only — no automatic commitments:</strong> missing assumptions stay visible. This view cannot auto-price, dispatch, hire, schedule, purchase, contact suppliers/customers or commit customer/vendor work.</div><div id="owner375Scenarios"></div></section>',
       '<section class="admin-panel-block owner364-recovery" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability-to-schedule recovery outcomes</h4><p class="section-subtitle">Build 364 · 90-day comparison of recorded Workability constraints with later Dispatch and Production evidence, including same-day recovery, rescheduled completion, partial/return visits and unresolved work.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome learning only:</strong> missing schedule or production evidence remains unresolved. This view cannot change a Workability decision, move a schedule item, dispatch crews, complete work or send a customer message.</div><div id="owner364Recovery"></div></section>',
+      '<section class="admin-panel-block owner378-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability forecast vs recovery calibration</h4><p class="section-subtitle">Build 378 · read-only 90-day proposed-reschedule vs recorded-completion alignment, by season. Current 7/14-day forecast is context, not historical prediction evidence.</p></div><a class="secondary" href="/help.html#workability-forecast-recovery-calibration" aria-label="Info: forecast recovery calibration help" title="Calibration Help">ⓘ Help</a></div><div id="owner378Calibration" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
       '<section class="admin-panel-block owner365-sequence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route plan-vs-actual &amp; stop-sequence learning</h4><p class="section-subtitle">Build 365 · repeated route-day learning from planned stop order, recorded production-start order, service duration, recorded delays, return visits and travel evidence already held by YW.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Learning only:</strong> repeated differences become review candidates, never automatic route changes. No worker scoring, GPS inference, stop reordering or dispatch mutation is performed.</div><div id="owner365Sequence"></div></section>',
       '<section class="admin-panel-block owner355-retention" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring service renewal &amp; retention workbench</h4><p class="section-subtitle">Build 355 · renewal windows, holds, repeated skips/delays, unresolved service issues, seasonal rollover and price-review evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only:</strong> this workbench prepares context. It does not renew an agreement, change pricing, send a customer message or create a customer commitment.</div><div id="owner355Retention"></div></section>',
@@ -205,6 +206,38 @@
         return '<div class="owner350-row" data-owner364-state="'+esc(x.outcome_state||'unknown')+'"><strong>'+esc(label+' · '+String(x.outcome_state||'unknown').replaceAll('_',' ').toUpperCase())+'</strong><small>'+esc((x.service_date||'date n/a')+' · '+(x.season_context||'four_season')+' · '+(x.decision_state||x.workability_state||'constraint')+' · '+recovery)+'</small><small>'+esc(x.decision_reason||'Recorded Workability constraint with no additional reason text.')+'</small></div>';
       }).join('');
       host.innerHTML=summary+'<details open><summary>Four-season recovery mix</summary><div class="owner350-list" style="margin-top:8px;">'+(seasons||'<p class="muted">No constrained episodes in the loaded window.</p>')+'</div></details><details style="margin-top:8px;"><summary>Recent recovery evidence</summary><div class="owner350-list" style="margin-top:8px;">'+(outcomes||'<p class="muted">No constrained episodes in the loaded window.</p>')+'</div></details><details style="margin-top:8px;"><summary>Evidence and authority boundaries</summary><p class="muted">'+esc(r.evidence_boundary||'')+'</p><p class="muted">'+esc(r.capacity_boundary||'')+'</p><p class="muted">'+esc(r.weather_boundary||'')+'</p><p class="muted">'+esc(r.authority_boundary||'')+'</p></details>';
+    }
+
+    function renderWorkabilityForecastRecoveryCalibration(){
+      const host=$('owner378Calibration');if(!host)return;
+      const c=state.data?.workability_forecast_recovery_calibration;
+      if(!allowed('jobs')||c?.state==='permission_hidden'){
+        host.innerHTML='<p class="muted">Jobs permission is required to view this comparison.</p>';return;
+      }
+      if(!c){host.innerHTML='<p class="muted">Calibration evidence was not returned by the canonical server.</p>';return;}
+      if(!['current','insufficient_sample'].includes(String(c.state||''))){
+        host.innerHTML='<p class="muted" data-owner378-state="'+esc(c.state||'unknown')+'">'+esc(c.reason||'Calibration evidence unavailable.')+'</p>';return;
+      }
+      const s=c.summary||{};
+      const valid=c.state==='current'&&s.sufficient_sample===true;
+      const asGap=v=>v==null?'Withheld':num(v).toFixed(1)+' day(s)';
+      host.innerHTML='<p class="muted" data-owner378-state="'+esc(c.state)+'">'+esc(c.reason||'')+'</p>'+
+        '<div class="owner351-summary">'+[
+          card('Constrained episodes',num(s.constraint_episodes),'90-day recorded window'),
+          card('Dated proposals',num(s.with_dated_proposal),num(s.missing_or_invalid_proposal)+' missing / invalid'),
+          card('Completed pairs',num(s.completed_with_proposal),num(s.proposals_without_full_completion)+' proposal(s) still without full completion'),
+          card('On planned day',valid?pct(s.on_proposed_day_percent):'Withheld',num(s.on_proposed_day_count)+' recorded matches'),
+          card('Mean absolute date gap',valid?asGap(s.mean_absolute_gap_days):'Withheld','Minimum five complete dated pairs')
+        ].join('')+'</div>'+
+        '<details open><summary>Seasonal plan alignment</summary><div class="owner350-list">'+
+          (Array.isArray(c.seasons)?c.seasons:[]).map(row=>
+            '<div class="owner350-row" data-owner378-season="'+esc(row.season_context||'')+'"><strong>'+
+            esc(String(row.season_context||'four_season').replace('_',' / '))+'</strong><small>'+
+            esc(num(row.completed_with_proposal)+' complete proposal/completion pairs · '+num(row.proposals_without_full_completion)+' outstanding · '+num(row.missing_or_invalid_proposal)+' without valid proposal')+
+            '</small><small>'+esc(row.sufficient_sample?'On planned day: '+pct(row.on_proposed_day_percent)+' · mean absolute gap: '+asGap(row.mean_absolute_gap_days):'Metrics withheld: fewer than five completed pairs')+'</small></div>'
+          ).join('')+'</div></details>'+
+        '<details><summary>Method, freshness and safeguards</summary><p>'+esc(c.comparison_basis||'')+'</p><p>'+esc(c.forecast_boundary||'')+'</p><p>'+esc(c.privacy_boundary||'')+'</p><p>'+esc(c.safety_boundary||'')+'</p><p class="muted">Forward forecast context (NOT a historical prediction): seven-day planned items '+
+        esc(c.current_forecast_context?.seven_day_planned_items??'unavailable')+'; blocked days '+esc(c.current_forecast_context?.seven_day_blocked_days??'unavailable')+'.</p></details>';
     }
 
     function renderRouteCrewEfficiency(){
@@ -960,6 +993,7 @@
       renderCapacityForecast();
       renderFourSeasonCapacityProfitabilityScenarios();
       renderWorkabilityRecovery();
+      renderWorkabilityForecastRecoveryCalibration();
       renderRouteCrewEfficiency();
       renderRouteSequenceLearning();
       renderRecurringRetention();
