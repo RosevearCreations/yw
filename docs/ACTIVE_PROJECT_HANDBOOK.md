@@ -199,9 +199,9 @@ Current direction: After item 373, that item is 374 — Mobile Offline Reliabili
 Current direction: After item 374, that item is 375 — Four-Season Capacity Mix & Profitability Scenario Evidence. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 Current direction: After item 375, that item is 376 — Production Learning & Autonomous Roadmap Renewal II. A proven security, data-integrity or release-truth defect may temporarily take priority, but repair it as a bounded prerequisite and then resume the queue.
 Current direction: After item 376, that item is 377 — Management Outcome Confidence & Cohort Trend.
-Historical Build 377 handoff: After item 377, that item is 378 — Workability Forecast-vs-Recovery Calibration.
+Historical completed-item handoff: After item 377, that item is 378 — Workability Forecast-vs-Recovery Calibration.
 Current direction: After item 378, the next is 379 — Route Stop-Sequence Friction Hotspots by Season.
-Build 378 is a 90-day, fail-closed, Jobs-permissioned aggregate comparison of proposed reschedule dates against actual full completion. At least five valid completed pairs are required for percentages and absolute day gap; no historical forecast snapshots exist, so outcomes are not forecast accuracy. No source writes or externally billed services. Larger SaaS expansion is sequenced in `docs/LANDSCAPING_SAAS_EXPANSION_377.txt` as non-active implementation work until each separate secure release. The 14-item renewal runs through item 390; missing Production outcome evidence is not success evidence.
+The current item is a 90-day, fail-closed, Jobs-permissioned aggregate comparison of proposed reschedule dates against actual full completion. At least five valid completed pairs are required for percentages and absolute day gap; no historical forecast snapshots exist, so outcomes are not forecast accuracy. No source writes or externally billed services. Larger SaaS expansion is sequenced in `docs/LANDSCAPING_SAAS_EXPANSION_377.txt` as non-active implementation work until each separate secure release. The 14-item renewal runs through item 390; missing Production outcome evidence is not success evidence.
 
 For every ordinary release, use this sequence:
 
