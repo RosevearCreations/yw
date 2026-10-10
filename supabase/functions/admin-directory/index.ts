@@ -3445,7 +3445,7 @@ function buildWorkabilityForecastRecoveryCalibration(input:{
   const episodes=Array.isArray(input.recovery.outcomes)?input.recovery.outcomes:[];
   const dateMs=(v:any)=>{
     const str=String(v||'');
-    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(str)) return null;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(str)) return null;
     const ms=Date.parse(str+'T12:00:00Z');
     return Number.isFinite(ms)&&new Date(ms).toISOString().slice(0,10)===str?ms:null;
   };
