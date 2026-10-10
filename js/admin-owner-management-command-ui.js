@@ -31,6 +31,7 @@
       '<section class="admin-panel-block owner378-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability forecast vs recovery calibration</h4><p class="section-subtitle">Build 378 · read-only 90-day proposed-reschedule vs recorded-completion alignment, by season. Current 7/14-day forecast is context, not historical prediction evidence.</p></div><a class="secondary" href="/help.html#workability-forecast-recovery-calibration" aria-label="Info: forecast recovery calibration help" title="Calibration Help">ⓘ Help</a></div><div id="owner378Calibration" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
       '<section class="admin-panel-block owner365-sequence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route plan-vs-actual &amp; stop-sequence learning</h4><p class="section-subtitle">Build 365 · repeated route-day learning from planned stop order, recorded production-start order, service duration, recorded delays, return visits and travel evidence already held by YW.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Learning only:</strong> repeated differences become review candidates, never automatic route changes. No worker scoring, GPS inference, stop reordering or dispatch mutation is performed.</div><div id="owner365Sequence"></div></section>',
+      '<section class="admin-panel-block owner379-hotspots" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route stop-sequence friction hotspots by season</h4><p class="section-subtitle">Build 379 · 90-day route-day comparisons, repeating friction signals and missing sequence evidence, grouped by season. Advisory only; no automatic rerouting.</p></div><a class="secondary" href="/help.html#route-stop-sequence-friction-hotspots" aria-label="Info: seasonal route friction help" title="Seasonal route friction Help">ⓘ Help</a></div><div id="owner379Hotspots" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner355-retention" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring service renewal &amp; retention workbench</h4><p class="section-subtitle">Build 355 · renewal windows, holds, repeated skips/delays, unresolved service issues, seasonal rollover and price-review evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only:</strong> this workbench prepares context. It does not renew an agreement, change pricing, send a customer message or create a customer commitment.</div><div id="owner355Retention"></div></section>',
       '<section class="admin-panel-block owner366-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring renewal conversion &amp; churn outcomes</h4><p class="section-subtitle">Build 366 · recorded renewed, declined, held, expired and unresolved outcomes from recurring agreements, CRM decisions, seasonal rollover and permission-scoped Finance evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Recorded outcomes only:</strong> active or overdue status is not treated as a renewal. This view does not renew/cancel agreements, change pricing, contact customers or resolve complaints.</div><div id="owner366Outcomes"></div></section>',
       '<section class="admin-panel-block owner356-cash" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate-to-cash leakage &amp; margin recovery</h4><p class="section-subtitle">Build 356 · accepted estimate → scheduling → production → approved extras → invoice readiness → invoicing → payment application → collection.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Analytical only:</strong> this workbench does not create invoices, post accounting, apply payments, send collection messages or charge customers.</div><div id="owner356EstimateCash"></div></section>',
@@ -307,6 +308,47 @@
         '<details style="margin-top:8px;"><summary>Stable route-day friction patterns</summary><div class="owner350-list" style="margin-top:8px;">'+(patterns||'<p class="muted">No friction type repeated on two or more loaded service dates.</p>')+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Candidate sequencing review</summary><div class="owner350-list" style="margin-top:8px;">'+(candidates||'<p class="muted">No repeated planned-position versus recorded-start-position difference met the review threshold.</p>')+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Evidence and authority boundaries</summary><p class="muted">'+esc(e.source_scope_boundary||'')+'</p><p class="muted">'+esc(e.travel_boundary||'')+'</p><p class="muted">'+esc(e.learning_boundary||'')+'</p><p class="muted">'+esc(e.performance_boundary||'')+'</p><p class="muted">'+esc(e.authority_boundary||'')+'</p></details>';
+    }
+
+    function renderRouteStopSequenceFrictionHotspots(){
+      const host=$('owner379Hotspots');if(!host)return;
+      const data=state.data?.route_stop_sequence_friction_hotspots;
+      if(!allowed('jobs')||data?.state==='permission_hidden'){
+        host.innerHTML='<p class="muted">Jobs permission is required to view route and seasonal friction evidence.</p>';return;
+      }
+      if(!data){host.innerHTML='<p class="muted">No canonical seasonal hotspot response is available.</p>';return;}
+      if(data.state!=='current'){
+        host.innerHTML='<p class="muted" data-owner379-state="'+esc(data.state||'unavailable')+'">'+esc(data.reason||'Source evidence is unavailable or insufficient.')+'</p>';return;
+      }
+      const sum=data.summary||{};
+      const types=row=>(Array.isArray(row?.friction_types)?row.friction_types:[]).map(t=>
+        '<div class="owner350-row" data-owner379-type="'+esc(t.type||'')+'"><strong>'+esc(t.label||t.type||'Friction')+'</strong>'+
+        '<small>'+esc(num(t.affected_route_days)+' affected / '+num(t.eligible_route_days)+' eligible route-days')+
+        ' · '+esc(t.sufficient_sample?(t.affected_percent==null?'withheld':pct(t.affected_percent)):'rate withheld: fewer than 5 eligible days')+
+        ' · '+esc(t.repeated?'Repeated hotspot (2+ dates)':'Not repeated')+'</small></div>').join('');
+      const seasonRows=(Array.isArray(data.seasons)?data.seasons:[]).map(row=>
+        '<details class="owner350-row" data-owner379-season="'+esc(row.season_context||'')+'"><summary><strong>'+
+        esc(String(row.season_context||'four_season').replace('_',' / '))+'</strong> · '+
+        esc(num(row.route_days)+' route-days, '+num(row.hotspot_route_count)+' hotspot route(s), '+num(row.sequence_comparable_days)+' comparable sequence days')+
+        '</summary><div class="owner350-list">'+types(row)+'</div></details>').join('');
+      const hotspotRows=(Array.isArray(data.hotspots)?data.hotspots:[]).map(row=>
+        '<details class="owner350-row" data-owner379-hotspot="'+esc(row.season_context||'')+'"><summary><strong>'+esc(row.route_name||'Unnamed route')+
+        ' · '+esc(String(row.season_context||'four_season').replace('_',' / '))+'</strong><small>'+
+        esc(num(row.repeated_type_count)+' repeated type(s) across '+num(row.route_days)+' route-days')+
+        '</small></summary><p class="muted">'+esc(num(row.sequence_comparable_days)+' full sequence comparisons; '+
+        num(row.route_days_missing_complete_sequence)+' route-days have incomplete start/order evidence.')+
+        '</p><div class="owner350-list">'+types(row)+'</div></details>').join('');
+      host.innerHTML='<p class="muted" data-owner379-state="current">'+esc(data.reason||'')+'</p>'+
+        '<div class="owner351-summary">'+[
+          card('Route-days observed',num(sum.observed_route_days),'90-day window'),
+          card('Seasonal hotspots',num(sum.hotspot_route_season_groups),'Repeated signals on 2+ distinct dates'),
+          card('Complete sequences',num(sum.complete_sequence_route_days),'Unique planned stops and recorded starts'),
+          card('Sequence incomplete',num(sum.sequence_incomplete_route_days),'Never treated as exact order')
+        ].join('')+'</div>'+
+        '<details open><summary>Four-season patterns</summary><div class="owner350-list">'+seasonRows+'</div></details>'+
+        '<details><summary>Repeating route hotspots</summary><div class="owner350-list">'+(hotspotRows||'<p class="muted">No repeated, supported hotspot in the loaded window.</p>')+'</div></details>'+
+        '<details><summary>Evidence and operating boundaries</summary><p>'+esc(data.evidence_basis||'')+'</p><p>'+esc(data.sequence_boundary||'')+'</p>'+
+        '<p>'+esc(data.outcome_boundary||'')+'</p><p>'+esc(data.privacy_boundary||'')+'</p><p>'+esc(data.authority_boundary||'')+'</p></details>';
     }
 
     function renderRecurringRetention(){
@@ -996,6 +1038,7 @@
       renderWorkabilityForecastRecoveryCalibration();
       renderRouteCrewEfficiency();
       renderRouteSequenceLearning();
+      renderRouteStopSequenceFrictionHotspots();
       renderRecurringRetention();
       renderRecurringOutcomes();
       renderEstimateToCash();
