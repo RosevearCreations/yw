@@ -882,7 +882,7 @@ function buildRouteStopSequenceFrictionHotspots(input:{
   for(const item of itemRows) {
     const route=String(item?.route_id||''),date=String(item?.service_date||'');
     const dispatch=String(item?.dispatch_id||'');
-    if(!route||!dispatch||!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))continue;
+    if(!route||!dispatch||!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
     const key=route+'|'+date;
     const rows=byDay.get(key)||[];
     if(!rows.some((prior:any)=>String(prior.dispatch_id)===dispatch))rows.push(item);
