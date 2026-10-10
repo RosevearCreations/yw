@@ -339,6 +339,16 @@
           <p><strong>Authority boundary:</strong> Schema 236 keeps the journal and read view private behind RLS and service-side authority. The learning loop cannot send customer/provider messages, change Finance, clear Safety or equipment state, dispatch work, create customer/vendor commitments or replace the canonical source workflow.</p>
         </section>
 
+        <section class="help-section" id="workability-forecast-recovery-calibration">
+          <h2>Build 378 — Workability Forecast-vs-Recovery Calibration</h2>
+          <p><strong>Where:</strong> Admin → Owner / Management Command Centre → Workability forecast vs recovery calibration. The circled i Help link opens this explanation.</p>
+          <p><strong>What is compared:</strong> for a constrained Workability episode, a valid dated proposed reschedule is compared with later recorded full Production completion. Each dated proposal and full completion makes one comparable pair. An incomplete or partial visit does not count as full completion.</p>
+          <p><strong>Interpretation:</strong> the 90-day view shows episode counts, missing plans, pending recoveries, completions earlier/on/later than the proposal and separate season aggregates. Same-day alignment and mean absolute day gap are withheld until at least five completed proposal/completion pairs exist within that group. Pending items are not silently counted as completed or as misses.</p>
+          <p><strong>Not historical forecast accuracy:</strong> the seven/fourteen-day capacity forecast is current only. There are no immutable historical forecast snapshots, and proposed dates could have changed after a decision. These figures are retrospective plan-alignment proxies, not proof that a forecast predicted reality or that recovery improved.</p>
+          <p><strong>Missing evidence:</strong> Jobs permission, successful and uncapped Workability/Dispatch/Production queries, current source freshness and valid linked dates are required. Missing, stale, hidden or capped sources block percentages. This view does not show customer names, employee ratings, work orders or notes.</p>
+          <p><strong>Authority:</strong> read only. It cannot change Workability restrictions, move crews, dispatch work, notify a customer, override Safety or post Finance.</p>
+        </section>
+
         <section class="help-section" id="workability-schedule-recovery-outcomes">
           <h2>Build 364 — Workability-to-Schedule Recovery Outcomes</h2>
           <p>Build 364 adds a read-only 90-day outcome view that compares recorded Workability constraints with later Dispatch and Production evidence so management can see whether affected work returned to a workable schedule and reached recorded completion.</p>

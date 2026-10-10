@@ -3418,6 +3418,74 @@ function buildDataQualityRemediationOutcomeRecurrence(input:{
 }
 
 
+// Build 378: retrospective calibration of recorded recovery proposals, not an invented
+// historical forecast. The seven/fourteen-day forecast is a current snapshot only.
+function buildWorkabilityForecastRecoveryCalibration(input:{
+  recovery:any;forwardForecast:any;jobsVisible:boolean;sourceQueriesOk:boolean;
+  coverageComplete:boolean;confidence:any;
+}) {
+  const boundary={
+    comparison_basis:'Recorded proposed reschedule date versus later recorded full Production completion date for the same constrained episode.',
+    forecast_boundary:'The current 7/14-day workability forecast has no immutable historical snapshots. Proposed dates can be revised; this comparison is a retrospective plan-alignment proxy, NOT forecast accuracy or causal improvement.',
+    safety_boundary:'No automatic changes to Workability restrictions, crew dispatch, Safety, customer messages, Production or Finance.',
+    privacy_boundary:'Only season-level aggregate counts and dates-as-day-differences are returned; no job, property, employee, customer or note details.'
+  };
+  const base={...boundary,window_days:90,minimum_completed_pairs:5,source_keys:['workability','dispatch','production'],
+    current_forecast_context:input.forwardForecast?.windows?{
+      seven_day_planned_items:input.forwardForecast.windows.seven_day?.planned_items??null,
+      seven_day_blocked_days:input.forwardForecast.windows.seven_day?.blocked_days??null,
+      fourteen_day_planned_items:input.forwardForecast.windows.fourteen_day?.planned_items??null
+    }:null};
+  if(!input.jobsVisible) return {...base,state:'permission_hidden',reason:'Jobs permission is required.',summary:null,seasons:[]};
+  if(input.sourceQueriesOk===false||input.recovery?.source_queries_ok===false||!input.recovery) {
+    return {...base,state:'source_unavailable',reason:'Workability, Dispatch or Production source query failed.',summary:null,seasons:[]};
+  }
+  if(!input.coverageComplete) return {...base,state:'partial_coverage',reason:'A canonical source read reached its cap; historical denominators are incomplete.',summary:null,seasons:[]};
+  if(String(input.confidence?.state||'')!=='current') return {...base,state:'evidence_unreliable',reason:'A required source is missing, stale, hidden or lacks reliable timestamp evidence.',summary:null,seasons:[]};
+  const episodes=Array.isArray(input.recovery.outcomes)?input.recovery.outcomes:[];
+  const dateMs=(v:any)=>{
+    const str=String(v||'');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(str)) return null;
+    const ms=Date.parse(str+'T12:00:00Z');
+    return Number.isFinite(ms)&&new Date(ms).toISOString().slice(0,10)===str?ms:null;
+  };
+  const completedStates=new Set(['same_day_completed','completed_after_recovery']);
+  const scored=episodes.map((row:any)=>{
+    const planned=dateMs(row?.proposed_reschedule_date);
+    const original=dateMs(row?.service_date);
+    const actual=completedStates.has(String(row?.outcome_state||''))?dateMs(row?.outcome_date):null;
+    const validPlan=planned!==null&&original!==null&&planned>=original;
+    return {season:['spring_summer','fall','winter','four_season'].includes(row?.season_context)?row.season_context:'four_season',
+      plan:validPlan,complete:actual!==null,delta:validPlan&&actual!==null?Math.round((actual-planned)/86400000):null};
+  });
+  const group=(items:typeof scored)=>{
+    const paired=items.filter(row=>row.delta!==null);
+    const absolute=paired.map(row=>Math.abs(Number(row.delta)));
+    const enough=paired.length>=5;
+    return {
+      constraint_episodes:items.length,
+      with_dated_proposal:items.filter(row=>row.plan).length,
+      completed_with_proposal:paired.length,
+      proposals_without_full_completion:items.filter(row=>row.plan&&!row.complete).length,
+      completed_without_dated_proposal:items.filter(row=>row.complete&&!row.plan).length,
+      missing_or_invalid_proposal:items.filter(row=>!row.plan).length,
+      on_proposed_day_count:paired.filter(row=>row.delta===0).length,
+      completed_later_count:paired.filter(row=>Number(row.delta)>0).length,
+      completed_earlier_count:paired.filter(row=>Number(row.delta)<0).length,
+      sufficient_sample:enough,
+      on_proposed_day_percent:enough?Math.round(paired.filter(row=>row.delta===0).length*1000/paired.length)/10:null,
+      mean_absolute_gap_days:enough?Math.round(absolute.reduce((a,b)=>a+b,0)*10/paired.length)/10:null
+    };
+  };
+  const summary=group(scored);
+  const seasons=['spring_summer','fall','winter','four_season'].map(season=>({
+    season_context:season,...group(scored.filter(row=>row.season===season))
+  }));
+  return {...base,state:summary.sufficient_sample?'current':'insufficient_sample',
+    reason:summary.sufficient_sample?'Descriptive proposal-versus-completion alignment only; not a historical forecast skill score.':'At least five completed episodes with a valid dated proposal are required; metrics are withheld.',
+    summary,seasons};
+}
+
 function buildWorkabilityScheduleRecoveryOutcomes(input:{
   workability:any[];dispatch:any[];production:any[];jobsVisible:boolean;sourceQueriesOk:boolean;
 }) {
@@ -3696,6 +3764,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
       data_quality_remediation_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans','management_decision_outcomes']),
       workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production']),
+      workability_forecast_recovery_calibration:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production']),
       management_outcome_confidence_cohort_trend:buildManagementMetricConfidence(sourceFreshness,['management_decision_outcomes']),
       four_season_capacity_profitability_scenarios:buildManagementMetricConfidence(sourceFreshness,canFinanceView?['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work','routes','production','material_stock','material_plans','profitability','agreement_profitability']:['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work','routes','production','material_stock','material_plans'])
     };
@@ -3708,6 +3777,12 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
     const workabilityScheduleRecoveryOutcomes=buildWorkabilityScheduleRecoveryOutcomes({
       workability,dispatch,production,jobsVisible:canJobsView,
       sourceQueriesOk:[workabilityRead,dispatchRead,productionRead].every((r)=>r.query_ok!==false)
+    });
+    const workabilityForecastRecoveryCalibration=buildWorkabilityForecastRecoveryCalibration({
+      recovery:workabilityScheduleRecoveryOutcomes,forwardForecast:fourSeasonCapacityForecast,
+      jobsVisible:canJobsView,sourceQueriesOk:[workabilityRead,dispatchRead,productionRead].every(r=>r.query_ok!==false),
+      coverageComplete:[workabilityRead,dispatchRead,productionRead].every(r=>r.query_ok!==false&&Number(r.row_count||0)<Number(r.limit||1)),
+      confidence:metricConfidence.workability_forecast_recovery_calibration
     });
     const routeCrewEfficiencyEvidence=buildRouteCrewEfficiencyEvidence({
       dispatch,production,timekeeping:timekeepingDetail,workability,routes
@@ -3808,6 +3883,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       management_outcome_confidence_cohort_trend:managementOutcomeConfidenceCohortTrend,
       four_season_capacity_forecast:fourSeasonCapacityForecast,
       workability_schedule_recovery_outcomes:workabilityScheduleRecoveryOutcomes,
+      workability_forecast_recovery_calibration:workabilityForecastRecoveryCalibration,
       route_crew_efficiency_evidence:routeCrewEfficiencyEvidence,
       route_plan_actual_stop_sequence_learning:routePlanActualStopSequenceLearning,
       recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,

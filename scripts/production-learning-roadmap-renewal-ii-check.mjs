@@ -24,7 +24,7 @@ assert.ok(review.renewed_queue.length>=10,'Renewal queue cannot run dry.');
 const expected=[[377,"Management Outcome Confidence & Cohort Trend"],[378,"Workability Forecast-vs-Recovery Calibration"],[379,"Route Stop-Sequence Friction Hotspots by Season"],[380,"Recurring Retention Cohort & Renewal Lag"],[381,"Estimate Margin Drift & Change-Order Follow-through"],[382,"Invoice Aging Handoff & Receivables Leakage"],[383,"Labour Capture Exception Closure & Shift Readiness"],[384,"Fleet Maintenance Cost Trend & Downtime Concentration"],[385,"Material Demand vs Stockout Trend & Season Transition"],[386,"Communication Follow-Up Coverage & Consent-Safe Queue Aging"],[387,"Data-Quality Fix Recurrence & Source Freshness"],[388,"Offline Conflict Closure & Device-Safe Reliability Cohorts"],[389,"Four-Season Crew-Day Mix Constraint & Scenario Backtesting"],[390,"Production Learning & Autonomous Roadmap Renewal III"]];
 assert.deepEqual(review.renewed_queue.map(row=>[row.item,row.title]),expected);
 for(const [number,title] of expected) {
- assert.ok(roadmap.includes('#### '+number+' — '+title),'Missing planned roadmap '+number);
+ assert.ok(roadmap.includes('#### '+number+' — '+title) || roadmap.includes('#### **'+number+' — '+title+'** is implemented'),'Missing planned-or-implemented roadmap '+number);
  assert.ok(handbook.includes('- **'+number+' — '+title+'**'),'Missing handbook queue '+number);
 }
 assert.ok(roadmap.includes('#### **376 — Production Learning & Autonomous Roadmap Renewal II** is implemented'));
