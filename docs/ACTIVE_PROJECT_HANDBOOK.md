@@ -170,7 +170,7 @@ The current autonomous queue continues with:
 - **377 — Management Outcome Confidence & Cohort Trend** (implemented)
 - **378 — Workability Forecast-vs-Recovery Calibration** (implemented)
 - **379 — Route Stop-Sequence Friction Hotspots by Season** (implemented)
-- **380 — Recurring Retention Cohort & Renewal Lag**
+- **380 — Recurring Retention Cohort & Renewal Lag** (implemented)
 - **381 — Estimate Margin Drift & Change-Order Follow-through**
 - **382 — Invoice Aging Handoff & Receivables Leakage**
 - **383 — Labour Capture Exception Closure & Shift Readiness**
@@ -202,6 +202,8 @@ Current direction: After item 376, that item is 377 — Management Outcome Confi
 Historical completed-item handoff: After item 377, that item is 378 — Workability Forecast-vs-Recovery Calibration.
 Historical completed-item handoff: After item 378, the next is 379 — Route Stop-Sequence Friction Hotspots by Season.
 Current direction: After item 379, the next is 380 — Recurring Retention Cohort & Renewal Lag.
+Current direction: After item 380, the next is 381 — Estimate Margin Drift & Change-Order Follow-through.
+Item 380 compares recorded agreement end-date quarterly cohorts and seasonal contexts against explicit renewed/declined decisions only, with signed decision lag, five-decision rate and lag thresholds, 365-day bounds and fail-closed query, coverage, permission and freshness states. Read-only, no messages or agreement changes.
 Item 379 is a read-only 90-day route/season aggregation with full-production-start sequence completeness, two-day repeated-signal threshold, five-day percentage denominators, explicit permission/cap/freshness holds, and no GPS/rerouting authority.
 The current item is a 90-day, fail-closed, Jobs-permissioned aggregate comparison of proposed reschedule dates against actual full completion. At least five valid completed pairs are required for percentages and absolute day gap; no historical forecast snapshots exist, so outcomes are not forecast accuracy. No source writes or externally billed services. Larger SaaS expansion is sequenced in `docs/LANDSCAPING_SAAS_EXPANSION_377.txt` as non-active implementation work until each separate secure release. The 14-item renewal runs through item 390; missing Production outcome evidence is not success evidence.
 
