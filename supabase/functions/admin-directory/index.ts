@@ -1212,6 +1212,84 @@ function buildRecurringRenewalRetentionWorkbench(input:{
 
 
 
+// Build 380 — auditable bounded cohorts from the already classified, permission-scoped renewal outcomes.
+function buildRecurringRetentionCohortRenewalLag(input:{
+  outcomes:any; jobsVisible:boolean; sourceQueriesOk:boolean; coverageComplete:boolean;
+  confidence:any; now?:string;
+}) {
+  const boundary={
+    cohort_boundary:'End-date quarter is the cohort, using recorded end dates within the past 365 days, and a separate recorded seasonal context. Open-ended and future agreements are excluded, not counted as retained.',
+    retention_boundary:'Observed retention is explicit renewed divided by explicit renewed plus explicit declined decisions in the eligible cohort. It is not the retention rate of every customer; held, expired and unresolved are separately counted and never guessed as renewed or churned.',
+    lag_boundary:'Renewal lag is signed calendar days from recorded agreement end date to a valid dated explicit renewed/declined decision. Negative means the recorded decision preceded expiry; positive means after. Missing, invalid, future or implausible decision dates do not supply a lag.',
+    coverage_boundary:'At least five explicit decisions are required for an observed retention percentage and at least five valid dated decisions for mean/median lag. A data-query error, query cap, missing permissions or stale authoritative timestamps withholds all aggregates.',
+    authority_boundary:'Read-only aggregate outcome observations only; no customer identities, personal employee scores, automatic renewals, contact messages, pricing, agreement edits, or Finance changes.'
+  };
+  const common={...boundary,lookback_days:365,minimum_explicit_decisions_for_rate:5,minimum_valid_lags:5};
+  const hold=(state:string,reason:string)=>({...common,state,reason,summary:null,cohorts:[],seasons:[]});
+  if(!input.jobsVisible) return hold('permission_hidden','Jobs permission is required for recurring-service cohorts.');
+  if(!input.sourceQueriesOk||!input.outcomes?.summary) return hold('source_unavailable','Canonical recurring agreement or renewal outcome source is unavailable.');
+  if(!input.coverageComplete) return hold('partial_coverage','One or more required sources reached its query cap; complete cohort denominators are unknown.');
+  if(String(input.confidence?.state||'')!=='current') return hold('evidence_unreliable','Required recurring source evidence is missing, stale or timestamp-unreliable.');
+  const today=/^\d{4}-\d{2}-\d{2}$/.test(String(input.now||''))?String(input.now):ontarioDateKey(new Date())!;
+  const cutoff=addCalendarDays(today,-365);
+  const validDate=(v:any)=>{
+    const value=String(v||'').slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const d=new Date(value+'T12:00:00Z');
+    return Number.isFinite(d.valueOf())&&d.toISOString().slice(0,10)===value?value:null;
+  };
+  const seasonNames=new Set(['spring_summer','fall','winter','four_season']);
+  const rows=Array.isArray(input.outcomes?.outcomes)?input.outcomes.outcomes:[];
+  if(Number(input.outcomes.summary.loaded_agreements||0)>rows.length)
+    return hold('partial_coverage','The canonical renewal outcome response was truncated, so cohort denominators cannot be trusted.');
+  const distinct=new Map<string,any>();
+  for(const row of rows){
+    const id=String(row?.agreement_id||'');
+    if(!id||distinct.has(id))continue;
+    const expiry=validDate(row?.end_date);
+    if(!expiry||expiry<cutoff||expiry>today)continue;
+    const state=String(row?.outcome_state||'unresolved').toLowerCase();
+    const outcome=['renewed','declined','held','expired','unresolved'].includes(state)?state:'unresolved';
+    const season=seasonNames.has(String(row?.season_context||''))?String(row.season_context):'four_season';
+    const quarter=expiry.slice(0,4)+'-Q'+(Math.floor((Number(expiry.slice(5,7))-1)/3)+1);
+    const rawDate=validDate(row?.outcome_date);
+    const decisionDate=['renewed','declined'].includes(outcome)?rawDate:null;
+    const lag=decisionDate&&decisionDate<=today?Math.round((Date.parse(decisionDate+'T12:00:00Z')-Date.parse(expiry+'T12:00:00Z'))/86400000):null;
+    const usableLag=lag!=null&&lag>=-365&&lag<=365?lag:null;
+    distinct.set(id,{quarter,season,outcome,usable_lag_days:usableLag,dated_decision:decisionDate!=null,expiry});
+  }
+  const eligible=[...distinct.values()];
+  const summarize=(arr:typeof eligible)=>{
+    const count=(state:string)=>arr.filter(row=>row.outcome===state).length;
+    const renewed=count('renewed'),declined=count('declined');
+    const explicit=renewed+declined;
+    const lags=arr.filter(row=>['renewed','declined'].includes(row.outcome)&&row.usable_lag_days!=null)
+      .map(row=>Number(row.usable_lag_days)).sort((a,b)=>a-b);
+    const mean=lags.length>=5?Math.round(lags.reduce((a,b)=>a+b,0)*10/lags.length)/10:null;
+    const middle=lags.length>=5?(lags.length%2?lags[(lags.length-1)/2]:
+      Math.round((lags[lags.length/2-1]+lags[lags.length/2])*10/2)/10):null;
+    return {eligible_agreements:arr.length,renewed_count:renewed,declined_count:declined,
+      held_count:count('held'),expired_count:count('expired'),unresolved_count:count('unresolved'),
+      explicit_decision_count:explicit,valid_dated_decisions:lags.length,
+      missing_or_unusable_decision_lags:explicit-lags.length,
+      observed_retention_percent:explicit>=5?Math.round(renewed*1000/explicit)/10:null,
+      average_signed_renewal_lag_days:mean,median_signed_renewal_lag_days:middle,
+      decided_before_end_count:lags.filter(n=>n<0).length,
+      decided_on_end_count:lags.filter(n=>n===0).length,
+      decided_after_end_count:lags.filter(n=>n>0).length};
+  };
+  const cohorts=[...new Set(eligible.map(row=>row.quarter))].sort().map(quarter=>({
+    expiry_cohort:quarter,...summarize(eligible.filter(row=>row.quarter===quarter))
+  }));
+  const seasons=['spring_summer','fall','winter','four_season'].map(season=>({
+    season_context:season,...summarize(eligible.filter(row=>row.season===season))
+  }));
+  return {...common,state:eligible.length?'current':'insufficient_evidence',
+    reason:eligible.length?'Only explicit decisions count toward observed retention; rates and lag aggregates have minimum evidence thresholds.':'No eligible end-dated agreements were recorded in the loaded 365-day window.',
+    summary:{...summarize(eligible),expiry_cohort_count:cohorts.length,excluded_from_end_date_window:rows.length-eligible.length},
+    cohorts,seasons};
+}
+
 function buildRecurringRenewalConversionChurnOutcomes(input:{
   programs:any[];renewals:any[];interactions:any[];rollovers:any[];profitability:any[];
   financeVisible:boolean;sourceQueriesOk:boolean;
@@ -3860,6 +3938,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       route_stop_friction_hotspots:buildManagementMetricConfidence(sourceFreshness,['dispatch','production','timekeeping_detail','routes','workability']),
       recurring_retention:buildManagementMetricConfidence(sourceFreshness,['recurring','recurring_events','crm_renewals','crm_interactions','seasonal_rollover']),
       recurring_outcomes:buildManagementMetricConfidence(sourceFreshness,['recurring','crm_renewals','crm_interactions','seasonal_rollover']),
+      recurring_retention_cohort_lag:buildManagementMetricConfidence(sourceFreshness,['recurring','crm_renewals','crm_interactions','seasonal_rollover']),
       estimate_to_cash:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','dispatch','production','change_orders','receivables','payment_applications','profitability']),
       estimate_accuracy_calibration:buildManagementMetricConfidence(sourceFreshness,['estimate_workflow','estimate_assumptions','estimate_assumption_variance','production','change_orders','job_cost_depth','jobs']),
       completed_invoiced_cash_conversion:buildManagementMetricConfidence(sourceFreshness,['production','closeouts','invoice_candidates','receivables','payment_applications']),
@@ -3911,6 +3990,12 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       programs:recurring,renewals:crmRenewals,interactions:crmInteractions,rollovers:seasonalRollover,
       profitability:agreementProfitability,financeVisible:canFinanceView,
       sourceQueriesOk:[recurringRead,crmRenewalsRead,crmInteractionsRead,seasonalRolloverRead].every((r)=>r.query_ok!==false)
+    });
+    const recurringRetentionCohortRenewalLag=buildRecurringRetentionCohortRenewalLag({
+      outcomes:recurringRenewalConversionChurnOutcomes,jobsVisible:canJobsView,
+      sourceQueriesOk:[recurringRead,crmRenewalsRead,crmInteractionsRead,seasonalRolloverRead].every(r=>r.query_ok!==false),
+      coverageComplete:[recurringRead,crmRenewalsRead,crmInteractionsRead,seasonalRolloverRead].every(r=>r.query_ok!==false&&r.row_count<r.limit),
+      confidence:metricConfidence.recurring_retention_cohort_lag
     });
     const estimateToCashLeakageWorkbench=buildEstimateToCashLeakageWorkbench({
       workflows:estimateWorkflow,dispatch,production,changeOrders,receivables,paymentApplications,
@@ -4004,6 +4089,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       route_stop_sequence_friction_hotspots:routeStopSequenceFrictionHotspots,
       recurring_renewal_retention_workbench:recurringRenewalRetentionWorkbench,
       recurring_renewal_conversion_churn_outcomes:recurringRenewalConversionChurnOutcomes,
+      recurring_retention_cohort_renewal_lag:recurringRetentionCohortRenewalLag,
       estimate_to_cash_leakage_workbench:estimateToCashLeakageWorkbench,
       estimate_accuracy_change_order_margin_calibration:estimateAccuracyChangeOrderMarginCalibration,
       completed_to_invoiced_cycle_time_cash_conversion:completedToInvoicedCashConversion,

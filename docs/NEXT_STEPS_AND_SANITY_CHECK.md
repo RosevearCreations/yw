@@ -658,7 +658,8 @@ The enlarged Yard Workers / future multi-company landscaping and small-construct
 
 <!-- Historical completed-item handoff: The next planned autonomous item is **378 — Workability Forecast-vs-Recovery Calibration**. -->
 <!-- Previous-item handoff: The next planned autonomous item is **379 — Route Stop-Sequence Friction Hotspots by Season**. -->
-The next planned autonomous item is **380 — Recurring Retention Cohort & Renewal Lag**.
+<!-- Previous-item handoff: The next planned autonomous item is **380 — Recurring Retention Cohort & Renewal Lag**. -->
+The next planned autonomous item is **381 — Estimate Margin Drift & Change-Order Follow-through**.
 
 Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
 
@@ -669,6 +670,16 @@ The current item adds a read-only 90-day retrospective comparison of recorded pr
 The current seven/fourteen-day capacity forecast remains a **forward-looking snapshot**, not an immutable historical forecast. Recorded proposed dates may have been revised; these are descriptive plan-alignment proxies, never a true forecast-accuracy or improved-business-performance claim. It cannot automatically change dispatch, workability, safety, finance or customer communication. Accessible Help is under Admin → Owner / Management Command Centre.
 
 The next planned autonomous item is **379 — Route Stop-Sequence Friction Hotspots by Season**.
+
+#### **380 — Recurring Retention Cohort & Renewal Lag** is implemented
+
+The Owner / Management Command Centre adds a read-only 365-day renewal-retention view organized by the recorded expiry quarter and the recorded seasonal service context. Each eligible agreement has one expiry-cohort membership. Open-ended, missing end dates, expired outside the window, and future end dates are excluded, never counted as retained.
+
+Only documented explicit renewed and declined decisions in the existing canonical renewal outcome record contribute to observed retention. Held, expired and unresolved outcomes remain separately reported; observed retention is not the total-customer retention rate. The denominator must contain five or more explicit decisions before the percentage is displayed.
+
+Signed renewal-decision lag compares the recorded end date with a valid dated explicit decision (negative early, zero on end, positive late). Invalid, missing, future or implausible dates have no lag; average and median require at least five valid dated decisions. Source-query failures, capped source reads, truncated outcome payloads, missing Jobs permissions or unreliable freshness withhold all aggregates. No customer messages, subscription mutations or paid providers.
+
+The dashboard includes quarterly and season cohorts, missing-evidence counts and a circled-i Help link. Future roadmap item is **381 — Estimate Margin Drift & Change-Order Follow-through**.
 
 #### **379 — Route Stop-Sequence Friction Hotspots by Season** is implemented
 

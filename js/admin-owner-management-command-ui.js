@@ -34,6 +34,7 @@
       '<section class="admin-panel-block owner379-hotspots" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route stop-sequence friction hotspots by season</h4><p class="section-subtitle">Build 379 · 90-day route-day comparisons, repeating friction signals and missing sequence evidence, grouped by season. Advisory only; no automatic rerouting.</p></div><a class="secondary" href="/help.html#route-stop-sequence-friction-hotspots" aria-label="Info: seasonal route friction help" title="Seasonal route friction Help">ⓘ Help</a></div><div id="owner379Hotspots" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner355-retention" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring service renewal &amp; retention workbench</h4><p class="section-subtitle">Build 355 · renewal windows, holds, repeated skips/delays, unresolved service issues, seasonal rollover and price-review evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only:</strong> this workbench prepares context. It does not renew an agreement, change pricing, send a customer message or create a customer commitment.</div><div id="owner355Retention"></div></section>',
       '<section class="admin-panel-block owner366-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring renewal conversion &amp; churn outcomes</h4><p class="section-subtitle">Build 366 · recorded renewed, declined, held, expired and unresolved outcomes from recurring agreements, CRM decisions, seasonal rollover and permission-scoped Finance evidence.</p></div><button class="secondary" data-owner350-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Recorded outcomes only:</strong> active or overdue status is not treated as a renewal. This view does not renew/cancel agreements, change pricing, contact customers or resolve complaints.</div><div id="owner366Outcomes"></div></section>',
+      '<section class="admin-panel-block owner380-cohorts" style="margin-top:12px;"><div class="owner350-head"><div><h4>Recurring retention cohorts &amp; renewal lag</h4><p class="section-subtitle">Build 380 · agreement-expiry quarterly cohorts, seasonal explicit renewal outcomes, observed retention and dated renewal-decision lag. Read-only; no customer contact or contract change.</p></div><a class="secondary" href="/help.html#recurring-retention-cohort-renewal-lag" aria-label="Info: renewal cohort and lag Help" title="Renewal cohort Help">ⓘ Help</a></div><div id="owner380Cohorts" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner356-cash" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate-to-cash leakage &amp; margin recovery</h4><p class="section-subtitle">Build 356 · accepted estimate → scheduling → production → approved extras → invoice readiness → invoicing → payment application → collection.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Analytical only:</strong> this workbench does not create invoices, post accounting, apply payments, send collection messages or charge customers.</div><div id="owner356EstimateCash"></div></section>',
       '<section class="admin-panel-block owner367-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Estimate accuracy &amp; change-order margin calibration</h4><p class="section-subtitle">Build 367 · accepted estimate baselines versus recorded labour, material, equipment, approved/applied change-order and job-cost closeout evidence.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Calibration evidence only:</strong> recorded variances can identify repeated estimate patterns, but this view never edits assumptions, invents target margins, changes prices, approves extras or posts accounting.</div><div id="owner367Calibration"></div></section>',
       '<section class="admin-panel-block owner368-cash-cycle" style="margin-top:12px;"><div class="owner350-head"><div><h4>Completed-to-invoiced cycle-time &amp; cash conversion</h4><p class="section-subtitle">Build 368 · recorded completion/approved closeout → invoice readiness → A/R invoice creation → payment application and full-collection evidence.</p></div><button class="secondary" data-owner356-open="finance">Open Finance</button></div><div class="notice" style="margin:8px 0;"><strong>Timing evidence only:</strong> this view measures recorded milestones and aging cohorts. It never creates invoices, applies payments, sends collection messages, posts journals or mutates payment-provider state.</div><div id="owner368CashCycle"></div></section>',
@@ -414,6 +415,47 @@
         '<details open><summary>Recorded renewal and churn outcomes</summary><div class="owner350-list" style="margin-top:8px;">'+(outcomes||'<p class="muted">No recurring agreement outcomes are loaded.</p>')+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Outcome mix</summary><div class="owner350-list" style="margin-top:8px;">'+groups+'</div></details>'+
         '<details style="margin-top:8px;"><summary>Classification and authority boundaries</summary><p class="muted">'+esc(o.classification_boundary||'')+'</p><p class="muted">'+esc(o.conversion_boundary||'')+'</p><p class="muted">'+esc(o.churn_boundary||'')+'</p><p class="muted">'+esc(o.finance_boundary||'')+'</p><p class="muted">'+esc(o.authority_boundary||'')+'</p></details>';
+    }
+
+    function renderRecurringRetentionCohortRenewalLag(){
+      const host=$('owner380Cohorts');if(!host)return;
+      const x=state.data?.recurring_retention_cohort_renewal_lag;
+      if(!allowed('jobs')||x?.state==='permission_hidden'){
+        host.innerHTML='<p class="muted">Jobs permission required for recurring retention cohorts.</p>';return;
+      }
+      if(!x){host.innerHTML='<p class="muted">Canonical retention cohort evidence is unavailable.</p>';return;}
+      if(x.state!=='current'){
+        host.innerHTML='<p class="muted" data-owner380-state="'+esc(x.state||'unavailable')+'">'+esc(x.reason||'Evidence is incomplete.')+'</p>';return;
+      }
+      const s=x.summary||{};
+      const rate=n=>n==null?'Withheld (fewer than 5 decisions)':pct(n);
+      const lag=n=>n==null?'Withheld (fewer than 5 dated decisions)':Number(n).toFixed(1)+' day(s)';
+      const details=(row,title,attribute)=>
+        '<details class="owner350-row" '+attribute+'="'+esc(title)+'"><summary><strong>'+esc(title)+'</strong> · '+
+        esc(num(row.eligible_agreements)+' end-dated agreements · '+num(row.explicit_decision_count)+' explicit decisions')+
+        '</summary><p class="muted">Observed retention: '+esc(rate(row.observed_retention_percent))+
+        ' · mean signed lag: '+esc(lag(row.average_signed_renewal_lag_days))+
+        ' · median signed lag: '+esc(lag(row.median_signed_renewal_lag_days))+'</p>'+
+        '<p class="muted">'+esc(num(row.renewed_count)+' renewed · '+num(row.declined_count)+' declined · '+
+        num(row.held_count)+' held · '+num(row.expired_count)+' expired · '+num(row.unresolved_count)+' unresolved')+'</p>'+
+        '<p class="muted">'+esc(num(row.decided_before_end_count)+' before end · '+num(row.decided_on_end_count)+
+        ' on end · '+num(row.decided_after_end_count)+' after end · '+num(row.missing_or_unusable_decision_lags)+' unusable decision lag(s)')+'</p></details>';
+      const byQuarter=(Array.isArray(x.cohorts)?x.cohorts:[]).map(row=>details(row,row.expiry_cohort,'data-owner380-cohort')).join('');
+      const bySeason=(Array.isArray(x.seasons)?x.seasons:[]).map(row=>details(row,String(row.season_context||'four_season').replace('_',' / '),'data-owner380-season')).join('');
+      host.innerHTML='<p class="muted" data-owner380-state="current">'+esc(x.reason||'')+'</p>'+
+        '<div class="owner351-summary">'+[
+          card('End-dated agreements',num(s.eligible_agreements),'Recorded expiry within 365 days'),
+          card('Explicit decisions',num(s.explicit_decision_count),'Renewed plus declined'),
+          card('Observed retention',rate(s.observed_retention_percent),'Not whole-customer retention'),
+          card('Average signed renewal lag',lag(s.average_signed_renewal_lag_days),'Negative: before expiry · positive: after'),
+          card('Lag evidence gaps',num(s.missing_or_unusable_decision_lags),'Invalid, missing or future decision dates'),
+          card('No eligible end date',num(s.excluded_from_end_date_window),'Outside window, future, open ended or missing')
+        ].join('')+'</div>'+
+        '<details open><summary>Quarterly expiry cohorts</summary><div class="owner350-list">'+
+        (byQuarter||'<p class="muted">No eligible expiry cohort found.</p>')+'</div></details>'+
+        '<details><summary>Seasonal retention observations</summary><div class="owner350-list">'+bySeason+'</div></details>'+
+        '<details><summary>Sources, denominators and limits</summary><p>'+esc(x.cohort_boundary||'')+'</p><p>'+esc(x.retention_boundary||'')+
+        '</p><p>'+esc(x.lag_boundary||'')+'</p><p>'+esc(x.coverage_boundary||'')+'</p><p>'+esc(x.authority_boundary||'')+'</p></details>';
     }
 
     function renderEstimateToCash(){
@@ -1041,6 +1083,7 @@
       renderRouteStopSequenceFrictionHotspots();
       renderRecurringRetention();
       renderRecurringOutcomes();
+      renderRecurringRetentionCohortRenewalLag();
       renderEstimateToCash();
       renderEstimateCalibration();
       renderCompletedCashConversion();
