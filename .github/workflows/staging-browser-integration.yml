@@ -147,6 +147,7 @@ jobs:
       - run: npm run test:route-stop-sequence-friction-hotspots
       - run: npm run test:recurring-retention-cohort-renewal-lag
       - run: npm run test:estimate-margin-drift-followthrough
+      - run: npm run test:invoice-aging-handoff
       - run: npm run test:recurring-service-renewal-retention
       - run: npm run test:recurring-renewal-conversion-churn-outcomes
       - run: npm run test:estimate-to-cash-leakage-margin-recovery
