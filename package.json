@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test:repo": "node scripts/repo-smoke-check.mjs",
+    "test:labour-exception-closure": "node scripts/labour-exception-closure-check.mjs",
     "test:invoice-aging-handoff": "node scripts/invoice-aging-handoff-check.mjs",
     "test:estimate-margin-drift-followthrough": "node scripts/estimate-margin-drift-followthrough-check.mjs",
     "test:browser": "playwright test --config=playwright.config.mjs tests/browser/operations-portal.spec.mjs",

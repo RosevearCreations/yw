@@ -792,6 +792,31 @@
         '<details style="margin-top:8px;"><summary>Downtime, cost, replacement &amp; authority boundaries</summary><p class="muted">'+esc(w.downtime_boundary||'')+'</p><p class="muted">'+esc(w.maintenance_boundary||'')+'</p><p class="muted">'+esc(w.cost_boundary||'')+'</p><p class="muted">'+esc(w.replacement_boundary||'')+'</p><p class="muted">'+esc(w.safety_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
 
+    // Build 383: historical work-unit exception closure signals, not live shift scheduling.
+    function buildLabourExceptionClosureReadiness(w){
+      const items=Array.isArray(w?.work_unit_evidence)?w.work_unit_evidence:[];
+      const seen=new Set(),rows=[];
+      for(const r of items){const key=[r.job_id||r.job_code,r.service_date,r.crew_id||r.crew_name].map(v=>String(v||'')).join('|');if(!key.replaceAll('|','')||seen.has(key))continue;seen.add(key);rows.push(r);}
+      const missing=rows.filter(r=>Number(r.time_entry_count||0)===0);
+      const openReview=rows.filter(r=>Number(r.open_review_count||0)>0);
+      const corrections=rows.filter(r=>Number(r.pending_correction_count||0)>0);
+      const ready=rows.filter(r=>r.capture_complete===true&&Number(r.open_review_count||0)===0&&Number(r.pending_correction_count||0)===0);
+      const candidates=rows.filter(r=>r.capture_complete!==true||Number(r.open_review_count||0)>0||Number(r.pending_correction_count||0)>0).slice(0,25);
+      return {loaded:rows.length,ready:ready.length,missing:missing.length,open_review:openReview.length,pending_correction:corrections.length,candidates};
+    }
+    function renderLabourExceptionClosureReadiness(w,meta){
+      if(!meta||meta.state!=='current')return '<p class="muted">Build 383 shift-readiness evidence withheld: source confidence is not current.</p>';
+      const x=buildLabourExceptionClosureReadiness(w);
+      const cases=x.candidates.map(r=>'<div class="owner350-row"><strong>'+esc((r.service_date||'Date unknown')+' · '+(r.crew_name||'Crew unknown')+' · '+(r.job_code||'Job unknown'))+'</strong><small>'+esc('time entries '+Number(r.time_entry_count||0)+' · open reviews '+Number(r.open_review_count||0)+' · pending corrections '+Number(r.pending_correction_count||0))+'</small></div>').join('');
+      return '<section class="admin-panel-block" id="owner383LabourClosure"><div class="owner350-head"><div><h4>Labour exception closure &amp; shift-readiness evidence</h4><p class="section-subtitle">Build 383 · recorded work-unit readiness for payroll review; not a future-shift or workforce availability forecast.</p></div><a class="secondary" href="/help.html#labour-capture-exception-closure-shift-readiness" aria-label="Info: labour closure Help">ⓘ Help</a></div>'+
+        '<div class="owner351-summary">'+card('Evidence complete',x.ready,'of '+x.loaded+' distinct loaded work units','labour_capture_payroll_exceptions')+
+        card('Missing time entries',x.missing,'requires verification','labour_capture_payroll_exceptions')+
+        card('Open reviews',x.open_review,'work units with recorded open review','labour_capture_payroll_exceptions')+
+        card('Pending corrections',x.pending_correction,'work units with recorded correction pending','labour_capture_payroll_exceptions')+'</div>'+
+        '<details><summary>Manual resolution candidates (maximum 25)</summary><div class="owner350-list">'+(cases||'<p class="muted">No unresolved work units in loaded evidence.</p>')+'</div></details>'+
+        '<p class="muted">Historical observed units only. Missing observations and incomplete source coverage cannot establish full payroll or next-shift readiness. This view cannot approve time sheets, close cases, change shifts, rank workers, or authorize payroll.</p></section>';
+    }
+
     function renderLabourCapturePayrollExceptions(){
       const host=$('owner369LabourCapture');if(!host)return;
       const w=state.data?.labour_capture_completeness_payroll_exception_reduction;

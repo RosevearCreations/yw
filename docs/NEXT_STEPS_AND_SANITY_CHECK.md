@@ -667,7 +667,10 @@ Read-only comparison of accepted-estimate calibrated margin changes and approved
 <!-- Historical item 381 handoff: The next planned autonomous item is **382 — Invoice Aging Handoff & Receivables Leakage**. -->
 #### **382 — Invoice Aging Handoff & Receivables Leakage** is implemented
 Read-only recorded-stage invoice handoff, open balances with missingness and bounded review candidates; 8+ day stage age is not due-date delinquency. No financial or messaging mutation.
-The next planned autonomous item is **383 — Labour Capture Exception Closure & Shift Readiness**.
+<!-- Historical item 382 handoff: The next planned autonomous item is **383 — Labour Capture Exception Closure & Shift Readiness**. -->
+#### **383 — Labour Capture Exception Closure & Shift Readiness** is implemented
+Read-only historical work-unit payroll exception closure signals, with incomplete source evidence explicitly withheld, no future-shift forecast, no payroll or timekeeping mutation.
+The next planned autonomous item is **384 — Fleet Maintenance Cost Trend & Downtime Concentration**.
 
 Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
 
