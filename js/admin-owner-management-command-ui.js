@@ -585,6 +585,38 @@
     }
 
 
+    // Build 382: evidence-only A/R handoff and aging; never mutate invoices or balances.
+    function buildInvoiceAgingHandoffReview(c){
+      const rows=Array.isArray(c?.cycle_records)?c.cycle_records:[];
+      const valid=n=>n!==null&&n!==undefined&&n!==''&&Number.isFinite(Number(n));
+      const seen=new Set(),unique=[];
+      for(const r of rows){
+        const id=String(r?.work_order_id||'').trim();if(!id||seen.has(id))continue;
+        seen.add(id);unique.push(r);
+      }
+      const ready=unique.filter(r=>r.current_stage==='invoice_ready_not_invoiced');
+      const openInvoices=unique.filter(r=>r.current_stage==='invoiced_open'&&valid(r.invoice_balance_due)&&Number(r.invoice_balance_due)>0);
+      const unknownBalances=unique.filter(r=>r.current_stage==='invoiced_open'&&!valid(r.invoice_balance_due));
+      const aged=openInvoices.filter(r=>valid(r.current_stage_age_days)&&Number(r.current_stage_age_days)>=8);
+      const unknownAge=openInvoices.filter(r=>!valid(r.current_stage_age_days));
+      const total=openInvoices.reduce((sum,r)=>sum+Number(r.invoice_balance_due),0);
+      const cases=[...ready.map(r=>({r,reason:'Ready but not invoiced'})),...aged.map(r=>({r,reason:'Open invoice aged 8+ days'}))].slice(0,25);
+      return {loaded:unique.length,ready:ready.length,open:openInvoices.length,aged:aged.length,unknown_balance:unknownBalances.length,unknown_age:unknownAge.length,
+        recorded_open_balance:Math.round(total*100)/100,cases};
+    }
+    function renderInvoiceAgingHandoffReview(c,meta){
+      if(!meta||meta.state!=='current')return '<p class="muted">Build 382 invoice aging withheld: source confidence is not current.</p>';
+      const x=buildInvoiceAgingHandoffReview(c);
+      const rows=x.cases.map(({r,reason})=>'<div class="owner350-row"><strong>'+esc(r.work_order_number||'Work order')+'</strong><small>'+esc(reason+' · '+(r.invoice_number||'no invoice number')+' · age '+(r.current_stage_age_days==null?'unknown':r.current_stage_age_days+' days')+' · balance '+(r.invoice_balance_due==null?'unknown':money(r.invoice_balance_due)))+'</small></div>').join('');
+      return '<section class="admin-panel-block" id="owner382InvoiceAging"><div class="owner350-head"><div><h4>Invoice aging handoff &amp; receivables leakage</h4><p class="section-subtitle">Build 382 · read-only handoff candidates from recorded completion-to-cash milestones. No reminders or collection actions.</p></div><a class="secondary" href="/help.html#invoice-aging-handoff-receivables-leakage" aria-label="Info: invoice aging Help">ⓘ Help</a></div>'+
+        '<div class="owner351-summary">'+card('Ready, not invoiced',x.ready,'handoff review','completed_invoiced_cash_conversion')+
+        card('Open invoices',x.open,'known positive balances only','completed_invoiced_cash_conversion')+
+        card('Aged 8+ days',x.aged,'time in recorded stage, not contractual overdue','completed_invoiced_cash_conversion')+
+        card('Recorded open balance',money(x.recorded_open_balance),'unknown balances excluded','completed_invoiced_cash_conversion')+'</div>'+
+        '<p class="muted">Unknown invoice balances: '+x.unknown_balance+'; unknown ages: '+x.unknown_age+'. Loaded records: '+x.loaded+'. This is not a complete A/R ledger, and stage age is not invoice due-date delinquency.</p>'+
+        '<details><summary>Manual review candidates (up to 25)</summary><div class="owner350-list">'+(rows||'<p class="muted">No handoff candidate visible in this bounded response.</p>')+'</div></details></section>';
+    }
+
     function renderCompletedCashConversion(){
       const host=$('owner368CashCycle');if(!host)return;
       const c=state.data?.completed_to_invoiced_cycle_time_cash_conversion;
