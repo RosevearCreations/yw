@@ -496,6 +496,42 @@
     }
 
 
+    // Build 381: bounded, advisory-only drift and change-order follow-through.
+    function buildEstimateMarginDriftFollowThrough(calibration){
+      const rows=Array.isArray(calibration?.calibration_records)?calibration.calibration_records:[];
+      const valid=n=>n!==null&&n!==undefined&&n!==''&&Number.isFinite(Number(n));
+      const safe=rows.filter(r=>r&&String(r.estimate_id||r.work_order_id||'').trim());
+      const seen=new Set(),dedup=safe.filter(r=>{const key=String(r.estimate_id||r.work_order_id);if(seen.has(key))return false;seen.add(key);return true;});
+      const comparable=dedup.filter(r=>valid(r.margin_variance_percentage_points)&&valid(r.adjusted_baseline_cost_total)&&valid(r.actual_known_cost_total));
+      const withChanges=dedup.filter(r=>Number(r.approved_change_order_count||0)>0);
+      const applied=withChanges.filter(r=>Number(r.approved_applied_change_order_count||0)>0);
+      const pending=withChanges.filter(r=>Number(r.approved_applied_change_order_count||0)<Number(r.approved_change_order_count||0));
+      const marginDown=comparable.filter(r=>Number(r.margin_variance_percentage_points)<0);
+      const marginUp=comparable.filter(r=>Number(r.margin_variance_percentage_points)>0);
+      const average=comparable.length>=5?Math.round(comparable.reduce((n,r)=>n+Number(r.margin_variance_percentage_points),0)*100/comparable.length)/100:null;
+      return {reviewed:dedup.length,comparable:comparable.length,average_margin_drift_pp:average,
+        margin_down:marginDown.length,margin_up:marginUp.length,approved_with_change:withChanges.length,
+        with_applied_change:applied.length,approved_not_fully_applied:pending.length,
+        // These are review candidates, never proof of an outstanding contractual obligation.
+        candidates:pending.slice(0,20).map(r=>({estimate:String(r.estimate_number||r.estimate_id||'Estimate'),approved:Number(r.approved_change_order_count),applied:Number(r.approved_applied_change_order_count)}))
+      };
+    }
+    function renderEstimateMarginDriftFollowThrough(c,meta){
+      const s=buildEstimateMarginDriftFollowThrough(c);
+      if(meta&&meta.state!=='current')return '<p class="muted">Build 381: margin trend withheld: evidence confidence is '+esc(meta.state||'unknown')+'.</p>';
+      const avg=s.average_margin_drift_pp===null?'Withheld (fewer than 5 comparable records)':s.average_margin_drift_pp.toFixed(2)+' percentage points';
+      return '<section class="admin-panel-block" id="owner381Drift" aria-label="Build 381 estimate margin drift and change-order follow-through">'+
+        '<div class="owner350-head"><div><h4>Estimate margin drift &amp; change-order follow-through</h4><p class="section-subtitle">Build 381 · recorded comparisons only; missing or unapproved changes are not assumed authorized.</p></div>'+
+        '<a class="secondary" href="/help.html#estimate-margin-drift-change-followthrough" aria-label="Info: Build 381 margin drift help">ⓘ Help</a></div>'+
+        '<div class="owner351-summary">'+card('Compared jobs',s.comparable,'of '+s.reviewed+' accepted estimates','estimate_accuracy_calibration')+
+        card('Average recorded margin drift',avg,'minimum five comparable records','estimate_accuracy_calibration')+
+        card('Margin below estimate',s.margin_down,s.margin_up+' above estimate','estimate_accuracy_calibration')+
+        card('Approved changes not fully applied',s.approved_not_fully_applied,s.with_applied_change+' estimate(s) with applied changes','estimate_accuracy_calibration')+'</div>'+
+        '<details><summary>Review candidates (maximum 20)</summary><div class="owner350-list">'+
+        (s.candidates.map(r=>'<div class="owner350-row"><strong>'+esc(r.estimate)+'</strong><small>'+esc(r.applied+' of '+r.approved+' recorded approved change(s) applied')+'</small></div>').join('')||'<p class="muted">No follow-through candidates in loaded records.</p>')+
+        '</div></details><p class="muted">Source limited to currently loaded accepted-estimate calibration records. This does not measure changes without approvals, claim full population coverage, determine invoice readiness, edit estimates or post Finance.</p></section>';
+    }
+
     function renderEstimateCalibration(){
       const host=$('owner367Calibration');if(!host)return;
       const c=state.data?.estimate_accuracy_change_order_margin_calibration;
