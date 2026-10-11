@@ -172,7 +172,7 @@ The current autonomous queue continues with:
 - **379 — Route Stop-Sequence Friction Hotspots by Season** (implemented)
 - **380 — Recurring Retention Cohort & Renewal Lag** (implemented)
 - **381 — Estimate Margin Drift & Change-Order Follow-through** (implemented)
-- **382 — Invoice Aging Handoff & Receivables Leakage**
+- **382 — Invoice Aging Handoff & Receivables Leakage** (implemented)
 - **383 — Labour Capture Exception Closure & Shift Readiness**
 - **384 — Fleet Maintenance Cost Trend & Downtime Concentration**
 - **385 — Material Demand vs Stockout Trend & Season Transition**
@@ -238,3 +238,5 @@ Do not modify Rosie Dazzlers or Devil n Dove while executing YW work unless the 
 
 Keep only active files in the working tree. Temporary workflows, test-write files, backup/log files, retired Markdown, archive directories and generated schema snapshots are prohibited. Historical comments inside migrations are audit evidence and are not rewritten merely to remove old wording.
 After item 381, the next is 382 — Invoice Aging Handoff & Receivables Leakage.
+
+After item 382, the next is 383 — Labour Capture Exception Closure & Shift Readiness.
