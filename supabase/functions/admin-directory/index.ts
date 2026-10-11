@@ -1230,16 +1230,18 @@ function buildRecurringRetentionCohortRenewalLag(input:{
   if(!input.sourceQueriesOk||!input.outcomes?.summary) return hold('source_unavailable','Canonical recurring agreement or renewal outcome source is unavailable.');
   if(!input.coverageComplete) return hold('partial_coverage','One or more required sources reached its query cap; complete cohort denominators are unknown.');
   if(String(input.confidence?.state||'')!=='current') return hold('evidence_unreliable','Required recurring source evidence is missing, stale or timestamp-unreliable.');
-  const today=/^\\d{4}-\\d{2}-\\d{2}$/.test(String(input.now||''))?String(input.now):ontarioDateKey(new Date())!;
+  const today=/^\d{4}-\d{2}-\d{2}$/.test(String(input.now||''))?String(input.now):ontarioDateKey(new Date())!;
   const cutoff=addCalendarDays(today,-365);
   const validDate=(v:any)=>{
     const value=String(v||'').slice(0,10);
-    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return null;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
     const d=new Date(value+'T12:00:00Z');
     return Number.isFinite(d.valueOf())&&d.toISOString().slice(0,10)===value?value:null;
   };
   const seasonNames=new Set(['spring_summer','fall','winter','four_season']);
   const rows=Array.isArray(input.outcomes?.outcomes)?input.outcomes.outcomes:[];
+  if(Number(input.outcomes.summary.loaded_agreements||0)>rows.length)
+    return hold('partial_coverage','The canonical renewal outcome response was truncated, so cohort denominators cannot be trusted.');
   const distinct=new Map<string,any>();
   for(const row of rows){
     const id=String(row?.agreement_id||'');
