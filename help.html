@@ -146,6 +146,16 @@
           <p><strong>No automatic renewal or messaging:</strong> suggested renewal/contact actions prepare context only. The workbench does not renew an agreement, send a customer message, create a commitment or mutate customer/provider state.</p>
         </section>
 
+        <section class="help-section" id="recurring-retention-cohort-renewal-lag">
+          <h2>Build 380 — Recurring Retention Cohort &amp; Renewal Lag</h2>
+          <p><strong>Where:</strong> Admin → Owner / Management Command Centre → Recurring retention cohorts &amp; renewal lag. Open the circled i Help button beside the panel.</p>
+          <p><strong>Expiry cohort:</strong> each agreement with a valid recorded end date in the past 365 days counts once in its end-date calendar quarter. Seasonal labels are separate (spring/summer, fall, winter, four-season). Missing/open-ended, future and out-of-window end dates are not treated as renewed.</p>
+          <p><strong>Observed retention:</strong> explicitly recorded renewed decisions divided by explicitly recorded renewed plus declined decisions only. Held, expired and unresolved are shown separately. This is an observed renewal decision mix, not the retention rate of all customers or proof of improvement. Percentages require five or more explicit decisions in a cohort.</p>
+          <p><strong>Renewal lag:</strong> signed calendar days from recorded agreement end date to a dated explicit renewal decision: a negative number means the decision was recorded before the end date, zero means on the end date, and a positive number means after. Mean and median require five valid dated decisions. Missing, malformed, future or implausible decision dates are counted as evidence gaps rather than zeros.</p>
+          <p><strong>Safeguards:</strong> missing Jobs permission, failed or capped canonical queries, truncated renewal outcome records and stale/missing source freshness withhold all cohort counts and rates. No Finance permission is required for this non-financial panel.</p>
+          <p><strong>Human authority:</strong> this is read-only operational evidence. No automatic renewal, cancellation, contract edit, customer contact or Finance posting occurs. Check the original agreement, CRM and seasonal decision evidence before contacting a customer or changing an agreement.</p>
+        </section>
+
         <section class="help-section" id="recurring-renewal-conversion-churn-outcomes">
           <h2>Build 366 — Recurring Renewal Conversion &amp; Churn Outcomes</h2>
           <p>Build 366 adds a <strong>read-only outcome layer</strong> over recurring agreements, CRM renewal/contact evidence, seasonal rollover decisions and permission-scoped profitability. It distinguishes recorded renewed, declined, held, expired and unresolved outcomes without converting ordinary active/overdue status into a decision.</p>

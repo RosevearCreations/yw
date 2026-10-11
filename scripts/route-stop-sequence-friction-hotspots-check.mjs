@@ -29,7 +29,7 @@ must(roadmap,['#### **379 — Route Stop-Sequence Friction Hotspots by Season** 
   'The next planned autonomous item is **380 — Recurring Retention Cohort & Renewal Lag**'],'roadmap');
 must(hand,['**379 — Route Stop-Sequence Friction Hotspots by Season** (implemented)',
   'After item 379, the next is 380'],'handbook');
-must(html,['admin-owner-management-command-ui.js?v=2026-10-10b379'],'cache key');
+must(html,['admin-owner-management-command-ui.js?v=2026-10-11b380'],'cache key');
 assert.equal(pkg.scripts['test:route-stop-sequence-friction-hotspots'],'node scripts/route-stop-sequence-friction-hotspots-check.mjs');
 assert.equal(pkg.scripts['test:browser:route-stop-sequence-friction-hotspots'],'playwright test --config=playwright.config.mjs tests/browser/route-stop-sequence-friction-hotspots.spec.mjs');
 must(workflow,['npm run test:route-stop-sequence-friction-hotspots','npm run test:browser:route-stop-sequence-friction-hotspots'],'CI');

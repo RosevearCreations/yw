@@ -28,7 +28,7 @@ must(help,['id="workability-forecast-recovery-calibration"','immutable historica
 must(roadmap,['#### **378 — Workability Forecast-vs-Recovery Calibration** is implemented',
   'The next planned autonomous item is **379 — Route Stop-Sequence Friction Hotspots by Season**'],'roadmap');
 must(hand,['**378 — Workability Forecast-vs-Recovery Calibration** (implemented)','After item 378, the next is 379'],'handoff');
-must(html,['admin-owner-management-command-ui.js?v=2026-10-10b379'],'asset');
+must(html,['admin-owner-management-command-ui.js?v=2026-10-11b380'],'asset');
 assert.equal(pkg.scripts['test:workability-forecast-recovery-calibration'],'node scripts/workability-forecast-recovery-calibration-check.mjs');
 assert.equal(pkg.scripts['test:browser:workability-forecast-recovery-calibration'],'playwright test --config=playwright.config.mjs tests/browser/workability-forecast-recovery-calibration.spec.mjs');
 must(workflow,['npm run test:workability-forecast-recovery-calibration',
