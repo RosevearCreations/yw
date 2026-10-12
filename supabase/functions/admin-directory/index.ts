@@ -2811,6 +2811,103 @@ function buildMaterialsConsumablesSeasonalStockReadiness(input:{
 
 
 
+
+/**
+ * Build 385: demand-event continuity + CURRENT projected stockout exposure.
+ * No historical stockout records are claimed: stock is a current snapshot.
+ */
+function buildMaterialDemandStockoutSeasonTransition(input:{
+  stockReadiness:any;materialPlans:any[];actualUse:any[];materials:any[];
+  jobsVisible:boolean;sourceQueriesOk:boolean;coverageComplete:boolean;today?:string;
+}){
+  const today=input.today||ontarioDateKey(new Date())!;
+  const recentEnd=addCalendarDays(today,-1), recentStart=addCalendarDays(today,-30);
+  const priorEnd=addCalendarDays(today,-31), priorStart=addCalendarDays(today,-60);
+  const period=(start:string,end:string)=>({start,end,actual_events:0,distinct_materials:0,comparable_quantity_events:0,unit_mismatch_events:0});
+  const recent:any=period(recentStart,recentEnd), prior:any=period(priorStart,priorEnd);
+  const month=Number(today.slice(5,7));
+  const currentSeason=month===12||month<=2?'winter':month>=9?'fall':'spring_summer';
+  const nextSeason=currentSeason==='winter'?'spring_summer':currentSeason==='fall'?'winter':'fall';
+  const result:any={
+    generated_at:new Date().toISOString(),source_queries_ok:input.sourceQueriesOk!==false,
+    coverage_complete:input.coverageComplete===true, state:'current',
+    periods:{recent,prior},current_season:currentSeason,next_season:nextSeason,
+    demand_event_delta:null,demand_event_delta_percent:null,
+    seasonal_evidence:[],unknown_dates:0,unlinked_actual_events:0,
+    current_snapshot:{tracked_materials:0,zero_or_negative_stock_materials:0,forecast_shortage_materials:0,
+      unit_mismatch_materials:0,unknown_stock_materials:0,upcoming_transition_attention:0},
+    historical_stockout_trend:'unavailable_no_historical_stock_snapshots',
+    boundary:'Historical demand is the number of recorded actual-use events in two complete 30-day periods, not demand quantity across incompatible units. Current stock-on-hand and 7/14-day projected shortages are one observation and cannot establish a historical stockout trend. Classification is advisory; no inventory, purchase, delivery, dispatch or Finance writes.'
+  };
+  if(!input.jobsVisible){result.state='permission_hidden';return result}
+  if(!result.source_queries_ok){result.state='source_unavailable';return result}
+  if(!result.coverage_complete){result.state='partial_coverage';return result}
+  if(!input.stockReadiness||input.stockReadiness.source_queries_ok!==true){result.state='stock_readiness_unavailable';return result}
+  const catalog=new Map<string,any>();
+  for(const material of input.materials||[])if(material?.id)catalog.set(String(material.id),material);
+  const stocks=new Map<string,any>();
+  for(const row of input.stockReadiness.stock_readiness||[])if(row?.material_id)stocks.set(String(row.material_id),row);
+  const planLine=new Map<string,any>();
+  for(const row of input.materialPlans||[])if(row?.id)planLine.set(String(row.id),row);
+  const seasonRows=new Map<string,any>();
+  const season=(value:string)=>value==='spring_summer'||value==='fall'||value==='winter'?value:'four_season';
+  const ensure=(key:string)=>{
+    if(!seasonRows.has(key))seasonRows.set(key,{
+      season:key,recent_events:0,prior_events:0,current_tracked:0,
+      current_zero_stock:0,forecast_shortage:0,unit_mismatch:0,
+      upcoming_transition:key===nextSeason||key==='four_season'
+    });
+    return seasonRows.get(key);
+  };
+  for(const key of ['spring_summer','fall','winter','four_season'])ensure(key);
+  const seenRecent=new Set<string>(),seenPrior=new Set<string>();
+  for(const ev of input.actualUse||[]){
+    const day=ontarioDateKey(ev?.recorded_at);
+    if(!day){result.unknown_dates++;continue}
+    const target=day>=recentStart&&day<=recentEnd?recent:day>=priorStart&&day<=priorEnd?prior:null;
+    if(!target)continue;
+    const line=planLine.get(String(ev?.material_estimate_line_id||''))||null;
+    if(!line){result.unlinked_actual_events++;continue}
+    const id=String(line.material_id||'');
+    if(!id||!catalog.has(id)){result.unlinked_actual_events++;continue}
+    const stock=stocks.get(id);
+    const bucket=season(String(stock?.seasonal_bucket||'four_season'));
+    const row=ensure(bucket);
+    target.actual_events++;
+    const isRecent=target===recent;
+    row[isRecent?'recent_events':'prior_events']++;
+    (isRecent?seenRecent:seenPrior).add(id);
+    const unit=String(catalog.get(id)?.unit_code||'').trim().toLowerCase().replace(/\\s+/g,'_');
+    const eventUnit=String(ev?.actual_unit||'').trim().toLowerCase().replace(/\\s+/g,'_');
+    if(unit&&eventUnit&&unit===eventUnit)target.comparable_quantity_events++;
+    else target.unit_mismatch_events++;
+  }
+  recent.distinct_materials=seenRecent.size;prior.distinct_materials=seenPrior.size;
+  const valid=(value:any)=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value));
+  for(const stock of stocks.values()){
+    if(!stock?.inventory_tracked)continue;
+    const row=ensure(season(String(stock?.seasonal_bucket||'four_season')));
+    row.current_tracked++;result.current_snapshot.tracked_materials++;
+    if(valid(stock.stock_on_hand)&&Number(stock.stock_on_hand)<=0){
+      row.current_zero_stock++;result.current_snapshot.zero_or_negative_stock_materials++;
+    }else if(!valid(stock.stock_on_hand))result.current_snapshot.unknown_stock_materials++;
+    if(String(stock.readiness_state||'').startsWith('shortage_')){
+      row.forecast_shortage++;result.current_snapshot.forecast_shortage_materials++;
+    }
+    if(Number(stock.unit_mismatch_event_count||0)>0){
+      row.unit_mismatch++;result.current_snapshot.unit_mismatch_materials++;
+    }
+  }
+  for(const r of seasonRows.values())if(r.upcoming_transition)result.current_snapshot.upcoming_transition_attention+=r.forecast_shortage+r.unit_mismatch;
+  result.seasonal_evidence=[...seasonRows.values()];
+  if(recent.actual_events>=5&&prior.actual_events>=5){
+    result.demand_event_delta=recent.actual_events-prior.actual_events;
+    if(prior.actual_events>0)result.demand_event_delta_percent=
+      Math.round(result.demand_event_delta/prior.actual_events*10000)/100;
+  }
+  return result;
+}
+
 function buildMaterialUsageVarianceReorderCalibration(input:{
   materialPlans:any[];actualUse:any[];materials:any[];jobsVisible:boolean;sourceQueriesOk:boolean;
 }) {
@@ -4021,6 +4118,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       equipment_downtime_replacement_readiness:buildManagementMetricConfidence(sourceFreshness,['equipment','maintenance','equipment_use','fleet','maintenance_history','equipment_service_tasks','fleet_downtime_events']),
       fleet_maintenance_cost_trend:buildManagementMetricConfidence(sourceFreshness,['equipment','fleet','maintenance_history','fleet_downtime_events']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
+      material_demand_stockout_transition:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','material_actual_use','dispatch','recurring_visits','seasonal_work']),
       material_usage_variance_reorder_calibration:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','material_actual_use']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
       communication_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_interactions','crm_followups','notification_delivery','closeouts']),
@@ -4111,6 +4209,12 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       materials:materialStock,materialPlans,dispatch,recurringVisits,seasonalWork,jobsVisible:canJobsView,
       sourceQueriesOk:[materialStockRead,materialPlansRead,dispatchRead,recurringVisitsRead,seasonalWorkRead].every((r)=>r.query_ok!==false)
     });
+    const materialDemandStockoutSeasonTransition=buildMaterialDemandStockoutSeasonTransition({
+      stockReadiness:materialsConsumablesSeasonalStockReadiness,
+      materialPlans,actualUse:materialActualUse,materials:materialStock,jobsVisible:canJobsView,
+      sourceQueriesOk:[materialStockRead,materialPlansRead,materialActualUseRead,dispatchRead,recurringVisitsRead,seasonalWorkRead].every((r)=>r.query_ok!==false),
+      coverageComplete:[materialStockRead,materialPlansRead,materialActualUseRead,dispatchRead,recurringVisitsRead,seasonalWorkRead].every((r)=>r.row_count<r.limit)
+    });
     const materialUsageVarianceReorderCalibration=buildMaterialUsageVarianceReorderCalibration({
       materialPlans,actualUse:materialActualUse,materials:materialStock,jobsVisible:canJobsView,
       sourceQueriesOk:[materialStockRead,materialPlansRead,materialActualUseRead].every((r)=>r.query_ok!==false)
@@ -4179,6 +4283,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       equipment_downtime_cost_replacement_readiness:equipmentDowntimeCostReplacementReadiness,
       fleet_maintenance_cost_trend_downtime_concentration:fleetMaintenanceCostTrendDowntimeConcentration,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
+      material_demand_stockout_season_transition:materialDemandStockoutSeasonTransition,
       material_usage_variance_reorder_calibration:materialUsageVarianceReorderCalibration,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
       customer_communication_outcome_followup_effectiveness:customerCommunicationOutcomeFollowUpEffectiveness,
