@@ -2843,6 +2843,7 @@ function buildMaterialDemandStockoutSeasonTransition(input:{
   if(!result.source_queries_ok){result.state='source_unavailable';return result}
   if(!result.coverage_complete){result.state='partial_coverage';return result}
   if(!input.stockReadiness||input.stockReadiness.source_queries_ok!==true){result.state='stock_readiness_unavailable';return result}
+  if(Number(input.stockReadiness.summary?.active_material_count||0)>(input.stockReadiness.stock_readiness||[]).length){result.state='partial_stock_snapshot';return result}
   const catalog=new Map<string,any>();
   for(const material of input.materials||[])if(material?.id)catalog.set(String(material.id),material);
   const stocks=new Map<string,any>();
@@ -2877,8 +2878,8 @@ function buildMaterialDemandStockoutSeasonTransition(input:{
     const isRecent=target===recent;
     row[isRecent?'recent_events':'prior_events']++;
     (isRecent?seenRecent:seenPrior).add(id);
-    const unit=String(catalog.get(id)?.unit_code||'').trim().toLowerCase().replace(/\\s+/g,'_');
-    const eventUnit=String(ev?.actual_unit||'').trim().toLowerCase().replace(/\\s+/g,'_');
+    const unit=String(catalog.get(id)?.unit_code||'').trim().toLowerCase().replace(/\s+/g,'_');
+    const eventUnit=String(ev?.actual_unit||'').trim().toLowerCase().replace(/\s+/g,'_');
     if(unit&&eventUnit&&unit===eventUnit)target.comparable_quantity_events++;
     else target.unit_mismatch_events++;
   }
@@ -2888,10 +2889,12 @@ function buildMaterialDemandStockoutSeasonTransition(input:{
     if(!stock?.inventory_tracked)continue;
     const row=ensure(season(String(stock?.seasonal_bucket||'four_season')));
     row.current_tracked++;result.current_snapshot.tracked_materials++;
-    if(valid(stock.stock_on_hand)&&Number(stock.stock_on_hand)<=0){
+    const raw= catalog.get(String(stock.material_id));
+    const stockKnown=raw&&valid(raw.stock_on_hand);
+    if(stockKnown&&valid(stock.stock_on_hand)&&Number(stock.stock_on_hand)<=0){
       row.current_zero_stock++;result.current_snapshot.zero_or_negative_stock_materials++;
-    }else if(!valid(stock.stock_on_hand))result.current_snapshot.unknown_stock_materials++;
-    if(String(stock.readiness_state||'').startsWith('shortage_')){
+    }else if(!stockKnown||!valid(stock.stock_on_hand))result.current_snapshot.unknown_stock_materials++;
+    if(stockKnown&&String(stock.readiness_state||'').startsWith('shortage_')){
       row.forecast_shortage++;result.current_snapshot.forecast_shortage_materials++;
     }
     if(Number(stock.unit_mismatch_event_count||0)>0){
