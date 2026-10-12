@@ -174,7 +174,7 @@ The current autonomous queue continues with:
 - **381 — Estimate Margin Drift & Change-Order Follow-through** (implemented)
 - **382 — Invoice Aging Handoff & Receivables Leakage** (implemented)
 - **383 — Labour Capture Exception Closure & Shift Readiness** (implemented)
-- **384 — Fleet Maintenance Cost Trend & Downtime Concentration**
+- **384 — Fleet Maintenance Cost Trend & Downtime Concentration** (implemented)
 - **385 — Material Demand vs Stockout Trend & Season Transition**
 - **386 — Communication Follow-Up Coverage & Consent-Safe Queue Aging**
 - **387 — Data-Quality Fix Recurrence & Source Freshness**
@@ -242,3 +242,5 @@ After item 381, the next is 382 — Invoice Aging Handoff & Receivables Leakage.
 After item 382, the next is 383 — Labour Capture Exception Closure & Shift Readiness.
 
 After item 383, the next is 384 — Fleet Maintenance Cost Trend & Downtime Concentration.
+
+After item 384, the next is 385 — Material Demand vs Stockout Trend & Season Transition.
