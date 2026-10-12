@@ -26,7 +26,7 @@ must(directory,[
   "authority_boundary:'Read-only readiness and queue-quality evidence"
 ],'Build 359 server');
 
-const b359=directory.slice(directory.indexOf('function buildCustomerCommunicationReadinessQueue'),directory.indexOf('function buildDataQualityDuplicateOrphanReconciliation'));
+const b359=directory.slice(directory.indexOf('function buildCustomerCommunicationReadinessQueue'),directory.indexOf('function buildCommunicationFollowupConsentAging'));
 assert.ok(b359.length>2500,'Build 359 helper slice missing');
 assert.ok(!/\.(insert|update|delete|upsert)\s*\(/.test(b359),'Build 359 helper must remain read-only');
 assert.ok(!b359.includes('billing_email')&&!b359.includes('contact_email')&&!b359.includes('public_token'),'Build 359 helper must not return customer email/portal-token fields.');

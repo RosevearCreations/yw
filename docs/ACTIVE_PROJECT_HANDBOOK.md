@@ -176,7 +176,7 @@ The current autonomous queue continues with:
 - **383 — Labour Capture Exception Closure & Shift Readiness** (implemented)
 - **384 — Fleet Maintenance Cost Trend & Downtime Concentration** (implemented)
 - **385 — Material Demand vs Stockout Trend & Season Transition** (implemented)
-- **386 — Communication Follow-Up Coverage & Consent-Safe Queue Aging**
+- **386 — Communication Follow-Up Coverage & Consent-Safe Queue Aging** (implemented)
 - **387 — Data-Quality Fix Recurrence & Source Freshness**
 - **388 — Offline Conflict Closure & Device-Safe Reliability Cohorts**
 - **389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting**

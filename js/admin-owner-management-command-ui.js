@@ -45,6 +45,7 @@
       '<section class="admin-panel-block owner371-material-variance" style="margin-top:12px;"><div class="owner350-head"><div><h4>Material usage variance &amp; reorder calibration</h4><p class="section-subtitle">Build 371 · planned estimator quantity versus recorded issue-linked/production actual use, repeated service/season variance and current stock/reorder evidence.</p></div><button class="secondary" data-owner358-open="jobs">Open Materials</button></div><div class="notice" style="margin:8px 0;"><strong>Calibration evidence only:</strong> unit mismatches stay explicit. This view never changes estimator assumptions, stock, reorder points/quantities or target stock and never creates purchases.</div><div id="owner371MaterialVariance"></div></section>',
       '<section class="admin-panel-block owner359-communications" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication readiness &amp; queue quality</h4><p class="section-subtitle">Build 359 · weather/workability, reschedule/ETA, completion, recurring-service, overdue follow-up and invoice-reminder readiness with cross-source duplicate suppression.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Review only — no send:</strong> this queue never emails, texts, publishes updates, reschedules work, retries providers or collects payment. Protected consent and delivery remain separate authority.</div><div id="owner359Communications"></div></section>',
       '<section class="admin-panel-block owner372-communication-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Customer communication outcome &amp; follow-up effectiveness</h4><p class="section-subtitle">Build 372 · recorded CRM outreach/response evidence, follow-up completion and timeliness, completion follow-up outcomes, repeated unresolved outreach and protected provider-delivery state.</p></div><button class="secondary" data-owner359-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome evidence only — no customer score:</strong> sent means provider-delivery evidence, not read/reply proof. Missing responses stay unknown; this view never sends, retries, changes consent or auto-closes CRM work.</div><div id="owner372CommunicationOutcomes"></div></section>',
+      '<section class="admin-panel-block owner386-consent-aging" style="margin-top:12px;"><div class="owner350-head"><div><h4>Communication follow-up coverage &amp; consent-safe queue aging</h4><p class="section-subtitle">Build 386 · due-date aging, source linkage and existing live-update email consent review only.</p></div><a class="secondary" href="/help.html#communication-followup-consent-aging" aria-label="Info: communication follow-up queue Help">ⓘ Help</a></div><div class="notice"><strong>Consent scope:</strong> a live-update email opt-in never authorizes generic CRM follow-ups, SMS or marketing. No message is sent.</div><div id="owner386ConsentAging"></div></section>',
       '<section class="admin-panel-block owner360-data-quality" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality, duplicate &amp; orphan reconciliation workbench</h4><p class="section-subtitle">Build 360 · duplicate customer/property candidates, broken canonical references, cross-module mismatches, stale crew/equipment assignments, and conflicting four-season service tags.</p></div><button class="secondary" data-owner360-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>No destructive auto-fix:</strong> this workbench preserves source IDs and audit history. It cannot merge/delete records, rewrite foreign keys, reassign crews/equipment or clear lockouts.</div><div id="owner360DataQuality"></div></section>',
       '<section class="admin-panel-block owner373-data-quality-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality remediation outcome &amp; recurrence prevention</h4><p class="section-subtitle">Build 373 · stable source-key outcome history for duplicate/orphan, reference, assignment and four-season tag defects using the private management-learning journal.</p></div><button class="secondary" data-owner360-open="operations">Open Management Journal</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome tracking only — no auto-fix:</strong> confirmed resolution requires complete current source coverage; recurring means the same stable quality source key is present after prior resolution or carries recorded recurrence evidence.</div><div id="owner373DataQualityOutcomes"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
@@ -1032,6 +1033,38 @@
     }
 
 
+
+    function renderCommunicationConsentAging(){
+      const host=$('owner386ConsentAging');if(!host)return;
+      const w=state.data?.communication_followup_consent_aging, meta=metricMeta('communication_consent_aging');
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Requires Jobs visibility. No follow-up or customer data is shown.</p>';return;}
+      if(!w||w.state!=='current'||!meta||meta.state!=='current'){
+        host.innerHTML='<p class="muted">Build 386 evidence withheld: '+esc(String(w?.state||meta?.state||'missing').replaceAll('_',' '))+'. Missing, stale, capped and permission-hidden sources are not zero-valued follow-up facts.</p>';return;
+      }
+      const s=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Open follow-ups',num(s.open_followups),'canonical CRM records','communication_consent_aging'),
+        card('Due-date coverage',s.due_date_coverage_percent==null?'Not comparable':pct(s.due_date_coverage_percent),num(s.open_missing_due_date)+' without due date; minimum 5 open for %','communication_consent_aging'),
+        card('Overdue 1–2 days',num(s.overdue_1_2_days),'completed Ontario calendar days','communication_consent_aging'),
+        card('Overdue 3–7 days',num(s.overdue_3_7_days),'recorded CRM due dates','communication_consent_aging'),
+        card('Overdue 8+ days',num(s.overdue_8_plus_days),'review priority only','communication_consent_aging'),
+        card('Consent blocked/unverified',num(s.email_consent_blocked_or_unverified_updates),'protected live-update email outbox only','communication_consent_aging')
+      ].join('')+'</div>';
+      const queue=(w.queue||[]).slice(0,60).map(r=>
+        '<div class="owner350-row"><strong>'+esc(String(r.aging_band||'unknown').replaceAll('_',' ')+' · '+String(r.followup_type||'CRM follow-up'))+'</strong>'+
+        '<small>'+esc('Priority '+(r.priority||'unrecorded')+' · due '+(r.due_at||'not recorded')+' · '+(r.season_context||'season not recorded'))+'</small>'+
+        '<small>'+esc('CRM interaction '+r.interaction_linkage+' · response '+String(r.response_evidence||'not_proven').replaceAll('_',' '))+'</small></div>').join('');
+      const delivery=(w.notification_review||[]).slice(0,40).map(r=>
+        '<div class="owner350-row"><strong>'+esc((r.work_order_number||'Work order')+' · '+String(r.consent_state||'unverified').replaceAll('_',' '))+'</strong>'+
+        '<small>'+esc(String(r.consent_reason||'').replaceAll('_',' ')+' · delivery '+(r.delivery_status||'unknown'))+'</small></div>').join('');
+      host.innerHTML=summary+
+        '<p class="muted">Completed on time '+num(s.completed_on_time)+' · completed late '+num(s.completed_late)+' · timing unknown '+num(s.completed_timing_unknown)+' · unknown statuses '+num(s.open_unknown_status)+'. An inbound response is not consent to send.</p>'+
+        '<details open><summary>Aged CRM follow-up review ('+num(w.queue_total)+')</summary><div class="owner350-list">'+(queue||'<p class="muted">No open follow-ups recorded in this complete source.</p>')+'</div></details>'+
+        '<details><summary>Existing live-update email consent and delivery review ('+num(w.notification_total)+')</summary><div class="owner350-list">'+(delivery||'<p class="muted">No protected outbox rows recorded.</p>')+'</div></details>'+
+        '<p class="muted">'+esc(w.consent_scope||'')+' '+esc(w.response_boundary||'')+' '+esc(w.authority_boundary||'')+'</p>'+
+        (w.queue_truncated||w.notification_truncated?'<p class="muted">Display limited to a bounded subset; counts refer to complete source coverage.</p>':'');
+    }
+
     function renderCommunicationOutcomes(){
       const host=$('owner372CommunicationOutcomes');if(!host)return;
       const w=state.data?.customer_communication_outcome_followup_effectiveness;
@@ -1242,6 +1275,7 @@
       renderMaterialUsageVarianceCalibration();
       renderCommunicationReadiness();
       renderCommunicationOutcomes();
+      renderCommunicationConsentAging();
       renderDataQualityReconciliation();
       renderDataQualityRemediationOutcomes();
       $('owner350Kpis').innerHTML=[
@@ -1295,6 +1329,8 @@
       if(target==='jobs'||target==='finance'){window.YWIRouter?.showSection?.(target);return}
       window.YWIRouter?.showSection?.('admin');
       const group=target==='safety'?'safety':target==='workforce'?'people':'operations';
+      window.YWIAdminHub?.open?.(group);
+      // Reapply once after the router has mounted a new Admin hub, if needed.
       setTimeout(()=>window.YWIAdminHub?.open?.(group),0);
     }
     async function load(){
