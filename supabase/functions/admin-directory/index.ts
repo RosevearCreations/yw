@@ -3268,6 +3268,129 @@ function buildCustomerCommunicationReadinessQueue(input:{
 }
 
 
+/**
+ * Build 386: read-only follow-up coverage and age cohorts using existing
+ * CRM and protected live-update notification sources. No generic consent
+ * inference: outbox consent applies only to its recorded email update.
+ */
+function buildCommunicationFollowupConsentAging(input:{
+  followups:any[];interactions:any[];notificationQueue:any[];
+  jobsVisible:boolean;sourceQueriesOk:boolean;coverageComplete:boolean;confidence?:any;today?:string;
+}) {
+  const today=input.today||ontarioDateKey(new Date())!;
+  const foundation:any={
+    generated_at:new Date().toISOString(),as_of_date:today,
+    source_queries_ok:input.sourceQueriesOk===true,coverage_complete:input.coverageComplete===true,
+    state:'current',
+    consent_scope:'The protected opt-in is solely for the matching live-work-update email notification, not permission for generic CRM follow-up, SMS or marketing.',
+    response_boundary:'A recorded response requires a later inbound CRM interaction linked to the same work order; a delivery or resolved status is not a reply.',
+    age_boundary:'Due-date aging uses completed calendar days in Ontario. Follow-ups with missing due dates cannot be assigned to an aging band. Queue coverage is not delivery success.',
+    authority_boundary:'Review only: no automatic contact, email/SMS, provider retry, change to consent, CRM completion, dispatch, invoice, payment or customer scoring.'
+  };
+  if(!input.jobsVisible)return {...foundation,state:'permission_hidden'};
+  if(!input.sourceQueriesOk)return {...foundation,state:'source_unavailable'};
+  if(!input.coverageComplete)return {...foundation,state:'partial_coverage'};
+  if(input.confidence&&input.confidence.state!=='current')return {...foundation,state:'evidence_uncertain'};
+  const norm=(v:any)=>String(v??'').trim().toLowerCase();
+  const validTime=(v:any)=>{if(!v)return null;const n=new Date(String(v)).getTime();return Number.isFinite(n)?n:null;};
+  const daysAged=(due:string)=>{
+    const day=ontarioDateKey(due);
+    if(!day)return null;
+    return Math.round((Date.parse(today+'T12:00:00Z')-Date.parse(day+'T12:00:00Z'))/86400000);
+  };
+  const byInteraction=new Map<string,any>();
+  const inboundByWorkOrder=new Map<string,any[]>();
+  for(const row of input.interactions||[]){
+    if(row?.id)byInteraction.set(String(row.id),row);
+    if(norm(row?.direction)==='inbound'&&row?.work_order_id){
+      const key=String(row.work_order_id),rows=inboundByWorkOrder.get(key)||[];
+      rows.push(row);inboundByWorkOrder.set(key,rows);
+    }
+  }
+  const notificationByWorkOrder=new Map<string,any[]>();
+  for(const row of input.notificationQueue||[]){
+    if(!row?.work_order_id)continue;
+    const key=String(row.work_order_id),rows=notificationByWorkOrder.get(key)||[];
+    rows.push(row);notificationByWorkOrder.set(key,rows);
+  }
+  const summary:any={
+    loaded_followups:(input.followups||[]).length,open_followups:0,open_with_due_date:0,
+    open_missing_due_date:0,open_unknown_status:0,overdue_1_2_days:0,overdue_3_7_days:0,
+    overdue_8_plus_days:0,due_today_or_next_2_days:0,due_later:0,
+    completed_on_time:0,completed_late:0,completed_timing_unknown:0,cancelled:0,
+    open_without_linked_interaction:0,open_with_recorded_response:0,
+    email_consent_eligible_updates:0,email_consent_blocked_or_unverified_updates:0,
+    delivery_attention_updates:0
+  };
+  const followupRows:any[]=[];
+  for(const row of input.followups||[]){
+    const status=norm(row?.followup_status);
+    if(status==='cancelled'){summary.cancelled++;continue;}
+    if(status==='completed'){
+      const done=validTime(row?.completed_at),due=validTime(row?.due_at);
+      if(done===null||due===null)summary.completed_timing_unknown++;
+      else if(done<=due)summary.completed_on_time++;
+      else summary.completed_late++;
+      continue;
+    }
+    if(!['pending','in_progress','deferred'].includes(status)){summary.open_unknown_status++;continue;}
+    summary.open_followups++;
+    const aged=daysAged(row?.due_at),source=byInteraction.get(String(row?.interaction_id||''))||null;
+    const workOrderId=String(source?.work_order_id||'');
+    const outboundAt=validTime(source?.occurred_at);
+    const replies=(inboundByWorkOrder.get(workOrderId)||[]).filter((r:any)=>{
+      const inboundAt=validTime(r?.occurred_at);
+      return !!workOrderId&&norm(source?.direction)==='outbound'&&outboundAt!==null&&inboundAt!==null&&inboundAt>outboundAt;
+    });
+    if(!source)summary.open_without_linked_interaction++;
+    if(replies.length)summary.open_with_recorded_response++;
+    let aging='due_date_unknown';
+    if(aged===null)summary.open_missing_due_date++;
+    else {
+      summary.open_with_due_date++;
+      if(aged>=8){aging='overdue_8_plus';summary.overdue_8_plus_days++;}
+      else if(aged>=3){aging='overdue_3_7';summary.overdue_3_7_days++;}
+      else if(aged>=1){aging='overdue_1_2';summary.overdue_1_2_days++;}
+      else if(aged>=-2){aging='due_soon_0_2';summary.due_today_or_next_2_days++;}
+      else {aging='due_later';summary.due_later++;}
+    }
+    followupRows.push({
+      followup_id:row?.id||null,interaction_id:row?.interaction_id||null,
+      work_order_id:workOrderId||null,followup_type:row?.followup_type||null,
+      priority:row?.priority||null,season_context:row?.season_context||null,
+      due_at:row?.due_at||null,followup_status:row?.followup_status||null,
+      age_days:aged,aging_band:aging,
+      interaction_linkage:source?'recorded':'missing',
+      response_evidence:replies.length?'later_inbound_recorded':'not_proven'
+    });
+  }
+  // The protected staff outbox is the ONLY surface with explicit live-update
+  // email consent evidence. Never reuse consent to authorize CRM outreach.
+  const updateRows:any[]=[];
+  for(const row of input.notificationQueue||[]){
+    const email=norm(row?.channel)==='email';
+    const permitted=email&&norm(row?.consent_status)==='granted'
+      &&row?.live_work_update_opt_in===true&&row?.contact_email_configured===true;
+    const status=norm(row?.delivery_status);
+    if(permitted)summary.email_consent_eligible_updates++;
+    else summary.email_consent_blocked_or_unverified_updates++;
+    if(['failed','manual_review','retry_scheduled','blocked'].includes(status))summary.delivery_attention_updates++;
+    updateRows.push({
+      outbox_id:row?.id||null,work_order_id:row?.work_order_id||null,
+      work_order_number:row?.work_order_number||null,channel:row?.channel||null,
+      delivery_status:row?.delivery_status||null,consent_state:permitted?'explicit_live_update_email_eligible':'blocked_or_unverified',
+      consent_reason:!email?'unsupported_channel':norm(row?.consent_status)!=='granted'?'consent_not_granted':
+        row?.live_work_update_opt_in!==true?'opt_in_absent':row?.contact_email_configured!==true?'contact_not_configured':'explicit_opt_in_recorded'
+    });
+  }
+  followupRows.sort((a:any,b:any)=>(b.age_days??-999)-(a.age_days??-999)||String(a.followup_id).localeCompare(String(b.followup_id)));
+  summary.due_date_coverage_percent=summary.open_followups>=5?
+    Number((100*summary.open_with_due_date/summary.open_followups).toFixed(1)):null;
+  return {...foundation,summary,queue:followupRows.slice(0,100),queue_total:followupRows.length,
+    queue_truncated:followupRows.length>100,notification_review:updateRows.slice(0,75),
+    notification_total:updateRows.length,notification_truncated:updateRows.length>75};
+}
+
 function buildCustomerCommunicationOutcomeFollowUpEffectiveness(input:{
   interactions:any[];followups:any[];notificationQueue:any[];closeouts:any[];jobsVisible:boolean;sourceQueriesOk:boolean;
 }) {
@@ -4125,6 +4248,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       material_usage_variance_reorder_calibration:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','material_actual_use']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
       communication_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_interactions','crm_followups','notification_delivery','closeouts']),
+      communication_consent_aging:buildManagementMetricConfidence(sourceFreshness,['crm_interactions','crm_followups','notification_delivery']),
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
       data_quality_remediation_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans','management_decision_outcomes']),
       workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production']),
@@ -4231,6 +4355,12 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       interactions:crmInteractions,followups:crmFollowups,notificationQueue,closeouts,jobsVisible:canJobsView,
       sourceQueriesOk:[crmInteractionsRead,crmFollowupsRead,notificationQueueRead,closeoutsRead].every((r)=>r.query_ok!==false)
     });
+    const communicationConsentAging=buildCommunicationFollowupConsentAging({
+      followups:crmFollowups,interactions:crmInteractions,notificationQueue,jobsVisible:canJobsView,
+      sourceQueriesOk:[crmFollowupsRead,crmInteractionsRead,notificationQueueRead].every(r=>r.query_ok!==false),
+      coverageComplete:[crmFollowupsRead,crmInteractionsRead,notificationQueueRead].every(r=>r.row_count<r.limit),
+      confidence:metricConfidence.communication_consent_aging
+    });
     const fourSeasonScenarioReads=[dispatchRead,recurringVisitsRead,crewsRead,equipmentRead,workabilityRead,stormsRead,stormRoutesRead,seasonalWorkRead,routesRead,productionRead,materialStockRead,materialPlansRead,recurringRead];
     if(canFinanceView){fourSeasonScenarioReads.push(profitabilityRead,agreementProfitabilityRead)}
     const fourSeasonCapacityProfitabilityScenarioEvidence=buildFourSeasonCapacityProfitabilityScenarioEvidence({
@@ -4290,6 +4420,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       material_usage_variance_reorder_calibration:materialUsageVarianceReorderCalibration,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
       customer_communication_outcome_followup_effectiveness:customerCommunicationOutcomeFollowUpEffectiveness,
+      communication_followup_consent_aging:communicationConsentAging,
       data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
       data_quality_remediation_outcome_recurrence:dataQualityRemediationOutcomeRecurrence,
       four_season_capacity_profitability_scenario_evidence:fourSeasonCapacityProfitabilityScenarioEvidence,

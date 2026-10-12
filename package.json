@@ -6,6 +6,7 @@
   "scripts": {
     "test:repo": "node scripts/repo-smoke-check.mjs",
     "test:material-demand-stockout-transition": "node scripts/material-demand-stockout-transition-check.mjs",
+    "test:communication-followup-consent-aging": "node scripts/communication-followup-consent-aging-check.mjs",
     "test:fleet-maintenance-cost-trend": "node scripts/fleet-maintenance-cost-trend-check.mjs",
     "test:labour-exception-closure": "node scripts/labour-exception-closure-check.mjs",
     "test:invoice-aging-handoff": "node scripts/invoice-aging-handoff-check.mjs",
