@@ -720,6 +720,32 @@
 
 
 
+    // Build 384: read-only, period-bounded fleet evidence sourced from canonical admin response.
+    function renderFleetMaintenanceCostTrend(w){
+      if(!w||w.state!=='current')return '<p class="muted">Build 384 comparison withheld: '+esc(String(w?.state||'evidence unavailable').replaceAll('_',' '))+'. Incomplete or permission-hidden evidence is not treated as zero.</p>';
+      const r=w.recent||{},p=w.prior||{},x=w.summary||{};
+      const costTrend=x.recorded_cost_delta==null?'Withheld (fewer than 5 priced records in either window)':money(x.recorded_cost_delta)+(x.recorded_cost_delta_percent==null?' · baseline zero/unknown':' · '+pct(x.recorded_cost_delta_percent));
+      const share=x.downtime_hours_concentration_percent==null?'Withheld (insufficient or undated events)':pct(x.downtime_hours_concentration_percent);
+      const row=(label,v)=>'<div class="owner350-row"><strong>'+esc(label+' · '+(v.start||'')+' to '+(v.end||''))+'</strong>'+
+        '<small>'+esc('Maintenance history: '+num(v.maintenance_records)+' events, '+num(v.priced_maintenance_records)+' priced · recorded cost '+money(v.recorded_maintenance_cost))+'</small>'+
+        '<small>'+esc('Downtime starts: '+num(v.downtime_events)+' · observed hours '+num(v.dated_downtime_hours)+' h · unknown-duration '+num(v.unknown_downtime_hours))+'</small></div>';
+      const assets=(w.concentration||[]).slice(0,25).map(a=>
+        '<div class="owner350-row" data-owner384-asset="'+esc(a.equipment_item_id||'')+'"><strong>'+esc(a.equipment_name||'Fleet equipment')+'</strong>'+
+        '<small>'+esc(num(a.events)+' downtime start(s) · '+num(a.known_duration_events)+' known-duration · '+num(a.recorded_hours)+' observed h')+'</small>'+
+        '<small>'+esc(num(a.priced_records)+' priced maintenance event(s) · '+money(a.maintenance_cost)+' recorded history cost')+'</small></div>').join('');
+      return '<section class="admin-panel-block" id="owner384FleetTrend"><div class="owner350-head"><div>'+
+        '<h4>Fleet maintenance cost trend &amp; downtime concentration</h4><p class="section-subtitle">Build 384 · two consecutive 90-day recorded periods; advisory evidence only.</p></div>'+
+        '<a class="secondary" href="/help.html#fleet-maintenance-cost-trend-downtime-concentration" aria-label="Info: fleet trend Help">ⓘ Help</a></div>'+
+        '<div class="owner351-summary">'+
+        card('Fleet registry assets',num(x.fleet_assets),'registered fleet IDs in loaded sources','fleet_maintenance_cost_trend')+
+        card('90-day maintenance cost change',costTrend,'recent versus prior recorded history','fleet_maintenance_cost_trend')+
+        card('Top-three downtime share',share,'observed fleet hours, not fleet availability','fleet_maintenance_cost_trend')+
+        card('Known downtime durations',num(x.known_duration_events),'events with valid dated intervals','fleet_maintenance_cost_trend')+'</div>'+
+        '<div class="owner350-list">'+row('Recent 90 days',r)+row('Previous 90 days',p)+'</div>'+
+        '<details><summary>Fleet asset concentration (up to 25)</summary><div class="owner350-list">'+(assets||'<p class="muted">No dated fleet maintenance or downtime evidence is available.</p>')+'</div></details>'+
+        '<p class="muted">'+esc(w.boundary||'')+'</p></section>';
+    }
+
     function renderEquipmentDowntimeReplacementReadiness(){
       const host=$('owner370EquipmentLifecycle');if(!host)return;
       const w=state.data?.equipment_downtime_cost_replacement_readiness;
