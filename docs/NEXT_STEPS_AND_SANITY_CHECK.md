@@ -670,7 +670,12 @@ Read-only recorded-stage invoice handoff, open balances with missingness and bou
 <!-- Historical item 382 handoff: The next planned autonomous item is **383 — Labour Capture Exception Closure & Shift Readiness**. -->
 #### **383 — Labour Capture Exception Closure & Shift Readiness** is implemented
 Read-only historical work-unit payroll exception closure signals, with incomplete source evidence explicitly withheld, no future-shift forecast, no payroll or timekeeping mutation.
-The next planned autonomous item is **384 — Fleet Maintenance Cost Trend & Downtime Concentration**.
+<!-- Historical item 383 handoff: The next planned autonomous item is **384 — Fleet Maintenance Cost Trend & Downtime Concentration**. -->
+#### **384 — Fleet Maintenance Cost Trend & Downtime Concentration** is implemented
+
+The Owner Management fleet lifecycle view now compares recorded history maintenance costs and fleet downtime starts/durations in consecutive 90-day windows using canonical timestamped sources. Trend percentage/absolute delta is withheld without five priced maintenance-history events in each window. Top-three downtime concentration is withheld below five known-duration events or when recorded durations are missing. Source errors and capped source reads fail closed. Separate all-time registry cost and job Finance context are never treated as period cost; no fleet, Safety, maintenance, payment or purchasing mutation.
+
+The next planned autonomous item is **385 — Material Demand vs Stockout Trend & Season Transition**.
 
 Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
 
