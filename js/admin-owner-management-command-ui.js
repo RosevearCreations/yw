@@ -886,6 +886,35 @@
         '<details style="margin-top:8px;"><summary>Matching, lateness, privacy &amp; authority boundaries</summary><p class="muted">'+esc(w.matching_boundary||'')+'</p><p class="muted">'+esc(w.late_boundary||'')+'</p><p class="muted">'+esc(w.reduction_boundary||'')+'</p><p class="muted">'+esc(w.privacy_boundary||'')+'</p><p class="muted">'+esc(w.safety_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
 
+    // Build 385: recorded historical demand-event coverage versus current, non-historical stock snapshot.
+    function renderMaterialDemandStockoutTransition(){
+      const w=state.data?.material_demand_stockout_season_transition;
+      const meta=metricMeta('material_demand_stockout_transition');
+      if(!allowed('jobs'))return '<p class="muted">Build 385 materials evidence requires Jobs visibility.</p>';
+      if(!w||w.state!=='current'||!meta||meta.state!=='current')
+        return '<p class="muted">Build 385 seasonal demand comparison withheld: '+esc(String(w?.state||meta?.state||'missing evidence').replaceAll('_',' '))+'. Source errors, capped queries, missing or stale evidence cannot be treated as zero.</p>';
+      const recent=w.periods?.recent||{},prior=w.periods?.prior||{},snap=w.current_snapshot||{};
+      const delta=w.demand_event_delta==null?'Withheld — fewer than 5 linked recorded events in either period':
+        (Number(w.demand_event_delta)>0?'+':'')+num(w.demand_event_delta)+' event(s) · '+pct(w.demand_event_delta_percent);
+      const seasons=(w.seasonal_evidence||[]).slice(0,4).map(r=>
+        '<div class="owner350-row"><strong>'+esc(String(r.season||'four_season').replaceAll('_',' / '))+(r.upcoming_transition?' · next-season review':'')+'</strong>'+
+        '<small>'+esc('Recorded actual-use events: prior '+num(r.prior_events)+' → recent '+num(r.recent_events))+'</small>'+
+        '<small>'+esc('Current tracked materials '+num(r.current_tracked)+' · currently out of stock '+num(r.current_zero_stock)+' · projected 14-day shortages '+num(r.forecast_shortage)+' · unit mismatches '+num(r.unit_mismatch))+'</small></div>').join('');
+      return '<section id="owner385DemandStockout" class="admin-panel-block" style="margin-top:12px;">'+
+        '<div class="owner350-head"><div><h4>Material demand vs stockout &amp; season transition</h4><p class="section-subtitle">Build 385 · actual-use event trend across two complete 30-day windows; current stock snapshot is not historical stockout trend.</p></div>'+
+        '<a class="secondary" href="/help.html#material-demand-stockout-season-transition" aria-label="Info: material demand trend Help">ⓘ Help</a></div>'+
+        '<div class="owner351-summary">'+
+        card('Recorded recent demand',num(recent.actual_events),esc((recent.start||'')+' to '+(recent.end||'')),'material_demand_stockout_transition')+
+        card('Recorded prior demand',num(prior.actual_events),esc((prior.start||'')+' to '+(prior.end||'')),'material_demand_stockout_transition')+
+        card('Demand-event movement',delta,'recorded linked event counts, not unit quantities','material_demand_stockout_transition')+
+        card('Current stockout observations',num(snap.zero_or_negative_stock_materials),'one stock-on-hand snapshot','material_demand_stockout_transition')+
+        card('Projected shortages',num(snap.forecast_shortage_materials),'current comparable 14-day plans','material_demand_stockout_transition')+
+        card('Transition attention',num(snap.upcoming_transition_attention),'next season + four-season shortages/mismatches','material_demand_stockout_transition')+
+        '</div><p class="muted">Unlinked recorded events '+num(w.unlinked_actual_events)+' · unknown event dates '+num(w.unknown_dates)+' · incompatible unit events recent '+num(recent.unit_mismatch_events)+' / prior '+num(prior.unit_mismatch_events)+'. Historical stockout change unavailable: no time-series stock snapshots are established by this source.</p>'+
+        '<details open><summary>Seasonal recorded-demand and current-pressure cohorts</summary><div class="owner350-list">'+(seasons||'<p class="muted">No season cohort is available.</p>')+'</div></details>'+
+        '<p class="muted">'+esc(w.boundary||'')+'</p></section>';
+    }
+
     function renderStockReadiness(){
       const host=$('owner358Stock');if(!host)return;
       const w=state.data?.materials_consumables_seasonal_stock_readiness;
