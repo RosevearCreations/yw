@@ -3901,6 +3901,74 @@ function buildDataQualityRemediationOutcomeRecurrence(input:{
 }
 
 
+
+function buildDataQualityFixRecurrenceSourceFreshness(input:any, nowValue=Date.now()){
+  // Recorded decision cohorts only; no historical scans, automatic fixes or Production improvement claims.
+  const keys=['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans','management_decision_outcomes'];
+  const sources=keys.map(key=>{
+    const v=input.sourceFreshness?.[key]||{};
+    return {source_key:key,freshness_state:String(v.freshness_state||'unknown'),coverage_state:String(v.coverage_state||'unknown'),
+      last_authoritative_update:v.last_authoritative_update||null,age_hours:v.age_hours??null,stale_after_hours:v.stale_after_hours??null,
+      row_count:Number(v.row_count||0),query_limit:Number(v.query_limit||0),coverage_gap:v.coverage_gap===true,reason:String(v.reason||'No evidence.')};
+  });
+  const boundaries={
+    cohort_basis:'Non-overlapping quality-journal decision_at windows: last 30 days and preceding 60 days. Distinct source keys, not historical scan snapshots.',
+    season_basis:'Ontario decision-month context: March–August spring/summer, September–November fall, December–February winter. This is not the underlying service season.',
+    trend_boundary:'Recorded decisions are not representative defect incidence or proof of a successful fix, reduced defects, employee/customer quality, causal change or Production improvement.',
+    resolution_boundary:'Repeat after recorded fix requires a dated recurring journal decision after an earlier dated resolved/improved decision on the same stable source key; current absence alone is not a dated fix.',
+    authority_boundary:'Read-only advisory review only: no merges, deletes, reference rewrite, dispatch/crew/equipment reassignment, Safety release, customer contact or Finance posting.'
+  };
+  const base={...boundaries,generated_at:new Date(nowValue).toISOString(),state:'unavailable',reason:'',window_days:90,
+    minimum_unique_keys_per_window:5,source_freshness:sources,summary:null,cohorts:[],seasons:[],current_priorities:[]};
+  if(!input.adminVisible||!input.jobsVisible)return {...base,state:'permission_hidden',reason:'Admin manage and Jobs view permission are required.',source_freshness:[]};
+  if(!input.recurrence||input.recurrence.source_queries_ok===false||input.journalQueryOk===false)
+    return {...base,state:'source_unavailable',reason:'Canonical quality scan or decision journal query failed.'};
+  if(input.recurrence.coverage_complete!==true||input.journalComplete!==true)
+    return {...base,state:'partial_coverage',reason:'A canonical data-quality source or the journal reached its row cap; comparison denominators are not complete.'};
+  const bad=sources.find(v=>v.freshness_state!=='current'||v.coverage_gap||v.query_limit<=0||v.row_count>=v.query_limit);
+  if(bad)return {...base,state:'freshness_withheld',reason:'Source '+bad.source_key+' is '+bad.freshness_state+' / '+bad.coverage_state+'; quality comparisons are withheld.'};
+  const norm=v=>String(v??'').trim().toLowerCase();
+  const journal=(Array.isArray(input.journal)?input.journal:[]).filter(v=>norm(v?.source_module)==='admin'&&norm(v?.source_type)==='data_quality_signal');
+  if(!journal.length)return {...base,state:'insufficient_evidence',reason:'No recorded quality decisions were returned. Missing history is not a zero recurrence rate.'};
+  const now=Number(nowValue);
+  const dated=journal.map(v=>({key:String(v.source_key||''),at:Date.parse(String(v.decision_at||'')),status:norm(v.outcome_status),recurring:v.recurrence_signal===true})).sort((a,b)=>a.at-b.at);
+  if(dated.some(v=>!v.key.startsWith('admin:data_quality_signal:')||!Number.isFinite(v.at)||v.at>now))
+    return {...base,state:'undated_history',reason:'A quality decision has an invalid, future or missing date/source key. No trustworthy cohort timing can be calculated.'};
+  const resolved=new Set();
+  const observations=dated.map(v=>{
+    const after_fix=resolved.has(v.key)&&(v.recurring||v.status==='recurring');
+    if(v.status==='resolved'||v.status==='improved')resolved.add(v.key);
+    return {...v,after_fix,age_days:(now-v.at)/86400000};
+  }).filter(v=>v.age_days>=0&&v.age_days<90);
+  const summarize=(rows,days)=>{
+    const unique=new Set(rows.map(v=>v.key));
+    const recurringRows=rows.filter(v=>v.recurring||v.status==='recurring');
+    const recurringKeys=new Set(recurringRows.map(v=>v.key));
+    const afterFixKeys=new Set(rows.filter(v=>v.after_fix).map(v=>v.key));
+    const enough=unique.size>=5;
+    return {recorded_decisions:rows.length,distinct_source_keys:unique.size,recorded_recurring_keys:recurringKeys.size,
+      repeat_after_recorded_fix_keys:afterFixKeys.size,sufficient_sample:enough,
+      recurrence_percent:enough?Math.round(1000*recurringKeys.size/unique.size)/10:null,
+      recurring_events_per_30_days:enough?Math.round(recurringRows.length*300/days)/10:null};
+  };
+  const cohorts=[
+    {key:'latest_30_days',label:'Last 30 days',from:0,to:30,days:30},
+    {key:'prior_60_days',label:'Preceding 60 days',from:30,to:90,days:60}
+  ].map(w=>({window_key:w.key,label:w.label,...summarize(observations.filter(v=>v.age_days>=w.from&&v.age_days<w.to),w.days)}));
+  const seasonAt=at=>{const m=new Date(at).getUTCMonth();return m>=2&&m<=7?'spring_summer':m>=8&&m<=10?'fall':'winter'};
+  const seasons=['spring_summer','fall','winter'].map(season_context=>({season_context,...summarize(observations.filter(v=>seasonAt(v.at)===season_context),90)}));
+  const current=Array.isArray(input.recurrence.current_outcomes)?input.recurrence.current_outcomes:[];
+  const priorities=current.filter(v=>v.outcome_state==='recurring').slice(0,15).map(v=>({
+    source_key:String(v.source_key||''),signal_type:String(v.signal_type||'quality signal'),
+    suggested_action:String(v.suggested_action||'Review the authoritative upstream source workflow.')}));
+  const enough=cohorts.every(v=>v.sufficient_sample);
+  return {...base,state:enough?'current':'insufficient_sample',
+    reason:enough?'Dated journal cohorts are descriptive only; improvement is unverified.':'Five distinct dated quality source keys are required in EACH window; sparse-window rates are withheld.',
+    summary:{current_detected_signals:current.length,current_recorded_recurring_signals:current.filter(v=>v.outcome_state==='recurring').length,
+      journal_decisions_last_90_days:observations.length,distinct_source_keys_last_90_days:new Set(observations.map(v=>v.key)).size},
+    cohorts,seasons,current_priorities:priorities};
+}
+
 // Build 378: retrospective calibration of recorded recovery proposals, not an invented
 // historical forecast. The seven/fourteen-day forecast is a current snapshot only.
 function buildWorkabilityForecastRecoveryCalibration(input:{
@@ -4251,6 +4319,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       communication_consent_aging:buildManagementMetricConfidence(sourceFreshness,['crm_interactions','crm_followups','notification_delivery']),
       data_quality_reconciliation:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans']),
       data_quality_remediation_outcomes:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans','management_decision_outcomes']),
+      data_quality_fix_recurrence_freshness:buildManagementMetricConfidence(sourceFreshness,['crm_customers','crm_properties','jobs','dispatch','recurring','crews','equipment','routes','workability','material_plans','management_decision_outcomes']),
       workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production']),
       workability_forecast_recovery_calibration:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production']),
       management_outcome_confidence_cohort_trend:buildManagementMetricConfidence(sourceFreshness,['management_decision_outcomes']),
@@ -4384,6 +4453,12 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       coverageComplete:dataQualityOutcomeReads.every((r)=>r.query_ok!==false&&Number(r.row_count||0)<Number(r.limit||1)),
       adminVisible:canAdminManage
     });
+    const dataQualityFixRecurrenceSourceFreshness=buildDataQualityFixRecurrenceSourceFreshness({
+      recurrence:dataQualityRemediationOutcomeRecurrence,journal:managementDecisionOutcomes,sourceFreshness,
+      adminVisible:canAdminManage,jobsVisible:canJobsView,
+      journalQueryOk:managementDecisionOutcomesRead.query_ok!==false,
+      journalComplete:managementDecisionOutcomesRead.query_ok!==false&&Number(managementDecisionOutcomesRead.row_count||0)<Number(managementDecisionOutcomesRead.limit||1)
+    });
     return Response.json({
       ok:true,scope:'owner_management_command',actor_role:actorRole,actor_profile_id:actorId,
       evidence_generated_at:new Date().toISOString(),
@@ -4423,6 +4498,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       communication_followup_consent_aging:communicationConsentAging,
       data_quality_duplicate_orphan_reconciliation:dataQualityDuplicateOrphanReconciliation,
       data_quality_remediation_outcome_recurrence:dataQualityRemediationOutcomeRecurrence,
+      data_quality_fix_recurrence_source_freshness:dataQualityFixRecurrenceSourceFreshness,
       four_season_capacity_profitability_scenario_evidence:fourSeasonCapacityProfitabilityScenarioEvidence,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
