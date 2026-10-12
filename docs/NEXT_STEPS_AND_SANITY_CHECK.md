@@ -740,11 +740,13 @@ Use recorded source evidence, explicit missing-data and permission states, seaso
 
 Read-only, consent-scoped communication management: age open CRM follow-ups into Ontario due-date buckets; keep missing dates, statuses, source linkage and recorded inbound responses explicit; show existing live-update email consent only for the matching protected outbox items. Withhold all counts on missing, stale, capped or permission-hidden source evidence. No generic contact authorization, automatic sending, provider retry, CRM changes, purchase, dispatch or Finance writes. No improvement claim without production measurement.
 
-Next: **387 — Data-Quality Fix Recurrence & Source Freshness**.
+Next: **387 — Data-Quality Fix Recurrence & Source Freshness** (implemented).
 
-#### 387 — Data-Quality Fix Recurrence & Source Freshness
+#### 387 — Data-Quality Fix Recurrence & Source Freshness (implemented)
 
-Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+Read-only Admin+Jobs-permissioned 30-day and preceding-60-day dated quality decision cohorts from Build 360/373 stable source-key evidence. Reports recurring keys, events following a dated resolved/improved decision, descriptive normalized 30-day event rates, Ontario decision-month spring/summer/fall/winter breakdowns and Build 351 canonical source freshness. Fewer than five distinct dated keys per window withholds percentages. Missing, hidden, stale, capped, unknown-timestamp, failed or undated evidence withholds comparisons; a missing defect is not proof of a successful past fix. No automatic reconciliation, source writes, employee scoring or Production improvement claim.
+
+Next: **388 — Offline Conflict Closure & Device-Safe Reliability Cohorts**.
 
 #### 388 — Offline Conflict Closure & Device-Safe Reliability Cohorts
 

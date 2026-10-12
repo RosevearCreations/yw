@@ -246,3 +246,9 @@ After item 383, the next is 384 — Fleet Maintenance Cost Trend & Downtime Conc
 After item 384, the next is 385 — Material Demand vs Stockout Trend & Season Transition.
 
 After item 385, the next is 386 — Communication Follow-Up Coverage & Consent-Safe Queue Aging.
+
+After item 386, the next is 387 — Data-Quality Fix Recurrence & Source Freshness.
+
+Build 387 implements bounded read-only source-key recurrence in the existing management command panel. It uses the canonical quality scan and private decision journal, dates non-overlapping 30-day and preceding 60-day cohorts, distinguishes recurrence after recorded fixes, shows Ontario decision-month seasonal context and rejects stale/partial/hidden/undated sources. Five unique quality keys are required per measured cohort. Recorded decisions are not historic scans, and this release has no destructive reconciliation authority or Production improvement claim.
+
+After item 387, the next is **388 — Offline Conflict Closure & Device-Safe Reliability Cohorts**.
