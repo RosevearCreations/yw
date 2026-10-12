@@ -50,7 +50,7 @@ assert.equal(f({...input,jobsVisible:false}).state,'permission_hidden');
 assert.equal(f({...input,sourceQueriesOk:false}).state,'source_unavailable');
 assert.equal(f({...input,coverageComplete:false}).state,'partial_coverage');
 assert.equal(f({...input,confidence:{state:'stale'}}).state,'evidence_uncertain');
-assert.equal(f({...input,followups:[...followups,{id:'f',followup_status:'pending',due_at:'2026-10-12'}]}).summary.due_date_coverage_percent,60);
+assert.equal(f({...input,followups:[...followups,{id:'f',followup_status:'pending',due_at:'2026-10-12'},{id:'g',followup_status:'pending',due_at:null}]}).summary.due_date_coverage_percent,60);
 assert.ok(backend.includes('communication_followup_consent_aging:communicationConsentAging'));
 assert.ok(backend.includes('communication_consent_aging:buildManagementMetricConfidence'));
 const ui=read('js/admin-owner-management-command-ui.js');
