@@ -1329,6 +1329,8 @@
       if(target==='jobs'||target==='finance'){window.YWIRouter?.showSection?.(target);return}
       window.YWIRouter?.showSection?.('admin');
       const group=target==='safety'?'safety':target==='workforce'?'people':'operations';
+      window.YWIAdminHub?.open?.(group);
+      // Reapply once after the router has mounted a new Admin hub, if needed.
       setTimeout(()=>window.YWIAdminHub?.open?.(group),0);
     }
     async function load(){
