@@ -3964,7 +3964,7 @@ function buildDataQualityFixRecurrenceSourceFreshness(input:any, nowValue=Date.n
   const enough=cohorts.every(v=>v.sufficient_sample);
   return {...base,state:enough?'current':'insufficient_sample',
     reason:enough?'Dated journal cohorts are descriptive only; improvement is unverified.':'Five distinct dated quality source keys are required in EACH window; sparse-window rates are withheld.',
-    summary:{current_detected_signals:current.length,current_recorded_recurring_signals:current.filter(v=>v.outcome_state==='recurring').length,
+    summary:{current_detected_signals:Number(input.recurrence.summary?.current_signals??current.length),current_recorded_recurring_signals:Number(input.recurrence.summary?.recurring_current??current.filter(v=>v.outcome_state==='recurring').length),
       journal_decisions_last_90_days:observations.length,distinct_source_keys_last_90_days:new Set(observations.map(v=>v.key)).size},
     cohorts,seasons,current_priorities:priorities};
 }
