@@ -48,6 +48,7 @@
       '<section class="admin-panel-block owner386-consent-aging" style="margin-top:12px;"><div class="owner350-head"><div><h4>Communication follow-up coverage &amp; consent-safe queue aging</h4><p class="section-subtitle">Build 386 · due-date aging, source linkage and existing live-update email consent review only.</p></div><a class="secondary" href="/help.html#communication-followup-consent-aging" aria-label="Info: communication follow-up queue Help">ⓘ Help</a></div><div class="notice"><strong>Consent scope:</strong> a live-update email opt-in never authorizes generic CRM follow-ups, SMS or marketing. No message is sent.</div><div id="owner386ConsentAging"></div></section>',
       '<section class="admin-panel-block owner360-data-quality" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality, duplicate &amp; orphan reconciliation workbench</h4><p class="section-subtitle">Build 360 · duplicate customer/property candidates, broken canonical references, cross-module mismatches, stale crew/equipment assignments, and conflicting four-season service tags.</p></div><button class="secondary" data-owner360-open="operations">Open Operations</button></div><div class="notice" style="margin:8px 0;"><strong>No destructive auto-fix:</strong> this workbench preserves source IDs and audit history. It cannot merge/delete records, rewrite foreign keys, reassign crews/equipment or clear lockouts.</div><div id="owner360DataQuality"></div></section>',
       '<section class="admin-panel-block owner373-data-quality-outcomes" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data quality remediation outcome &amp; recurrence prevention</h4><p class="section-subtitle">Build 373 · stable source-key outcome history for duplicate/orphan, reference, assignment and four-season tag defects using the private management-learning journal.</p></div><button class="secondary" data-owner360-open="operations">Open Management Journal</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome tracking only — no auto-fix:</strong> confirmed resolution requires complete current source coverage; recurring means the same stable quality source key is present after prior resolution or carries recorded recurrence evidence.</div><div id="owner373DataQualityOutcomes"></div></section>',
+      '<section class="admin-panel-block owner387-quality-freshness" style="margin-top:12px;"><div class="owner350-head"><div><h4>Data-quality fix recurrence &amp; source freshness</h4><p class="section-subtitle">Build 387 · 30/60-day recorded decision cohorts, repeats after recorded fix and canonical freshness evidence.</p></div><button class="secondary" data-owner360-open="operations">Open Management Journal</button></div><div class="notice"><strong>Advisory only:</strong> decisions are not historic scans or proof of a successful production fix; no destructive auto-fix.</div><div id="owner387DataQualityFreshness"></div></section>',
       '<div id="owner350Kpis" class="owner350-grid" style="margin-top:12px;"></div>',
       '<div class="grid" style="margin-top:14px;">',
         '<section class="admin-panel-block"><div class="owner350-head"><h4>Today &amp; schedule risk</h4><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div id="owner350Today"></div></section>',
@@ -1208,6 +1209,52 @@
         '<details style="margin-top:8px;"><summary>Source-key, resolution, recurrence &amp; authority boundaries</summary><p class="muted">'+esc(w.source_key_boundary||'')+'</p><p class="muted">'+esc(w.resolution_boundary||'')+'</p><p class="muted">'+esc(w.recurrence_boundary||'')+'</p><p class="muted">'+esc(w.prevention_boundary||'')+'</p><p class="muted">'+esc(w.journal_boundary||'')+'</p><p class="muted">'+esc(w.authority_boundary||'')+'</p></details>';
     }
 
+
+    function renderDataQualityFixRecurrenceFreshness(){
+      const host=$('owner387DataQualityFreshness');if(!host)return;
+      const w=state.data?.data_quality_fix_recurrence_source_freshness;
+      if(!allowed('admin')||!allowed('jobs')){host.innerHTML='<p class="muted">Admin manage and Jobs view permission required to see data-quality fix recurrence history.</p>';return}
+      if(!w){host.innerHTML='<p class="muted">Quality recurrence evidence unavailable.</p>';return}
+      const stateName=String(w.state||'unavailable');
+      if(['permission_hidden','source_unavailable','partial_coverage','freshness_withheld','undated_history','insufficient_evidence'].includes(stateName)){
+        host.innerHTML='<div class="notice"><strong>Quality comparison withheld:</strong> '+esc(w.reason||'Source is unreliable.')+'</div><p class="muted">Missing, stale or partial evidence is not a zero defect count or a confirmed fix.</p>';return;
+      }
+      const s=w.summary||{};
+      const summary='<div class="owner351-summary">'+[
+        card('Current signals',num(s.current_detected_signals),'live scan · not historical rate','data_quality_fix_recurrence_freshness'),
+        card('Current recurring',num(s.current_recorded_recurring_signals),'stable source-key recurrence','data_quality_fix_recurrence_freshness'),
+        card('90-day journal decisions',num(s.journal_decisions_last_90_days),'dated decisions only','data_quality_fix_recurrence_freshness'),
+        card('90-day source keys',num(s.distinct_source_keys_last_90_days),'distinct quality source identities','data_quality_fix_recurrence_freshness')
+      ].join('')+'</div>';
+      const cohorts=(w.cohorts||[]).map(r=>
+        '<div class="owner350-row" data-owner387-cohort="'+esc(r.window_key||'')+'"><strong>'+esc(r.label||'Journal window')+'</strong><small>'+
+        esc(num(r.recorded_decisions)+' decisions · '+num(r.distinct_source_keys)+' distinct source keys · '+num(r.recorded_recurring_keys)+' recurring keys · '+num(r.repeat_after_recorded_fix_keys)+' repeat after recorded fix')+
+        '</small><small>'+esc(r.sufficient_sample?'Recorded recurrence '+r.recurrence_percent+'% · '+r.recurring_events_per_30_days+' recurring decision events per 30 days':'Rate withheld — fewer than five distinct dated keys')+'</small></div>'
+      ).join('');
+      const seasons=(w.seasons||[]).map(r=>
+        '<div class="owner350-row" data-owner387-season="'+esc(r.season_context||'')+'"><strong>'+esc(String(r.season_context||'unknown').replaceAll('_',' / '))+'</strong><small>'+
+        esc(num(r.recorded_decisions)+' dated decisions · '+num(r.distinct_source_keys)+' distinct keys · '+num(r.repeat_after_recorded_fix_keys)+' repeat after fix')+
+        '</small><small>'+esc(r.sufficient_sample?'Recorded recurrence '+r.recurrence_percent+'%':'Percent withheld — fewer than five distinct keys')+'</small></div>'
+      ).join('');
+      const source=(w.source_freshness||[]).map(r=>
+        '<div class="owner350-row" data-owner387-source="'+esc(r.source_key||'')+'"><strong>'+esc(String(r.source_key||'').replaceAll('_',' '))+' · '+esc(r.freshness_state||'unknown')+'</strong>'+
+        '<small>'+esc('Updated '+when(r.last_authoritative_update)+' · age '+(r.age_hours===null?'unknown':r.age_hours+'h')+' · window '+(r.stale_after_hours===null?'unknown':r.stale_after_hours+'h')+' · '+r.coverage_state)+'</small>'+
+        '<small>'+esc(r.reason||'')+'</small></div>'
+      ).join('');
+      const priorities=(w.current_priorities||[]).map(r=>
+        '<div class="owner350-row" data-owner387-priority="'+esc(r.source_key||'')+'"><strong>'+esc(String(r.signal_type||'quality').replaceAll('_',' '))+'</strong>'+
+        '<small style="overflow-wrap:anywhere;">'+esc(r.source_key||'')+'</small><small>'+esc(r.suggested_action||'Review authoritative source workflow.')+'</small></div>'
+      ).join('');
+      host.innerHTML=summary+
+        (stateName==='insufficient_sample'?'<div class="notice"><strong>Cohort comparison withheld:</strong> '+esc(w.reason||'Insufficient unique keys')+'</div>':'')+
+        '<details open><summary>Recorded recurrence · last 30 days versus prior 60 days</summary><div class="owner350-list">'+cohorts+'</div></details>'+
+        '<details><summary>Ontario decision-month seasonal context</summary><div class="owner350-list">'+seasons+'</div></details>'+
+        '<details open><summary>Canonical source freshness and cap evidence</summary><div class="owner350-list">'+source+'</div></details>'+
+        '<details><summary>Recurring source keys for upstream review</summary><div class="owner350-list">'+(priorities||'<p class="muted">No recurring keys in the current scan, not proof of historical absence.</p>')+'</div></details>'+
+        '<details><summary>Boundaries and read-only authority</summary><p class="muted">'+
+        [w.cohort_basis,w.season_basis,w.trend_boundary,w.resolution_boundary,w.authority_boundary].map(v=>esc(v||'')).join('</p><p class="muted">')+'</p></details>';
+    }
+
     const rowsHtml=(rows,empty='No current items.')=>rows.length?'<div class="owner350-list">'+rows.map(r=>'<div class="owner350-row"><strong>'+esc(r.title)+'</strong><small>'+esc(r.detail||'')+'</small></div>').join('')+'</div>':'<p class="muted">'+esc(empty)+'</p>';
     function metrics(){
       const d=state.data,today=todayKey(),now=Date.now();
@@ -1278,6 +1325,7 @@
       renderCommunicationConsentAging();
       renderDataQualityReconciliation();
       renderDataQualityRemediationOutcomes();
+      renderDataQualityFixRecurrenceFreshness();
       $('owner350Kpis').innerHTML=[
         card('Crews today',allowed('jobs')?m.crewCount:'Unavailable',allowed('jobs')?m.scheduledToday+' scheduled':'Jobs module unavailable.','crews_today'),
         card('Completion today',allowed('jobs')?pct(m.completionRate):'Unavailable',allowed('jobs')?m.completedToday+' completed':'Jobs module unavailable.','completion_today'),
