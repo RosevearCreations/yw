@@ -1217,7 +1217,13 @@
       if(!w){host.innerHTML='<p class="muted">Quality recurrence evidence unavailable.</p>';return}
       const stateName=String(w.state||'unavailable');
       if(['permission_hidden','source_unavailable','partial_coverage','freshness_withheld','undated_history','insufficient_evidence'].includes(stateName)){
-        host.innerHTML='<div class="notice"><strong>Quality comparison withheld:</strong> '+esc(w.reason||'Source is unreliable.')+'</div><p class="muted">Missing, stale or partial evidence is not a zero defect count or a confirmed fix.</p>';return;
+        const sourceHealth=(w.source_freshness||[]).map(r=>
+          '<div class="owner350-row" data-owner387-source="'+esc(r.source_key||'')+'"><strong>'+esc(String(r.source_key||'').replaceAll('_',' '))+' · '+esc(r.freshness_state||'unknown')+'</strong>'+
+          '<small>'+esc('Updated '+when(r.last_authoritative_update)+' · '+r.coverage_state+' · '+(r.age_hours===null?'age unknown':r.age_hours+'h old'))+'</small><small>'+esc(r.reason||'')+'</small></div>'
+        ).join('');
+        host.innerHTML='<div class="notice"><strong>Quality comparison withheld:</strong> '+esc(w.reason||'Source is unreliable.')+'</div>'+
+          '<p class="muted">Missing, stale or partial evidence is not a zero defect count or a confirmed fix.</p>'+
+          (sourceHealth?'<details open><summary>Source freshness and coverage requiring attention</summary><div class="owner350-list">'+sourceHealth+'</div></details>':'');return;
       }
       const s=w.summary||{};
       const summary='<div class="owner351-summary">'+[
