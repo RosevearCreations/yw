@@ -744,7 +744,7 @@ Next: **387 — Data-Quality Fix Recurrence & Source Freshness** (implemented).
 
 #### 387 — Data-Quality Fix Recurrence & Source Freshness (implemented)
 
-Read-only Admin+Jobs-permissioned 30-day and preceding-60-day dated quality decision cohorts from Build 360/373 stable source-key evidence. Reports recurring keys, events following a dated resolved/improved decision, descriptive normalized 30-day event rates, Ontario decision-month spring/summer/fall/winter breakdowns and Build 351 canonical source freshness. Fewer than five distinct dated keys per window withholds percentages. Missing, hidden, stale, capped, unknown-timestamp, failed or undated evidence withholds comparisons; a missing defect is not proof of a successful past fix. No automatic reconciliation, source writes, employee scoring or Production improvement claim.
+Read-only Admin+Jobs-permissioned 30-day and preceding-60-day dated quality decision cohorts from items 360/373 stable source-key evidence. Reports recurring keys, events following a dated resolved/improved decision, descriptive normalized 30-day event rates, Ontario decision-month spring/summer/fall/winter breakdowns and item 351 canonical source freshness. Fewer than five distinct dated keys per window withholds percentages. Missing, hidden, stale, capped, unknown-timestamp, failed or undated evidence withholds comparisons; a missing defect is not proof of a successful past fix. No automatic reconciliation, source writes, employee scoring or Production improvement claim.
 
 Next: **388 — Offline Conflict Closure & Device-Safe Reliability Cohorts**.
 
