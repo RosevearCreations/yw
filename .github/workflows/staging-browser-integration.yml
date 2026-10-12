@@ -150,6 +150,7 @@ jobs:
       - run: npm run test:invoice-aging-handoff
       - run: npm run test:labour-exception-closure
       - run: npm run test:fleet-maintenance-cost-trend
+      - run: npm run test:material-demand-stockout-transition
       - run: npm run test:recurring-service-renewal-retention
       - run: npm run test:recurring-renewal-conversion-churn-outcomes
       - run: npm run test:estimate-to-cash-leakage-margin-recovery

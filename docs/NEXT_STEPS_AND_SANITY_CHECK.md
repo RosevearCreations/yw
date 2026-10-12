@@ -675,7 +675,12 @@ Read-only historical work-unit payroll exception closure signals, with incomplet
 
 The Owner Management fleet lifecycle view now compares recorded history maintenance costs and fleet downtime starts/durations in consecutive 90-day windows using canonical timestamped sources. Trend percentage/absolute delta is withheld without five priced maintenance-history events in each window. Top-three downtime concentration is withheld below five known-duration events or when recorded durations are missing. Source errors and capped source reads fail closed. Separate all-time registry cost and job Finance context are never treated as period cost; no fleet, Safety, maintenance, payment or purchasing mutation.
 
-The next planned autonomous item is **385 — Material Demand vs Stockout Trend & Season Transition**.
+<!-- Historical 384 handoff: The next planned autonomous item is **385 — Material Demand vs Stockout Trend & Season Transition**. -->
+#### **385 — Material Demand vs Stockout Trend & Season Transition** is implemented
+
+Adds a bounded 30-day versus previous 30-day count of recorded linked actual-use events grouped by catalog material season. Dated events from canonical actual-use and estimator lines are counted once; unknown dates, unlinked events and unit mismatches are reported. A minimum five linked recorded events in each period is required for movement comparison. Separately, a **current snapshot only** reports registered material stockouts, comparable 7/14-day planned shortages and next-season/four-season readiness pressure. There are no dated historical inventory snapshots to support a historical stockout rate or seasonal stockout improvement claim. Missing stock, source errors, capped datasets, stale data, unauthorized views or truncated stock readiness fail closed. No purchasing, stock changes, dispatch changes, Finance postings, customer sends or approval writes.
+
+The next planned autonomous item is **386 — Communication Follow-Up Coverage & Consent-Safe Queue Aging**.
 
 Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
 
