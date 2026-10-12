@@ -2380,6 +2380,80 @@ function buildEquipmentDowntimeCostReplacementReadiness(input:{
   };
 }
 
+
+function buildFleetMaintenanceCostTrendDowntimeConcentration(input:{
+  equipment:any[];fleet:any[];maintenanceHistory:any[];downtimeEvents:any[];
+  jobsVisible:boolean;sourceQueriesOk:boolean;coverageComplete:boolean;today?:string;
+}) {
+  const today=input.today||ontarioDateKey(new Date())!;
+  const recentStart=addCalendarDays(today,-89);
+  const priorStart=addCalendarDays(today,-179);
+  const priorEnd=addCalendarDays(today,-90);
+  const finite=(v:any)=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+  const round2=(v:number)=>Math.round(v*100)/100;
+  const fleetIds=new Set((input.fleet||[]).map((r)=>String(r?.equipment_item_id||'')).filter(Boolean));
+  const labels=new Map((input.equipment||[]).map((r)=>[String(r?.id||r?.equipment_item_id||''),String(r?.equipment_code||r?.equipment_name||'Fleet equipment')]));
+  const window=(day:string)=>day>=recentStart&&day<=today?(day>=priorStart&&day<=priorEnd?'prior':'recent'):
+    day>=priorStart&&day<=priorEnd?'prior':null;
+  const period=(first:string,last:string)=>({start:first,end:last,maintenance_records:0,priced_maintenance_records:0,
+    recorded_maintenance_cost:0,downtime_events:0,dated_downtime_hours:0,unknown_downtime_hours:0});
+  const result:any={state:'current',source_queries_ok:input.sourceQueriesOk!==false,
+    coverage_complete:input.coverageComplete===true,
+    recent:period(recentStart,today),prior:period(priorStart,priorEnd),
+    summary:{fleet_assets:fleetIds.size,recorded_cost_delta:null,recorded_cost_delta_percent:null,
+      downtime_hours_concentration_percent:null,known_duration_events:0,unknown_asset_events:0},
+    concentration:[],boundary:'Read-only 180-day fleet subset. Dated history costs are distinct from service task costs and job-level Finance totals; no cross-source addition. Downtime intervals are assigned to their recorded start-date window. An open event is measured through observation time. No automatic repair, lockout release, purchase, posting or dispatch.'};
+  if(!input.jobsVisible){result.state='permission_hidden';return result}
+  if(!result.source_queries_ok){result.state='source_unavailable';return result}
+  if(!result.coverage_complete){result.state='partial_coverage';return result}
+  if(!fleetIds.size){result.state='insufficient_evidence';return result}
+  const assetStats=new Map<string,any>();
+  for(const id of fleetIds)assetStats.set(id,{equipment_item_id:id,equipment_name:labels.get(id)||'Fleet equipment',
+    events:0,known_duration_events:0,recorded_hours:0,maintenance_cost:0,priced_records:0});
+  for(const r of input.maintenanceHistory||[]){
+    const id=String(r?.equipment_item_id||'');if(!fleetIds.has(id))continue;
+    const day=ontarioDateKey(r?.performed_at);const group=day?window(day):null;
+    if(!group)continue;
+    const p=result[group];p.maintenance_records++;
+    if(finite(r?.cost_amount)){p.priced_maintenance_records++;p.recorded_maintenance_cost+=Number(r.cost_amount);
+      const asset=assetStats.get(id);asset.priced_records++;asset.maintenance_cost+=Number(r.cost_amount)}
+  }
+  const observedAt=new Date();
+  for(const r of input.downtimeEvents||[]){
+    const id=String(r?.equipment_item_id||'');if(!fleetIds.has(id)){result.summary.unknown_asset_events++;continue}
+    const day=ontarioDateKey(r?.started_at||r?.created_at);const group=day?window(day):null;if(!group)continue;
+    const p=result[group],asset=assetStats.get(id);p.downtime_events++;asset.events++;
+    const start=new Date(r?.started_at||''),end=r?.ended_at?new Date(r.ended_at):observedAt;
+    if(!Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())||end.getTime()<start.getTime()||end.getTime()>observedAt.getTime()){
+      p.unknown_downtime_hours++;continue;
+    }
+    const hours=(end.getTime()-start.getTime())/3600000;
+    p.dated_downtime_hours+=hours;asset.recorded_hours+=hours;asset.known_duration_events++;result.summary.known_duration_events++;
+  }
+  for(const group of ['recent','prior']){
+    const p=result[group];p.recorded_maintenance_cost=round2(p.recorded_maintenance_cost);
+    p.dated_downtime_hours=round2(p.dated_downtime_hours);
+  }
+  if(result.recent.priced_maintenance_records>=5&&result.prior.priced_maintenance_records>=5){
+    const delta=round2(result.recent.recorded_maintenance_cost-result.prior.recorded_maintenance_cost);
+    result.summary.recorded_cost_delta=delta;
+    if(result.prior.recorded_maintenance_cost>0)result.summary.recorded_cost_delta_percent=
+      round2(delta/result.prior.recorded_maintenance_cost*100);
+  }
+  const concentration=[...assetStats.values()].filter((r)=>r.events>0||r.priced_records>0)
+    .sort((a,b)=>b.recorded_hours-a.recorded_hours||b.events-a.events||a.equipment_name.localeCompare(b.equipment_name));
+  result.concentration=concentration.slice(0,25).map((r)=>({...r,recorded_hours:round2(r.recorded_hours),maintenance_cost:round2(r.maintenance_cost)}));
+  const hours=concentration.reduce((sum,r)=>sum+r.recorded_hours,0);
+  const knownEvents=result.summary.known_duration_events;
+  if(knownEvents>=5&&result.recent.unknown_downtime_hours+result.prior.unknown_downtime_hours===0&&hours>0){
+    result.summary.downtime_hours_concentration_percent=round2(concentration.slice(0,3).reduce((sum,r)=>sum+r.recorded_hours,0)/hours*100);
+  }
+  if(!result.recent.maintenance_records&&!result.prior.maintenance_records&&!result.recent.downtime_events&&!result.prior.downtime_events){
+    result.state='insufficient_evidence';
+  }
+  return result;
+}
+
 function buildLabourCapturePayrollExceptionReduction(input:{
   timekeeping:any[];dispatch:any[];production:any[];jobsVisible:boolean;adminVisible:boolean;sourceQueriesOk:boolean;
 }) {
@@ -3945,6 +4019,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       utilization_support:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch','equipment','equipment_use','maintenance','fleet']),
       labour_capture_payroll_exceptions:buildManagementMetricConfidence(sourceFreshness,['timekeeping_detail','production','dispatch']),
       equipment_downtime_replacement_readiness:buildManagementMetricConfidence(sourceFreshness,['equipment','maintenance','equipment_use','fleet','maintenance_history','equipment_service_tasks','fleet_downtime_events']),
+      fleet_maintenance_cost_trend:buildManagementMetricConfidence(sourceFreshness,['equipment','fleet','maintenance_history','fleet_downtime_events']),
       stock_readiness:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','dispatch','recurring_visits','seasonal_work']),
       material_usage_variance_reorder_calibration:buildManagementMetricConfidence(sourceFreshness,['material_stock','material_plans','material_actual_use']),
       communication_readiness:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','recurring_visits','crm_interactions','crm_followups','crm_customers','notification_delivery','closeouts','receivables']),
@@ -4022,6 +4097,12 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       jobsVisible:canJobsView,financeVisible:canFinanceView,
       sourceQueriesOk:[equipmentRead,maintenanceRead,maintenanceHistoryRead,serviceTasksRead,equipmentUseRead,fleetRead,fleetDowntimeEventsRead].every((r)=>r.query_ok!==false)&&(!canFinanceView||jobCostDepthRead.query_ok!==false)
     });
+    const fleetMaintenanceCostTrendDowntimeConcentration=buildFleetMaintenanceCostTrendDowntimeConcentration({
+      equipment,fleet,maintenanceHistory,downtimeEvents:fleetDowntimeEvents,
+      jobsVisible:canJobsView,
+      sourceQueriesOk:[equipmentRead,fleetRead,maintenanceHistoryRead,fleetDowntimeEventsRead].every((r)=>r.query_ok!==false),
+      coverageComplete:[equipmentRead,fleetRead,maintenanceHistoryRead,fleetDowntimeEventsRead].every((r)=>r.row_count<r.limit)
+    });
     const labourCapturePayrollExceptionReduction=buildLabourCapturePayrollExceptionReduction({
       timekeeping:timekeepingDetail,dispatch,production,jobsVisible:canJobsView,adminVisible:canAdminManage,
       sourceQueriesOk:[timekeepingDetailRead,dispatchRead,productionRead].every((r)=>r.query_ok!==false)
@@ -4096,6 +4177,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       labour_equipment_fleet_utilization_support:labourEquipmentFleetUtilizationSupport,
       labour_capture_completeness_payroll_exception_reduction:labourCapturePayrollExceptionReduction,
       equipment_downtime_cost_replacement_readiness:equipmentDowntimeCostReplacementReadiness,
+      fleet_maintenance_cost_trend_downtime_concentration:fleetMaintenanceCostTrendDowntimeConcentration,
       materials_consumables_seasonal_stock_readiness:materialsConsumablesSeasonalStockReadiness,
       material_usage_variance_reorder_calibration:materialUsageVarianceReorderCalibration,
       customer_communication_readiness_queue:customerCommunicationReadinessQueue,
