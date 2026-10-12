@@ -736,9 +736,11 @@ Use recorded source evidence, explicit missing-data and permission states, seaso
 
 Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
 
-#### 386 — Communication Follow-Up Coverage & Consent-Safe Queue Aging
+#### 386 — Communication Follow-Up Coverage & Consent-Safe Queue Aging (implemented)
 
-Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+Read-only, consent-scoped communication management: age open CRM follow-ups into Ontario due-date buckets; keep missing dates, statuses, source linkage and recorded inbound responses explicit; show existing live-update email consent only for the matching protected outbox items. Withhold all counts on missing, stale, capped or permission-hidden source evidence. No generic contact authorization, automatic sending, provider retry, CRM changes, purchase, dispatch or Finance writes. No improvement claim without production measurement.
+
+Next: **387 — Data-Quality Fix Recurrence & Source Freshness**.
 
 #### 387 — Data-Quality Fix Recurrence & Source Freshness
 
