@@ -296,6 +296,16 @@
           <p><strong>No automatic customer contact:</strong> this layer cannot email/text, retry a provider, create/close CRM interactions or follow-ups, change consent/preferences, publish customer updates, reschedule work, collect payment or contact a provider.</p>
         </section>
 
+
+        <section class="help-section" id="offline-conflict-device-safe-reliability-cohorts">
+          <h2>Build 388 — Offline Conflict Closure &amp; Device-Safe Reliability Cohorts</h2>
+          <p>Open Today → Mobile Crew App v2 → Offline conflict closure &amp; device-safe reliability. The report is calculated locally in the current browser from the existing offline action queue and conflict recovery history. It never uploads a device identifier, private queued payload, recovery note or customer data to the management dashboard. Only the currently authenticated profile's owner-key records are included; older unowned and other-profile records are excluded.</p>
+          <p><strong>Outstanding conflict aging:</strong> ≤1 day, 1–7 days, older than seven days and unknown/invalid age. Missing timestamps are never silently considered fresh. Pending actions are not successful deliveries.</p>
+          <p><strong>Independent decision cohorts:</strong> last seven days and preceding 23 days of locally recorded recovery choices, bounded to the existing maximum 50 locally retained history entries. Decisions are a local sample; different browsers and devices cannot be combined, and an overfull ledger or invalid/future timestamps withholds percentages. Five valid decisions per window are required. Historical events are normalized to a seven-day display only when enough evidence exists.</p>
+          <p><strong>Closure is not synchronization:</strong> Keep Server and Discard remove a queued mutation on this device only. Keep Mine, Merge and Retry merely prepare a new replay attempt, which may conflict again. A locally recorded decision never certifies a server-side successful write, a fleet-wide closure rate, a performance improvement or a Safety/equipment/Finance override.</p>
+          <p><strong>Recovery stays deliberate:</strong> review Mine and the available Server snapshot using Build 348 conflict cards. Nothing is automatically merged, retried, discarded, reassigned or sent. Sign out or use another profile and the report becomes hidden for that profile's original data.</p>
+        </section>
+
         <section class="help-section" id="data-quality-fix-recurrence-source-freshness">
           <h2>Build 387 — Data-Quality Fix Recurrence &amp; Source Freshness</h2>
           <p>Admin → Owner / Management Command Centre → Data-quality fix recurrence &amp; source freshness. Admin manage and Jobs view permission are required. This review reuses Build 360 canonical quality signals, Build 373 private Management Decision Outcome Journal source keys and Build 351 source freshness.</p>

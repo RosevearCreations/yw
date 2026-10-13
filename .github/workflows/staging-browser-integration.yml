@@ -169,6 +169,7 @@ jobs:
       - run: npm run test:data-quality-fix-recurrence-source-freshness
       - run: npm run test:mobile-offline-read-budget-reliability
       - run: npm run test:mobile-offline-reliability-trend-outcomes
+      - run: npm run test:offline-conflict-device-safe-cohorts
       - run: npm run test:four-season-capacity-profitability-scenario-evidence
       - run: npm run test:production-learning-roadmap-renewal
       - run: npm run test:production-learning-roadmap-renewal-ii
@@ -298,6 +299,7 @@ jobs:
       - run: npm run test:browser:data-quality-fix-recurrence-source-freshness
       - run: npm run test:browser:mobile-offline-read-budget-reliability
       - run: npm run test:browser:mobile-offline-reliability-trend-outcomes
+      - run: npm run test:browser:offline-conflict-device-safe-cohorts
       - run: npm run test:browser:four-season-capacity-profitability-scenario-evidence
       - run: npm run test:browser:production-learning-roadmap-renewal
       - run: npm run test:browser:production-learning-roadmap-renewal-ii
