@@ -34,6 +34,7 @@ const noData=run({...input,history:[],actions:[]});assert.equal(noData.state,'no
 assert.equal(noData.cohorts[0].local_removal_share_percent,null);
 assert.equal(run({...input,history:history.slice(0,3)}).state,'insufficient_sample');
 assert.ok(outbox.includes('getDeviceSafeReliabilityCohorts\n  };'),'Outbox export must be read only');
+assert.ok(outbox.includes('String(entry.owner_key || \'\') === currentOwner'),'Deduplication must be scoped to the active owner profile');
 assert.ok(mobile.includes('deviceSafeReliabilityMarkup() +'),'Mobile crew panel displays local evidence');
 assert.ok(!source.includes('owner_key:'),'Pure helper must not leak stored owner identity');
 const pkg=JSON.parse(read('package.json'));
