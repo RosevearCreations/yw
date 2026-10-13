@@ -113,10 +113,11 @@
 
   <script>
     // Build 361 service-worker provenance: /server-worker.js?v=2026-09-30b361
+    // Build 374 service-worker provenance: /server-worker.js?v=2026-10-08b374
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-10-08b374');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-10-12b388');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -435,7 +436,8 @@
   <script src="/js/module-nav.js?v=2026-09-03a"></script>
   <script src="/js/mobile-menu.js?v=2026-09-03a"></script>
   <!-- Build 361 asset provenance: /js/mobile-today.js?v=2026-09-30b361 -->
-  <script src="/js/mobile-today.js?v=2026-10-08b374"></script>
+  <!-- Build 374 asset provenance: /js/mobile-today.js?v=2026-10-08b374 -->
+  <script src="/js/mobile-today.js?v=2026-10-12b388"></script>
   <script src="/js/mobile-form-helper.js?v=2026-09-03a"></script>
   <script src="/js/bootstrap.js?v=2026-09-03a"></script>
   <script src="/js/auth.js?v=2026-09-03a"></script>
@@ -443,7 +445,8 @@
   <script src="/js/core-data-service.js?v=2026-09-03a"></script>
   <script src="/js/customer-portal.js?v=2026-09-03a"></script>
   <script src="/js/public-routes.js?v=2026-09-03a"></script>
-  <script src="/js/outbox.js?v=2026-09-30b361"></script>
+  <!-- Build 361 asset provenance: /js/outbox.js?v=2026-09-30b361 -->
+  <script src="/js/outbox.js?v=2026-10-12b388"></script>
   <script src="/js/ui-auth.js?v=2026-09-03a"></script>
   <script src="/js/account-ui.js?v=2026-09-03a"></script>
   <script src="/js/profile-ui.js?v=2026-09-03a"></script>

@@ -152,6 +152,27 @@
       '</div></details>';
   }
 
+
+  function deviceSafeReliabilityMarkup() {
+    const evidence = outbox()?.getDeviceSafeReliabilityCohorts?.();
+    if(!evidence) return '<details class="mobile-reliability-v388"><summary>Offline conflict closure · local evidence unavailable</summary><p class="muted">This device has no compatible recovery evidence provider.</p></details>';
+    const s=evidence.summary||{};
+    if(evidence.state==='permission_hidden')return '<details class="mobile-reliability-v388"><summary>Offline conflict closure · sign-in required</summary><p class="muted">'+crewEscape(evidence.reason||'Permission withheld')+'</p></details>';
+    const age=evidence.queue_age;
+    const ageCopy=age ? '<p class="field-sync-note" data-offline388-age>'+
+      crewEscape('Conflicts awaiting deliberate review: '+age.current_conflicts+' · ≤1 day '+age.within_day+' · 1–7 days '+age.days_1_to_7+' · >7 days '+age.over_7_days+' · undated '+age.unknown_age+'. Pending local actions '+age.pending_actions+'.')+'</p>' : '';
+    const windows=(evidence.cohorts||[]).map(w=>'<div class="owner350-row" data-offline388-cohort="'+crewEscape(w.window_key)+'"><strong>'+crewEscape(w.label)+'</strong><small>'+
+      crewEscape(w.decision_events+' recovery choices · '+w.local_removal_choices+' local removal choices · '+w.replay_preparation_choices+' prepared for replay')+'</small><small>'+
+      crewEscape(w.sufficient_sample?'Local removal-choice share '+w.local_removal_share_percent+'% · '+w.decision_events_per_7_days+' choices per seven days':'Rate withheld — fewer than five decisions or incomplete history')+'</small></div>').join('');
+    return '<details class="mobile-reliability-v388"'+(age?.current_conflicts?' open':'')+'><summary><strong>Build 388 · Offline conflict closure &amp; device-safe reliability</strong></summary>'+
+      '<p class="field-sync-note">'+crewEscape('This browser, current signed-in profile only · '+(s.local_recovery_decisions||0)+' retained recovery choices. No device-fleet comparison is available.')+'</p>'+
+      ageCopy+'<p class="field-sync-note">'+crewEscape(evidence.reason||'')+'</p>'+
+      (age?.current_conflicts?'<p><a href="#offlineConflictRecovery348">Review the conflict cards below before selecting an action</a></p>':'')+
+      '<div class="owner350-list">'+windows+'</div>'+
+      '<details><summary>Evidence and authority boundaries</summary><p class="muted">'+
+      [evidence.comparison_basis,evidence.closure_boundary,evidence.authority_boundary].map(x=>crewEscape(x||'')).join('</p><p class="muted">')+'</p></details></details>';
+  }
+
   function countDraftForms() {
     try { return window.YWIMobileFormAssist?.countDrafts?.() || 0; } catch { return 0; }
   }
@@ -622,6 +643,7 @@
       '<div class="mobile-crew-v2-tabs"><button type="button" class="secondary" data-crew-tab="route" aria-selected="' + (state.crewTab === 'route') + '">My Route</button><button type="button" class="secondary" data-crew-tab="jobs" aria-selected="' + (state.crewTab === 'jobs') + '">My Jobs</button><button type="button" class="secondary" data-crew-refresh="1"' + (state.crewLoading || !snapshot.online ? ' disabled' : '') + '>' + (state.crewLoading ? 'Refreshing…' : 'Refresh') + '</button></div>' +
       '<p class="field-sync-note">' + crewEscape(syncCopy) + '</p>' +
       reliabilityMarkup +
+      deviceSafeReliabilityMarkup() +
       '<div class="mobile-crew-v2-list">' + (state.crewLoading && !payload ? '<div class="mobile-crew-v2-empty">Loading assigned field work…</div>' : rows.length ? rows.map(crewCard).join('') : '<div class="mobile-crew-v2-empty">No assigned work is in the current seven-day crew window.</div>') + '</div>';
     panel.querySelectorAll('[data-crew-tab]').forEach((button) => button.addEventListener('click', () => { state.crewTab = button.dataset.crewTab || 'route'; renderMobileCrewApp(); }));
     panel.querySelector('[data-crew-refresh]')?.addEventListener('click', () => loadMobileCrewContext(true));
@@ -799,7 +821,7 @@
 
   window.YWIMobileToday = {
     bind, render, countOutboxItems, countActionItems, countConflictItems, countDraftForms,
-    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery,
+    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery,
     reliabilityReleaseHistory: () => MOBILE_RELIABILITY_RELEASE_HISTORY.map((row) => ({ ...row }))
   };
   document.addEventListener('DOMContentLoaded', bind);
