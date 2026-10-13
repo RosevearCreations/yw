@@ -24,6 +24,7 @@
       '<div class="notice" style="margin-top:8px;"><strong>Four-season Ontario model:</strong> spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class operating contexts. Missing module access is shown as unavailable rather than inferred.</div>',
       '<div class="notice" data-build="390" style="margin-top:8px;"><strong>Production learning evidence:</strong> a 2026-10-13 snapshot of ten inspected canonical tables contained no recorded rows. This does not prove operational improvement or absence of activity elsewhere. <a href="/help.html#production-learning-roadmap-renewal-iii" aria-label="Info: Production learning review and first-use roadmap">ⓘ Review evidence and first-use build queue</a>.</div>',
       '<div id="owner350Status" class="notice" style="margin-top:10px;"></div>',
+      '<section class="admin-panel-block owner391-first-use" data-build="391" style="margin-top:12px;"><div class="owner350-head"><div><h4>First-use readiness &amp; verified data intake</h4><p class="section-subtitle">Item 391 · source-derived onboarding checklist. No customer, job, crew or material record is created by this panel.</p></div><a class="secondary" href="/help.html#first-use-readiness-verified-intake" aria-label="Info: verified data intake help">ⓘ Help</a></div><div id="owner391Readiness" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner351-evidence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management metric freshness &amp; confidence</h4><p class="section-subtitle">Build 351 · authoritative source age, coverage, visibility and confidence. Missing evidence is never converted into a zero-valued business fact.</p></div></div><div id="owner351Freshness"></div></section>',
       '<section class="admin-panel-block owner377-cohorts" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management outcome confidence &amp; cohort trend</h4><p class="section-subtitle">Build 377 · source-key-level decision outcomes in separate 30-day and preceding 60-day windows; incomplete evidence never becomes a performance claim.</p></div><a class="secondary" href="/help.html#management-outcome-confidence-cohort-trend" aria-label="Info: management outcome cohort help" title="Help for management outcome cohorts">ⓘ Help</a></div><div id="owner377Cohorts"></div></section>',
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
@@ -83,6 +84,76 @@
     const metricDetail=(key,detail)=>{const m=metricMeta(key);if(!m)return detail;if(['unavailable','missing'].includes(String(m.state||'')))return m.reason||'Authoritative source evidence is unavailable.';return detail};
     const metricEvidence=(key)=>{const m=metricMeta(key);if(!m)return'';return '<small class="owner351-meta">Evidence: '+esc(String(m.state||'unknown').toUpperCase())+' · confidence '+esc(String(m.confidence||'unknown').toUpperCase())+' · updated '+esc(when(m.last_authoritative_update))+'</small>'};
     const card=(label,value,detail='',metricKey='')=>'<div class="owner350-kpi"><span>'+esc(label)+'</span><strong>'+esc(metricKey?metricValue(metricKey,value):value)+'</strong>'+(detail||metricKey?'<small>'+esc(metricKey?metricDetail(metricKey,detail):detail)+'</small>':'')+(metricKey?metricEvidence(metricKey):'')+'</div>';
+
+    function buildFirstUseReadiness(response,nowMs=Date.now()){
+      // Build 391 uses canonical backend source-freshness evidence only. No second read or storage.
+      const stages=[
+        {key:'crm_customers',label:'Customer intake',module:'jobs',target:'jobs',next:'Open Jobs / CRM to review or create an authorized customer.'},
+        {key:'crm_properties',label:'Property & site',module:'jobs',target:'jobs',next:'Open Jobs / CRM to link an authorized property to a customer.'},
+        {key:'crews',label:'Crew availability',module:'jobs',target:'jobs',next:'Review authorized crew setup and seasonal availability.'},
+        {key:'equipment',label:'Equipment readiness',module:'jobs',target:'jobs',next:'Inspect canonical equipment readiness and lockout state before assignment.'},
+        {key:'jobs',label:'Jobs & work orders',module:'jobs',target:'jobs',next:'Review job records; never invent a first job or default service.'},
+        {key:'dispatch',label:'Dispatch schedule',module:'jobs',target:'jobs',next:'Review actual dispatch and conflict evidence before crew allocation.'},
+        {key:'production',label:'Production sessions',module:'jobs',target:'jobs',next:'Use the authorized field workflow to capture recorded job evidence.'},
+        {key:'recurring_visits',label:'Recurring visit schedule',module:'jobs',target:'jobs',next:'Review real planned recurring visits for all four Ontario seasons.'}
+      ];
+      if(response?.source_visibility?.jobs!==true)return {state:'permission_hidden',reason:'Jobs / Business & Operations view permission is required; no operational record counts are disclosed.',stages:[],summary:null};
+      const freshness=response?.source_freshness||{};
+      const records=stages.map(stage=>{
+        const meta=freshness[stage.key];
+        if(!meta || meta.freshness_state==='hidden')return {...stage,state:'withheld',count:null,reason:'Canonical source evidence is unavailable to this profile.'};
+        const count=Number(meta.row_count);
+        const limit=Number(meta.query_limit);
+        const fetched=Date.parse(String(meta.retrieved_at||''));
+        const recent=Number.isFinite(fetched)&&fetched<=nowMs+300000&&nowMs-fetched<=30*60000;
+        const validCount=Number.isInteger(count)&&count>=0;
+        const safeLimit=Number.isInteger(limit)&&limit>0;
+        const capped=meta.coverage_gap===true || meta.coverage_state==='possibly_capped'||(validCount&&safeLimit&&count>=limit);
+        if(meta.freshness_state==='source_error'||meta.coverage_state==='query_failed')return {...stage,state:'query_failed',count:null,reason:'Canonical source query failed; this is not a zero-record result.'};
+        if(!recent)return {...stage,state:'needs_recheck',count:null,reason:'No recent source-read receipt (within 30 minutes). Use Refresh to recheck; current activity is unknown.'};
+        if(!validCount||!safeLimit)return {...stage,state:'needs_recheck',count:null,reason:'Source count or query boundary is missing; no readiness assertion is made.'};
+        if(capped)return {...stage,state:'partial',count:null,reason:'Query reached the row cap; complete record count and readiness are unknown.'};
+        if(meta.coverage_state==='no_rows'&&meta.freshness_state==='missing'&&count===0)
+          return {...stage,state:'needs_intake',count:0,reason:'Verified empty source response at this check. No first-use record was returned; this does not imply zero activity elsewhere.'};
+        if(count===0)return {...stage,state:'needs_recheck',count:null,reason:'An inconsistent zero/coverage signal was returned; verify rather than infer no records.'};
+        if(meta.coverage_state!=='within_query_limit')return {...stage,state:'needs_recheck',count:null,reason:'Source query completeness is not established.'};
+        if(meta.freshness_state!=='current')return {...stage,state:'needs_recheck',count:null,reason:'Rows exist, but their authoritative freshness cannot be confirmed ('+String(meta.freshness_state||'unknown')+').'};
+        return {...stage,state:'recorded',count,reason:'A recent, uncapped canonical read returned '+count+' row(s). Presence only; no job completion, quality or performance claim.'};
+      });
+      const counts=Object.fromEntries(['recorded','needs_intake','needs_recheck','query_failed','partial','withheld'].map(k=>[k,records.filter(r=>r.state===k).length]));
+      return {state:records.every(r=>r.state==='recorded')?'source_presence_recorded':'review_required',
+        reason:'Read-only source presence, not operational activation or performance certification.',
+        stages:records,summary:{checked:records.length,...counts}};
+    }
+
+    function renderFirstUseReadiness(){
+      const host=$('owner391Readiness');if(!host)return;
+      const w=buildFirstUseReadiness(state.data);
+      if(w.state==='permission_hidden'){
+        host.innerHTML='<p class="muted">'+esc(w.reason)+'</p>';return;
+      }
+      const s=w.summary||{},stateLabel={
+        recorded:'Records present',needs_intake:'Verified empty — needs intake',
+        needs_recheck:'Needs evidence recheck',query_failed:'Source query failed',
+        partial:'Query limit — incomplete',withheld:'Permission unavailable'
+      };
+      const cards='<div class="owner351-summary">'+[
+        card('Verified records present',num(s.recorded),'source-presence checks only'),
+        card('Verified empty',num(s.needs_intake),'review before authorized first-use intake'),
+        card('Recheck needed',num(s.needs_recheck)+num(s.partial)+num(s.query_failed)+num(s.withheld),'no inferred zero'),
+      ].join('')+'</div>';
+      const rows=(w.stages||[]).map(r=>'<div class="owner350-row" data-owner391-source="'+esc(r.key)+'" data-owner391-state="'+esc(r.state)+'">'+
+        '<strong>'+esc(r.label)+' · '+esc(stateLabel[r.state]||'Unverified')+'</strong>'+
+        '<small>'+esc(r.count===null?'Count withheld / unavailable':r.count+' recorded row(s) in checked source')+'</small>'+
+        '<small>'+esc(r.reason)+'</small>'+
+        '<small>'+esc(r.next)+'</small>'+
+        (r.state==='withheld'?'':'<button class="secondary" type="button" data-owner350-open="'+esc(r.target)+'">Open source module</button>')+
+        '</div>').join('');
+      host.innerHTML=cards+'<p class="muted">A verified empty source is an intake opportunity, not a failed system. A populated source does not certify workflow readiness. Refresh re-queries the authorized backend; this view cannot create or alter records.</p>'+
+        '<div class="owner350-list">'+rows+'</div>'+
+        '<p class="muted">Four-season scope: spring/summer lawn and landscaping; fall cleanup/leaf; winter snow/storm/ice; general year-round service. All operator changes happen in their existing authorized modules.</p>';
+    }
+
     function renderFreshness(){
       const host=$('owner351Freshness');if(!host)return;
       const entries=Object.values(state.data?.source_freshness||{});
@@ -1346,6 +1417,7 @@
     }
     function render(){
       const m=metrics();
+      renderFirstUseReadiness();
       renderFreshness();
       renderManagementOutcomeConfidenceCohorts();
       renderCapacityForecast();
@@ -1428,9 +1500,15 @@
       // Reapply once after the router has mounted a new Admin hub, if needed.
       setTimeout(()=>window.YWIAdminHub?.open?.(group),0);
     }
+    let firstUseReadInFlight=false;
     async function load(){
-      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 360 data-quality duplicate/orphan reconciliation evidence refreshed. Build 373 data-quality remediation outcome/recurrence evidence refreshed. Build 364 workability-to-schedule recovery outcomes refreshed. Source records were not changed.')}
+      if(firstUseReadInFlight)return;
+      firstUseReadInFlight=true;
+      const refresh=$('owner350Refresh');
+      if(refresh){refresh.disabled=true;refresh.textContent='Checking…';}
+      try{note('Loading owner / management evidence…');const r=await api.loadAdminDirectory({scope:'owner_management_command',limit:500})||{};if(r.ok===false)throw new Error(r.error||'Management command centre load failed.');state.data=r;render();note('Build 360 data-quality duplicate/orphan reconciliation evidence refreshed. Build 373 data-quality remediation outcome/recurrence evidence refreshed. Build 364 workability-to-schedule recovery outcomes refreshed. Source records were not changed. First-use source checks refreshed without writes.')}
       catch(e){state.data={source_visibility:{jobs:false,finance:false,safety:false,admin:false},source_freshness:{},management_metric_confidence:{},four_season_capacity_forecast:null,route_crew_efficiency_evidence:null,recurring_renewal_retention_workbench:null,estimate_to_cash_leakage_workbench:null,labour_equipment_fleet_utilization_support:null,materials_consumables_seasonal_stock_readiness:null,customer_communication_readiness_queue:null,data_quality_duplicate_orphan_reconciliation:null,workability_schedule_recovery_outcomes:null};render();note('Unable to load Build 364 workability schedule-recovery outcomes. Unable to load Build 360 data-quality duplicate/orphan reconciliation evidence: '+(e?.message||e),true)}
+      finally{firstUseReadInFlight=false;if(refresh){refresh.disabled=false;refresh.textContent='Refresh';}}
     }
     el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open],[data-owner359-open],[data-owner360-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open')||b.getAttribute('data-owner359-open')||b.getAttribute('data-owner360-open'))});
     $('owner350Refresh').onclick=load;load();
