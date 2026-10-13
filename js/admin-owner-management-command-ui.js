@@ -27,6 +27,7 @@
       '<section class="admin-panel-block owner377-cohorts" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management outcome confidence &amp; cohort trend</h4><p class="section-subtitle">Build 377 · source-key-level decision outcomes in separate 30-day and preceding 60-day windows; incomplete evidence never becomes a performance claim.</p></div><a class="secondary" href="/help.html#management-outcome-confidence-cohort-trend" aria-label="Info: management outcome cohort help" title="Help for management outcome cohorts">ⓘ Help</a></div><div id="owner377Cohorts"></div></section>',
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
       '<section class="admin-panel-block owner375-scenarios" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity mix &amp; profitability scenario evidence</h4><p class="section-subtitle">Build 375 · recorded 14-day seasonal workload mix, shared crew-day evidence, configured route-capacity history, workability recovery, material readiness and permission-scoped profitability.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Evidence scenarios only — no automatic commitments:</strong> missing assumptions stay visible. This view cannot auto-price, dispatch, hire, schedule, purchase, contact suppliers/customers or commit customer/vendor work.</div><div id="owner375Scenarios"></div></section>',
+      '<section class="admin-panel-block owner389-crew-day" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season crew-day mix constraint &amp; scenario backtesting</h4><p class="section-subtitle">Item 389 · live 14-day shared crew assignment/mixed-season constraints and dated 90-day retrospective plan-versus-completion evidence.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice"><strong>Read-only planning review:</strong> a mixed crew-day is not an automatic collision or proof that capacity exists. This is not historical forecast accuracy.</div><div id="owner389CrewDayBacktest"></div></section>',
       '<section class="admin-panel-block owner364-recovery" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability-to-schedule recovery outcomes</h4><p class="section-subtitle">Build 364 · 90-day comparison of recorded Workability constraints with later Dispatch and Production evidence, including same-day recovery, rescheduled completion, partial/return visits and unresolved work.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome learning only:</strong> missing schedule or production evidence remains unresolved. This view cannot change a Workability decision, move a schedule item, dispatch crews, complete work or send a customer message.</div><div id="owner364Recovery"></div></section>',
       '<section class="admin-panel-block owner378-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability forecast vs recovery calibration</h4><p class="section-subtitle">Build 378 · read-only 90-day proposed-reschedule vs recorded-completion alignment, by season. Current 7/14-day forecast is context, not historical prediction evidence.</p></div><a class="secondary" href="/help.html#workability-forecast-recovery-calibration" aria-label="Info: forecast recovery calibration help" title="Calibration Help">ⓘ Help</a></div><div id="owner378Calibration" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner354-efficiency" style="margin-top:12px;"><div class="owner350-head"><div><h4>Route &amp; crew efficiency evidence</h4><p class="section-subtitle">Build 354 · planned-versus-recorded service duration, travel allowance context, route order, crew hours, return visits, delay/workability effects and repeated route friction.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Advisory, not employee scoring:</strong> this evidence can surface route clustering and configured-capacity opportunities, but it does not rank workers, rewrite routes or change dispatch.</div><div id="owner354Efficiency"></div></section>',
@@ -137,6 +138,44 @@
       host.innerHTML=summary+'<p class="muted">'+esc(f.capacity_method||'')+'</p>'+days+'<details style="margin-top:8px;"><summary>Forecast authority &amp; weather boundary</summary><p class="muted">'+esc(f.weather_boundary||'')+'</p><p class="muted">'+esc(f.authority_boundary||'')+'</p></details>';
     }
 
+
+
+    function renderFourSeasonCrewDayMixBacktest(){
+      const host=$('owner389CrewDayBacktest');if(!host)return;
+      const w=state.data?.four_season_crew_day_mix_constraint_backtesting;
+      if(!allowed('jobs')){host.innerHTML='<p class="muted">Jobs / Business &amp; Operations view permission is required for crew-day evidence.</p>';return;}
+      if(!w){host.innerHTML='<p class="muted">Four-season crew-day evidence is not available in this response.</p>';return;}
+      const withholding=['permission_hidden','source_unavailable','partial_coverage','freshness_withheld'];
+      if(withholding.includes(String(w.state||''))){
+        host.innerHTML='<div class="notice"><strong>Scenario/backtest withheld:</strong> '+esc(w.reason||'Required current and historical sources are not reliable.')+'</div>'+
+          '<p class="muted">No unobserved spare crew capacity, defect-free day, or zero completion gap is inferred.</p>';return;
+      }
+      const s=w.summary||{},cohorts=(w.backtest_cohorts||[]).map(r=>
+        '<div class="owner350-row" data-owner389-cohort="'+esc(r.window_key||'')+'"><strong>'+esc(r.label||'Recorded plan cohort')+'</strong>'+
+        '<small>'+esc(num(r.matched_completed_pairs)+' unambiguous completed pairs · '+num(r.completed_on_recorded_scheduled_day)+' on day · '+num(r.completed_after_recorded_scheduled_day)+' later · '+num(r.completed_before_recorded_scheduled_day)+' earlier')+'</small>'+
+        '<small>'+esc(r.sufficient_sample?'Recorded plan-day alignment '+pct(r.on_day_alignment_percent)+' · mean absolute gap '+r.mean_absolute_day_gap+' days':'Alignment withheld — fewer than five completed pairs')+'</small></div>'
+      ).join('');
+      const seasons=(w.seasons||[]).map(r=>{
+        const b=r.plan_completion_alignment||{};
+        return '<div class="owner350-row" data-owner389-season="'+esc(r.season_context||'')+'"><strong>'+esc(String(r.season_context||'unknown').replaceAll('_',' / '))+'</strong>'+
+          '<small>'+esc(num(r.planned_dispatch_items)+' dispatch item(s) · '+num(r.forecast_days_with_load)+' season-loaded date(s) · '+num(r.mixed_crew_days_for_season)+' mixed assigned crew-day(s)')+'</small>'+
+          '<small>'+esc(num(r.constrained_shared_days)+' constrained shared date(s) · '+num(r.workability_blocked_shared_days)+' workability-blocked · '+num(r.unassigned_dispatch_shared_signals)+' unassigned · '+num(r.equipment_attention_shared_signals)+' equipment attention (shared, not additive)')+'</small>'+
+          '<small>'+esc(b.sufficient_sample?num(b.matched_completed_pairs)+' matched completed pairs · recorded plan-day alignment '+pct(b.on_day_alignment_percent):num(b.matched_completed_pairs||0)+' completed pairs; season alignment withheld below five')+'</small></div>';
+      }).join('');
+      host.innerHTML='<div class="owner351-summary">'+[
+        card('14-day planned',num(s.planned_items_14_days),'recorded dispatch &amp; visits'),
+        card('Mixed assigned crew-days',num(s.mixed_assigned_crew_days),'one crew booked in multiple seasons on same date'),
+        card('Multi-season calendar days',num(s.days_with_multiple_season_loads),'shared date context, not conflict proof'),
+        card('Constrained days',num(s.days_with_readiness_constraints),'recorded blocked / attention / review'),
+        card('90-day completed pairs',num(s.unambiguous_completion_pairs_90_days),'recorded schedule versus Production'),
+        card('Excluded ambiguous plans',num(s.ambiguous_work_orders_excluded),'multiple plan/session candidates')
+      ].join('')+'</div>'+
+        (w.state!=='current'?'<div class="notice"><strong>Partial planning evidence:</strong> '+esc(w.reason||'Historical comparison sample insufficient.')+'</div>':'')+
+        '<details open><summary>Four-season crew-day constraint mix</summary><div class="owner350-list">'+seasons+'</div></details>'+
+        '<details><summary>Recorded-plan completion backtesting · 30 / 60 days</summary><div class="owner350-list">'+cohorts+'</div></details>'+
+        '<details><summary>Method, limits, privacy and source authority</summary><p class="muted">'+
+          [w.method_boundary,w.backtest_boundary,w.capacity_boundary,w.privacy_boundary,w.authority_boundary].map(x=>esc(x||'')).join('</p><p class="muted">')+'</p></details>';
+    }
 
     function renderFourSeasonCapacityProfitabilityScenarios(){
       const host=$('owner375Scenarios');if(!host)return;
@@ -1310,6 +1349,7 @@
       renderManagementOutcomeConfidenceCohorts();
       renderCapacityForecast();
       renderFourSeasonCapacityProfitabilityScenarios();
+      renderFourSeasonCrewDayMixBacktest();
       renderWorkabilityRecovery();
       renderWorkabilityForecastRecoveryCalibration();
       renderRouteCrewEfficiency();

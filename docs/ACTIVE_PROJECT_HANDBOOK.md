@@ -256,3 +256,7 @@ After item 387, the next is **388 — Offline Conflict Closure & Device-Safe Rel
 After item 388, the next is **389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting**.
 
 Item 388 adds read-only, browser-local, profile-isolated evidence of conflicts awaiting explicit review and a capped 7/23-day record of manual recovery choices. Local removal is not server delivery, absent history is not zero incident risk, no central device tracking is introduced, and the existing replay read/write authority boundaries and budgets remain unchanged. Browser source acceptance, mobile UI acceptance and Help are required in the same release.
+
+After item 389, the next is **390 — Production Learning & Autonomous Roadmap Renewal III**.
+
+Item 389 adds a read-only current 14-day shared crew-day seasonal mix and constrained-date review plus a 90-day retrospective dated Dispatch-to-full-Production comparison. Multiple matches and capped/missing/stale/hidden sources are withheld. Current live calendars cannot be treated as archived forecast snapshots, mixed-season crew-days are review candidates rather than proven collisions, and no invented shift length or Profitability target is permitted. The next roadmap-renewal item must record real evidence and queue at least ten new bounded builds.

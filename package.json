@@ -250,7 +250,9 @@
     "test:data-quality-fix-recurrence-source-freshness": "node scripts/data-quality-fix-recurrence-source-freshness-check.mjs",
     "test:browser:data-quality-fix-recurrence-source-freshness": "playwright test --config=playwright.config.mjs tests/browser/data-quality-fix-recurrence-source-freshness.spec.mjs",
     "test:offline-conflict-device-safe-cohorts": "node scripts/offline-conflict-device-safe-cohorts-check.mjs",
-    "test:browser:offline-conflict-device-safe-cohorts": "playwright test --config=playwright.config.mjs tests/browser/offline-conflict-device-safe-cohorts.spec.mjs"
+    "test:browser:offline-conflict-device-safe-cohorts": "playwright test --config=playwright.config.mjs tests/browser/offline-conflict-device-safe-cohorts.spec.mjs",
+    "test:four-season-crew-day-mix-backtesting": "node scripts/four-season-crew-day-mix-backtesting-check.mjs",
+    "test:browser:four-season-crew-day-mix-backtesting": "playwright test --config=playwright.config.mjs tests/browser/four-season-crew-day-mix-backtesting.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
