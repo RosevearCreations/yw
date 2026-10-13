@@ -254,7 +254,9 @@
     "test:four-season-crew-day-mix-backtesting": "node scripts/four-season-crew-day-mix-backtesting-check.mjs",
     "test:browser:four-season-crew-day-mix-backtesting": "playwright test --config=playwright.config.mjs tests/browser/four-season-crew-day-mix-backtesting.spec.mjs",
     "test:production-learning-roadmap-renewal-iii": "node scripts/production-learning-roadmap-renewal-iii-check.mjs",
-    "test:browser:production-learning-roadmap-renewal-iii": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-iii.spec.mjs"
+    "test:browser:production-learning-roadmap-renewal-iii": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-iii.spec.mjs",
+    "test:first-use-readiness-verified-intake": "node scripts/first-use-readiness-verified-intake-check.mjs",
+    "test:browser:first-use-readiness-verified-intake": "playwright test --config=playwright.config.mjs tests/browser/first-use-readiness-verified-intake.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
