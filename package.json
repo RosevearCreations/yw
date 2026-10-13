@@ -246,7 +246,9 @@
     "test:workability-schedule-recovery-outcomes": "node scripts/workability-schedule-recovery-outcomes-check.mjs",
     "test:browser:workability-schedule-recovery-outcomes": "playwright test --config=playwright.config.mjs tests/browser/workability-schedule-recovery-outcomes.spec.mjs",
     "test:workability-forecast-recovery-calibration": "node scripts/workability-forecast-recovery-calibration-check.mjs",
-    "test:browser:workability-forecast-recovery-calibration": "playwright test --config=playwright.config.mjs tests/browser/workability-forecast-recovery-calibration.spec.mjs"
+    "test:browser:workability-forecast-recovery-calibration": "playwright test --config=playwright.config.mjs tests/browser/workability-forecast-recovery-calibration.spec.mjs",
+    "test:data-quality-fix-recurrence-source-freshness": "node scripts/data-quality-fix-recurrence-source-freshness-check.mjs",
+    "test:browser:data-quality-fix-recurrence-source-freshness": "playwright test --config=playwright.config.mjs tests/browser/data-quality-fix-recurrence-source-freshness.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
