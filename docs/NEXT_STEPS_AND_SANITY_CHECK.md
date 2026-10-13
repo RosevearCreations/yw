@@ -782,6 +782,8 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 #### 393 — Four-Season Service Template & Price Source Validation
 
+**Implemented:** Admin read-only source review shows actual recorded template charges, unit/duration basis and active configured Canadian sale tax codes, including missing-source warnings, without publishing or writing rates. The following item is **394 — Crew Availability & Dispatch Conflict Gate**.
+
 **Outcome:** Expose season/service-specific existing price and unit source validation, missing-rate warnings and Canadian tax context; do not invent rates or publish prices.
 
 **Canonical source:** service catalog, templates, season and tax configuration. **Boundary:** Configuration review only; no live price change or invoice write.
