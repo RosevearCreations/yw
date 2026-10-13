@@ -169,7 +169,8 @@
   function queueAction(item) {
     const list = getActionItems();
     const conflictKey = item?.conflict_key || buildConflictKey(item);
-    const existingIndex = list.findIndex((entry) => String(entry.conflict_key || '') === String(conflictKey) && entry.status !== 'sent');
+    const currentOwner = ownerKey();
+    const existingIndex = list.findIndex((entry) => currentOwner && String(entry.owner_key || '') === currentOwner && String(entry.conflict_key || '') === String(conflictKey) && entry.status !== 'sent');
     const merged = {
       id: existingIndex >= 0 ? list[existingIndex].id : `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       queued_at: existingIndex >= 0 ? list[existingIndex].queued_at : new Date().toISOString(),
