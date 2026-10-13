@@ -45,6 +45,28 @@ function fixture(financeVisible=true){
     source_visibility:{jobs:true,finance:financeVisible,safety:false,admin:true},
     source_freshness:{},
     management_metric_confidence:{four_season_capacity_profitability_scenarios:meta()},
+    four_season_crew_day_mix_constraint_backtesting:{
+      state:'current',reason:'Retrospective proxy only',summary:{
+        planned_items_14_days:12,mixed_assigned_crew_days:2,days_with_multiple_season_loads:3,
+        days_with_readiness_constraints:2,unambiguous_completion_pairs_90_days:14,
+        ambiguous_work_orders_excluded:2,unpaired_work_orders_excluded:1
+      },
+      backtest_cohorts:[
+        {window_key:'latest_30_days',label:'Latest 30 dated plan days',matched_completed_pairs:6,completed_on_recorded_scheduled_day:4,
+        completed_after_recorded_scheduled_day:1,completed_before_recorded_scheduled_day:1,sufficient_sample:true,
+        on_day_alignment_percent:66.7,mean_absolute_day_gap:0.3},
+        {window_key:'preceding_60_days',label:'Preceding 60 dated plan days',matched_completed_pairs:8,
+        completed_on_recorded_scheduled_day:5,completed_after_recorded_scheduled_day:2,completed_before_recorded_scheduled_day:1,
+        sufficient_sample:true,on_day_alignment_percent:62.5,mean_absolute_day_gap:0.5}
+      ],
+      seasons:['spring_summer','fall','winter','four_season'].map((season_context,i)=>({
+        season_context,planned_dispatch_items:i+1,forecast_days_with_load:i+2,mixed_crew_days_for_season:i===0?2:1,
+        constrained_shared_days:i,workability_blocked_shared_days:0,unassigned_dispatch_shared_signals:1,equipment_attention_shared_signals:1,
+        plan_completion_alignment:{matched_completed_pairs:6,sufficient_sample:true,on_day_alignment_percent:50}
+      })),
+      method_boundary:'Shared crew-day is not an automatic conflict.',backtest_boundary:'No immutable historic forecast snapshots.',
+      capacity_boundary:'No invented shifts.',privacy_boundary:'No customer or employee IDs.',authority_boundary:'Read-only; no dispatch, Safety or Finance writes.'
+    },
     four_season_capacity_profitability_scenario_evidence:{
       generated_at:now(),timezone:'America/Toronto',source_queries_ok:true,coverage_complete:true,jobs_visible:true,finance_visible:financeVisible,
       horizon_start:'2026-10-08',horizon_end:'2026-10-21',
@@ -84,6 +106,44 @@ async function boot(page,data=fixture()){
   },data);
   await page.addScriptTag({content:source});
   await page.evaluate(()=>window.YWIOwnerManagementCommandUI.mount({api:window.YWIAPI}));
-  await expect(page.locator('#owner375Scenarios')).toBeVisible();
+  await expect(page.locator('#owner389CrewDayBacktest')).toBeVisible();
 }
 
+
+test('Build 389 compares seasonal mixed crew-days and retrospective dated plan cohorts at mobile width',async({page})=>{
+  await boot(page);
+  const host=page.locator('#owner389CrewDayBacktest');
+  await expect(host).toContainText('Mixed assigned crew-days');
+  await expect(host).toContainText('Constrained days');
+  await expect(host.locator('[data-owner389-season="spring_summer"]')).toContainText('2 mixed assigned crew-day');
+  await expect(host.locator('[data-owner389-season="winter"]')).toContainText('winter');
+  await host.getByText('Recorded-plan completion backtesting · 30 / 60 days').click();
+  await expect(host.locator('[data-owner389-cohort="latest_30_days"]')).toContainText('66.7%');
+  await expect(host.locator('[data-owner389-cohort="preceding_60_days"]')).toContainText('62.5%');
+  await host.getByText('Method, limits, privacy and source authority').click();
+  await expect(host).toContainText('No immutable historic forecast snapshots');
+  await expect(host.getByRole('button',{name:/reassign|schedule crew|unlock|post invoice/i})).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+});
+test('Build 389 withholds comparisons when required canonical source is stale',async({page})=>{
+  const d=fixture();d.four_season_crew_day_mix_constraint_backtesting={state:'freshness_withheld',reason:'Required production evidence is stale'};
+  await boot(page,d);
+  const host=page.locator('#owner389CrewDayBacktest');
+  await expect(host).toContainText('Scenario/backtest withheld');
+  await expect(host).toContainText('Required production evidence is stale');
+  await expect(host.locator('[data-owner389-season]')).toHaveCount(0);
+});
+test('Build 389 withholds historical comparison percentages under five completed pairs',async({page})=>{
+  const d=fixture();d.four_season_crew_day_mix_constraint_backtesting.state='insufficient_historical_pairs';
+  d.four_season_crew_day_mix_constraint_backtesting.backtest_cohorts[0].sufficient_sample=false;
+  d.four_season_crew_day_mix_constraint_backtesting.backtest_cohorts[0].on_day_alignment_percent=null;
+  await boot(page,d);
+  const host=page.locator('#owner389CrewDayBacktest');
+  await host.getByText('Recorded-plan completion backtesting · 30 / 60 days').click();
+  await expect(host.locator('[data-owner389-cohort="latest_30_days"]')).toContainText('Alignment withheld');
+});
+test('Build 389 hides crew-day analytics without Jobs visibility',async({page})=>{
+  const d=fixture();d.source_visibility.jobs=false;
+  await boot(page,d);
+  await expect(page.locator('#owner389CrewDayBacktest')).toContainText('Jobs / Business & Operations view permission');
+});
