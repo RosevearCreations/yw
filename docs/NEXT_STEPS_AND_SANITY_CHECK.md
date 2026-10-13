@@ -746,11 +746,13 @@ Next: **387 — Data-Quality Fix Recurrence & Source Freshness** (implemented).
 
 Read-only Admin+Jobs-permissioned 30-day and preceding-60-day dated quality decision cohorts from items 360/373 stable source-key evidence. Reports recurring keys, events following a dated resolved/improved decision, descriptive normalized 30-day event rates, Ontario decision-month spring/summer/fall/winter breakdowns and item 351 canonical source freshness. Fewer than five distinct dated keys per window withholds percentages. Missing, hidden, stale, capped, unknown-timestamp, failed or undated evidence withholds comparisons; a missing defect is not proof of a successful past fix. No automatic reconciliation, source writes, employee scoring or Production improvement claim.
 
-Next: **388 — Offline Conflict Closure & Device-Safe Reliability Cohorts**.
+Next: **388 — Offline Conflict Closure & Device-Safe Reliability Cohorts** (implemented).
 
-#### 388 — Offline Conflict Closure & Device-Safe Reliability Cohorts
+#### 388 — Offline Conflict Closure & Device-Safe Reliability Cohorts (implemented)
 
-Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+The existing local device conflict queue and Build 348 recovery history are aggregated for the currently signed-in profile, without new storage or server collection. A Mobile Crew App v2 card shows aged conflicts, pending actions, locally recorded Keep Server/Discard removals versus Keep Mine/Merge/Retry replay preparation, with last-7-day and preceding-23-day comparison windows. At least five local decisions per window are required to show percentages; a full 50-entry history cap, invalid/future timestamps or missing owner identity withhold comparisons. Device-specific samples are not fleet-wide and a local closure choice is never proof of successful server sync. Only a user decision can perform a recovery action; no automatic writes or increased read/replay budgets.
+
+Next: **389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting**.
 
 #### 389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting
 

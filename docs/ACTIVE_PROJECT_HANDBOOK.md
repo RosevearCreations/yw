@@ -252,3 +252,7 @@ After item 386, the next is 387 — Data-Quality Fix Recurrence & Source Freshne
 Item 387 implements bounded read-only source-key recurrence in the existing management command panel. It uses the canonical quality scan and private decision journal, dates non-overlapping 30-day and preceding 60-day cohorts, distinguishes recurrence after recorded fixes, shows Ontario decision-month seasonal context and rejects stale/partial/hidden/undated sources. Five unique quality keys are required per measured cohort. Recorded decisions are not historic scans, and this release has no destructive reconciliation authority or Production improvement claim.
 
 After item 387, the next is **388 — Offline Conflict Closure & Device-Safe Reliability Cohorts**.
+
+After item 388, the next is **389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting**.
+
+Item 388 adds read-only, browser-local, profile-isolated evidence of conflicts awaiting explicit review and a capped 7/23-day record of manual recovery choices. Local removal is not server delivery, absent history is not zero incident risk, no central device tracking is introduced, and the existing replay read/write authority boundaries and budgets remain unchanged. Browser source acceptance, mobile UI acceptance and Help are required in the same release.

@@ -344,6 +344,75 @@
     });
   }
 
+
+  // Build 388: local-only, profile-scoped, bounded decision ledger and active conflict age.
+  // Do not transfer payloads, notes, owner identity or stable device identifiers to a server.
+  function buildDeviceSafeReliabilityCohorts(input, nowValue = Date.now()) {
+    const now = Number(nowValue);
+    const base = {
+      state:'unavailable', reason:'', window_days:30, history_limit:50, source:'this_browser_only',
+      comparison_basis:'Last 7 days versus preceding 23 days of locally recorded recovery choices; events normalized per seven days. Neither window is complete device fleet telemetry.',
+      closure_boundary:'Keep Server and Discard remove this device queued mutation; Keep Mine, Merge and Retry prepare local replay. None is proof the server accepted, applied or reconciled the operation.',
+      authority_boundary:'Advisory local display only; conflict resolution remains explicit and owner-scoped. No automatic merge, replay, delete, server mutation or production improvement claim.',
+      cohorts:[], queue_age:null, summary:null
+    };
+    if(!input.ownerAuthenticated || !input.ownerKey) return {...base,state:'permission_hidden',reason:'Sign in to inspect only this profile’s local offline evidence.'};
+    if(!Number.isFinite(now))return {...base,state:'invalid_clock',reason:'Browser clock is invalid; evidence ages are withheld.'};
+    const owner = String(input.ownerKey);
+    const allHistory=Array.isArray(input.history)?input.history:[];
+    const allActions=Array.isArray(input.actions)?input.actions:[];
+    const history=allHistory.filter(x=>x && x.owner_key && String(x.owner_key)===owner);
+    const actions=allActions.filter(x=>x && x.owner_key && String(x.owner_key)===owner);
+    const age=(stamp)=>{const t=Date.parse(String(stamp||''));const days=(now-t)/86400000;return Number.isFinite(t)&&days>=0?days:null;};
+    const unresolved=actions.filter(x=>x.status==='conflict');
+    const pending=actions.filter(x=>x.status!=='conflict');
+    const buckets={within_day:0,days_1_to_7:0,over_7_days:0,unknown_age:0};
+    for(const row of unresolved){
+      const days=age(row.conflict_detected_at||row.queued_at);
+      if(days===null)buckets.unknown_age++;
+      else if(days<=1)buckets.within_day++;
+      else if(days<=7)buckets.days_1_to_7++;
+      else buckets.over_7_days++;
+    }
+    const queue_age={...buckets,current_conflicts:unresolved.length,pending_actions:pending.length,
+      oldest_conflict_days:unresolved.length && buckets.unknown_age===0 ? Math.round(Math.max(...unresolved.map(x=>age(x.conflict_detected_at||x.queued_at)))*10)/10 : null};
+    const records=history.map(x=>({days:age(x.resolved_at),action:String(x.resolution_action||''),
+      removed_locally:['keep_server','discard'].includes(String(x.resolution_action||''))}));
+    const invalid_decisions=records.filter(x=>x.days===null||!['keep_mine','keep_server','merge','retry','discard'].includes(x.action)).length;
+    const limited=allHistory.length>=50;
+    const windows=[{key:'last_7_days',label:'Last 7 days',min:0,max:7,length:7},
+      {key:'preceding_23_days',label:'Preceding 23 days',min:7,max:30,length:23}];
+    const cohorts=windows.map(w=>{
+      const items=records.filter(x=>x.days!==null&&x.days>=w.min&&x.days<w.max);
+      const removed=items.filter(x=>x.removed_locally).length;
+      const enough=items.length>=5&&!limited&&!invalid_decisions;
+      return {window_key:w.key,label:w.label,decision_events:items.length,local_removal_choices:removed,
+        replay_preparation_choices:items.length-removed,sufficient_sample:enough,
+        local_removal_share_percent:enough?Math.round(1000*removed/items.length)/10:null,
+        decision_events_per_7_days:enough?Math.round(items.length*70/w.length)/10:null};
+    });
+    const note=invalid_decisions?'A recorded choice has missing/future/invalid timing or action; comparisons withheld.'
+      :limited?'The local recovery history reached its 50-record cap; historical comparison is incomplete.'
+      :!history.length?'No recorded recovery decision is present for this profile on this browser.'
+      :cohorts.every(x=>x.sufficient_sample)?'Observed local choices only; no server delivery or resolution success claim.'
+      :'At least five valid local recovery choices per comparison window are required for percentages.';
+    return {...base,state:invalid_decisions?'invalid_history':limited?'partial_history':!history.length&&!actions.length?'no_local_evidence':cohorts.every(x=>x.sufficient_sample)?'current':'insufficient_sample',
+      reason:note,queue_age,cohorts,summary:{
+        local_recovery_decisions:history.length,active_conflicts:unresolved.length,pending_actions:pending.length,
+        unknown_age_conflicts:buckets.unknown_age,invalid_history_decisions:invalid_decisions
+      }};
+  }
+
+  function getDeviceSafeReliabilityCohorts(nowValue = Date.now()) {
+    const auth = window.YWI_AUTH?.getState?.() || {};
+    return buildDeviceSafeReliabilityCohorts({
+      ownerAuthenticated:auth.isAuthenticated === true,
+      ownerKey:ownerKey(),
+      history:getRecoveryHistory(),
+      actions:getActionItems()
+    }, nowValue);
+  }
+
   function getRecoveryComparison(itemOrId) {
     const item = typeof itemOrId === 'object' && itemOrId
       ? itemOrId
@@ -453,6 +522,7 @@
     getRecoveryItems,
     getRecoveryComparison,
     applyRecoveryAction,
-    getRecoveryHistory
+    getRecoveryHistory,
+    getDeviceSafeReliabilityCohorts
   };
 })();
