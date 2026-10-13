@@ -297,6 +297,6 @@ After item 392, the next is **393 — Four-Season Service Template & Price Sourc
 Item 392 adds CRM guided customer/property creation and editing through existing authenticated `crm_client_save` / `property_site_save` authoritative operations only. The frontend searches current CRM data for name/email and client-owned name/address potential duplicates; it blocks obvious matches but does NOT guarantee uniqueness under races or unknown source coverage. Submit buttons show Saving… and lock against extra requests until backend acknowledgment and readback; if acknowledgment/readback is uncertain the UI says so and asks for verification before retrying. Existing backend `jobs` approve/write boundary, profile rank and audit remain authoritative. It makes no automatic external messages, contract, work order or Finance records.
 
 
-## Build 393 — Four-season pricing source review
+## Four-season pricing source review
 
 The Admin read-only four-season review uses the authorized Jobs directory's `service_pricing_templates`, `tax_codes`, and `business_tax_settings`. Operators select spring/summer, fall, winter, or four-season, refresh authoritative current records, and inspect missing/nonpositive recorded charges, missing units/duration basis, pricing method, and tax source mismatches. Season classification is advisory from the currently recorded template name/code/job-family/scope/pattern, not a new canonical season. No template, estimate, invoice, price or tax record is written. Missing/denied sources fail closed; no invented prices or tax status.
