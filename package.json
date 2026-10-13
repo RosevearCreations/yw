@@ -256,7 +256,9 @@
     "test:production-learning-roadmap-renewal-iii": "node scripts/production-learning-roadmap-renewal-iii-check.mjs",
     "test:browser:production-learning-roadmap-renewal-iii": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-iii.spec.mjs",
     "test:first-use-readiness-verified-intake": "node scripts/first-use-readiness-verified-intake-check.mjs",
-    "test:browser:first-use-readiness-verified-intake": "playwright test --config=playwright.config.mjs tests/browser/first-use-readiness-verified-intake.spec.mjs"
+    "test:browser:first-use-readiness-verified-intake": "playwright test --config=playwright.config.mjs tests/browser/first-use-readiness-verified-intake.spec.mjs",
+    "test:guided-customer-property-creation": "node scripts/guided-customer-property-creation-check.mjs",
+    "test:browser:guided-customer-property-creation": "playwright test --config=playwright.config.mjs tests/browser/guided-customer-property-creation.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

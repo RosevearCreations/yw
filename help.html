@@ -393,6 +393,15 @@
           <p><strong>Where to find it:</strong> Admin → Owner / Management Command Centre → Management outcome confidence &amp; cohort trend. The circled information link in that section opens this guidance.</p>
         </section>
 
+        <section class="help-section" id="guided-customer-property-creation">
+          <h2>Build 392 — Customer &amp; Property Guided Record Creation</h2>
+          <p><strong>Where:</strong> Admin → Customer &amp; Property CRM → Guided customer &amp; property creation. Use customer search to select and edit an existing customer or choose New customer. Save requires a legal name; the email format is checked. The existing CRM also keeps seasons, service history and follow-up evidence together.</p>
+          <p><strong>Property:</strong> after a customer exists, choose a customer, supply a site name and optional service address, and Save property. Property search and selection let an authorized operator edit an existing site. Customer and property saves reuse the canonical <code>crm_client_save</code> and <code>property_site_save</code> backend actions against <code>clients</code> and <code>client_sites</code>. Both actions require existing Jobs approve authorization. This screen adds no second database table.</p>
+          <p><strong>Duplicates:</strong> before Save the loaded CRM customers are checked for matching legal name/billing email, and sites for same-customer matching name or address. A match blocks an extra create and asks the operator to select the existing record. These are advisory pre-submit checks, not a database uniqueness guarantee; entries created elsewhere between check and save may not be visible yet. Do not intentionally enter a second identical customer.</p>
+          <p><strong>Confirmation:</strong> buttons display Saving… and disable during the request. A success notice requires a backend OK response with a canonical identifier and successful CRM reload. Failed requests, missing identifiers and denied permissions produce a visible error; verify the source before retrying after uncertain delivery. No hidden retries, automatic import, merges, customer messages, work schedules, billing or provider operations.</p>
+          <p><strong>Season coverage:</strong> a single canonical customer and property supports spring/summer lawn and landscaping, fall cleanup/leaf, winter snow/storm/ice and general four-season relationships. The next build is <strong>393 — Four-Season Service Template &amp; Price Source Validation</strong>.</p>
+        </section>
+
         <section class="help-section" id="first-use-readiness-verified-intake">
           <h2>Build 391 — First-Use Readiness &amp; Verified Data Intake</h2>
           <p><strong>Where:</strong> Admin → Owner / Management Command Centre → First-use readiness &amp; verified data intake. Jobs / Business &amp; Operations view permission is required. The Owner refresh button performs a new authenticated, permission-scoped management-source read and displays Checking… until it completes.</p>
