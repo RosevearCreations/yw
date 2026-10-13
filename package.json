@@ -252,7 +252,9 @@
     "test:offline-conflict-device-safe-cohorts": "node scripts/offline-conflict-device-safe-cohorts-check.mjs",
     "test:browser:offline-conflict-device-safe-cohorts": "playwright test --config=playwright.config.mjs tests/browser/offline-conflict-device-safe-cohorts.spec.mjs",
     "test:four-season-crew-day-mix-backtesting": "node scripts/four-season-crew-day-mix-backtesting-check.mjs",
-    "test:browser:four-season-crew-day-mix-backtesting": "playwright test --config=playwright.config.mjs tests/browser/four-season-crew-day-mix-backtesting.spec.mjs"
+    "test:browser:four-season-crew-day-mix-backtesting": "playwright test --config=playwright.config.mjs tests/browser/four-season-crew-day-mix-backtesting.spec.mjs",
+    "test:production-learning-roadmap-renewal-iii": "node scripts/production-learning-roadmap-renewal-iii-check.mjs",
+    "test:browser:production-learning-roadmap-renewal-iii": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-iii.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

@@ -760,9 +760,105 @@ Read-only 14-day mixed assigned crew-day and shared seasonal readiness review us
 
 Next: **390 — Production Learning & Autonomous Roadmap Renewal III**.
 
-#### 390 — Production Learning & Autonomous Roadmap Renewal III
+#### 390 — Production Learning & Autonomous Roadmap Renewal III (implemented)
 
-Review the 377–389 measured source-backed outcomes and write at least ten further bounded autonomous releases.
+Item 390 records a dated capability-versus-outcome evidence review for items 377–389 in `docs/production_learning_review_390.json`. On 2026-10-13, privacy-safe read-only aggregate inspections found **zero recorded rows in ten inspected Production operational tables** (including Dispatch, Workability, Production sessions, CRM follow-ups, and the management decision journal). This is a bounded source-presence observation, not proof of zero activity elsewhere or of successful improvements. Percentages, historical comparisons and business outcome assertions remain **unknown / insufficient observed evidence**. No Production writes, schema, payment/provider, Safety or schedule changes are authorized by this review.
+
+The next wave prioritizes usable first-use customer/property and service setup, explicit operator confirmation and saved/error acknowledgement, dispatch/field execution readiness, QA, Finance handoff and genuine evidence capture. The renewed queue below covers items 391–405, with a further review item at 405. Each future release must enforce canonical source/module permissions, fail-closed freshness and safe authority boundaries, with a phone and source acceptance gate.
+
+Next: **391 — First-Use Readiness & Verified Data Intake**.
+
+#### 391 — First-Use Readiness & Verified Data Intake
+
+**Outcome:** Show an operator-facing first-use checklist driven by actual empty/nonempty canonical data and explicit module access. Recheck reads without fabricated sample rows; no writes.
+
+**Canonical source:** profiles, source-freshness, customer/property, Jobs and Production views. **Boundary:** Read-only readiness first; no auto-creation, default business seed or write bypass.
+
+#### 392 — Customer & Property Guided Record Creation
+
+**Outcome:** Reuse authorized CRM customer/property forms and existing duplicate warnings; verify one save, edit, lookup and permission-denied browser flow against exact existing write authority, without automatic import.
+
+**Canonical source:** CRM customer and property authority. **Boundary:** Any create/edit must use existing authorized forms; no duplicate customer creation or external contact.
+
+#### 393 — Four-Season Service Template & Price Source Validation
+
+**Outcome:** Expose season/service-specific existing price and unit source validation, missing-rate warnings and Canadian tax context; do not invent rates or publish prices.
+
+**Canonical source:** service catalog, templates, season and tax configuration. **Boundary:** Configuration review only; no live price change or invoice write.
+
+#### 394 — Crew Availability & Dispatch Conflict Gate
+
+**Outcome:** Test job assignment against actual crew availability, overlapping dispatch, ready vehicles and configured schedules using the existing Jobs authority, no auto-rescheduling.
+
+**Canonical source:** dispatch, crews, shifts, routes, equipment. **Boundary:** No automatic route editing, personnel reassignment or dispatch.
+
+#### 395 — Workability Safe Schedule Recheck
+
+**Outcome:** Require recorded Ontario conditions, workability decisions and Safety permission for schedule-review readiness, never override a hold or automatically dispatch.
+
+**Canonical source:** workability observations/decisions, Dispatch and Safety. **Boundary:** Safety and operator workability decision remain final; no autonomous scheduling.
+
+#### 396 — Job Start/Stop & Production Evidence Capture
+
+**Outcome:** Make one mobile job session path legible with a pending/saved/retry/error acknowledgement and linked completion evidence; no duplicate sessions on repeated clicks.
+
+**Canonical source:** mobile crew, Production sessions and execution proof. **Boundary:** Existing production writes only with explicit user action; immutable idempotency evidence.
+
+#### 397 — Safety & Equipment Readiness Preflight
+
+**Outcome:** Before an active job, surface canonical site hazard, training and equipment lockout readiness, with explicit blocked/unavailable instead of auto-clearing.
+
+**Canonical source:** Safety plans, training, lockout and equipment readiness. **Boundary:** No Safety approval, lockout removal or employment change through this layer.
+
+#### 398 — Material Issue & Return Reconciliation
+
+**Outcome:** Link job-level estimated and actual material quantities to canonical stock issue/return actions; preserve unit, cost and audit provenance and no negative stock assumption.
+
+**Canonical source:** materials catalog, stock adjustments and job material issues. **Boundary:** No automatic purchase, receipt, stock adjustment or supplier interaction.
+
+#### 399 — Visit Completion, QC & Customer-Safe Evidence
+
+**Outcome:** Guide crew proof capture through supervisor QC, customer-safe visibility and deficiency correction; never impersonate a customer or auto-approve signoff.
+
+**Canonical source:** execution proofs, QC and customer portal signoff. **Boundary:** No automatic customer approval, external message or image disclosure.
+
+#### 400 — Estimate/Change Order to Invoice Readiness
+
+**Outcome:** Connect recorded estimate, approved change-order application and work completion to a Finance review-ready invoice packet; Finance writes remain separately permissioned.
+
+**Canonical source:** estimates, change orders, closeout and Finance invoices. **Boundary:** No posting, collection, external accounting provider or tax remittance.
+
+#### 401 — Receivables Aging & Payment Reconciliation
+
+**Outcome:** Show authorized aging, deposit allocation and payment reconciliation exceptions from existing Finance records, without creating or posting payment transactions.
+
+**Canonical source:** accounts receivable, deposits and payment reconciliation. **Boundary:** Finance authority and payment providers unchanged; reconciliation review only.
+
+#### 402 — Recurring Renewal & Season Rollover Readiness
+
+**Outcome:** Review four-season agreement renewal dates, overlapping site work and winter rollover prerequisites; require operator confirmation for canonical renewal actions.
+
+**Canonical source:** recurring agreements, visits, seasonal operations. **Boundary:** No unattended auto-renewal, communication or payment.
+
+#### 403 — Offline Replay Receipt & Provenance Confirmation
+
+**Outcome:** Add profile-bound offline replay receipt evidence tied to canonical server acknowledgements; local queue removal alone is not server success, no cross-device identifiers.
+
+**Canonical source:** device-local outbox plus existing server conflict/result contracts. **Boundary:** No automatic conflict merge/retry or cross-profile replay.
+
+#### 404 — First Operational Cohort Measurement & Conversion Funnel
+
+**Outcome:** Only with genuine samples and complete fresh sources, show first-job funnel denominators from customer intake through dispatch, session, closeout and invoice, and withhold small cohort comparisons.
+
+**Canonical source:** CRM, Dispatch, Production, QC and Finance canonical views. **Boundary:** No employee ranking or inferred customer effect; minimum-sample and freshness gates.
+
+#### 405 — Production Learning & Autonomous Roadmap Renewal IV
+
+**Outcome:** Review measured first-use evidence and outcome gaps, publish the next >=10 bounded releases; never report improvement without dated comparable Production events.
+
+**Canonical source:** completed releases and dated source-cohort evidence. **Boundary:** No additional mutations or external authorization grants.
+
+
 
 
 Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, **354 — Route & Crew Efficiency Evidence**, **355 — Recurring Service Renewal & Retention Workbench**, **356 — Estimate-to-Cash Leakage & Margin Recovery**, **357 — Labour, Equipment & Fleet Utilization Decision Support**, **358 — Materials, Consumables & Seasonal Stock Readiness**, **359 — Customer Communication Readiness & Queue Quality**, **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**, **361 — Mobile, Offline & Read-Budget Reliability Optimization**, and **362 — Production Learning & Autonomous Roadmap Renewal**, **363 — Management Decision Outcome Journal & Learning Loop**, and **364 — Workability-to-Schedule Recovery Outcomes** are implemented by the current release. The renewed autonomous queue now continues with **365–376**, beginning with **365 — Route Plan-vs-Actual & Stop-Sequence Learning**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
