@@ -768,11 +768,11 @@ The next wave prioritizes usable first-use customer/property and service setup, 
 
 Next: **391 — First-Use Readiness & Verified Data Intake**.
 
-#### 391 — First-Use Readiness & Verified Data Intake
+#### 391 — First-Use Readiness & Verified Data Intake (implemented)
 
-**Outcome:** Show an operator-facing first-use checklist driven by actual empty/nonempty canonical data and explicit module access. Recheck reads without fabricated sample rows; no writes.
+An accessible, read-only source-derived first-use checklist is now at Owner / Management Command Centre, with help at `/help.html#first-use-readiness-verified-intake`. It distinguishes source-presence from completed operational readiness. The existing authenticated backend canonical `source_freshness` map verifies CRM customer/property, crew, equipment, job, dispatch, Production and recurring-visit queries with source-read timestamp, role visibility, freshness, row count and query-cap checks. Recent uncapped `no_rows` means verified empty at that moment and an opportunity for authorized intake, **not** a fictional performance zero. Failed, hidden, stale, undated, capped or expired source reads withhold evidence. Existing Jobs/CRM module navigation is the only next action. No automatic writes, seeds, schema updates, provider calls or signoffs. Existing Refresh disables duplicate clicks and announces checking and completion.
 
-**Canonical source:** profiles, source-freshness, customer/property, Jobs and Production views. **Boundary:** Read-only readiness first; no auto-creation, default business seed or write bypass.
+Next: **392 — Customer & Property Guided Record Creation**.
 
 #### 392 — Customer & Property Guided Record Creation
 

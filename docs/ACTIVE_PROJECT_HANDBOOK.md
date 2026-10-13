@@ -287,3 +287,7 @@ Renewed authorized queue:
 - **405 — Production Learning & Autonomous Roadmap Renewal IV** — Review measured first-use evidence and outcome gaps, publish the next >=10 bounded releases; never report improvement without dated comparable Production events. Boundary: No additional mutations or external authorization grants.
 
 Preserve the established protected-main exact-source GitHub/Vercel/Edge Function verification, final Development reconciliation and the original Jobs, Safety, Employment, CRM, Equipment and Finance write authorities. No unattended real customer/provider communications, payments, invoices, payroll posting or destructive reconciliation.
+
+After item 391, the next is **392 — Customer & Property Guided Record Creation**.
+
+Item 391 adds an Owner Management first-use record-presence checklist from existing authenticated, permission-scoped `source_freshness` evidence: CRM customers/properties, crews, equipment, jobs, dispatch, Production sessions and recurring visits. Fresh uncapped query-success `no_rows` is a truthful empty read at its retrieval timestamp, not proof of absent activity elsewhere or permission to auto-populate. Hidden/stale/expired/failed/capped/undated signals stay unverified. Refresh is disabled while in flight, reuses the existing backend, and never seeds or changes records. Phone Help and source/browser acceptance run in CI. Existing Jobs/CRM module authority is unchanged.
