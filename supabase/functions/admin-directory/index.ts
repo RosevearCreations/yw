@@ -573,6 +573,115 @@ function buildFourSeasonCapacityProfitabilityScenarioEvidence(input:{
 }
 
 
+
+function buildFourSeasonCrewDayMixConstraintBacktesting(input:any, todayOverride='') {
+  // Build 389: read-only mixed-season crew-day signals and retrospective recorded-plan comparison.
+  const today=/^\d{4}-\d{2}-\d{2}$/.test(todayOverride)?todayOverride:ontarioDateKey(new Date());
+  const previous90=addCalendarDays(today,-90), previous30=addCalendarDays(today,-30);
+  const required=['dispatch','recurring_visits','crews','equipment','workability','production','routes'];
+  const source_health=required.map(k=>{const v=input.sourceFreshness?.[k]||{};return {
+    source_key:k,freshness_state:String(v.freshness_state||'unknown'),coverage_state:String(v.coverage_state||'unknown'),
+    age_hours:v.age_hours??null,coverage_gap:v.coverage_gap===true,row_count:Number(v.row_count||0),query_limit:Number(v.query_limit||0),
+    reason:String(v.reason||'Canonical source freshness evidence is unavailable.')
+  }});
+  const boundary={
+    method_boundary:'Fourteen-day crew-day mixing uses already scheduled Dispatch and Build 353 current readiness snapshots; shared crews are not dedicated seasonal capacity, and mixed seasons do not prove a scheduling collision.',
+    backtest_boundary:'Ninety-day schedule-date vs recorded full Production completion comparison is retrospective plan alignment only. Schedules may have been edited and no immutable forecasts exist, so this is not historical forecast accuracy, avoided cost, or a causal improvement.',
+    capacity_boundary:'Missing crew-hour availability, historical daily forecast snapshots, configured route headroom or recurring-visit crew assignment is not filled with invented 8-hour shifts or spare capacity.',
+    privacy_boundary:'Aggregated season and dated-cohort counts only; no customer, property, employee, job or private notes are returned in this panel.',
+    authority_boundary:'Read-only review. Safety/workability, equipment lockout, dispatch, payroll, customer contact, purchases, billing and Finance remain with their original authorized workflows.'
+  };
+  const base={...boundary,generated_at:new Date().toISOString(),timezone:'America/Toronto',horizon_days:14,
+    backtest_window_days:90,minimum_completed_pairs:5,source_health,
+    state:'unavailable',reason:'',summary:null,seasons:[],backtest_cohorts:[]};
+  if(input.jobsVisible!==true)return {...base,state:'permission_hidden',source_health:[],reason:'Jobs / Business & Operations view permission is required.'};
+  if(input.sourceQueriesOk!==true)return {...base,state:'source_unavailable',reason:'A required canonical dispatch, crew, workability, production or route source query failed.'};
+  if(input.coverageComplete!==true)return {...base,state:'partial_coverage',reason:'A canonical source read reached its configured row cap; comparisons are withheld.'};
+  const invalid=source_health.find(r=>r.freshness_state!=='current'||r.coverage_gap||r.query_limit<=0||r.row_count>=r.query_limit);
+  if(invalid)return {...base,state:'freshness_withheld',reason:'Required '+invalid.source_key+' evidence is '+invalid.freshness_state+' / '+invalid.coverage_state+'; zero is not inferred.'};
+  const dayKey=(v)=>v?ontarioDateKey(v):null;
+  const seasons=['spring_summer','fall','winter','four_season'];
+  const seasonOf=(row)=>{const s=forecastSeason(row);return seasons.includes(s)?s:'four_season';};
+  const days=Array.isArray(input.capacityForecast?.days)?input.capacityForecast.days:[];
+  const dispatch=Array.isArray(input.dispatch)?input.dispatch:[];
+  const production=Array.isArray(input.production)?input.production:[];
+  const active=dispatch.filter(r=>{const date=dayKey(r.scheduled_start||r.service_date);
+    return date&&date>=today&&date<=addCalendarDays(today,13)&&!['cancelled','canceled','completed','superseded'].includes(String(r.schedule_status||'').toLowerCase())});
+  const dateCrewMap=new Map();
+  for(const row of active){
+    const date=dayKey(row.scheduled_start||row.service_date),crew=String(row.crew_id||'');
+    if(!date||!crew)continue;
+    const key=date+'|'+crew;
+    const context=dateCrewMap.get(key)||{date,seasons:new Set()};
+    context.seasons.add(seasonOf(row));dateCrewMap.set(key,context);
+  }
+  const mixedCrewDays=[...dateCrewMap.values()].filter(x=>x.seasons.size>1);
+  const totalPlanned=days.reduce((n,r)=>n+Math.max(0,Number(r.total_planned_items||0)),0);
+  const seasonRows=seasons.map(season=>{
+    const seasonDays=days.filter(d=>Number(d.season_load?.[season]||0)>0);
+    const mix=mixedCrewDays.filter(x=>x.seasons.has(season));
+    const planned=active.filter(d=>seasonOf(d)===season).length;
+    const attention=seasonDays.filter(d=>['blocked','attention','review'].includes(String(d.readiness_state||''))).length;
+    const blocked=seasonDays.filter(d=>d.workability_blocked_count>0).length;
+    const unassigned=seasonDays.reduce((n,d)=>n+Math.max(0,Number(d.unassigned_dispatch_count||0)),0);
+    const equip=seasonDays.reduce((n,d)=>n+Math.max(0,Number(d.equipment_attention_count||0)),0);
+    return {season_context:season,planned_dispatch_items:planned,forecast_days_with_load:seasonDays.length,
+      mixed_crew_days_for_season:mix.length,constrained_shared_days:attention,workability_blocked_shared_days:blocked,
+      unassigned_dispatch_shared_signals:unassigned,equipment_attention_shared_signals:equip,
+      shared_crew_day_note:'These are shared calendar-day signals on season-loaded dates, not independent or additive seasonal totals.'};
+  });
+  // A work order with multiple schedule rows or multiple completed sessions cannot yield an unambiguous retrospective pair.
+  const planByWork=new Map();
+  for(const d of dispatch){const id=String(d.work_order_id||'');const date=dayKey(d.scheduled_start||d.service_date);
+    if(!id||!date||date<previous90||date>=today)continue;
+    const group=planByWork.get(id)||[];group.push({date,season:seasonOf(d)});planByWork.set(id,group);
+  }
+  const completionByWork=new Map();
+  for(const p of production){
+    if(!['completed','complete','closed'].includes(String(p.session_status||p.production_state||'').toLowerCase()))continue;
+    const id=String(p.work_order_id||''),completed=dayKey(p.session_date||p.completed_at);
+    if(!id||!completed)continue;
+    const group=completionByWork.get(id)||[];group.push(completed);completionByWork.set(id,group);
+  }
+  const pairs=[];
+  let ambiguous=0,unpaired=0;
+  for(const [id,plans] of planByWork){
+    const completions=completionByWork.get(id)||[];
+    if(plans.length!==1||completions.length>1){ambiguous++;continue;}
+    if(completions.length!==1){unpaired++;continue;}
+    const p=plans[0],actual=completions[0];
+    if(actual<previous90||actual>today){unpaired++;continue;}
+    const diff=Math.round((Date.parse(actual+'T12:00:00Z')-Date.parse(p.date+'T12:00:00Z'))/86400000);
+    const daysAgo=Math.round((Date.parse(today+'T12:00:00Z')-Date.parse(p.date+'T12:00:00Z'))/86400000);
+    if(!Number.isFinite(diff)||!Number.isFinite(daysAgo)){unpaired++;continue;}
+    pairs.push({season:p.season,days_ago:daysAgo,delta_days:diff});
+  }
+  const summarize=(rows)=>{
+    const enough=rows.length>=5;
+    const aligned=rows.filter(r=>r.delta_days===0).length,late=rows.filter(r=>r.delta_days>0).length;
+    return {matched_completed_pairs:rows.length,completed_on_recorded_scheduled_day:aligned,
+      completed_after_recorded_scheduled_day:late,completed_before_recorded_scheduled_day:rows.filter(r=>r.delta_days<0).length,
+      sufficient_sample:enough,on_day_alignment_percent:enough?Math.round(1000*aligned/rows.length)/10:null,
+      mean_absolute_day_gap:enough?Math.round(rows.reduce((n,r)=>n+Math.abs(r.delta_days),0)*10/rows.length)/10:null};
+  };
+  const backtest_cohorts=[{window_key:'latest_30_days',label:'Latest 30 dated plan days',min:0,max:30},
+    {window_key:'preceding_60_days',label:'Preceding 60 dated plan days',min:30,max:90}].map(w=>({
+    window_key:w.window_key,label:w.label,...summarize(pairs.filter(r=>r.days_ago>=w.min&&r.days_ago<w.max))
+  }));
+  const seasonalBacktest=seasonRows.map(s=>({...s,plan_completion_alignment:summarize(pairs.filter(r=>r.season===s.season_context))}));
+  const sufficient=backtest_cohorts.every(c=>c.sufficient_sample);
+  return {...base,state:totalPlanned===0?'no_current_plan':sufficient?'current':'insufficient_historical_pairs',
+    reason:totalPlanned===0?'No loaded planned items for the fourteen-day horizon; no mix comparison is invented.':
+      sufficient?'Retrospective recorded-plan alignment only; no historical forecast snapshots.':
+      'At least five unambiguous completed plan/session pairs in EACH historical cohort are needed; rates are withheld where sparse.',
+    summary:{planned_items_14_days:totalPlanned,mixed_assigned_crew_days:mixedCrewDays.length,
+      days_with_multiple_season_loads:days.filter(d=>seasons.filter(s=>Number(d.season_load?.[s]||0)>0).length>1).length,
+      days_with_readiness_constraints:days.filter(d=>['blocked','attention','review'].includes(String(d.readiness_state||''))).length,
+      unambiguous_completion_pairs_90_days:pairs.length,ambiguous_work_orders_excluded:ambiguous,unpaired_work_orders_excluded:unpaired,
+      historical_comparison_sufficient:sufficient},
+    seasons:seasonalBacktest,backtest_cohorts};
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -4323,6 +4432,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       workability_schedule_recovery:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production']),
       workability_forecast_recovery_calibration:buildManagementMetricConfidence(sourceFreshness,['workability','dispatch','production']),
       management_outcome_confidence_cohort_trend:buildManagementMetricConfidence(sourceFreshness,['management_decision_outcomes']),
+      four_season_crew_day_mix_backtest:buildManagementMetricConfidence(sourceFreshness,['dispatch','recurring_visits','crews','equipment','workability','production','routes']),
       four_season_capacity_profitability_scenarios:buildManagementMetricConfidence(sourceFreshness,canFinanceView?['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work','routes','production','material_stock','material_plans','profitability','agreement_profitability']:['dispatch','recurring_visits','crews','equipment','workability','storms','storm_routes','seasonal_work','routes','production','material_stock','material_plans'])
     };
     const managementOutcomeConfidenceCohortTrend=buildManagementOutcomeConfidenceCohortTrend(
@@ -4439,6 +4549,12 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       sourceQueriesOk:fourSeasonScenarioReads.every((r)=>r.query_ok!==false),
       coverageComplete:fourSeasonScenarioReads.every((r)=>r.query_ok!==false&&Number(r.row_count||0)<Number(r.limit||1))
     });
+    const crewDayBacktestReads=[dispatchRead,recurringVisitsRead,crewsRead,equipmentRead,workabilityRead,productionRead,routesRead];
+    const fourSeasonCrewDayMixBacktest=buildFourSeasonCrewDayMixConstraintBacktesting({
+      dispatch,production,capacityForecast:fourSeasonCapacityForecast,sourceFreshness,jobsVisible:canJobsView,
+      sourceQueriesOk:crewDayBacktestReads.every(r=>r.query_ok!==false),
+      coverageComplete:crewDayBacktestReads.every(r=>r.query_ok!==false&&Number(r.row_count||0)<Number(r.limit||1))
+    });
     const dataQualityReferenceReads=[customerDirectoryRead,propertyDirectoryRead,jobsRead,dispatchRead,recurringRead,crewsRead,equipmentRead,routesRead];
     const dataQualityDuplicateOrphanReconciliation=buildDataQualityDuplicateOrphanReconciliation({
       customers:customerDirectory,properties:propertyDirectory,jobs,dispatch,recurring,crews,equipment,routes,workability,materialPlans,
@@ -4500,6 +4616,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       data_quality_remediation_outcome_recurrence:dataQualityRemediationOutcomeRecurrence,
       data_quality_fix_recurrence_source_freshness:dataQualityFixRecurrenceSourceFreshness,
       four_season_capacity_profitability_scenario_evidence:fourSeasonCapacityProfitabilityScenarioEvidence,
+      four_season_crew_day_mix_constraint_backtesting:fourSeasonCrewDayMixBacktest,
       freshness_boundary:'Freshness and confidence describe source evidence quality only. Missing, hidden or failed sources do not become zero-valued business facts.',
       seasonal_boundary:'Spring/summer landscaping, fall cleanup/leaf collection and winter snow/storm operations are first-class management contexts.',
       authority_boundary:'Management metrics are read-only aggregates of canonical source workflows; this scope does not mutate Jobs, Safety, Workforce, Equipment or Finance.'
