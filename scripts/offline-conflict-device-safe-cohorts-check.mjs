@@ -41,6 +41,8 @@ const pkg=JSON.parse(read('package.json'));
 assert.equal(pkg.scripts['test:offline-conflict-device-safe-cohorts'],'node scripts/offline-conflict-device-safe-cohorts-check.mjs');
 const flow=read('.github/workflows/staging-browser-integration.yml');
 assert.ok(flow.includes('npm run test:offline-conflict-device-safe-cohorts')&&flow.includes('npm run test:browser:offline-conflict-device-safe-cohorts'));
+assert.ok(read('index.html').includes('/js/mobile-today.js?v=2026-10-12b388') && read('index.html').includes('/js/outbox.js?v=2026-10-12b388'),'Build 388 browser shell cache-busting');
+assert.ok(read('server-worker.js').includes("const CACHE_NAME = 'ywi-shell-v2026-10-12b388';"),'Build 388 PWA cache rotation');
 assert.ok(read('help.html').includes('Build 388 — Offline Conflict Closure &amp; Device-Safe Reliability Cohorts'));
 assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('Next: **389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting**'));
 assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('After item 388, the next is **389'));
