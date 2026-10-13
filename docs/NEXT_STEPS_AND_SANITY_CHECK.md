@@ -774,11 +774,11 @@ An accessible, read-only source-derived first-use checklist is now at Owner / Ma
 
 Next: **392 — Customer & Property Guided Record Creation**.
 
-#### 392 — Customer & Property Guided Record Creation
+#### 392 — Customer & Property Guided Record Creation (implemented)
 
-**Outcome:** Reuse authorized CRM customer/property forms and existing duplicate warnings; verify one save, edit, lookup and permission-denied browser flow against exact existing write authority, without automatic import.
+Add a two-step customer/property create-or-edit workspace inside the existing Customer & Property CRM. Source lookup, name/email and same-customer property name/address duplicate warnings are pre-submit protections, not uniqueness certification; customers and sites remain in canonical `clients` / `client_sites`. Explicit Save calls existing authorized `crm_client_save` or `property_site_save` through `manageOperations`, preserving Jobs approve permissions, central audit and RPC ownership. Busy buttons display Saving… and suppress repeat requests until the backend acknowledges a record identifier and the CRM readback is checked. Empty customer list forbids property creation. Missing CRM access prevents writes. No new Edge Functions, database migrations, customer messages, automatic import, merges, invoices or provider calls. Phone-source/browser acceptance validates new/update/lookup, duplicate, unauthorized, ack error and saving lock cases.
 
-**Canonical source:** CRM customer and property authority. **Boundary:** Any create/edit must use existing authorized forms; no duplicate customer creation or external contact.
+Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 #### 393 — Four-Season Service Template & Price Source Validation
 

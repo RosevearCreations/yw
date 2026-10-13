@@ -20,6 +20,28 @@
       '<div class="notice"><strong>Four-season Ontario operating model:</strong> the same customer/property relationship carries spring/summer mowing and landscaping, fall cleanup and leaf collection, and winter snow clearing/removal history. Winter is a first-class CRM service context.</div>',
       '<div class="notice" style="margin-top:8px;"><strong>Authority boundary:</strong> canonical <code>clients</code>, <code>client_sites</code>, quote/contact leads, recurring service agreements, estimates and work orders remain authoritative. Cross-service candidates are advisory only; nothing here automatically contacts a customer, creates an estimate, schedules work or bills anything.</div>',
       '<div id="crm340Summary" class="admin-backbone-summary" style="margin-top:12px;"></div>',
+      '<section class="admin-panel-block" data-build="392" style="margin-top:14px;" id="crm392Guided"><h4>Guided customer &amp; property creation</h4>',
+      '<p class="muted">Existing authorized CRM and Property Site records only. Search and check possible duplicates before pressing Save. Buttons acknowledge pending, saved or failed actions.</p>',
+      '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px;">',
+      '<div><h5>1. Find or save customer</h5><label>Find customer<input id="crm392CustomerSearch" type="search" placeholder="Search customer or email" style="width:100%;box-sizing:border-box"></label>',
+      '<label>Record<select id="crm392CustomerSelect" style="width:100%;box-sizing:border-box"><option value="">New customer</option></select></label>',
+      '<label>Legal name<input id="crm392LegalName" maxlength="220" style="width:100%;box-sizing:border-box"></label>',
+      '<label>Billing email<input id="crm392Email" type="email" maxlength="320" style="width:100%;box-sizing:border-box"></label>',
+      '<label>Phone<input id="crm392Phone" type="tel" maxlength="80" style="width:100%;box-sizing:border-box"></label>',
+      '<label>City<input id="crm392CustomerCity" maxlength="120" style="width:100%;box-sizing:border-box"></label>',
+      '<button id="crm392SaveCustomer" class="secondary" type="button">Save customer</button>',
+      '<div id="crm392CustomerStatus" class="notice" role="status" aria-live="polite"></div></div>',
+      '<div><h5>2. Find or save property</h5><label>Find property<input id="crm392PropertySearch" type="search" placeholder="Search property or address" style="width:100%;box-sizing:border-box"></label>',
+      '<label>Record<select id="crm392PropertySelect" style="width:100%;box-sizing:border-box"><option value="">New property</option></select></label>',
+      '<label>Customer<select id="crm392PropertyCustomer" style="width:100%;box-sizing:border-box"></select></label>',
+      '<label>Site name<input id="crm392SiteName" maxlength="180" style="width:100%;box-sizing:border-box"></label>',
+      '<label>Service address<input id="crm392Address" maxlength="400" style="width:100%;box-sizing:border-box"></label>',
+      '<label>City<input id="crm392SiteCity" maxlength="120" style="width:100%;box-sizing:border-box"></label>',
+      '<label>Postal code<input id="crm392Postal" maxlength="30" style="width:100%;box-sizing:border-box"></label>',
+      '<button id="crm392SaveProperty" class="secondary" type="button">Save property</button>',
+      '<div id="crm392PropertyStatus" class="notice" role="status" aria-live="polite"></div></div>',
+      '</div><p class="muted">A matching customer or property is a review warning, not a destructive merge. This view never sends customer messages, schedules jobs or creates invoices. Backend Jobs approve access is mandatory.</p></section>',
+
       '<div class="grid" style="margin-top:14px;"><div class="admin-panel-block"><h4>Customers</h4><div id="crm340Customers"></div></div><div class="admin-panel-block"><h4>Selected relationship</h4><div id="crm340Selected"></div></div></div>',
       '<div class="grid" style="margin-top:14px;"><div class="admin-panel-block"><h4>Open leads</h4><div id="crm340Leads"></div></div><div class="admin-panel-block"><h4>Renewals &amp; follow-ups</h4><div id="crm340Queues"></div></div></div>',
       '<div class="admin-panel-block" style="margin-top:14px;"><h4>Record relationship evidence</h4><div class="grid">',
@@ -41,12 +63,102 @@
     const api=config.api||window.YWIAPI;
     if(!api?.loadAdminDirectory||!api?.manageOperations)return;
     const el=host(); if(!el||el.dataset.mounted==='1')return; el.dataset.mounted='1';
-    const state={payload:{},selectedId:''};
+    const state={payload:{},selectedId:'',loaded:false,customerEdit:'',propertyEdit:'',saving:false};
     const arr=(k)=>Array.isArray(state.payload[k])?state.payload[k]:[];
     const notice=(t,bad=false)=>{const e=byId('crm340Status');if(e){e.textContent=t;e.classList.toggle('error',bad);}};
     const selected=()=>arr('crm_customers').find((x)=>String(x.client_id)===String(state.selectedId))||null;
     const coverage=(x)=>'<small>Spring/summer '+mark(x?.spring_summer_coverage)+' · Fall '+mark(x?.fall_coverage)+' · Winter '+mark(x?.winter_coverage)+'</small>';
+
+    const norm=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('en-CA');
+    const val=id=>byId(id)?.value.trim()||'';
+    const status392=(kind,message,bad=false)=>{const host=byId('crm392'+kind+'Status');if(host){host.textContent=message;host.classList.toggle('error',bad)}};
+    const sourceCustomer=id=>arr('crm_customers').find(r=>String(r.client_id)===String(id));
+    const sourceProperty=id=>arr('crm_properties').find(r=>String(r.id)===String(id));
+    const customers=()=>arr('crm_customers').filter(r=>r.is_active!==false);
+    const propertyCustomerSelect=()=>val('crm392PropertyCustomer');
+    function renderGuideOptions(){
+      const active=customers(),selectedCustomer=state.customerEdit,selectedProperty=state.propertyEdit;
+      const searchCustomer=norm(val('crm392CustomerSearch')),searchProperty=norm(val('crm392PropertySearch'));
+      const keep=(list,current,predicate)=>list.filter(r=>predicate(r)||String(r.client_id||r.id)===String(current));
+      const matches=keep(active,selectedCustomer,c=>!searchCustomer||norm([c.client_name,c.billing_email,c.client_code].join(' ')).includes(searchCustomer));
+      byId('crm392CustomerSelect').innerHTML='<option value="">New customer</option>'+matches.map(c=>
+        '<option value="'+esc(c.client_id)+'">'+esc(c.client_name||c.legal_name||'Customer')+'</option>').join('');
+      byId('crm392CustomerSelect').value=sourceCustomer(selectedCustomer)?selectedCustomer:'';
+      const sites=keep(arr('crm_properties'),selectedProperty,p=>!searchProperty||norm([p.site_name,p.service_address,p.postal_code].join(' ')).includes(searchProperty));
+      byId('crm392PropertySelect').innerHTML='<option value="">New property</option>'+sites.map(p=>
+        '<option value="'+esc(p.id)+'">'+esc((p.site_name||'Property')+' — '+(p.service_address||'no address'))+'</option>').join('');
+      byId('crm392PropertySelect').value=sourceProperty(selectedProperty)?selectedProperty:'';
+      const chosen=propertyCustomerSelect();
+      byId('crm392PropertyCustomer').innerHTML='<option value="">Choose an existing customer</option>'+
+        active.map(c=>'<option value="'+esc(c.client_id)+'">'+esc(c.client_name||c.legal_name||'Customer')+'</option>').join('');
+      byId('crm392PropertyCustomer').value=active.some(c=>String(c.client_id)===chosen)?chosen:
+        active.some(c=>String(c.client_id)===state.selectedId)?state.selectedId:'';
+      byId('crm392SaveCustomer').disabled=state.saving||!state.loaded;
+      byId('crm392SaveProperty').disabled=state.saving||!state.loaded||!active.length;
+    }
+    function fillCustomer(){
+      const c=sourceCustomer(state.customerEdit)||{};
+      for(const [key,source] of [['crm392LegalName','legal_name'],['crm392Email','billing_email'],
+        ['crm392Phone','phone'],['crm392CustomerCity','city']])byId(key).value=String(c[source]||'');
+      status392('Customer',state.customerEdit?'Editing recorded customer. Save changes explicitly.':'New customer — complete legal name and review existing matches.');
+    }
+    function fillProperty(){
+      const p=sourceProperty(state.propertyEdit)||{};
+      for(const [key,source] of [['crm392SiteName','site_name'],['crm392Address','service_address'],
+        ['crm392SiteCity','city'],['crm392Postal','postal_code']])byId(key).value=String(p[source]||'');
+      if(p.client_id&&customers().some(c=>String(c.client_id)===String(p.client_id)))byId('crm392PropertyCustomer').value=String(p.client_id);
+      status392('Property',state.propertyEdit?'Editing recorded property; service address is canonical.':'New property — select a real customer first.');
+    }
+    async function guidedSave(kind){
+      if(state.saving||!state.loaded)return;
+      const isCustomer=kind==='Customer';
+      const button=byId(isCustomer?'crm392SaveCustomer':'crm392SaveProperty');
+      const name=val(isCustomer?'crm392LegalName':'crm392SiteName');
+      if(!name)return status392(kind,isCustomer?'Customer legal name is required.':'Property/site name is required.',true);
+      const edit=isCustomer?state.customerEdit:state.propertyEdit;
+      const row=isCustomer?sourceCustomer(edit):sourceProperty(edit);
+      if(edit&&!row)return status392(kind,'Selected record is not in the latest CRM read. Refresh first.',true);
+      if(isCustomer){
+        const email=val('crm392Email');
+        if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return status392(kind,'Please enter a valid billing email.',true);
+        const duplicate=customers().find(c=>String(c.client_id)!==String(edit)&&
+          (norm(c.client_name||c.legal_name)===norm(name)||(email&&norm(c.billing_email)===norm(email))));
+        if(duplicate)return status392(kind,'Possible duplicate customer: '+(duplicate.client_name||duplicate.legal_name||'Existing customer')+'. Search/select the existing record before creating another.',true);
+      }else{
+        const clientId=propertyCustomerSelect();
+        if(!clientId||!sourceCustomer(clientId))return status392(kind,'Choose an existing customer before saving the property.',true);
+        const address=val('crm392Address');
+        const duplicate=arr('crm_properties').find(p=>String(p.id)!==String(edit)&&String(p.client_id)===clientId&&(
+          (address&&norm(p.service_address)===norm(address))||norm(p.site_name)===norm(name)));
+        if(duplicate)return status392(kind,'Possible duplicate property: '+(duplicate.site_name||'Existing site')+'. Search/select it to edit rather than creating a second site.',true);
+      }
+      const payload=isCustomer?{
+        action:'crm_client_save',...(edit?{id:edit}:{}),legal_name:name,
+        billing_email:val('crm392Email'),phone:val('crm392Phone'),city:val('crm392CustomerCity'),
+        ...(!edit?{crm_lifecycle_stage:'customer'}:{})
+      }:{
+        action:'property_site_save',...(edit?{id:edit}:{}),client_id:propertyCustomerSelect(),
+        site_name:name,service_address:val('crm392Address'),city:val('crm392SiteCity'),postal_code:val('crm392Postal')
+      };
+      state.saving=true;
+      button.textContent='Saving…';button.disabled=true;
+      byId('crm392SaveCustomer').disabled=true;byId('crm392SaveProperty').disabled=true;
+      status392(kind,'Saving in the authorized CRM workflow…');
+      try{
+        const result=await api.manageOperations(payload);
+        if(!result?.ok)throw new Error(result?.error||'Backend did not acknowledge the save.');
+        const recordId=isCustomer?String(result.record?.client_id||result.record?.id||''):String(result.record?.id||'');
+        if(!recordId)throw new Error('Save response did not contain the canonical record identifier. Verify the source before retrying.');
+        if(isCustomer){state.customerEdit=recordId;state.selectedId=recordId}
+        else state.propertyEdit=recordId;
+        const refreshed=await load();
+        if(!refreshed)throw new Error('Save was acknowledged, but the CRM readback failed. Verify the record before retrying.');
+        status392(kind,'Saved and CRM records reloaded. The backend acknowledged '+(edit?'an update.':'a new record.')+' No automatic additional action was taken.');
+      }catch(e){status392(kind,String(e?.message||e),true)}
+      finally{state.saving=false;button.textContent=isCustomer?'Save customer':'Save property';renderGuideOptions()}
+    }
     function render(){
+      renderGuideOptions();
       const customers=arr('crm_customers').filter((x)=>x.is_active!==false);
       if(!state.selectedId&&customers[0])state.selectedId=String(customers[0].client_id);
       const openFollowups=arr('crm_followups').filter((x)=>['pending','in_progress','deferred'].includes(x.followup_status)).length;
@@ -80,11 +192,18 @@
     }
     async function load(){
       notice('Loading Customer & Property CRM…');
-      const r=await api.loadAdminDirectory({scope:'crm',limit:1000});
-      if(!r?.ok)return notice(r?.error||'CRM load failed.',true);
-      state.payload=r;
-      if(!arr('crm_customers').some((x)=>String(x.client_id)===String(state.selectedId)))state.selectedId=String(arr('crm_customers')[0]?.client_id||'');
-      render(); notice('CRM loaded. Four-season customer/property history is unified.');
+      try{
+        const r=await api.loadAdminDirectory({scope:'crm',limit:1000});
+        if(!r?.ok)throw new Error(r?.error||'CRM access denied or load failed.');
+        if(!Array.isArray(r.crm_customers)||!Array.isArray(r.crm_properties))throw new Error('CRM customer/property sources not returned; intake is withheld.');
+        state.payload=r;state.loaded=true;
+        if(!arr('crm_customers').some((x)=>String(x.client_id)===String(state.selectedId)))state.selectedId=String(arr('crm_customers')[0]?.client_id||'');
+        render();notice('CRM loaded. Canonical customer and property sources checked.');
+        return true;
+      }catch(e){
+        state.loaded=false;state.payload={crm_customers:[],crm_properties:[]};
+        render();notice(String(e?.message||e),true);return false;
+      }
     }
     async function manage(payload,ok){
       const r=await api.manageOperations(payload);
@@ -92,6 +211,12 @@
       await load(); notice(ok);
     }
     byId('crm340Refresh').onclick=load;
+    byId('crm392CustomerSearch').oninput=renderGuideOptions;
+    byId('crm392PropertySearch').oninput=renderGuideOptions;
+    byId('crm392CustomerSelect').onchange=()=>{state.customerEdit=val('crm392CustomerSelect');fillCustomer()};
+    byId('crm392PropertySelect').onchange=()=>{state.propertyEdit=val('crm392PropertySelect');fillProperty()};
+    byId('crm392SaveCustomer').onclick=()=>guidedSave('Customer');
+    byId('crm392SaveProperty').onclick=()=>guidedSave('Property');
     byId('crm340Customers').onclick=(e)=>{const b=e.target.closest('[data-crm-customer]');if(!b)return;state.selectedId=b.getAttribute('data-crm-customer')||'';render();};
     byId('crm340AddInteraction').onclick=()=>{
       const c=selected(); if(!c)return notice('Select a customer first.',true);
