@@ -296,6 +296,15 @@
           <p><strong>No automatic customer contact:</strong> this layer cannot email/text, retry a provider, create/close CRM interactions or follow-ups, change consent/preferences, publish customer updates, reschedule work, collect payment or contact a provider.</p>
         </section>
 
+        <section class="help-section" id="data-quality-fix-recurrence-source-freshness">
+          <h2>Build 387 — Data-Quality Fix Recurrence &amp; Source Freshness</h2>
+          <p>Admin → Owner / Management Command Centre → Data-quality fix recurrence &amp; source freshness. Admin manage and Jobs view permission are required. This review reuses Build 360 canonical quality signals, Build 373 private Management Decision Outcome Journal source keys and Build 351 source freshness.</p>
+          <p><strong>Dated journal cohorts:</strong> the last 30 days and preceding 60 days are non-overlapping windows by decision_at. Distinct stable source keys, expressly recorded recurring decisions and recurring decisions made after a previously dated resolved/improved outcome are separated. The 60-day window's recorded event count is normalized per 30 days for description only. The absence of a defect in a current scan is not a dated historical fix.</p>
+          <p><strong>Ontario season context:</strong> March–August spring/summer, September–November fall, December–February winter. This categorizes journal decision months, not the underlying job's service season. A recurrence percentage is withheld if fewer than five distinct dated quality keys are present in a given window or season.</p>
+          <p><strong>Fail-closed evidence:</strong> missing, permission-hidden, stale, timestamp-unknown, failed, capped or partial canonical sources/journal prevent any cohort comparisons. Invalid or undated journal decisions withhold longitudinal estimates. Missing source evidence never becomes a zero defect rate or a confirmed resolution.</p>
+          <p><strong>Read-only boundary:</strong> journal decision history is not a historic defect census and cannot establish improvement, causal effect or employee/customer ratings. Only advice to review authoritative upstream workflows is shown; no auto-merge, deletion, foreign-key rewrite, crew reassignment, equipment/lockout override, dispatch, messages or Finance writes are performed.</p>
+        </section>
+
         <section class="help-section" id="data-quality-duplicate-orphan-reconciliation">
           <h2>Build 360 — Data Quality, Duplicate &amp; Orphan Reconciliation Workbench</h2>
           <p>Build 360 adds read-only data-quality reconciliation across canonical CRM, Property, Jobs, Dispatch, Recurring Service, Crew, Equipment, Route, Workability and Material Estimator evidence.</p>
