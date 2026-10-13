@@ -174,6 +174,7 @@ jobs:
       - run: npm run test:four-season-crew-day-mix-backtesting
       - run: npm run test:production-learning-roadmap-renewal
       - run: npm run test:production-learning-roadmap-renewal-ii
+      - run: npm run test:production-learning-roadmap-renewal-iii
       - run: npm run test:management-outcome-confidence-cohort-trend
       - run: npm run test:workability-forecast-recovery-calibration
       - run: npm run test:management-decision-outcome-journal
@@ -305,6 +306,7 @@ jobs:
       - run: npm run test:browser:four-season-crew-day-mix-backtesting
       - run: npm run test:browser:production-learning-roadmap-renewal
       - run: npm run test:browser:production-learning-roadmap-renewal-ii
+      - run: npm run test:browser:production-learning-roadmap-renewal-iii
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
