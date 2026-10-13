@@ -752,11 +752,13 @@ Next: **388 — Offline Conflict Closure & Device-Safe Reliability Cohorts** (im
 
 The existing local device conflict queue and item 348 recovery history are aggregated for the currently signed-in profile, without new storage or server collection. A Mobile Crew App v2 card shows aged conflicts, pending actions, locally recorded Keep Server/Discard removals versus Keep Mine/Merge/Retry replay preparation, with last-7-day and preceding-23-day comparison windows. At least five local decisions per window are required to show percentages; a full 50-entry history cap, invalid/future timestamps or missing owner identity withhold comparisons. Device-specific samples are not fleet-wide and a local closure choice is never proof of successful server sync. Only a user decision can perform a recovery action; no automatic writes or increased read/replay budgets.
 
-Next: **389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting**.
+Next: **389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting** (implemented).
 
-#### 389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting
+#### 389 — Four-Season Crew-Day Mix Constraint & Scenario Backtesting (implemented)
 
-Use recorded source evidence, explicit missing-data and permission states, season-aware windows, and bounded advisory guidance without authority to mutate business records. Measurements must not imply improvements before real Production outcome evidence exists.
+Read-only 14-day mixed assigned crew-day and shared seasonal readiness review using the existing capacity forecast and canonical Dispatch, Crew, Workability, Equipment and Recurring Visit sources; no invented per-crew hours or hard season allocations. Historical 90-day scheduling-to-completed-Production comparison uses only unambiguous work-order pairs, excluding multiple plans and sessions and requiring at least five completed pairs for per-window 30/60-day alignment percentages. It is explicitly retrospective recorded-plan alignment, **not** historical forecast accuracy or improvement evidence. Jobs permission and current, complete, uncapped canonical source evidence required, with missing/failed/stale/timestamp-unknown reads withholding the analysis. No dispatch, Safety, Equipment or Finance writes.
+
+Next: **390 — Production Learning & Autonomous Roadmap Renewal III**.
 
 #### 390 — Production Learning & Autonomous Roadmap Renewal III
 

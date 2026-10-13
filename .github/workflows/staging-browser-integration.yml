@@ -171,6 +171,7 @@ jobs:
       - run: npm run test:mobile-offline-reliability-trend-outcomes
       - run: npm run test:offline-conflict-device-safe-cohorts
       - run: npm run test:four-season-capacity-profitability-scenario-evidence
+      - run: npm run test:four-season-crew-day-mix-backtesting
       - run: npm run test:production-learning-roadmap-renewal
       - run: npm run test:production-learning-roadmap-renewal-ii
       - run: npm run test:management-outcome-confidence-cohort-trend
@@ -301,6 +302,7 @@ jobs:
       - run: npm run test:browser:mobile-offline-reliability-trend-outcomes
       - run: npm run test:browser:offline-conflict-device-safe-cohorts
       - run: npm run test:browser:four-season-capacity-profitability-scenario-evidence
+      - run: npm run test:browser:four-season-crew-day-mix-backtesting
       - run: npm run test:browser:production-learning-roadmap-renewal
       - run: npm run test:browser:production-learning-roadmap-renewal-ii
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
