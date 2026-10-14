@@ -42,7 +42,8 @@ async function boot(page,width){
     window.YWIMobileFormAssist={countDrafts:()=>0,draftSummaries:()=>[]};
     window.YWIAPI={
       fetchMobileCrewContext:async()=>payload,
-      manageOperations:async(body)=>{window.__opsCalls.push(body); return {ok:true};}
+      manageOperations:async(body)=>{window.__opsCalls.push(body); return {ok:true};},
+      mobileProductionTransition:async(body)=>{window.__opsCalls.push(body); return {ok:true,session_id:'61111111-1111-4111-8111-111111111111',session_status:'in_progress'};}
     };
   },contextPayload());
   await page.addScriptTag({content:source});
@@ -70,7 +71,8 @@ test('Build 326 uses canonical production action and disables writes offline', a
   await page.locator('[data-crew-action="start_visit"]').click();
   await expect.poll(()=>page.evaluate(()=>window.__opsCalls.length)).toBeGreaterThan(0);
   const call=await page.evaluate(()=>window.__opsCalls[0]);
-  expect(call.action).toBe('landscape_production_session_save');
+  expect(call.transition).toBe('start');
+  expect(call.intent_key).toMatch(/^[0-9a-f-]{36}$/i);
   expect(call.work_order_id).toBe('31111111-1111-4111-8111-111111111111');
 
   await page.evaluate(()=>{

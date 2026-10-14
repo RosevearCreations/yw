@@ -24,7 +24,11 @@
     crewLoading: false,
     crewError: '',
     crewLoadedAt: 0,
-    crewTab: 'route'
+    crewTab: 'route',
+    crewPendingAction: '',
+    crewActionStatus: '',
+    crewIntentKeys: Object.create(null),
+    crewAcknowledgement: null
   };
 
   function authState() {
@@ -570,6 +574,7 @@
     const caps = state.crewContext?.capabilities || {};
     const online = navigator.onLine !== false;
     const session = row?.latest_session || null;
+    const pending = !!state.crewPendingAction;
     const inProgress = session?.session_status === 'in_progress';
     const buttons = [
       crewActionButton('Clock / Break','clock',index,true),
@@ -577,8 +582,8 @@
       crewActionButton('Equipment Scan','equipment',index,!!caps.equipment_scan)
     ];
     if (caps.production_capture) {
-      buttons.push(crewActionButton(inProgress ? 'Finish Visit' : 'Start Visit',inProgress ? 'finish_visit' : 'start_visit',index,online));
-      buttons.push(crewActionButton('Production Qty','quantity',index,online && !!session?.id));
+      buttons.push(crewActionButton(pending && state.crewPendingAction.includes(String(row?.dispatch?.id||'')) ? 'Saving…' : (inProgress ? 'Finish Visit' : 'Start Visit'),inProgress ? 'finish_visit' : 'start_visit',index,online && !pending));
+      buttons.push(crewActionButton('Production Qty','quantity',index,online && !pending && !!session?.id));
     }
     if (caps.live_update) buttons.push(crewActionButton('Live Update','live_update',index,online));
     if (caps.execution_proof) buttons.push(crewActionButton('Execution Proof','execution_proof',index,online));
@@ -642,6 +647,7 @@
       '<div class="mobile-crew-v2-head"><div><h2>Mobile Crew App v2</h2><p>My Jobs, My Route and field actions for 390/430-width phones.</p></div><span class="field-sync-state">' + crewEscape(syncLabel(snapshot)) + '</span></div>' +
       '<div class="mobile-crew-v2-tabs"><button type="button" class="secondary" data-crew-tab="route" aria-selected="' + (state.crewTab === 'route') + '">My Route</button><button type="button" class="secondary" data-crew-tab="jobs" aria-selected="' + (state.crewTab === 'jobs') + '">My Jobs</button><button type="button" class="secondary" data-crew-refresh="1"' + (state.crewLoading || !snapshot.online ? ' disabled' : '') + '>' + (state.crewLoading ? 'Refreshing…' : 'Refresh') + '</button></div>' +
       '<p class="field-sync-note">' + crewEscape(syncCopy) + '</p>' +
+      '<p class="field-sync-note" data-crew-save-state role="status" aria-live="polite">' + crewEscape(state.crewActionStatus || 'Job start/finish needs an acknowledged online save.') + '</p>' +
       reliabilityMarkup +
       deviceSafeReliabilityMarkup() +
       '<div class="mobile-crew-v2-list">' + (state.crewLoading && !payload ? '<div class="mobile-crew-v2-empty">Loading assigned field work…</div>' : rows.length ? rows.map(crewCard).join('') : '<div class="mobile-crew-v2-empty">No assigned work is in the current seven-day crew window.</div>') + '</div>';
@@ -664,11 +670,59 @@
     if (action === 'equipment') return router()?.showSection?.('equipment');
     const workOrderId = row?.work_order?.id || row?.dispatch?.work_order_id || '';
     try {
-      if (action === 'start_visit') {
-        await crewOperation({ action:'landscape_production_session_save', work_order_id:workOrderId, dispatch_schedule_item_id:row?.dispatch?.id || null, session_date:new Date().toISOString().slice(0,10), session_status:'in_progress', started_at:new Date().toISOString(), workability_status:row?.dispatch?.workability_state || 'not_recorded', weather_summary:row?.dispatch?.weather_summary || null, completion_state:'open', production_notes:'Started from Mobile Crew App v2.' });
-      } else if (action === 'finish_visit') {
-        const note = window.prompt('Completion / production note (optional):','') || '';
-        await crewOperation({ action:'landscape_production_session_save', id:row?.latest_session?.id, work_order_id:workOrderId, session_status:'completed', ended_at:new Date().toISOString(), completion_state:'complete', production_notes:note || 'Completed from Mobile Crew App v2.' });
+      if (action === 'start_visit' || action === 'finish_visit') {
+        if (state.crewPendingAction) return;
+        if (navigator.onLine === false) throw new Error('Start/Finish needs an online server acknowledgement.');
+        if (!crewApi()?.mobileProductionTransition) throw new Error('Production transition service is unavailable.');
+        const dispatchId = row?.dispatch?.id || '';
+        const sessionId = row?.latest_session?.id || '';
+        if (!workOrderId || !dispatchId) throw new Error('An assigned work order and dispatch are required.');
+        if (action === 'finish_visit' && !sessionId) throw new Error('Refresh the server session before finishing.');
+        if (action === 'start_visit' && row?.latest_session?.session_status === 'in_progress')
+          throw new Error('This visit is already started; refresh before another action.');
+        const transition = action === 'start_visit' ? 'start' : 'finish';
+        let completionNote = '';
+        if (transition === 'finish') {
+          const note = window.prompt('Completion / production note (optional):','');
+          if (note === null) return;
+          completionNote = note.trim();
+        }
+        const retryKey = [transition,workOrderId,dispatchId,sessionId].join(':');
+        const intentKey = state.crewIntentKeys[retryKey] ||
+          (globalThis.crypto?.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const n = Math.floor(Math.random()*16); return (c==='x'?n:(n&3|8)).toString(16);
+          }));
+        state.crewIntentKeys[retryKey] = intentKey;
+        state.crewPendingAction = transition + ':' + dispatchId;
+        state.crewActionStatus = 'Saving ' + transition + '… Please do not repeat the action.';
+        renderMobileCrewApp();
+        try {
+          const answer = await crewApi().mobileProductionTransition({
+            transition, intent_key:intentKey,work_order_id:workOrderId,
+            dispatch_schedule_item_id:dispatchId,session_id:sessionId || null,
+            completion_note:completionNote
+          });
+          if (!answer?.ok || !answer.session_id ||
+              answer.session_status !== (transition === 'start' ? 'in_progress' : 'completed'))
+            throw new Error(answer?.error || 'Server did not confirm the expected session state.');
+          delete state.crewIntentKeys[retryKey];
+          state.crewAcknowledgement = {session_id:answer.session_id,transition,work_order_id:workOrderId};
+          state.crewActionStatus = (answer.replayed ? 'Confirmed prior save: ' : 'Saved: ') +
+            (transition === 'start' ? 'visit started' : 'visit completed') +
+            '. Session ' + answer.session_id + '. ' +
+            (transition === 'finish' ? 'Completion note is linked to the session; use Execution Proof for supporting evidence.' : 'Production quantities and proof can be linked to this session.');
+          state.crewError = '';
+        } catch (error) {
+          state.crewActionStatus = 'Not confirmed: ' + (error?.message || 'Unknown error') +
+            '. Retry the same action; the original action key is retained.';
+          state.crewError = error?.message || 'Start/Finish not acknowledged.';
+          return;
+        } finally {
+          state.crewPendingAction = '';
+          renderMobileCrewApp();
+        }
+        await loadMobileCrewContext(true);
+        return;
       } else if (action === 'quantity') {
         if (!row?.latest_session?.id) throw new Error('Start the visit before recording production quantity.');
         const metric = window.prompt('What did we measure? (example: Mowing area, Mulch installed)','');

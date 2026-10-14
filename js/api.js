@@ -801,6 +801,15 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     });
   }
 
+  async function mobileProductionTransition(payload = {}) {
+    return jsonFetch('mobile-production-transition', {
+      method: 'POST',
+      body: payload,
+      requireAuth: true,
+      timeoutMs: 45000
+    });
+  }
+
   async function fetchMobileCrewContext(payload = {}) {
     try {
       return await jsonFetch('mobile-crew-context', {
@@ -1160,6 +1169,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     fetchProfileScope,
     saveMyProfile,
     fetchJobsDirectory,
+    mobileProductionTransition,
     fetchMobileCrewContext,
     loadAdminDirectory,
     invalidateAdminReadCache,
