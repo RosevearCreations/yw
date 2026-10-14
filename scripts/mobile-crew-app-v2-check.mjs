@@ -50,7 +50,7 @@ must(mobile,[
   'Closeout Request',
   'Offline — no crew snapshot',
   '390/430-width phones',
-  "action:'landscape_production_session_save'",
+  "mobileProductionTransition",
   "action:'landscape_production_quantity_save'",
   "action:'work_order_live_update_create'",
   "action:'work_order_execution_proof_submit'",
