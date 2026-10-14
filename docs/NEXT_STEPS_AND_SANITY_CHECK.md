@@ -820,7 +820,7 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 #### 398 — Material Issue & Return Reconciliation
 
-**Implementation scope:** A read-only operator material-stock exception review now shows canonical stock, units, cost availability, negative balances, and recorded usage variance without inventory mutation. This does **not** constitute complete job-level estimated/actual issue/return reconciliation: corresponding transaction-level, audit, and return source linkage remains unimplemented and must be completed before describing the full Build 398 objective as accepted. Source contract: `node scripts/material-issue-return-reconciliation-398-check.mjs`. No automatic issue, return, adjustment, receipt, supplier or purchasing operations.
+**Implementation scope:** A read-only operator materials review now joins authorized estimator planned/actual-use evidence with separate canonical stock snapshots, units, cost availability, negative balances, and recorded usage variance without inventory mutation. This does **not** constitute complete job-level estimated/actual issue/return reconciliation: corresponding transaction-level, audit, and return source linkage remains unimplemented and must be completed before describing the full Build 398 objective as accepted. Source contract: `node scripts/material-issue-return-reconciliation-398-check.mjs`. No automatic issue, return, adjustment, receipt, supplier or purchasing operations.
 
 **Outcome:** Link job-level estimated and actual material quantities to canonical stock issue/return actions; preserve unit, cost and audit provenance and no negative stock assumption.
 
