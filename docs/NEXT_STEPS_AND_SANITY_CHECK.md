@@ -812,6 +812,8 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 #### 397 — Safety & Equipment Readiness Preflight
 
+**Implemented on dev:** Admin operations now exposes an on-demand, read-only job/equipment preflight for authorized Jobs records. Every result remains BLOCKED / UNVERIFIED for separate canonical Safety signoff, training and current equipment inspection/lockout confirmation; unknown sources fail closed. No status transitions, approvals, equipment release or employment changes. Source acceptance: `node scripts/safety-equipment-preflight-397-check.mjs`. **Next queued after verified Production GREEN: 398 — Material Issue & Return Reconciliation.**
+
 **Outcome:** Before an active job, surface canonical site hazard, training and equipment lockout readiness, with explicit blocked/unavailable instead of auto-clearing.
 
 **Canonical source:** Safety plans, training, lockout and equipment readiness. **Boundary:** No Safety approval, lockout removal or employment change through this layer.
