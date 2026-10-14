@@ -804,6 +804,8 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 #### 396 — Job Start/Stop & Production Evidence Capture
 
+**Implemented:** Mobile Crew Start/Finish now use authenticated, assignment-filtered transition endpoint and atomic Schema 237 intent ledger with stable retry keys; pending/saved/uncertain status is shown on the phone, completion notes remain on canonical sessions, and Production quantity/Execution Proof remain linked actions. Dedicated source and rendered browser regressions are release-gated. **Next queued: 397 — Safety & Equipment Readiness Preflight.**
+
 **Outcome:** Make one mobile job session path legible with a pending/saved/retry/error acknowledgement and linked completion evidence; no duplicate sessions on repeated clicks.
 
 **Canonical source:** mobile crew, Production sessions and execution proof. **Boundary:** Existing production writes only with explicit user action; immutable idempotency evidence.
