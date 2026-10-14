@@ -135,4 +135,6 @@ revoke all on function public.ywi_rpc_mobile_production_transition(uuid,uuid,uui
   from public,anon,authenticated;
 grant execute on function public.ywi_rpc_mobile_production_transition(uuid,uuid,uuid,uuid,text,uuid,text)
   to service_role;
+-- Repository staging-fixture acceptance marker (no runtime mutation).
+select 237 as expected_schema_version;
 commit;
