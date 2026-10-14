@@ -75,7 +75,8 @@ serve(async(req)=>{
       return json({ok:false,error:error.message||"Production session was not recorded.",
         retry_safe:!conflict,intent_key:key},conflict?409:503);
     }
-    if(data?.ok!==true||!uuid.test(clean(data.session_id)))
+    if(data?.ok!==true||!uuid.test(clean(data.session_id))||
+       data.session_status!==(action==="start"?"in_progress":"completed"))
       return json({ok:false,error:"Server response did not acknowledge a canonical session.",
         retry_safe:true,intent_key:key},503);
     return json({...data,build:396});
