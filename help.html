@@ -692,6 +692,13 @@
           <p><strong>Customer communication:</strong> customer-notification readiness is recorded as evidence (not needed, not ready, ready or notified elsewhere). Build 342 does not send a notification; the existing notification workflow remains authoritative.</p>
         </section>
 
+        <section class="help-section" id="mobile-production-transition">
+          <h2>Build 396 — Job Start/Stop &amp; Production Evidence Capture</h2>
+          <p>From Today → Mobile Crew App v2, use <strong>Start Visit</strong> or <strong>Finish Visit</strong> only for your assigned dispatch. Saving disables duplicate clicks and displays a server-confirmed result, including the canonical job session identifier. Finish records an optional completion note on the existing session; add separately linked production quantities or an Execution Proof using the adjacent actions.</p>
+          <p><strong>Retry safety:</strong> if the connection ends without confirmation, select the same action again. The client retains its action key, and Schema 237 atomically replays the prior acknowledgement instead of creating another session. Existing active sessions are reused. Never assume a pending action saved until the server acknowledges it.</p>
+          <p><strong>Authority:</strong> this action requires a signed-in assigned crew member with Jobs create access and site-leader or higher role. It cannot clear a dispatch/weather hold, alter a different crew's sessions, edit accounting, or send messages. Immutable action evidence stays in the protected server-side intent ledger and writes remain in the canonical Production session RPC.</p>
+        </section>
+
         <section class="help-section" id="workability-safe-schedule-recheck">
           <h2>Build 395 — Workability Safe Schedule Recheck</h2>
           <p>In Admin → Business &amp; Operations → Weather &amp; Workability, select a canonical dispatch and use <strong>Recheck current evidence</strong>. The result uses the existing workability observation and supervisor decision linked to that exact dispatch, its present schedule and workability state, and any linked HSE packet.</p>
