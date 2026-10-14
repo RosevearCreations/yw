@@ -22,13 +22,18 @@ function init(){
  $('material398Refresh').onclick=async()=>{
  if(busy)return;busy=true;const button=$('material398Refresh'),status=$('material398Status'),rows=$('material398Rows');button.disabled=true;button.textContent='Checking…';rows.replaceChildren();
  try{
-  const api=window.YWIAPI;if(typeof api?.fetchJobsDirectory!=='function')throw Error('Authorized Jobs material source unavailable');
+  const api=window.YWIAPI;if(typeof api?.fetchJobsDirectory!=='function'||typeof api?.loadAdminDirectory!=='function')throw Error('Authorized Jobs / estimator material sources unavailable');
   const data=await api.fetchJobsDirectory({scope:'all'});
   if(data?.ok===false||!Array.isArray(data?.material_stock_control))throw Error(data?.error||'Canonical material stock source unavailable');
   const materials=data.material_stock_control;if(materials.length>=1500)throw Error('Material directory reached the query cap; completeness unverified');
+  const estimate=await api.loadAdminDirectory({scope:'material_estimator'});
+  if(estimate?.ok===false||!Array.isArray(estimate?.material_estimator_lines)||!Array.isArray(estimate?.material_estimator_actual_use))throw Error(estimate?.error||'Planned / actual material evidence unavailable');
+  const plans=estimate.material_estimator_lines,actual=estimate.material_estimator_actual_use;
+  if(plans.length>=3000||actual.length>=3000)throw Error('Estimator evidence reached query cap; reconciliation withheld');
   const issues=materials.map(m=>({m,result:assess(m)}));
-  status.textContent=materials.length+' material(s) received · '+issues.filter(x=>x.result.issues.length).length+' stock exception(s) · job issue/return matching UNVERIFIED; no inventory changes.';
-  rows.innerHTML=issues.length?issues.map(({m,result})=>'<div class="notice"><strong>'+esc(m.sku||m.item_name||m.id)+'</strong> · '+esc(result.state)+'<p>On hand: '+esc(m.stock_on_hand??'unknown')+' '+esc(m.unit_code||'unit unknown')+' · unit cost: '+esc(m.current_unit_cost??'restricted')+'</p>'+result.issues.map(i=>'<p>'+esc(i)+'</p>').join('')+'</div>').join(''):'<p>No material rows available; no evidence of reconciliation is implied.</p>';
+  status.textContent=materials.length+' stock rows · '+plans.length+' planned lines · '+actual.length+' actual-use events · '+issues.filter(x=>x.result.issues.length).length+' stock exceptions. Job issue/return matching UNVERIFIED; no inventory changes.';
+  const planHtml=plans.map(p=>{const id=String(p.id||'');const events=actual.filter(a=>String(a.material_estimate_line_id||'')===id);const qty=numeric(p.planned_quantity);const used=events.reduce((sum,a)=>sum+(numeric(a.actual_quantity_planned_unit)??0),0);const confirmed=events.length&&events.every(a=>numeric(a.actual_quantity_planned_unit)!==null)&&qty!==null&&Boolean(p.planned_unit);return '<div class="notice"><strong>'+esc(p.material_label||p.material_type||id)+'</strong> · '+esc(confirmed?'PLAN / ACTUAL EVIDENCE ONLY':'RECONCILIATION UNVERIFIED')+'<p>Planned '+esc(qty??'unknown')+' '+esc(p.planned_unit||'unit unknown')+' · recorded actual '+esc(confirmed?used:'unknown')+' · variance '+esc(confirmed?(used-qty).toFixed(2):'withheld')+'. Canonical stock issue/return linkage not confirmed.</p></div>';}).join('');
+  rows.innerHTML=planHtml+(issues.length?issues.map(({m,result})=>'<div class="notice"><strong>'+esc(m.sku||m.item_name||m.id)+'</strong> · '+esc(result.state)+'<p>On hand: '+esc(m.stock_on_hand??'unknown')+' '+esc(m.unit_code||'unit unknown')+' · unit cost: '+esc(m.current_unit_cost??'restricted')+'</p>'+result.issues.map(i=>'<p>'+esc(i)+'</p>').join('')+'</div>').join('') :'<p>No material rows available; no evidence of reconciliation is implied.</p>');
  }catch(e){status.textContent='BLOCKED / UNAVAILABLE: '+String(e?.message||e);}
  finally{busy=false;button.disabled=false;button.textContent='Recheck material stock evidence';}
  };
