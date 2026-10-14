@@ -131,6 +131,7 @@ jobs:
       - run: npm run test:customer-property-crm
       - run: npm run test:route-optimization-territory
       - run: npm run test:weather-workability
+      - run: npm run test:workability-safe-schedule-recheck
       - run: npm run test:landscape-material-estimator
       - run: npm run test:change-orders-extras
       - run: npm run test:quality-control-customer-signoff
@@ -271,6 +272,7 @@ jobs:
       - run: npm run test:browser:customer-property-crm
       - run: npm run test:browser:route-optimization-territory
       - run: npm run test:browser:weather-workability
+      - run: npm run test:browser:workability-safe-schedule-recheck
       - run: npm run test:browser:landscape-material-estimator
       - run: npm run test:browser:change-orders-extras
       - run: npm run test:browser:quality-control-customer-signoff

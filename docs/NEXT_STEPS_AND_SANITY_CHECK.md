@@ -796,6 +796,8 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 #### 395 — Workability Safe Schedule Recheck
 
+**Implementation:** Read-only, fresh authorized `workability` check in the existing Weather & Workability workspace; matches exact dispatch observation/decision, required HSE monitoring, existing holds and loaded Safety approve access. Explicit HOLD/REVIEW/operator recheck results; never changes schedules or sends messages. Regression scripts and browser acceptance are release-gated. Next: **396 — Job Start/Stop & Production Evidence Capture**.
+
 **Outcome:** Require recorded Ontario conditions, workability decisions and Safety permission for schedule-review readiness, never override a hold or automatically dispatch.
 
 **Canonical source:** workability observations/decisions, Dispatch and Safety. **Boundary:** Safety and operator workability decision remain final; no autonomous scheduling.

@@ -300,3 +300,8 @@ Item 392 adds CRM guided customer/property creation and editing through existing
 ## Four-season pricing source review
 
 The Admin read-only four-season review uses the authorized Jobs directory's `service_pricing_templates`, `tax_codes`, and `business_tax_settings`. Operators select spring/summer, fall, winter, or four-season, refresh authoritative current records, and inspect missing/nonpositive recorded charges, missing units/duration basis, pricing method, and tax source mismatches. Season classification is advisory from the currently recorded template name/code/job-family/scope/pattern, not a new canonical season. No template, estimate, invoice, price or tax record is written. Missing/denied sources fail closed; no invented prices or tax status.
+
+
+## Workability schedule recheck boundary
+
+The Admin workability recheck is read-only. It calls the authorized `workability` directory with a forced fresh read and correlates exact `dispatch_schedule_item_id` observations, latest canonical supervisor decisions, existing dispatch/workability holds, and linked HSE packet monitoring. Recorded Ontario conditions older than 24 hours or later than the present, missing source links, a blocking decision, or incomplete mandatory HSE monitoring produce HOLD. An explicitly loaded current-profile Safety module permission of `approve` or `manage` is required even for a favourable advisory result; role-only defaults never qualify. Caution and restriction guidance remain operator review. Even a complete result means operator recheck only, not safety approval, work authorization, dispatch, notice, or schedule mutation. No additional tables or write endpoints are introduced.
