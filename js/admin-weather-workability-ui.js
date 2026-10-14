@@ -37,7 +37,9 @@
   }
   async function mount(config={}){
     const api=config.api||window.YWIAPI;if(!api?.loadAdminDirectory||!api?.manageOperations)return;
-    const el=host();if(!el||el.dataset.mounted==='1')return;el.dataset.mounted='1';
+    const el=host();if(!el)return;
+    window.YWIWorkabilitySafeScheduleRecheck?.mount?.(el,{api});
+    if(el.dataset.mounted==='1')return;el.dataset.mounted='1';
     const state={data:{},observationId:'',decisionId:''};const arr=(k)=>Array.isArray(state.data[k])?state.data[k]:[];
     const note=(t,b=false)=>{const n=$('wk342Status');if(n){n.textContent=t;n.classList.toggle('error',b);}};
     const fill=(id,rows,key,textFn)=>{const e=$(id);if(!e)return;e.innerHTML='<option value="">— Select —</option>'+rows.map(x=>'<option value="'+esc(x[key])+'">'+esc(textFn(x))+'</option>').join('');};
