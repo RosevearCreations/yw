@@ -1169,6 +1169,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     fetchProfileScope,
     saveMyProfile,
     fetchJobsDirectory,
+    mobileProductionTransition,
     fetchMobileCrewContext,
     loadAdminDirectory,
     invalidateAdminReadCache,
