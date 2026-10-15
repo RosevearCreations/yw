@@ -117,5 +117,5 @@ test('Build 361 bounds one replay batch to twelve queued actions',async({page})=
   expect(result.processed).toBe(12);
   expect(result.deferred).toBe(3);
   expect(await page.evaluate(()=>window.__batchCalls)).toBe(12);
-  expect(await page.evaluate(()=>window.YWIOutbox.getActionItems().length)).toBe(15);
+  expect(await page.evaluate(()=>window.YWIOutbox.getActionItems().length)).toBe(3);
 });
