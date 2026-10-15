@@ -122,6 +122,7 @@ jobs:
       - run: node scripts/estimate-change-invoice-readiness-400-check.mjs
       - run: node scripts/receivables-aging-payment-reconciliation-401-check.mjs
       - run: node scripts/renewal-season-rollover-readiness-402-check.mjs
+      - run: node scripts/offline-replay-receipt-provenance-403-check.mjs
       - run: npm run test:safety-compliance-command-centre
       - run: npm run test:job-hazard-site-safety-plans
       - run: npm run test:incident-near-miss-investigation
