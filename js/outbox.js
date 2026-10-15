@@ -194,6 +194,30 @@
     return list.length;
   }
 
+  const REPLAY_RECEIPT_KEY = 'ywi_offline_replay_receipts_v403';
+  function getReplayReceipts() {
+    const owner = ownerKey();
+    if (!owner) return [];
+    try {
+      const rows = JSON.parse(localStorage.getItem(REPLAY_RECEIPT_KEY) || '[]');
+      return Array.isArray(rows) ? rows.filter(x => x.owner_key === owner).map(({owner_key,...safe}) => safe) : [];
+    } catch { return []; }
+  }
+  function recordReplayReceipt(item, acknowledgement) {
+    const owner = ownerKey();
+    if (!owner || !item?.owner_key || String(item.owner_key) !== owner) return false;
+    const id = acknowledgement?.id || acknowledgement?.receipt_id || acknowledgement?.session_id || acknowledgement?.record_id;
+    const accepted = acknowledgement?.ok === true || acknowledgement?.success === true || acknowledgement?.status === 'saved';
+    if (!accepted || typeof id !== 'string' || !id.trim()) return false;
+    let previous = [];
+    try { previous = JSON.parse(localStorage.getItem(REPLAY_RECEIPT_KEY) || '[]'); } catch {}
+    if (!Array.isArray(previous)) previous = [];
+    previous.push({owner_key:owner,action_type:String(item.action_type||'').slice(0,80),receipt_id:id.slice(0,150),received_at:new Date().toISOString(),source:'server_acknowledgement'});
+    localStorage.setItem(REPLAY_RECEIPT_KEY,JSON.stringify(previous.slice(-100)));
+    document.dispatchEvent(new CustomEvent('ywi:offline-replay-receipt',{detail:{action_type:item.action_type,confirmed:true}}));
+    return true;
+  }
+
   async function runQueuedActionReplay(config = {}) {
     const handlers = config.handlers || {};
     const scope = config.scope || '';
@@ -246,7 +270,11 @@
         continue;
       }
       try {
-        await handler(item.payload || {}, item);
+        const acknowledgement = await handler(item.payload || {}, item);
+        if (!recordReplayReceipt(item, acknowledgement)) {
+          remaining.push({ ...item, status:'pending', error:'Server acknowledgement missing or unverified; do not replay automatically.', attempts:Number(item.attempts||0)+1 });
+          continue;
+        }
         retried += 1;
       } catch (err) {
         const msg = String(err?.message || err || 'Retry failed');
@@ -524,6 +552,7 @@
     getRecoveryComparison,
     applyRecoveryAction,
     getRecoveryHistory,
-    getDeviceSafeReliabilityCohorts
+    getDeviceSafeReliabilityCohorts,
+    getReplayReceipts
   };
 })();
