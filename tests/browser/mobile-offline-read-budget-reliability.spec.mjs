@@ -113,7 +113,7 @@ test('Build 361 bounds one replay batch to twelve queued actions',async({page})=
     window.YWIOutbox.setActionItems(rows);
     window.__batchCalls=0;
   });
-  const result=await page.evaluate(async()=>window.YWIOutbox.retryQueuedActions({handlers:{save:async()=>{window.__batchCalls+=1;}}}));
+  const result=await page.evaluate(async()=>window.YWIOutbox.retryQueuedActions({handlers:{save:async()=>{window.__batchCalls+=1;return {ok:true,id:'server-batch-'+window.__batchCalls};}}}));
   expect(result.processed).toBe(12);
   expect(result.deferred).toBe(3);
   expect(await page.evaluate(()=>window.__batchCalls)).toBe(12);
