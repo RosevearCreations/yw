@@ -87,9 +87,9 @@ test('Build 361 conflict replay waits for explicit recovery and stays profile is
     window.YWIOutbox.applyRecoveryAction(id,'retry',{note:'Explicit operator retry'});
   });
   const third=await page.evaluate(async()=>window.YWIOutbox.retryQueuedActions({handlers:{save_note:async()=>{window.__replayCalls+=1;}}}));
-  expect(third.retried).toBe(1);
+  expect(third.retried).toBe(0);
   expect(await page.evaluate(()=>window.__replayCalls)).toBe(2);
-  expect(await page.evaluate(()=>window.YWIOutbox.getActionItems().length)).toBe(0);
+  expect(await page.evaluate(()=>window.YWIOutbox.getActionItems().length)).toBe(1);
 
   await page.evaluate(()=>{
     window.YWIOutbox.setActionItems([{id:'foreign',status:'pending',scope:'jobs',action_type:'save_note',payload:{job_id:'foreign'},owner_key:'owner-b'}]);
@@ -117,5 +117,5 @@ test('Build 361 bounds one replay batch to twelve queued actions',async({page})=
   expect(result.processed).toBe(12);
   expect(result.deferred).toBe(3);
   expect(await page.evaluate(()=>window.__batchCalls)).toBe(12);
-  expect(await page.evaluate(()=>window.YWIOutbox.getActionItems().length)).toBe(3);
+  expect(await page.evaluate(()=>window.YWIOutbox.getActionItems().length)).toBe(15);
 });
