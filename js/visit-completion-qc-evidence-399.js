@@ -25,11 +25,11 @@
    try{
     const api=window.YWIAPI;if(typeof api?.loadAdminDirectory!=='function')throw Error('Authorized QC source unavailable');
     const data=await api.loadAdminDirectory({scope:'quality_control'});
-    const names=['quality_control_runs','quality_control_deficiencies','quality_control_evidence','quality_control_work_orders','quality_control_proofs','quality_control_sessions','quality_control_closeouts'];
+    const names=['quality_control_runs','quality_control_deficiencies','quality_control_evidence','quality_control_work_orders','quality_control_execution_proofs','quality_control_sessions','quality_control_closeouts'];
     if(data?.ok===false||names.some(n=>!Array.isArray(data?.[n])))throw Error(data?.error||'Canonical QC, visit and proof sources missing');
-    if(data.quality_control_work_orders.length>=2000||data.quality_control_runs.length>=1500||data.quality_control_deficiencies.length>=3000||data.quality_control_proofs.length>=4000||data.quality_control_sessions.length>=2500||data.quality_control_closeouts.length>=2000)throw Error('Query limit reached: results incomplete');
+    if(data.quality_control_work_orders.length>=2000||data.quality_control_runs.length>=1500||data.quality_control_deficiencies.length>=3000||data.quality_control_execution_proofs.length>=4000||data.quality_control_sessions.length>=2500||data.quality_control_closeouts.length>=2000)throw Error('Query limit reached: results incomplete');
     const orders=data.quality_control_work_orders.slice(0,100);
-    const evaluations=orders.map(o=>({o,result:review(o,data.quality_control_sessions,data.quality_control_runs,data.quality_control_deficiencies,data.quality_control_proofs,data.quality_control_closeouts)}));
+    const evaluations=orders.map(o=>({o,result:review(o,data.quality_control_sessions,data.quality_control_runs,data.quality_control_deficiencies,data.quality_control_execution_proofs,data.quality_control_closeouts)}));
     status.textContent=orders.length+' visits checked · '+evaluations.filter(x=>x.result.gaps.length).length+' require review. No customer-visible content released.';
     rows.innerHTML=evaluations.map(({o,result})=>'<article class="notice"><strong>'+esc(o.work_order_number||o.id)+'</strong> · '+esc(result.state)+'<p>QC records '+result.qcCount+' · proof records '+result.proofCount+'</p><p>'+esc(result.gaps.join('; ')||'Review actual approvals and access scope in canonical modules before closure')+'</p></article>').join('')||'<p>No work orders returned; absence is not clearance.</p>';
    }catch(e){status.textContent='BLOCKED / UNAVAILABLE: '+String(e?.message||e);}
