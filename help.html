@@ -402,6 +402,14 @@
           <p><strong>Season coverage:</strong> a single canonical customer and property supports spring/summer lawn and landscaping, fall cleanup/leaf, winter snow/storm/ice and general four-season relationships. The next build is <strong>393 — Four-Season Service Template &amp; Price Source Validation</strong>.</p>
         </section>
 
+        <section class="help-section" id="first-operational-cohort-404">
+          <h2>Build 404 — First Operational Cohort &amp; Conversion Funnel</h2>
+          <p><strong>Where:</strong> Admin → Owner / Management Command Centre → First operational cohort · customer to invoice. Requires both Jobs and Finance view permissions. Refresh reads the existing authenticated management endpoint; this panel never performs a write or creates a second client-side data authority.</p>
+          <p><strong>What the funnel means:</strong> customers created in the past 90 days are linked to their earliest canonical work order, then that same first work order is checked for recorded dispatch, Production session, approved closeout and a non-draft invoice. A customer contributes only once. This describes observed historical transitions, not improvement, employee performance, or the effect of a customer interaction.</p>
+          <p><strong>When values are withheld:</strong> any permission denial, failed/stale/capped/incomplete canonical source, missing date or ID provenance, incomplete CRM coverage, or fewer than 10 first-use customers withholds the cohort. Individual conversion rates are hidden whenever their denominator is below 10. A successful empty query is not proof that unrelated operations have no activity.</p>
+          <p><strong>Authority:</strong> Jobs / CRM, Dispatch, Production and approved closeout remain the original operational authorities; Finance retains invoice and payment authority. This report never ranks workers, modifies records, transmits customer messages, bills customers or processes payments.</p>
+        </section>
+
         <section class="help-section" id="first-use-readiness-verified-intake">
           <h2>Build 391 — First-Use Readiness &amp; Verified Data Intake</h2>
           <p><strong>Where:</strong> Admin → Owner / Management Command Centre → First-use readiness &amp; verified data intake. Jobs / Business &amp; Operations view permission is required. The Owner refresh button performs a new authenticated, permission-scoped management-source read and displays Checking… until it completes.</p>
