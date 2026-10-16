@@ -10,7 +10,7 @@ const packageJson=JSON.parse(read('package.json'));
 const flow=read('.github/workflows/staging-browser-integration.yml');
 const crm=backend.slice(backend.indexOf("if (scope === 'crm'"),backend.indexOf("if (scope === 'routing'"));
 assert.ok(crm.length>2000);
-for(const token of ["roleRank(actorRole) >= roleRank('supervisor')","safeListEvidence(supabase,'v_crm_customer_directory'","safeListEvidence(supabase,'clients','id,created_at'","r.row_count>=r.limit","!r.query_ok","crmIntake406","clients.id + clients.created_at","crm_intake_406:crmIntake406","state:'no_record'","state:'withheld'"]) assert.ok(crm.includes(token),'Missing canonical CRM receipt guard: '+token);
+for(const token of ["roleRank(actorRole) >= roleRank('supervisor')","safeListEvidence(supabase,'v_crm_customer_directory'","safeListEvidence(supabase,'clients','id,created_at'","r.row_count>=r.limit","!r.query_ok","crmIntake406","clients.id + clients.created_at","crm_intake_406:crmIntake406","state:receipts.length?'recorded':'no_record'","state:'withheld'"]) assert.ok(crm.includes(token),'Missing canonical CRM receipt guard: '+token);
 assert.ok(!/\.insert\(|\.update\(|\.delete\(/.test(crm),'CRM receipt scope must not write to Supabase');
 for(const token of ['data-build="406"','crm406Receipt','crm406Recheck','renderIntake406()','data-crm406-state="withheld"','data-crm406-state="no_record"','data-crm406-duplicates="review"','Date.now()-checked>300000','Recheck before creating a customer']) assert.ok(ui.includes(token),'Missing receipt UI or guard '+token);
 assert.ok(ui.includes("action:'crm_client_save'")&&ui.includes('await api.manageOperations(payload)'),'Must retain canonical explicit save authority');
