@@ -4921,8 +4921,9 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
 
 
   if (scope === 'crm' && roleRank(actorRole) >= roleRank('supervisor')) {
-    const [customers,properties,leads,plans,history,interactions,followups,opportunities,renewals,candidates,profiles] = await Promise.all([
-      safeList(supabase,'v_crm_customer_directory','*','client_name',1000,true),
+    const [customersEvidence,intakeDatesEvidence,properties,leads,plans,history,interactions,followups,opportunities,renewals,candidates,profiles] = await Promise.all([
+      safeListEvidence(supabase,'v_crm_customer_directory','*','client_name',1000,true),
+      safeListEvidence(supabase,'clients','id,created_at','created_at',1000,true),
       safeList(supabase,'v_crm_property_directory','*','site_name',1500,true),
       safeList(supabase,'v_quote_contact_followup_queue','*','created_at',500,false),
       safeList(supabase,'v_crm_service_plan_directory','*','updated_at',1500,false),
@@ -4934,9 +4935,38 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       safeList(supabase,'v_crm_cross_service_candidates','*','client_name',1500,true),
       safeList(supabase,'profiles','id,full_name,email,role,is_active','full_name',500,true)
     ]);
+    // Item 406: read-only first-customer intake evidence from existing CRM authority.
+    // Fail closed for failed/partial source coverage or missing/future source timestamps.
+    const intakeNow=Date.now();
+    const crmIntake406=(()=>{
+      const withheld=(reason:string)=>({state:'withheld',reason,retrieved_at:new Date(intakeNow).toISOString(),receipts:[],complete:false,duplicate_review:'unavailable'});
+      const reads=[customersEvidence,intakeDatesEvidence];
+      if(reads.some(r=>!r.query_ok || !Array.isArray(r.rows) || r.row_count>=r.limit ||
+         !Number.isFinite(Date.parse(r.retrieved_at)) || Date.parse(r.retrieved_at)>intakeNow+300000 ||
+         intakeNow-Date.parse(r.retrieved_at)>300000))
+        return withheld('CRM intake provenance query failed, expired, or may be capped. Refresh before reviewing.');
+      const ids=new Set(customersEvidence.rows.map((r:any)=>String(r.client_id||'')).filter(Boolean));
+      const sourceIds=new Set(intakeDatesEvidence.rows.map((r:any)=>String(r.id||'')).filter(Boolean));
+      if(ids.size!==customersEvidence.rows.length || sourceIds.size!==intakeDatesEvidence.rows.length ||
+         ids.size!==sourceIds.size || [...ids].some(id=>!sourceIds.has(id)))
+        return withheld('Canonical CRM intake and customer directory do not have complete matching identities.');
+      const receipts:any[]=[];
+      for(const r of intakeDatesEvidence.rows){
+        const timestamp=Date.parse(String(r.created_at||''));
+        if(!Number.isFinite(timestamp) || timestamp>intakeNow+300000)
+          return withheld('A canonical customer creation timestamp is missing or invalid.');
+        receipts.push({client_id:String(r.id),recorded_at:new Date(timestamp).toISOString()});
+      }
+      return {
+        state:receipts.length?'recorded':'no_record',complete:true,
+        reason:receipts.length?'Dated canonical customer intake records verified.':'No dated customer record in the complete inspected CRM read; first-customer evidence is not yet available.',
+        retrieved_at:new Date(intakeNow).toISOString(),
+        receipts,duplicate_review:'advisory_only',source:'clients.id + clients.created_at cross-checked against v_crm_customer_directory'
+      };
+    })();
     return Response.json({
       ok:true,scope:'crm',actor_role:actorRole,actor_profile_id:actorId,
-      crm_customers:customers,crm_properties:properties,crm_leads:leads,crm_service_plans:plans,
+      crm_customers:customersEvidence.rows,crm_intake_406:crmIntake406,crm_properties:properties,crm_leads:leads,crm_service_plans:plans,
       crm_service_history:history,crm_interactions:interactions,crm_followups:followups,
       crm_opportunities:opportunities,crm_renewals:renewals,crm_cross_service_candidates:candidates,crm_profiles:profiles,
       seasonal_boundary:'YW is a four-season Ontario operation: spring/summer mowing and landscaping, fall cleanup and leaf collection, and winter snow clearing/removal remain one customer/property relationship history.',
