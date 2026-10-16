@@ -393,6 +393,15 @@
           <p><strong>Where to find it:</strong> Admin → Owner / Management Command Centre → Management outcome confidence &amp; cohort trend. The circled information link in that section opens this guidance.</p>
         </section>
 
+        <section class="help-section" id="first-customer-intake-receipt-406">
+          <h2>Item 406 — First-Customer Intake Receipt &amp; Duplicate-Safe Review</h2>
+          <p><strong>Where:</strong> Admin → Customer &amp; Property CRM → First-customer intake receipt &amp; duplicate review. The existing CRM supervisor-or-higher backend access is required. Choose an existing customer and use Recheck canonical intake for a new read; this never saves anything.</p>
+          <p><strong>Recorded receipt:</strong> the original <code>clients.id</code> and dated <code>clients.created_at</code> are cross-checked against the permissioned CRM customer directory. The receipt is displayed only when both complete source reads succeed, match identities and were fetched within five minutes. A source failure, expired read, potentially capped query, missing canonical identifier or invalid date withholds the receipt instead of declaring a zero or a created customer.</p>
+          <p><strong>First-customer boundary:</strong> an empty, successfully verified CRM source displays no dated first-customer intake receipt. It does not create sample customers or claim a completed intake. Actual customer creation or editing remains an explicit Save customer action in the guided CRM form, with the existing Jobs approval authority.</p>
+          <p><strong>Possible duplicates:</strong> exact normalized name or billing-email matches in the complete CRM read are advisory review flags. Select and inspect existing records before pressing Save; no automatic duplicate merge or cross-account lookup occurs. No-match does not prove business-wide uniqueness. A failed or stale source receipt blocks new-customer creation until the operator rechecks.</p>
+          <p><strong>Privacy:</strong> only the already-permissioned customer names and source-linked dates are shown. This panel never sends a message, dispatches a crew, changes permissions, issues an invoice or charges a customer.</p>
+        </section>
+
         <section class="help-section" id="guided-customer-property-creation">
           <h2>Build 392 — Customer &amp; Property Guided Record Creation</h2>
           <p><strong>Where:</strong> Admin → Customer &amp; Property CRM → Guided customer &amp; property creation. Use customer search to select and edit an existing customer or choose New customer. Save requires a legal name; the email format is checked. The existing CRM also keeps seasons, service history and follow-up evidence together.</p>
