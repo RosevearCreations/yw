@@ -42,6 +42,7 @@
       '<div id="crm392PropertyStatus" class="notice" role="status" aria-live="polite"></div></div>',
       '</div><p class="muted">A matching customer or property is a review warning, not a destructive merge. This view never sends customer messages, schedules jobs or creates invoices. Backend Jobs approve access is mandatory.</p></section>',
 
+      '<section class="admin-panel-block" data-build="406" id="crm406Intake" style="margin-top:14px;"><h4>First-customer intake receipt &amp; duplicate review</h4><p class="muted">Dated, read-only source evidence for the selected recorded customer. Possible duplicate names or emails require human review; no automatic merge, creation or contact. <a href="/help.html#first-customer-intake-receipt-406">ⓘ Help</a></p><button type="button" class="secondary" id="crm406Recheck">Recheck canonical intake</button><div id="crm406Receipt" role="status" aria-live="polite"></div></section>',
       '<div class="grid" style="margin-top:14px;"><div class="admin-panel-block"><h4>Customers</h4><div id="crm340Customers"></div></div><div class="admin-panel-block"><h4>Selected relationship</h4><div id="crm340Selected"></div></div></div>',
       '<div class="grid" style="margin-top:14px;"><div class="admin-panel-block"><h4>Open leads</h4><div id="crm340Leads"></div></div><div class="admin-panel-block"><h4>Renewals &amp; follow-ups</h4><div id="crm340Queues"></div></div></div>',
       '<div class="admin-panel-block" style="margin-top:14px;"><h4>Record relationship evidence</h4><div class="grid">',
@@ -96,6 +97,36 @@
       byId('crm392SaveCustomer').disabled=state.saving||!state.loaded;
       byId('crm392SaveProperty').disabled=state.saving||!state.loaded||!active.length;
     }
+    function renderIntake406(){
+      const host=byId('crm406Receipt');if(!host)return;
+      const evidence=state.payload?.crm_intake_406;
+      const retrieved=Date.parse(String(evidence?.retrieved_at||''));
+      const current=Number.isFinite(retrieved)&&retrieved<=Date.now()+300000&&Date.now()-retrieved<=300000;
+      if(!state.loaded||!evidence?.complete||!current||!['recorded','no_record'].includes(evidence?.state)){
+        host.innerHTML='<p class="muted" data-crm406-state="withheld">Intake receipt withheld: canonical date, source coverage, permission or freshness has not been verified. Recheck before treating this as a record.</p>';return;
+      }
+      if(evidence.state==='no_record'){
+        host.innerHTML='<p class="muted" data-crm406-state="no_record">No dated first-customer intake receipt exists in the complete current CRM read. Create a real customer only through the existing authorized Save customer workflow after checking possible matches.</p>';return;
+      }
+      const id=state.customerEdit||state.selectedId;
+      const record=arr('crm_customers').find(r=>String(r.client_id)===String(id));
+      const receipt=Array.isArray(evidence.receipts)?evidence.receipts.find(r=>String(r.client_id)===String(id)):null;
+      const stamp=Date.parse(String(receipt?.recorded_at||''));
+      if(!record||!Number.isFinite(stamp)||stamp>Date.now()+300000){
+        host.innerHTML='<p class="muted" data-crm406-state="withheld">No dated source-linked intake receipt for the selected customer. Select a canonical customer and refresh.</p>';return;
+      }
+      const name=norm(val('crm392LegalName')||record.client_name||record.legal_name);
+      const email=norm(val('crm392Email')||record.billing_email);
+      const candidates=arr('crm_customers').filter(r=>String(r.client_id)!==String(id)&&
+        ((name&&norm(r.client_name||r.legal_name)===name)||(email&&norm(r.billing_email)===email)));
+      host.innerHTML='<p class="notice" data-crm406-state="recorded"><strong>Recorded customer intake</strong> · '+esc(record.client_name||record.legal_name||'Selected customer')+
+        '<br><small>Canonical created: '+esc(new Date(stamp).toLocaleString('en-CA'))+
+        ' · Intake rechecked: '+esc(new Date(retrieved).toLocaleString('en-CA'))+'</small></p>'+
+        (candidates.length?'<p class="notice" data-crm406-duplicates="review">Possible duplicate customers in the complete CRM read: '+
+          esc(candidates.slice(0,3).map(r=>r.client_name||r.legal_name||'Existing customer').join(', '))+
+          '. Review the existing record before any new Save. No automatic merge.</p>':
+          '<p class="muted" data-crm406-duplicates="none">No exact name/email match in the inspected complete CRM read. This does not guarantee uniqueness outside current authority.</p>');
+    }
     function fillCustomer(){
       const c=sourceCustomer(state.customerEdit)||{};
       for(const [key,source] of [['crm392LegalName','legal_name'],['crm392Email','billing_email'],
@@ -118,6 +149,13 @@
       const edit=isCustomer?state.customerEdit:state.propertyEdit;
       const row=isCustomer?sourceCustomer(edit):sourceProperty(edit);
       if(edit&&!row)return status392(kind,'Selected record is not in the latest CRM read. Refresh first.',true);
+      if(isCustomer&&!edit&&state.payload?.crm_intake_406){
+        const evidence=state.payload.crm_intake_406;
+        const checked=Date.parse(String(evidence.retrieved_at||''));
+        if(!evidence.complete||!['recorded','no_record'].includes(evidence.state)||
+           !Number.isFinite(checked)||checked>Date.now()+300000||Date.now()-checked>300000)
+          return status392(kind,'Current complete canonical CRM intake verification is unavailable. Recheck before creating a customer.',true);
+      }
       if(isCustomer){
         const email=val('crm392Email');
         if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return status392(kind,'Please enter a valid billing email.',true);
@@ -159,6 +197,7 @@
     }
     function render(){
       renderGuideOptions();
+      renderIntake406();
       const customers=arr('crm_customers').filter((x)=>x.is_active!==false);
       if(!state.selectedId&&customers[0])state.selectedId=String(customers[0].client_id);
       const openFollowups=arr('crm_followups').filter((x)=>['pending','in_progress','deferred'].includes(x.followup_status)).length;
@@ -211,9 +250,12 @@
       await load(); notice(ok);
     }
     byId('crm340Refresh').onclick=load;
+    byId('crm406Recheck').onclick=load;
+    byId('crm392LegalName').addEventListener('input',renderIntake406);
+    byId('crm392Email').addEventListener('input',renderIntake406);
     byId('crm392CustomerSearch').oninput=renderGuideOptions;
     byId('crm392PropertySearch').oninput=renderGuideOptions;
-    byId('crm392CustomerSelect').onchange=()=>{state.customerEdit=val('crm392CustomerSelect');fillCustomer()};
+    byId('crm392CustomerSelect').onchange=()=>{state.customerEdit=val('crm392CustomerSelect');fillCustomer();renderIntake406()};
     byId('crm392PropertySelect').onchange=()=>{state.propertyEdit=val('crm392PropertySelect');fillProperty()};
     byId('crm392SaveCustomer').onclick=()=>guidedSave('Customer');
     byId('crm392SaveProperty').onclick=()=>guidedSave('Property');
