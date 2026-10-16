@@ -871,7 +871,7 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 **Canonical source:** completed releases and dated source-cohort evidence. **Boundary:** No additional mutations or external authorization grants.
 
 
-**Implemented acceptance:** The dated 2026-10-16 read-only sample across six named Production tables in `docs/production_learning_review_405.json` returned zero recorded rows (and zero clients created in the past 90 days). This is not a statement about the whole business. Build 391–404 release capability exists, but first-use operational improvement, invoice conversion, season-specific retention, employee effects and ROI remain unmeasured. The renewed queue below comprises 12 bounded releases; no automatic business writes or additional permissions were introduced. The next build is **406 — First-Customer Intake Receipt & Duplicate-Safe Review**.
+**Implemented acceptance:** The dated 2026-10-16 read-only sample across six named Production tables in `docs/production_learning_review_405.json` returned zero recorded rows (and zero clients created in the past 90 days). This is not a statement about the whole business. Released items 391–404 have implemented capabilities, but first-use operational improvement, invoice conversion, season-specific retention, employee effects and ROI remain unmeasured. The renewed queue below comprises 12 bounded releases; no automatic business writes or additional permissions were introduced. The next build is **406 — First-Customer Intake Receipt & Duplicate-Safe Review**.
 
 #### 406 — First-Customer Intake Receipt & Duplicate-Safe Review
 
