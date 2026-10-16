@@ -25,6 +25,7 @@
       '<div class="notice" data-build="390" style="margin-top:8px;"><strong>Production learning evidence:</strong> a 2026-10-13 snapshot of ten inspected canonical tables contained no recorded rows. This does not prove operational improvement or absence of activity elsewhere. <a href="/help.html#production-learning-roadmap-renewal-iii" aria-label="Info: Production learning review and first-use roadmap">ⓘ Review evidence and first-use build queue</a>.</div>',
       '<div id="owner350Status" class="notice" style="margin-top:10px;"></div>',
       '<section class="admin-panel-block owner391-first-use" data-build="391" style="margin-top:12px;"><div class="owner350-head"><div><h4>First-use readiness &amp; verified data intake</h4><p class="section-subtitle">Item 391 · source-derived onboarding checklist. No customer, job, crew or material record is created by this panel.</p></div><a class="secondary" href="/help.html#first-use-readiness-verified-intake" aria-label="Info: verified data intake help">ⓘ Help</a></div><div id="owner391Readiness" aria-live="polite"></div></section>',
+      '<section class="admin-panel-block owner404-first-cohort" data-build="404" style="margin-top:12px;"><div class="owner350-head"><div><h4>First operational cohort · customer to invoice</h4><p class="section-subtitle">Build 404 · 90-day first-use customer cohort, first work-order dispatch through recorded Production, approved closeout and invoice. Percentages are withheld for small samples or unverified sources.</p></div><a class="secondary" href="/help.html#first-operational-cohort-404" aria-label="Info: first operational cohort measurement help">ⓘ Help</a></div><div id="owner404FirstCohort" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner351-evidence" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management metric freshness &amp; confidence</h4><p class="section-subtitle">Build 351 · authoritative source age, coverage, visibility and confidence. Missing evidence is never converted into a zero-valued business fact.</p></div></div><div id="owner351Freshness"></div></section>',
       '<section class="admin-panel-block owner377-cohorts" style="margin-top:12px;"><div class="owner350-head"><div><h4>Management outcome confidence &amp; cohort trend</h4><p class="section-subtitle">Build 377 · source-key-level decision outcomes in separate 30-day and preceding 60-day windows; incomplete evidence never becomes a performance claim.</p></div><a class="secondary" href="/help.html#management-outcome-confidence-cohort-trend" aria-label="Info: management outcome cohort help" title="Help for management outcome cohorts">ⓘ Help</a></div><div id="owner377Cohorts"></div></section>',
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
@@ -152,6 +153,34 @@
       host.innerHTML=cards+'<p class="muted">A verified empty source is an intake opportunity, not a failed system. A populated source does not certify workflow readiness. Refresh re-queries the authorized backend; this view cannot create or alter records.</p>'+
         '<div class="owner350-list">'+rows+'</div>'+
         '<p class="muted">Four-season scope: spring/summer lawn and landscaping; fall cleanup/leaf; winter snow/storm/ice; general year-round service. All operator changes happen in their existing authorized modules.</p>';
+    }
+
+    function renderFirstOperationalCohort404(){
+      const host=$('owner404FirstCohort');if(!host)return;
+      const evidence=state.data?.first_operational_cohort_404;
+      if(!allowed('jobs')||!allowed('finance')){
+        host.innerHTML='<p class="muted" data-owner404-state="permission_hidden">Jobs and Finance view permissions are required. Cohort counts are withheld.</p>';
+        return;
+      }
+      if(!evidence || evidence.state!=='measured'){
+        host.innerHTML='<p class="muted" data-owner404-state="withheld">'+esc(evidence?.reason||'A fresh, complete, authorized canonical cohort is unavailable; counts and conversion rates are withheld.')+'</p>';
+        return;
+      }
+      const stages=Array.isArray(evidence.stages)?evidence.stages:[];
+      const conversions=Array.isArray(evidence.conversions)?evidence.conversions:[];
+      if(stages.length!==5||conversions.length!==4){
+        host.innerHTML='<p class="muted" data-owner404-state="withheld">Incomplete canonical cohort evidence; measurements withheld.</p>';
+        return;
+      }
+      const safeCount=v=>Number.isInteger(v)&&v>=0?String(v):'Withheld';
+      const stageCards='<div class="owner351-summary">'+stages.map(r=>card(r.name,safeCount(r.count),'Dated, source-linked first-job cohort')).join('')+'</div>';
+      const rates=conversions.map(r=>'<div class="owner350-row" data-owner404-stage="'+esc(r.to)+'"><strong>'+
+        esc(r.from)+' → '+esc(r.to)+'</strong><small>'+
+        (r.state==='measured'&&Number.isFinite(Number(r.rate))?esc(r.rate+'% · '+safeCount(r.numerator)+' of '+safeCount(r.denominator)):'Rate withheld · fewer than '+safeCount(evidence.minimum_sample)+' qualifying records')+
+        '</small></div>').join('');
+      host.innerHTML=stageCards+'<p class="muted">Cohort: '+esc(evidence.lookback_days)+' days from first recorded customer creation. Source read: '+esc(when(evidence.generated_at))+'. Comparisons require at least '+esc(evidence.minimum_sample)+' records per denominator. Descriptive counts do not prove improvement or causality.</p>'+
+        '<div class="owner350-list">'+rates+'</div>'+
+        '<p class="muted">All data is read-only. Customer records, invoices and payments remain under their existing authorized modules.</p>';
     }
 
     function renderFreshness(){
@@ -1418,6 +1447,7 @@
     function render(){
       const m=metrics();
       renderFirstUseReadiness();
+      renderFirstOperationalCohort404();
       renderFreshness();
       renderManagementOutcomeConfidenceCohorts();
       renderCapacityForecast();

@@ -4337,6 +4337,81 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       materialStock=materialStockRead.rows,materialPlans=materialPlansRead.rows,materialActualUse=materialActualUseRead.rows,
       crmFollowups=crmFollowupsRead.rows,customerDirectory=customerDirectoryRead.rows,notificationQueue=notificationQueueRead.rows,closeouts=closeoutsRead.rows,
       propertyDirectory=propertyDirectoryRead.rows,managementDecisionOutcomes=managementDecisionOutcomesRead.rows;
+    // Build 404: permission-scoped canonical first-use provenance (no writes).
+    // The full client/work-order universe is required to identify an actual first job.
+    const [cohortClientsRead,cohortOrdersRead] = canJobsView && canFinanceView
+      ? await Promise.all([
+        safeListEvidence(supabase,'clients','id,created_at','created_at',1000,true),
+        safeListEvidence(supabase,'work_orders','id,client_id,created_at','created_at',1000,true)
+      ])
+      : [null,null];
+
+    const firstOperationalCohort404 = (() => {
+      const generatedAt=new Date().toISOString(), nowMs=Date.parse(generatedAt);
+      const threshold=10, cutoff=nowMs-90*86400000;
+      const withheld=(reason:string)=>({
+        state:'withheld',reason,generated_at:generatedAt,lookback_days:90,minimum_sample:threshold,
+        stages:[],conversions:[],authority_boundary:'Read-only aggregate; no inferred first jobs, staff ranking, customer effects or Finance actions.'
+      });
+      if(!canJobsView || !canFinanceView) return withheld('Both Jobs and Finance view permissions are required.');
+      const reads=[cohortClientsRead,cohortOrdersRead,customerDirectoryRead,dispatchRead,productionRead,closeoutsRead,receivablesRead];
+      if(reads.some(r=>!r || r.query_ok!==true || !Array.isArray(r.rows) ||
+        !Number.isInteger(r.row_count) || !Number.isInteger(r.limit) ||
+        r.limit<1 || r.row_count>=r.limit ||
+        !Number.isFinite(Date.parse(r.retrieved_at||'')) ||
+        Date.parse(r.retrieved_at)>nowMs+300000 || nowMs-Date.parse(r.retrieved_at)>30*60000))
+        return withheld('A required permissioned source failed, is stale, or reached its query boundary.');
+      const date=(v:any)=>{const t=Date.parse(String(v||''));return Number.isFinite(t)&&t<=nowMs?t:null;};
+      const crmIds=new Set(customerDirectory.map((r:any)=>String(r?.client_id||'')).filter(Boolean));
+      if((cohortClientsRead?.rows||[]).some((r:any)=>!r?.id || date(r.created_at)===null) ||
+         (cohortOrdersRead?.rows||[]).some((r:any)=>!r?.id || !r?.client_id || date(r.created_at)===null))
+        return withheld('Required client or work-order identifiers and dated provenance are incomplete.');
+      const clientRows:any[]=cohortClientsRead?.rows||[], orderRows:any[]=cohortOrdersRead?.rows||[];
+      const clients=clientRows.filter((r:any)=>Number(date(r.created_at))>=cutoff && crmIds.has(String(r.id)));
+      if(clients.length!==clientRows.filter((r:any)=>Number(date(r.created_at))>=cutoff).length)
+        return withheld('First-use customers are not all represented in the canonical CRM read.');
+      const firstOrder=new Map<string,any>();
+      for(const order of orderRows){
+        const key=String(order.client_id),old=firstOrder.get(key);
+        if(!old || Number(date(order.created_at))<Number(date(old.created_at)))firstOrder.set(key,order);
+      }
+      const intake=new Set(clients.map((r:any)=>String(r.id)));
+      const dispatchIds=new Set(dispatch.filter((r:any)=>
+        !!r?.work_order_id && !!date(r.scheduled_start) &&
+        !['cancelled','superseded'].includes(String(r.schedule_status||'').toLowerCase())
+      ).map((r:any)=>String(r.work_order_id)));
+      const sessionIds=new Set(production.filter((r:any)=>!!r?.work_order_id &&
+        !!date(r.started_at||r.production_recorded_at) &&
+        !['cancelled','blocked'].includes(String(r.session_status||'').toLowerCase())
+      ).map((r:any)=>String(r.work_order_id)));
+      const closeoutIds=new Set(closeouts.filter((r:any)=>!!r?.work_order_id &&
+        (!!date(r.approved_at) || String(r.closeout_status||'').toLowerCase()==='approved')
+      ).map((r:any)=>String(r.work_order_id)));
+      const invoiceIds=new Set(receivables.filter((r:any)=>!!r?.work_order_id &&
+        !!date(r.invoice_date||r.created_at) &&
+        !['draft','void','voided','cancelled','canceled'].includes(String(r.invoice_status||'').toLowerCase())
+      ).map((r:any)=>String(r.work_order_id)));
+      const ids=[intake];
+      for(const observed of [dispatchIds,sessionIds,closeoutIds,invoiceIds]){
+        const prior=ids.at(-1)!,next=new Set<string>();
+        for(const clientId of prior){const order=firstOrder.get(clientId);if(order && observed.has(String(order.id)))next.add(clientId);}
+        ids.push(next);
+      }
+      const names=['Customer intake','First-job dispatch','Production session','Approved closeout','Invoice'];
+      if(intake.size<threshold)return withheld('Fewer than 10 dated first-use customer records; all cohort comparisons withheld.');
+      const stages=names.map((name,i)=>({name,count:ids[i].size}));
+      const conversions=names.slice(1).map((name,i)=>{
+        const denominator=ids[i].size,numerator=ids[i+1].size;
+        return {from:names[i],to:name,denominator,numerator,
+          rate:denominator>=threshold?Number((100*numerator/denominator).toFixed(1)):null,
+          state:denominator>=threshold?'measured':'withheld_small_sample'};
+      });
+      return {state:'measured',reason:'Canonical complete reads; first work orders determined from complete dated work-order history.',
+        generated_at:generatedAt,lookback_days:90,minimum_sample:threshold,
+        stages,conversions,
+        authority_boundary:'Read-only, permission-scoped aggregate; no staff ranking, customer effects, or Finance actions.'};
+    })();
+
     const sourceFreshness:Record<string,any> = {};
     const addFresh=(read:SourceReadEvidence,key:string,module:string,view:string,visible:boolean,stale_after_hours:number)=>{
       sourceFreshness[key]=buildManagementSourceFreshness(read,{key,module,view,visible,stale_after_hours});
@@ -4587,6 +4662,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
       owner_equipment_use:equipmentUse,owner_fleet:fleet,owner_material_stock:materialStock,owner_material_plans:materialPlans,
       owner_crm_followups:crmFollowups,owner_notification_delivery:notificationQueue,owner_closeouts:closeouts,owner_crm_properties:propertyDirectory,
       source_visibility:{jobs:canJobsView,finance:canFinanceView,safety:canSafetyView,admin:canAdminManage},
+      first_operational_cohort_404:firstOperationalCohort404,
       source_freshness:sourceFreshness,
       management_metric_confidence:metricConfidence,
       management_outcome_confidence_cohort_trend:managementOutcomeConfidenceCohortTrend,
