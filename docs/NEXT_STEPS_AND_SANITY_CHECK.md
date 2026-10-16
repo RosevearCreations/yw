@@ -877,6 +877,9 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 **Acceptance:** Demonstrate permissioned first-customer intake receipt and existing duplicate review on a real operator-provided example; withhold status when no dated customer record exists.
 
+**Implementation:** CRM supervisor-or-higher canonical read now cross-checks client identifiers and original `clients.created_at` against the existing CRM directory in a five-minute, bounded, complete-source receipt. Missing, expired, failed or capped source evidence withholds display and pauses new-customer creation until recheck. The operator panel shows the chosen customer's dated receipt, advisory exact-name/email duplicate matches, and a read-only Recheck action; no customer data is generated to simulate acceptance. Authenticated existing `crm_client_save` remains the only customer write authority. No genuine first-customer intake has been claimed from empty Production source evidence. This item requires the matching `admin-directory` Edge Function release and exact-source production verification before being marked GREEN.
+
+
 **Canonical source:** CRM customer intake and existing duplicate review. **Boundary:** No automatic customer creation, duplicate merge, or broad-profile disclosure.
 
 #### 407 — Property & Four-Season Coverage Evidence
