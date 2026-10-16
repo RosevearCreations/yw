@@ -4363,16 +4363,17 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
         return withheld('A required permissioned source failed, is stale, or reached its query boundary.');
       const date=(v:any)=>{const t=Date.parse(String(v||''));return Number.isFinite(t)&&t<=nowMs?t:null;};
       const crmIds=new Set(customerDirectory.map((r:any)=>String(r?.client_id||'')).filter(Boolean));
-      if(cohortClientsRead.rows.some((r:any)=>!r?.id || date(r.created_at)===null) ||
-         cohortOrdersRead.rows.some((r:any)=>!r?.id || !r?.client_id || date(r.created_at)===null))
+      if((cohortClientsRead?.rows||[]).some((r:any)=>!r?.id || date(r.created_at)===null) ||
+         (cohortOrdersRead?.rows||[]).some((r:any)=>!r?.id || !r?.client_id || date(r.created_at)===null))
         return withheld('Required client or work-order identifiers and dated provenance are incomplete.');
-      const clients=cohortClientsRead.rows.filter((r:any)=>date(r.created_at)!>=cutoff && crmIds.has(String(r.id)));
-      if(clients.length!==cohortClientsRead.rows.filter((r:any)=>date(r.created_at)!>=cutoff).length)
+      const clientRows:any[]=cohortClientsRead?.rows||[], orderRows:any[]=cohortOrdersRead?.rows||[];
+      const clients=clientRows.filter((r:any)=>Number(date(r.created_at))>=cutoff && crmIds.has(String(r.id)));
+      if(clients.length!==clientRows.filter((r:any)=>Number(date(r.created_at))>=cutoff).length)
         return withheld('First-use customers are not all represented in the canonical CRM read.');
       const firstOrder=new Map<string,any>();
-      for(const order of cohortOrdersRead.rows){
+      for(const order of orderRows){
         const key=String(order.client_id),old=firstOrder.get(key);
-        if(!old || date(order.created_at)!<date(old.created_at)!)firstOrder.set(key,order);
+        if(!old || Number(date(order.created_at))<Number(date(old.created_at)))firstOrder.set(key,order);
       }
       const intake=new Set(clients.map((r:any)=>String(r.id)));
       const dispatchIds=new Set(dispatch.filter((r:any)=>
