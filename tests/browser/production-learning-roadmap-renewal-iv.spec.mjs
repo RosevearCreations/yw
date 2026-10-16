@@ -20,7 +20,7 @@ test('Build 405 shows only dated read-only evidence and preserves missing-outcom
  await expect(section).toContainText('not a claim that the entire business');
  await expect(section).toContainText('No ROI');
  await expect(section).toContainText('this review creates no records');
- await expect(section).toContainText('missing');
+ await expect(section).toContainText('Missing, unauthorized, failed, stale or query-capped source reads');
  expect(ownerSource).toContain('data-build="405"');
  expect(ownerSource).toContain('/help.html#production-learning-roadmap-renewal-iv');
 });
