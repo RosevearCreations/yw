@@ -264,7 +264,9 @@
     "test:guided-customer-property-creation": "node scripts/guided-customer-property-creation-check.mjs",
     "test:browser:guided-customer-property-creation": "playwright test --config=playwright.config.mjs tests/browser/guided-customer-property-creation.spec.mjs",
     "test:operational-cohort-404": "node scripts/operational-cohort-404-check.mjs",
-    "test:browser:operational-cohort-404": "playwright test --config=playwright.config.mjs tests/browser/operational-cohort-404.spec.mjs"
+    "test:browser:operational-cohort-404": "playwright test --config=playwright.config.mjs tests/browser/operational-cohort-404.spec.mjs",
+    "test:production-learning-roadmap-renewal-iv": "node scripts/production-learning-roadmap-renewal-iv-check.mjs",
+    "test:browser:production-learning-roadmap-renewal-iv": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-iv.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
