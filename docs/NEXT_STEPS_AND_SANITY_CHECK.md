@@ -871,6 +871,82 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 **Canonical source:** completed releases and dated source-cohort evidence. **Boundary:** No additional mutations or external authorization grants.
 
 
+**Implemented acceptance:** The dated 2026-10-16 read-only sample across six named Production tables in `docs/production_learning_review_405.json` returned zero recorded rows (and zero clients created in the past 90 days). This is not a statement about the whole business. Released items 391–404 have implemented capabilities, but first-use operational improvement, invoice conversion, season-specific retention, employee effects and ROI remain unmeasured. The renewed queue below comprises 12 bounded releases; no automatic business writes or additional permissions were introduced. The next build is **406 — First-Customer Intake Receipt & Duplicate-Safe Review**.
+
+#### 406 — First-Customer Intake Receipt & Duplicate-Safe Review
+
+**Acceptance:** Demonstrate permissioned first-customer intake receipt and existing duplicate review on a real operator-provided example; withhold status when no dated customer record exists.
+
+**Canonical source:** CRM customer intake and existing duplicate review. **Boundary:** No automatic customer creation, duplicate merge, or broad-profile disclosure.
+
+#### 407 — Property & Four-Season Coverage Evidence
+
+**Acceptance:** Reconcile one real customer-owned property to its seasonal work types without inferring winter or summer readiness from missing agreements.
+
+**Canonical source:** CRM properties, site intelligence and seasonal agreements. **Boundary:** No site mutation, enrollment or plan renewal without operator action.
+
+#### 408 — Estimate Acceptance to First Work Order Trace
+
+**Acceptance:** Show explicit customer acceptance, internal approval and first work-order identity with missing approvals marked unavailable.
+
+**Canonical source:** Estimate workflow and work-order authority. **Boundary:** No automatic estimate acceptance, pricing or work-order issuance.
+
+#### 409 — First-Dispatch Schedule Receipt
+
+**Acceptance:** Match an authorized first work order to a dated noncancelled schedule; show unresolved resource/workability exceptions separately.
+
+**Canonical source:** Dispatch schedule and Workability authorities. **Boundary:** No unattended dispatch, weather override or staff assignment.
+
+#### 410 — Production Start and Return-Visit Proof
+
+**Acceptance:** Reconcile first-job scheduled visit to an actual dated started session, partial completion and return-visit evidence.
+
+**Canonical source:** Production sessions and field capture receipts. **Boundary:** No synthetic session or automatic completion.
+
+#### 411 — Material and Equipment First-Job Trace
+
+**Acceptance:** Distinguish recorded actual materials/equipment from estimates on the same first-job identity with caps and permission checks.
+
+**Canonical source:** Materials issue, equipment use and Production evidence. **Boundary:** No inventory correction, lockout override or job-cost posting.
+
+#### 412 — Quality-Control Closeout Evidence
+
+**Acceptance:** Show first-job QC, supervisor approval and customer-safe proof completeness without substituting planned steps for completed evidence.
+
+**Canonical source:** QC, supervisor signoff and closeout packages. **Boundary:** No automatic signoff, customer message or review request.
+
+#### 413 — Invoice Readiness and Candidate Provenance
+
+**Acceptance:** Link approved first-job closeout to Finance candidate identity with explicit missing and approval states.
+
+**Canonical source:** Approved closeout and Finance invoice candidate source. **Boundary:** No posting an invoice, collection, payment or external provider call.
+
+#### 414 — First Invoice Receivable Confidence
+
+**Acceptance:** Verify actual non-void first invoice presence and the authoritative receivable state only for permissioned, complete samples.
+
+**Canonical source:** Finance receivable and payment application views. **Boundary:** No charge, receipt allocation or customer follow-up automation.
+
+#### 415 — Seasonal First-Use Cohort Coverage
+
+**Acceptance:** Show season-specific first-use denominators only when dated, fully linked and sample-supported.
+
+**Canonical source:** CRM first-use dates, seasonal services and Workability. **Boundary:** No performance attribution, staff ranking or zero assumption.
+
+#### 416 — Owner First-Use Trial Acceptance Workbench
+
+**Acceptance:** Provide a bounded owner acceptance checklist for each canonical first-use handoff and record unresolved evidence gaps without fake demo success.
+
+**Canonical source:** Existing owner source checks, Help and operator acceptance. **Boundary:** No unattended seed data, external outreach, or account-role change.
+
+#### 417 — Production Learning & Autonomous Roadmap Renewal V
+
+**Acceptance:** Review actual comparable first-job outcomes, withhold claims when denominators are inadequate, and renew another bounded queue.
+
+**Canonical source:** Dated production cohort evidence and release records. **Boundary:** No autonomous business transactions or unauthorized data access.
+
+
+
 
 
 Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, **324 — Estimate → Job → Invoice Workflow**, **325 — Landscape Production Tracking**, **326 — Mobile Crew App v2**, **327 — Safety & Compliance Command Centre**, **328 — Job Hazard & Site Safety Plans**, **329 — Incident & Near-Miss Investigation**, **330 — Training & Certification Matrix**, **331 — Equipment Registry & QR System v2**, **332 — Daily Equipment Inspection & Lockout**, **333 — Fleet, Trailer & Vehicle Operations**, **334 — Preventive Maintenance Engine**, **335 — Fuel, Consumables & Materials Control**, **336 — Employee & Crew Management**, **337 — Timekeeping, Attendance & Payroll Evidence**, **338 — Performance & Development**, **339 — Hiring & Onboarding Workflow**, **340 — Customer & Property CRM**, **341 — Route Optimization & Territory Management**, **342 — Weather & Workability Controls**, **343 — Landscape Material Estimator**, **344 — Change Orders & Extras**, **345 — Quality Control & Customer Signoff**, **346 — Seasonal Operations Centre**, **347 — Universal Activity & Audit Timeline**, **348 — Offline & Conflict Recovery**, **349 — Saved Views, Search & Command Centre**, **350 — Owner / Management Command Centre**, **351 — Management Metric Freshness & Confidence**, **352 — Autonomous Exception Triage & Next-Safe-Action**, **353 — Four-Season Capacity & Workability Forecast**, **354 — Route & Crew Efficiency Evidence**, **355 — Recurring Service Renewal & Retention Workbench**, **356 — Estimate-to-Cash Leakage & Margin Recovery**, **357 — Labour, Equipment & Fleet Utilization Decision Support**, **358 — Materials, Consumables & Seasonal Stock Readiness**, **359 — Customer Communication Readiness & Queue Quality**, **360 — Data Quality, Duplicate & Orphan Reconciliation Workbench**, **361 — Mobile, Offline & Read-Budget Reliability Optimization**, and **362 — Production Learning & Autonomous Roadmap Renewal**, **363 — Management Decision Outcome Journal & Learning Loop**, and **364 — Workability-to-Schedule Recovery Outcomes** are implemented by the current release. The renewed autonomous queue now continues with **365–376**, beginning with **365 — Route Plan-vs-Actual & Stop-Sequence Learning**. The four-season Ontario operating model applies to every later release where season or service type is relevant. The canonical cross-AI operating instructions live in the **Cross-AI autonomous handoff** section of `docs/ACTIVE_PROJECT_HANDBOOK.md`.
