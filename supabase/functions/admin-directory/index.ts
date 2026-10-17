@@ -4921,12 +4921,12 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
 
 
   if (scope === 'crm' && roleRank(actorRole) >= roleRank('supervisor')) {
-    const [customersEvidence,intakeDatesEvidence,properties,leads,plans,history,interactions,followups,opportunities,renewals,candidates,profiles] = await Promise.all([
+    const [customersEvidence,intakeDatesEvidence,propertiesEvidence,leads,plansEvidence,history,interactions,followups,opportunities,renewals,candidates,profiles] = await Promise.all([
       safeListEvidence(supabase,'v_crm_customer_directory','*','client_name',1000,true),
       safeListEvidence(supabase,'clients','id,created_at','created_at',1000,true),
-      safeList(supabase,'v_crm_property_directory','*','site_name',1500,true),
+      safeListEvidence(supabase,'v_crm_property_directory','*','site_name',1500,true),
       safeList(supabase,'v_quote_contact_followup_queue','*','created_at',500,false),
-      safeList(supabase,'v_crm_service_plan_directory','*','updated_at',1500,false),
+      safeListEvidence(supabase,'v_crm_service_plan_directory','*','updated_at',1500,false),
       safeList(supabase,'v_crm_service_history','*','occurred_at',2500,false),
       safeList(supabase,'v_crm_interaction_timeline','*','occurred_at',1500,false),
       safeList(supabase,'v_crm_followup_queue','*','due_at',1500,true),
@@ -4964,9 +4964,74 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
         receipts,duplicate_review:'advisory_only',source:'clients.id + clients.created_at cross-checked against v_crm_customer_directory'
       };
     })();
+    // Item 407: site-specific seasonal agreement evidence, not inferred site readiness.
+    // Caller has the existing supervisor-or-higher authenticated CRM permission.
+    const propertyNow=Date.now();
+    const crmProperty407=(()=>{
+      const withheld=(reason:string)=>({state:'withheld',complete:false,reason,retrieved_at:new Date(propertyNow).toISOString(),properties:[]});
+      const reads=[customersEvidence,propertiesEvidence,plansEvidence];
+      if(reads.some(r=>!r.query_ok || !Array.isArray(r.rows) || !Number.isInteger(r.row_count) ||
+          r.row_count>=r.limit || !Number.isFinite(Date.parse(r.retrieved_at)) ||
+          Date.parse(r.retrieved_at)>propertyNow+300000 || propertyNow-Date.parse(r.retrieved_at)>300000))
+        return withheld('Customer, property or agreement query failed, expired or could be capped. Refresh canonical CRM sources.');
+      const owners=new Set(customersEvidence.rows.map((x:any)=>String(x.client_id||'')).filter(Boolean));
+      if(owners.size!==customersEvidence.rows.length)return withheld('Customer owner identities are incomplete.');
+      const sites=new Map<string,any>();
+      for(const p of propertiesEvidence.rows){
+        const id=String(p?.id||''),owner=String(p?.client_id||'');
+        if(!id || !owner || !owners.has(owner) || sites.has(id))
+          return withheld('Site identity or customer ownership cannot be fully verified.');
+        sites.set(id,p);
+      }
+      const today=new Date(propertyNow).toISOString().slice(0,10);
+      const seasons=['spring_summer','fall','winter'];
+      const coverage=new Map<string,any>();
+      for(const [id,p] of sites)coverage.set(id,{
+        client_site_id:id,client_id:String(p.client_id),
+        seasons:Object.fromEntries(seasons.map(season=>[season,{state:'not_verified',agreement_count:0,source_agreement_ids:[]}]))
+      });
+      const seen=new Set<string>();
+      const scopes:any[]=[];
+      for(const a of plansEvidence.rows){
+        const aid=String(a?.agreement_id||''),siteId=String(a?.client_site_id||''),owner=String(a?.client_id||'');
+        if(!aid || seen.has(aid) || !owner || !owners.has(owner))
+          return withheld('Agreement identities are incomplete, duplicate or do not belong to a canonical customer.');
+        seen.add(aid);
+        if(!siteId){scopes.push({agreement_id:aid,scope:'customer_only_not_site_evidence'});continue;}
+        const site=sites.get(siteId);
+        if(!site || String(site.client_id)!==owner)
+          return withheld('Agreement and property customer ownership do not match.');
+        const season=String(a.season_context||'other');
+        const applies=season==='four_season'?seasons:seasons.includes(season)?[season]:[];
+        if(!applies.length){scopes.push({agreement_id:aid,scope:'unclassified_season'});continue;}
+        const status=String(a.agreement_status||'').toLowerCase();
+        const start=String(a.start_date||''),end=String(a.end_date||'');
+        const dateFormat=/^\\d{4}-\\d{2}-\\d{2}$/;
+        const valid=(d:string)=>dateFormat.test(d)&&!Number.isNaN(Date.parse(d+'T00:00:00Z'))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
+        const datesValid=(!start||valid(start))&&(!end||valid(end));
+        const current= status==='active' && datesValid && !!start && start<=today &&
+          (a.open_end_date===true || (!!end&&end>=today));
+        for(const seasonKey of applies){
+          const entry=coverage.get(siteId).seasons[seasonKey];
+          entry.agreement_count++;
+          entry.source_agreement_ids.push(aid);
+          // Never use draft, paused, historical service, or absent end dates as active coverage.
+          if(current)entry.state='active_agreement_recorded';
+          else if(entry.state!=='active_agreement_recorded')entry.state='review_agreement';
+        }
+      }
+      const records=[...coverage.values()];
+      return {
+        state:records.length?'recorded':'no_property',complete:true,
+        reason:records.length?'Site ownership verified. Coverage reflects only dated active site-specific agreements.':'No verified owned properties in the complete canonical CRM read.',
+        retrieved_at:new Date(propertyNow).toISOString(),properties:records,
+        unscoped_agreement_count:scopes.length,
+        authority_boundary:'Read-only site-specific agreement evidence. Historical work, property coverage flags and drafts do not establish current seasonal readiness.'
+      };
+    })();
     return Response.json({
       ok:true,scope:'crm',actor_role:actorRole,actor_profile_id:actorId,
-      crm_customers:customersEvidence.rows,crm_intake_406:crmIntake406,crm_properties:properties,crm_leads:leads,crm_service_plans:plans,
+      crm_customers:customersEvidence.rows,crm_intake_406:crmIntake406,crm_property_coverage_407:crmProperty407,crm_properties:propertiesEvidence.rows,crm_leads:leads,crm_service_plans:plansEvidence.rows,
       crm_service_history:history,crm_interactions:interactions,crm_followups:followups,
       crm_opportunities:opportunities,crm_renewals:renewals,crm_cross_service_candidates:candidates,crm_profiles:profiles,
       seasonal_boundary:'YW is a four-season Ontario operation: spring/summer mowing and landscaping, fall cleanup and leaf collection, and winter snow clearing/removal remain one customer/property relationship history.',
