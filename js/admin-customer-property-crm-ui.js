@@ -42,6 +42,7 @@
       '<div id="crm392PropertyStatus" class="notice" role="status" aria-live="polite"></div></div>',
       '</div><p class="muted">A matching customer or property is a review warning, not a destructive merge. This view never sends customer messages, schedules jobs or creates invoices. Backend Jobs approve access is mandatory.</p></section>',
 
+      '<section class="admin-panel-block" data-build="407" id="crm407PropertyCoverage" style="margin-top:14px;"><h4>Property &amp; four-season coverage evidence</h4><p class="muted">Site-specific spring/summer, fall and winter agreement evidence for the selected customer-owned property. History, plans in draft/paused status and coverage flags do not prove an active agreement or operational readiness. <a href="/help.html#property-four-season-coverage-407">ⓘ Help</a></p><button type="button" class="secondary" id="crm407Recheck">Recheck property and agreements</button><div id="crm407Evidence" role="status" aria-live="polite"></div></section>',
       '<section class="admin-panel-block" data-build="406" id="crm406Intake" style="margin-top:14px;"><h4>First-customer intake receipt &amp; duplicate review</h4><p class="muted">Dated, read-only source evidence for the selected recorded customer. Possible duplicate names or emails require human review; no automatic merge, creation or contact. <a href="/help.html#first-customer-intake-receipt-406">ⓘ Help</a></p><button type="button" class="secondary" id="crm406Recheck">Recheck canonical intake</button><div id="crm406Receipt" role="status" aria-live="polite"></div></section>',
       '<div class="grid" style="margin-top:14px;"><div class="admin-panel-block"><h4>Customers</h4><div id="crm340Customers"></div></div><div class="admin-panel-block"><h4>Selected relationship</h4><div id="crm340Selected"></div></div></div>',
       '<div class="grid" style="margin-top:14px;"><div class="admin-panel-block"><h4>Open leads</h4><div id="crm340Leads"></div></div><div class="admin-panel-block"><h4>Renewals &amp; follow-ups</h4><div id="crm340Queues"></div></div></div>',
@@ -96,6 +97,38 @@
         active.some(c=>String(c.client_id)===state.selectedId)?state.selectedId:'';
       byId('crm392SaveCustomer').disabled=state.saving||!state.loaded;
       byId('crm392SaveProperty').disabled=state.saving||!state.loaded||!active.length;
+    }
+    function renderPropertyCoverage407(){
+      const host=byId('crm407Evidence');if(!host)return;
+      const proof=state.payload?.crm_property_coverage_407;
+      const checked=Date.parse(String(proof?.retrieved_at||''));
+      const current=Number.isFinite(checked)&&checked<=Date.now()+300000&&Date.now()-checked<=300000;
+      if(!state.loaded||!proof?.complete||!current||!['recorded','no_property'].includes(proof.state)){
+        host.innerHTML='<p class="muted" data-crm407-state="withheld">Site/season evidence withheld: a fresh complete permissioned CRM property and agreement read is unavailable.</p>';return;
+      }
+      if(proof.state==='no_property'){
+        host.innerHTML='<p class="muted" data-crm407-state="no_property">No verified customer-owned property in the complete CRM read. No seasonal coverage or winter readiness is inferred.</p>';return;
+      }
+      const owner=String(state.customerEdit||state.selectedId||'');
+      const owned=arr('crm_properties').filter(p=>String(p.client_id)===owner);
+      const requested=state.propertyEdit?owned.find(p=>String(p.id)===String(state.propertyEdit)):null;
+      const property=requested||(!state.propertyEdit?owned[0]:null);
+      const evidence=Array.isArray(proof.properties)&&property?proof.properties.find(p=>String(p.client_site_id)===String(property.id)&&String(p.client_id)===owner):null;
+      if(!owner||!property||!evidence||!evidence.seasons){
+        host.innerHTML='<p class="muted" data-crm407-state="withheld">Select an existing property belonging to the selected customer. Unmatched site ownership is not evidence.</p>';return;
+      }
+      const rows=[['spring_summer','Spring / summer'],['fall','Fall'],['winter','Winter']].map(([key,label])=>{
+        const season=evidence.seasons[key];
+        const valid=season&&['active_agreement_recorded','review_agreement','not_verified'].includes(season.state);
+        const stateLabel=!valid?'Withheld':season.state==='active_agreement_recorded'?'Dated active agreement recorded':
+          season.state==='review_agreement'?'Agreement exists; status or dates require review':'No verified active site agreement';
+        return '<div class="notice" data-crm407-season="'+esc(key)+'"><strong>'+esc(label)+'</strong> · '+esc(stateLabel)+
+          '<br><small>Site-scoped agreement records: '+esc(valid?season.agreement_count:'Withheld')+
+          '. This is not a workability, crew, weather or safety clearance.</small></div>';
+      }).join('');
+      host.innerHTML='<p data-crm407-state="recorded"><strong>Owned site:</strong> '+esc(property.site_name||'Property')+
+        ' · <small>Checked '+esc(new Date(checked).toLocaleString('en-CA'))+'</small></p>'+rows+
+        '<p class="muted">Draft, paused, unclassified, future or incomplete-date plans do not count as active coverage. Customer-only agreements cannot establish a particular site. No changes or bookings were made.</p>';
     }
     function renderIntake406(){
       const host=byId('crm406Receipt');if(!host)return;
@@ -200,6 +233,7 @@
       renderIntake406();
       const customers=arr('crm_customers').filter((x)=>x.is_active!==false);
       if(!state.selectedId&&customers[0])state.selectedId=String(customers[0].client_id);
+      renderPropertyCoverage407();
       const openFollowups=arr('crm_followups').filter((x)=>['pending','in_progress','deferred'].includes(x.followup_status)).length;
       const renewals=arr('crm_renewals').filter((x)=>x.renewal_status!=='open_ended').length;
       const opportunities=arr('crm_opportunities').filter((x)=>['identified','contact_ready','quoted','on_hold'].includes(x.opportunity_status)).length;
@@ -251,12 +285,14 @@
     }
     byId('crm340Refresh').onclick=load;
     byId('crm406Recheck').onclick=load;
+    byId('crm407Recheck').onclick=load;
+    byId('crm392PropertyCustomer').onchange=renderPropertyCoverage407;
     byId('crm392LegalName').addEventListener('input',renderIntake406);
     byId('crm392Email').addEventListener('input',renderIntake406);
     byId('crm392CustomerSearch').oninput=renderGuideOptions;
     byId('crm392PropertySearch').oninput=renderGuideOptions;
-    byId('crm392CustomerSelect').onchange=()=>{state.customerEdit=val('crm392CustomerSelect');fillCustomer();renderIntake406()};
-    byId('crm392PropertySelect').onchange=()=>{state.propertyEdit=val('crm392PropertySelect');fillProperty()};
+    byId('crm392CustomerSelect').onchange=()=>{state.customerEdit=val('crm392CustomerSelect');fillCustomer();renderIntake406();renderPropertyCoverage407()};
+    byId('crm392PropertySelect').onchange=()=>{state.propertyEdit=val('crm392PropertySelect');fillProperty();renderPropertyCoverage407()};
     byId('crm392SaveCustomer').onclick=()=>guidedSave('Customer');
     byId('crm392SaveProperty').onclick=()=>guidedSave('Property');
     byId('crm340Customers').onclick=(e)=>{const b=e.target.closest('[data-crm-customer]');if(!b)return;state.selectedId=b.getAttribute('data-crm-customer')||'';render();};

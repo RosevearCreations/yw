@@ -268,7 +268,9 @@
     "test:production-learning-roadmap-renewal-iv": "node scripts/production-learning-roadmap-renewal-iv-check.mjs",
     "test:browser:production-learning-roadmap-renewal-iv": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-iv.spec.mjs",
     "test:first-customer-intake-receipt-406": "node scripts/first-customer-intake-receipt-406-check.mjs",
-    "test:browser:first-customer-intake-receipt-406": "playwright test --config=playwright.config.mjs tests/browser/first-customer-intake-receipt-406.spec.mjs"
+    "test:browser:first-customer-intake-receipt-406": "playwright test --config=playwright.config.mjs tests/browser/first-customer-intake-receipt-406.spec.mjs",
+    "test:property-four-season-coverage-407": "node scripts/property-four-season-coverage-407-check.mjs",
+    "test:browser:property-four-season-coverage-407": "playwright test --config=playwright.config.mjs tests/browser/property-four-season-coverage-407.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
