@@ -886,6 +886,9 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 **Acceptance:** Reconcile one real customer-owned property to its seasonal work types without inferring winter or summer readiness from missing agreements.
 
+**Implementation:** The permissioned CRM read validates original customer/property ownership, complete property and service-agreement read coverage, source freshness, and dated active site-specific agreements across spring/summer, fall and winter. The operator can recheck, select an owned property and see per-season agreement states. Missing or paused/draft/future/unscoped agreements do not establish active coverage. No site mutation or weather/workability/snow readiness inference is made. Real-world owner acceptance remains unmeasured if there are no customer-owned property records. The canonical `admin-directory` Supabase Edge Function must match the exact released `main` source with JWT enabled before GREEN.
+
+
 **Canonical source:** CRM properties, site intelligence and seasonal agreements. **Boundary:** No site mutation, enrollment or plan renewal without operator action.
 
 #### 408 — Estimate Acceptance to First Work Order Trace
