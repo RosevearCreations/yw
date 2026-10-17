@@ -37,7 +37,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
-  if (['crew','change_orders_extras','quality_control','seasonal_operations'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','saved_views_search','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
@@ -720,6 +720,112 @@ serve(async (req) => {
       module_key:moduleRequirement.moduleKey,
       required_access:moduleRequirement.minimum
     }, { status:403, headers:corsHeaders });
+  }
+
+  
+  // Item 408 — dated canonical customer acceptance -> internal approval -> first work order.
+  // Read-only, supervisor + Jobs view only; no implied acceptance or order issuance.
+  if (scope === 'estimate_first_work_order_trace') {
+    if (roleRank(actorRole) < roleRank('supervisor')) {
+      return Response.json({ok:false,error:'Supervisor access is required for estimate trace review.'},{status:403,headers:corsHeaders});
+    }
+    const now=Date.now();
+    const [workflowRead,estimateRead,workOrderRead] = await Promise.all([
+      safeListEvidence(supabase,'v_estimate_job_invoice_workflow',
+        'estimate_id,estimate_number,client_id,client_site_id,estimate_status,approval_required,approval_status,approved_at,quote_package_id,quote_accepted_at,work_order_id,work_order_number,customer_approval_ready,internal_approval_ready',
+        'estimate_number',750,true),
+      safeListEvidence(supabase,'estimates',
+        'id,client_id,client_site_id,status,approval_required,approval_status,approved_at,approved_by_profile_id,converted_work_order_id,converted_at',
+        'created_at',750,false),
+      safeListEvidence(supabase,'work_orders',
+        'id,estimate_id,client_id,client_site_id,work_order_number,created_at',
+        'created_at',1000,false)
+    ]);
+    const withheld=(reason:string)=>Response.json({
+      ok:true,scope,trace_408:{state:'withheld',complete:false,reason,retrieved_at:new Date(now).toISOString(),records:[]},
+      authority_boundary:'Read-only review; never approves estimates, changes prices, or issues work orders.'
+    },{headers:corsHeaders});
+    const reads=[workflowRead,estimateRead,workOrderRead];
+    if(reads.some(r=>!r.query_ok || !Array.isArray(r.rows) || r.row_count!==r.rows.length ||
+      r.row_count>=r.limit || !Number.isFinite(Date.parse(r.retrieved_at)) ||
+      Date.parse(r.retrieved_at)>now+300000 || now-Date.parse(r.retrieved_at)>300000))
+      return withheld('Estimate/work-order sources failed, expired, or reached a query cap; recheck.');
+    const byEstimate=new Map<string,any>();
+    for(const e of estimateRead.rows){
+      const id=String(e.id||'');
+      if(!id || !e.client_id || byEstimate.has(id))return withheld('Canonical estimate identity or owner is missing/duplicated.');
+      byEstimate.set(id,e);
+    }
+    const workflowIds=new Set<string>();
+    for(const w of workflowRead.rows){
+      const id=String(w.estimate_id||'');
+      if(!id || workflowIds.has(id) || !byEstimate.has(id))
+        return withheld('Workflow and original estimate identity do not reconcile.');
+      workflowIds.add(id);
+      const e=byEstimate.get(id);
+      if(String(w.client_id||'')!==String(e.client_id||'') ||
+         String(w.client_site_id||'')!==String(e.client_site_id||''))
+        return withheld('Estimate customer or site ownership differs across canonical sources.');
+    }
+    if(workflowIds.size!==byEstimate.size)return withheld('Canonical estimate workflow coverage is incomplete.');
+    const ordersByEstimate=new Map<string,any[]>();
+    const orderIds=new Set<string>();
+    for(const o of workOrderRead.rows){
+      const id=String(o.id||''),eid=String(o.estimate_id||'');
+      if(!id || orderIds.has(id))return withheld('Work-order identities are missing or duplicated.');
+      orderIds.add(id);
+      if(!eid)continue;
+      const e=byEstimate.get(eid);
+      if(!e)return withheld('A work order references an absent estimate; coverage is incomplete.');
+      if(String(o.client_id||'')!==String(e.client_id||'') ||
+         String(o.client_site_id||'')!==String(e.client_site_id||''))
+        return withheld('Linked work-order customer/site ownership does not match the estimate.');
+      const list=ordersByEstimate.get(eid)||[];list.push(o);ordersByEstimate.set(eid,list);
+    }
+    const validDate=(raw:any)=>Boolean(raw)&&Number.isFinite(Date.parse(String(raw)))&&
+      Date.parse(String(raw))<=now+300000;
+    const records:any[]=[];
+    for(const w of workflowRead.rows){
+      const eid=String(w.estimate_id),e=byEstimate.get(eid);
+      const accepts=String(e.status||'').toLowerCase()==='accepted'||Boolean(w.quote_accepted_at);
+      if(!accepts)continue;
+      const acceptedAt=validDate(w.quote_accepted_at)?new Date(Date.parse(String(w.quote_accepted_at))).toISOString():null;
+      const customerState=acceptedAt && w.quote_package_id?'dated_quote_acceptance_recorded':'customer_acceptance_not_verified';
+      const required=e.approval_required===true;
+      const approved=String(e.approval_status||'').toLowerCase()==='approved' && validDate(e.approved_at) && Boolean(e.approved_by_profile_id);
+      const internalState=e.approval_required===false?'not_required':
+        required&&approved?'dated_internal_approval_recorded':'internal_approval_not_verified';
+      const orders=[...(ordersByEstimate.get(eid)||[])];
+      if(orders.some(o=>!validDate(o.created_at)))return withheld('A linked work-order creation date is missing/invalid.');
+      orders.sort((a,b)=>Date.parse(String(a.created_at))-Date.parse(String(b.created_at)));
+      if(orders.length>1 && Date.parse(String(orders[0].created_at))===Date.parse(String(orders[1].created_at)))
+        return withheld('Ambiguous first work-order chronology requires canonical review.');
+      const first=orders[0]||null;
+      if(e.converted_work_order_id && (!first || !orders.some(o=>String(o.id)===String(e.converted_work_order_id))))
+        return withheld('Estimate conversion identity is not in the linked work-order source.');
+      if(w.work_order_id && !orders.some(o=>String(o.id)===String(w.work_order_id)))
+        return withheld('Workflow work-order identity is absent from the canonical source.');
+      const orderState=first?'first_work_order_recorded':'no_work_order_recorded';
+      const verified=customerState==='dated_quote_acceptance_recorded' &&
+        internalState!=='internal_approval_not_verified' && Boolean(first);
+      records.push({
+        estimate_id:eid,estimate_number:w.estimate_number||null,
+        customer_acceptance_state:customerState,customer_accepted_at:acceptedAt,
+        internal_approval_state:internalState,internal_approved_at:approved?new Date(Date.parse(String(e.approved_at))).toISOString():null,
+        first_work_order_state:orderState,first_work_order_id:first?.id||null,
+        first_work_order_number:first?.work_order_number||null,
+        first_work_order_created_at:first?.created_at||null,
+        work_order_count:orders.length,
+        trace_state:verified?'fully_traced':'hold_for_review'
+      });
+    }
+    return Response.json({
+      ok:true,scope,actor_role:actorRole,
+      trace_408:{state:records.length?'recorded':'no_record',complete:true,source:'v_estimate_job_invoice_workflow + estimates + work_orders',
+        retrieved_at:new Date(now).toISOString(),records:records.slice(0,150),
+        reason:records.length?'Recorded estimate traces for authorized supervisor review.':'No accepted estimates recorded in the complete source sample.'},
+      authority_boundary:'Read-only review only; no automatic customer acceptance, internal approval, pricing changes, or work-order issuance.'
+    },{headers:corsHeaders});
   }
 
   if (scope === 'activity_timeline') {
