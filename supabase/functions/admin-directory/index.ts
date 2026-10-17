@@ -936,7 +936,8 @@ serve(async (req) => {
       const authorized=customerAuthorized&&internalAuthorized&&!!first;
       const candidates=first?[...(dispatchByOrder.get(String(first.id))||[])].filter(d=>
         !inactive.has(String(d.schedule_status||'').toLowerCase())):[];
-      if(candidates.some(d=>!validAt(d.scheduled_start)||!Number.isFinite(Date.parse(String(d.scheduled_end||'')))||
+      if(candidates.some(d=>!Number.isFinite(Date.parse(String(d.scheduled_start||'')))||
+        !Number.isFinite(Date.parse(String(d.scheduled_end||'')))||
         Date.parse(String(d.scheduled_end))<=Date.parse(String(d.scheduled_start))))
         return withheld('Noncancelled linked schedule has an invalid or missing dated time window.');
       candidates.sort((a,b)=>Date.parse(a.scheduled_start)-Date.parse(b.scheduled_start));
@@ -948,7 +949,7 @@ serve(async (req) => {
         (Array.isArray(firstSchedule.assigned_crew_profile_ids)&&firstSchedule.assigned_crew_profile_ids.length>0));
       const resourceIssues:string[]=[];
       if(firstSchedule){
-        if(!Number.isFinite(conflicts)||conflicts<0)return withheld('Dispatch resource conflict count is unknown.');
+        if(firstSchedule.conflict_count===null||firstSchedule.conflict_count===undefined||!Number.isFinite(conflicts)||conflicts<0)return withheld('Dispatch resource conflict count is unknown.');
         if(!assigned)resourceIssues.push('crew_not_assigned');
         if(conflicts>0)resourceIssues.push('recorded_resource_conflict');
         if(firstSchedule.conflict_override_note)resourceIssues.push('conflict_override_requires_manual_review');
