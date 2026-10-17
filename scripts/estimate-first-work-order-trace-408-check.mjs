@@ -16,7 +16,7 @@ for(const t of [
  "quote_accepted_at","approved_by_profile_id","approved_at",
  "customer_acceptance_not_verified","internal_approval_not_verified",
  "first_work_order_recorded","hold_for_review","state:'withheld'",
- "Ambiguous first work-order chronology","No automatic customer acceptance"
+ "Ambiguous first work-order chronology","no automatic customer acceptance"
 ]) assert.ok((scope+backend.slice(0,start)).includes(t),'Missing 408 canonical guard '+t);
 assert.doesNotMatch(scope,/\.(insert|upsert|update|delete)\s*\(/,'408 must never write');
 const ui=read('js/estimate-first-work-order-trace-408.js');
