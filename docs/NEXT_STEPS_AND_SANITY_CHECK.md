@@ -895,6 +895,8 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 **Acceptance:** Show explicit customer acceptance, internal approval and first work-order identity with missing approvals marked unavailable.
 
+**Implementation:** A read-only supervisor Jobs review checks a fresh, complete, capped canonical estimate workflow against original estimate identities, customer/site ownership and original linked work orders. Dated quote-package acceptance is distinguished from estimate status-only acceptance, and a separate dated internal approver is required whenever approval is configured. An approval that is not required is explicitly labelled as such. Earliest linked work-order identity is withheld when chronology, ownership or source coverage is ambiguous. Recheck does not approve, price, convert, issue, email or modify records. No genuine trial acceptance is claimed without live dated records. The exact source for the Jobs-scope `admin-directory` function must be released with JWT verification enabled before GREEN.
+
 **Canonical source:** Estimate workflow and work-order authority. **Boundary:** No automatic estimate acceptance, pricing or work-order issuance.
 
 #### 409 — First-Dispatch Schedule Receipt
