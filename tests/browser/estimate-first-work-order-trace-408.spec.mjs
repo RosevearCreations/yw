@@ -16,6 +16,7 @@ async function boot(page,payload){
   window.YWIAPI={loadAdminDirectory:async()=>{window.__reads++;return structuredClone(data)},manageOperations:async()=>{window.__writes++;throw Error('No write permitted')}};
  },payload);
  await page.addScriptTag({content:ui});
+ await page.locator('#estimate408 summary').click();
  await page.locator('#estimate408Recheck').click();
 }
 test('dated acceptance, approval and first work order render on phone without writes',async({page})=>{
