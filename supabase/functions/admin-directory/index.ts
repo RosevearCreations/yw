@@ -37,7 +37,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
-  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','saved_views_search','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
@@ -825,6 +825,169 @@ serve(async (req) => {
         retrieved_at:new Date(now).toISOString(),records:records.slice(0,150),
         reason:records.length?'Recorded estimate traces for authorized supervisor review.':'No accepted estimates recorded in the complete source sample.'},
       authority_boundary:'Read-only review only; no automatic customer acceptance, internal approval, pricing changes, or work-order issuance.'
+    },{headers:corsHeaders});
+  }
+
+  
+  // Item 409: explicit first-dispatch schedule receipt, preserving original Jobs and Workability authorities.
+  // No weather override, crew assignment, schedule issuance, customer message, or data mutation.
+  if (scope === 'first_dispatch_schedule_receipt') {
+    if (roleRank(actorRole) < roleRank('supervisor'))
+      return Response.json({ok:false,error:'Supervisor role is required for first-dispatch receipt.'},{status:403,headers:corsHeaders});
+    const now=Date.now(),retrieved_at=new Date(now).toISOString();
+    const [workflowRead,estimateRead,orderRead,dispatchRead,workabilityRead]=await Promise.all([
+      safeListEvidence(supabase,'v_estimate_job_invoice_workflow',
+        'estimate_id,estimate_number,client_id,client_site_id,estimate_status,quote_package_id,quote_accepted_at,work_order_id',
+        'estimate_number',750,true),
+      safeListEvidence(supabase,'estimates',
+        'id,client_id,client_site_id,status,approval_required,approval_status,approved_at,approved_by_profile_id,converted_work_order_id',
+        'created_at',750,false),
+      safeListEvidence(supabase,'work_orders',
+        'id,work_order_number,estimate_id,client_id,client_site_id,created_at',
+        'created_at',1000,false),
+      safeListEvidence(supabase,'v_crew_dispatch_schedule',
+        'id,work_order_id,client_id,effective_client_site_id,schedule_status,scheduled_start,scheduled_end,crew_id,assigned_crew_profile_ids,conflict_count,conflicts_json,conflict_override_note,dispatch_readiness,workability_state,supersedes_dispatch_id',
+        'scheduled_start',1500,true),
+      safeListEvidence(supabase,'v_weather_workability_queue',
+        'id,dispatch_schedule_item_id,work_order_id,observed_at,decision_at,decision_workability_state,workability_queue_status,restriction_guidance_count,dispatch_application_status',
+        'observed_at',1500,false)
+    ]);
+    const withheld=(reason:string)=>Response.json({
+      ok:true,scope,receipt_409:{state:'withheld',complete:false,retrieved_at,reason,records:[]},
+      authority_boundary:'Read-only evidence; no dispatch, assignment, safety override, or customer outreach.'
+    },{headers:corsHeaders});
+    const reads=[workflowRead,estimateRead,orderRead,dispatchRead,workabilityRead];
+    if (reads.some(r=>!r.query_ok||!Array.isArray(r.rows)||r.row_count!==r.rows.length||
+      r.row_count>=r.limit||!Number.isFinite(Date.parse(r.retrieved_at))||
+      Date.parse(r.retrieved_at)>now+300000||now-Date.parse(r.retrieved_at)>300000))
+      return withheld('A canonical estimate, order, dispatch or Workability read failed, is stale or may be capped.');
+    const validAt=(date:any)=>!!date&&Number.isFinite(Date.parse(String(date)))&&Date.parse(String(date))<=now+300000;
+    const estimateById=new Map<string,any>();
+    for(const e of estimateRead.rows){
+      const id=String(e.id||'');
+      if(!id||!e.client_id||estimateById.has(id))
+        return withheld('Canonical estimate identifiers or customer ownership cannot be verified.');
+      estimateById.set(id,e);
+    }
+    const workflowById=new Map<string,any>();
+    for(const w of workflowRead.rows){
+      const id=String(w.estimate_id||''),e=estimateById.get(id);
+      if(!id||!e||workflowById.has(id)||String(e.client_id)!==String(w.client_id||'')||
+        String(e.client_site_id||'')!==String(w.client_site_id||''))
+        return withheld('Estimate workflow identity or customer/site ownership does not reconcile.');
+      workflowById.set(id,w);
+    }
+    if(workflowById.size!==estimateById.size)
+      return withheld('The estimate-to-workflow source is incomplete.');
+    const ordersByEstimate=new Map<string,any[]>(),ordersById=new Map<string,any>();
+    for(const o of orderRead.rows){
+      const id=String(o.id||''),eid=String(o.estimate_id||'');
+      if(!id||ordersById.has(id))return withheld('Duplicate or missing canonical work-order identity.');
+      ordersById.set(id,o);
+      if(!eid)continue;
+      const e=estimateById.get(eid);
+      if(!e||String(o.client_id||'')!==String(e.client_id)||
+        String(o.client_site_id||'')!==String(e.client_site_id||'')||!validAt(o.created_at))
+        return withheld('Work-order estimate, ownership or dated creation source is incomplete.');
+      const list=ordersByEstimate.get(eid)||[];list.push(o);ordersByEstimate.set(eid,list);
+    }
+    const dispatchByOrder=new Map<string,any[]>(),dispatchById=new Map<string,any>();
+    for(const d of dispatchRead.rows){
+      const id=String(d.id||''),wid=String(d.work_order_id||'');
+      if(!id||dispatchById.has(id))return withheld('Dispatch identity is absent or duplicated.');
+      dispatchById.set(id,d);
+      if(!wid)continue; // Recurring and unrelated dispatches are never first-job evidence.
+      const order=ordersById.get(wid);
+      if(!order||String(d.client_id||'')!==String(order.client_id||'')||
+        String(d.effective_client_site_id||'')!==String(order.client_site_id||''))
+        return withheld('Dispatch work-order reference or customer/site ownership does not reconcile.');
+      const list=dispatchByOrder.get(wid)||[];list.push(d);dispatchByOrder.set(wid,list);
+    }
+    const weatherByDispatch=new Map<string,any[]>(),weatherIds=new Set<string>();
+    for(const observation of workabilityRead.rows){
+      const id=String(observation.id||''),did=String(observation.dispatch_schedule_item_id||'');
+      if(!id||weatherIds.has(id))return withheld('Duplicate or missing Workability observation identity.');
+      weatherIds.add(id);
+      if(!did)continue;
+      const schedule=dispatchById.get(did);
+      if(!schedule)return withheld('Workability observation references an absent dispatch schedule.');
+      if(observation.work_order_id &&
+        String(observation.work_order_id)!==String(schedule.work_order_id||''))
+        return withheld('Workability and dispatch work-order references disagree.');
+      const list=weatherByDispatch.get(did)||[];list.push(observation);weatherByDispatch.set(did,list);
+    }
+    const inactive=new Set(['cancelled','canceled','superseded','void','voided']);
+    const records:any[]=[];
+    for(const [eid,w] of workflowById){
+      const e=estimateById.get(eid);
+      if(String(e.status||'').toLowerCase()!=='accepted'&&!w.quote_accepted_at)continue;
+      const orders=[...(ordersByEstimate.get(eid)||[])].sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at));
+      if(orders.length>1&&Date.parse(orders[0].created_at)===Date.parse(orders[1].created_at))
+        return withheld('First work-order chronology is ambiguous.');
+      const first=orders[0]||null;
+      if(e.converted_work_order_id&&!orders.some(o=>String(o.id)===String(e.converted_work_order_id)))
+        return withheld('Converted work-order identity does not belong to the estimate.');
+      if(w.work_order_id&&!orders.some(o=>String(o.id)===String(w.work_order_id)))
+        return withheld('Estimate workflow work-order identity is not present in the source.');
+      const customerAuthorized=!!w.quote_package_id&&validAt(w.quote_accepted_at);
+      const internalAuthorized=e.approval_required===false||
+        (e.approval_required===true&&String(e.approval_status||'').toLowerCase()==='approved'&&
+          !!e.approved_by_profile_id&&validAt(e.approved_at));
+      const authorized=customerAuthorized&&internalAuthorized&&!!first;
+      const candidates=first?[...(dispatchByOrder.get(String(first.id))||[])].filter(d=>
+        !inactive.has(String(d.schedule_status||'').toLowerCase())):[];
+      if(candidates.some(d=>!validAt(d.scheduled_start)||!Number.isFinite(Date.parse(String(d.scheduled_end||'')))||
+        Date.parse(String(d.scheduled_end))<=Date.parse(String(d.scheduled_start))))
+        return withheld('Noncancelled linked schedule has an invalid or missing dated time window.');
+      candidates.sort((a,b)=>Date.parse(a.scheduled_start)-Date.parse(b.scheduled_start));
+      if(candidates.length>1&&Date.parse(candidates[0].scheduled_start)===Date.parse(candidates[1].scheduled_start))
+        return withheld('Multiple noncancelled dispatches share the first scheduled start time.');
+      const firstSchedule=candidates[0]||null;
+      const conflicts=firstSchedule?Number(firstSchedule.conflict_count):null;
+      const assigned=firstSchedule&&(!!firstSchedule.crew_id||
+        (Array.isArray(firstSchedule.assigned_crew_profile_ids)&&firstSchedule.assigned_crew_profile_ids.length>0));
+      const resourceIssues:string[]=[];
+      if(firstSchedule){
+        if(!Number.isFinite(conflicts)||conflicts<0)return withheld('Dispatch resource conflict count is unknown.');
+        if(!assigned)resourceIssues.push('crew_not_assigned');
+        if(conflicts>0)resourceIssues.push('recorded_resource_conflict');
+        if(firstSchedule.conflict_override_note)resourceIssues.push('conflict_override_requires_manual_review');
+        if(String(firstSchedule.dispatch_readiness||'').toLowerCase()!=='ready')
+          resourceIssues.push('dispatch_readiness_not_confirmed');
+      }
+      const observations=firstSchedule?(weatherByDispatch.get(String(firstSchedule.id))||[]):[];
+      let weatherState='not_observed';
+      if(observations.length){
+        const blocked=observations.some(o=>
+          ['blocked','postpone','reschedule','unsafe','hold'].includes(String(o.decision_workability_state||'').toLowerCase())||
+          ['decision_required','blocked','hold','operator_dispatch_required'].includes(String(o.workability_queue_status||'').toLowerCase())||
+          Number(o.restriction_guidance_count||0)>0);
+        weatherState=blocked?'unresolved_workability_exception':'recorded_observation_not_clearance';
+      }
+      records.push({
+        estimate_id:eid,estimate_number:w.estimate_number||null,
+        first_work_order_id:first?.id||null,first_work_order_number:first?.work_order_number||null,
+        authorization_state:authorized?'confirmed_source_authorization':'approval_evidence_missing',
+        schedule_state:authorized?(firstSchedule?'dated_non_cancelled_schedule_recorded':'no_schedule_recorded'):'authorization_hold',
+        first_dispatch_id:authorized?firstSchedule?.id||null:null,
+        scheduled_start:authorized?firstSchedule?.scheduled_start||null:null,
+        scheduled_end:authorized?firstSchedule?.scheduled_end||null:null,
+        schedule_status:authorized?firstSchedule?.schedule_status||null:null,
+        resource_exception_state:firstSchedule?(resourceIssues.length?'review_required':'no_recorded_exception'):'not_assessed',
+        resource_exception_codes:firstSchedule?resourceIssues:[],
+        workability_exception_state:firstSchedule?weatherState:'not_assessed',
+        workability_observation_count:observations.length,
+        note:'A dated schedule receipt is not proof of dispatch execution, safe weather, equipment availability, or completed work.'
+      });
+    }
+    return Response.json({
+      ok:true,scope,actor_role:actorRole,
+      receipt_409:{state:records.length?'recorded':'no_record',complete:true,retrieved_at,
+        source:'v_estimate_job_invoice_workflow + estimates + work_orders + v_crew_dispatch_schedule + v_weather_workability_queue',
+        records:records.slice(0,150),reason:records.length?
+          'Source-linked first dispatch receipt and separate exception evidence.':
+          'No accepted estimate-to-first-order cohort in the complete inspected sources.'},
+      authority_boundary:'Read-only. Operators retain all dispatch, crew, equipment, weather, customer and Finance decisions.'
     },{headers:corsHeaders});
   }
 

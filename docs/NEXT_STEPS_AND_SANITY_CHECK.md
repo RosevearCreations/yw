@@ -903,6 +903,8 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 **Acceptance:** Match an authorized first work order to a dated noncancelled schedule; show unresolved resource/workability exceptions separately.
 
+**Implementation:** A supervisor-and-Jobs-view-only, read-only source receipt cross-checks estimate quote acceptance, dated internal approval (when required), original first work-order identity, work-order ownership and earliest noncancelled dated dispatch. Capped, failed, stale, duplicate, mismatched or ambiguous schedule/Workability reads withhold the result. A cancelled or superseded schedule never counts. Conflicts, crew assignment and existing dispatch-readiness evidence are presented separately from linked Workability observations, including unresolved restrictions; absence of weather observations does not prove safe conditions. Operator Recheck does not assign crew, override Safety/workability, dispatch, communicate, price or change Finance. Exact released `admin-directory` source must be deployed with JWT enabled and verified in Production; owner trial cannot be claimed without actual dated operational records.
+
 **Canonical source:** Dispatch schedule and Workability authorities. **Boundary:** No unattended dispatch, weather override or staff assignment.
 
 #### 410 — Production Start and Return-Visit Proof
