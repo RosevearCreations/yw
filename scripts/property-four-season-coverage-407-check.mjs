@@ -25,7 +25,7 @@ for(const word of [
  "'four_season'",
  "'spring_summer','fall','winter'",
  "state:'withheld'",
- "state:'no_property'",
+ "state:records.length?'recorded':'no_property'",
  "customer_only_not_site_evidence",
  "unclassified_season",
  "Date.parse(d+'T00:00:00Z')"
