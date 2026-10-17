@@ -272,7 +272,9 @@
     "test:property-four-season-coverage-407": "node scripts/property-four-season-coverage-407-check.mjs",
     "test:browser:property-four-season-coverage-407": "playwright test --config=playwright.config.mjs tests/browser/property-four-season-coverage-407.spec.mjs",
     "test:estimate-first-work-order-trace-408": "node scripts/estimate-first-work-order-trace-408-check.mjs",
-    "test:browser:estimate-first-work-order-trace-408": "playwright test --config=playwright.config.mjs tests/browser/estimate-first-work-order-trace-408.spec.mjs"
+    "test:browser:estimate-first-work-order-trace-408": "playwright test --config=playwright.config.mjs tests/browser/estimate-first-work-order-trace-408.spec.mjs",
+    "test:first-dispatch-schedule-receipt-409": "node scripts/first-dispatch-schedule-receipt-409-check.mjs",
+    "test:browser:first-dispatch-schedule-receipt-409": "playwright test --config=playwright.config.mjs tests/browser/first-dispatch-schedule-receipt-409.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
