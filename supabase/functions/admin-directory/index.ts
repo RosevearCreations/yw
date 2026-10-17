@@ -5006,7 +5006,7 @@ function buildWorkabilityScheduleRecoveryOutcomes(input:{
         if(!applies.length){scopes.push({agreement_id:aid,scope:'unclassified_season'});continue;}
         const status=String(a.agreement_status||'').toLowerCase();
         const start=String(a.start_date||''),end=String(a.end_date||'');
-        const dateFormat=/^\\d{4}-\\d{2}-\\d{2}$/;
+        const dateFormat=/^\d{4}-\d{2}-\d{2}$/;
         const valid=(d:string)=>dateFormat.test(d)&&!Number.isNaN(Date.parse(d+'T00:00:00Z'))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
         const datesValid=(!start||valid(start))&&(!end||valid(end));
         const current= status==='active' && datesValid && !!start && start<=today &&
