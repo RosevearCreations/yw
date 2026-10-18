@@ -32,5 +32,5 @@ for(const x of ['npm run test:production-start-return-visit-proof-410','npm run 
 assert.ok(read('index.html').includes('js/production-start-return-visit-proof-410.js'));
 assert.ok(read('help.html').includes('id="production-start-return-visit-410"'));
 assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('#### 410 — Production Start and Return-Visit Proof'));
-assert.ok(read('docs/MULTI_SERVICE_INTEGRATION_ARCHITECTURE.md').includes('Septic and vacuum services'));
+assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('Septic and vacuum services'));
 console.log('Build 410 read-only source, fresh bounded authorization, linkage, UX and CI contracts PASS');
