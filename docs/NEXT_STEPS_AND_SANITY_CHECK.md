@@ -911,6 +911,8 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 **Acceptance:** Reconcile first-job scheduled visit to an actual dated started session, partial completion and return-visit evidence.
 
+**Implementation:** Supervisor/JOBS read-only first-job production receipt reconciles canonical accepted quote/approval, earliest work order, first noncancelled dated dispatch, actual started session and dated field-capture receipt with the same work-order and customer/site identity. An explicit unfinished/partial completion field is not final signoff; return required versus separately recorded dated return session/receipt are distinct states. Missing, capped, stale, mismatched, duplicate or ambiguous source is held. No synthetic production, invoicing, staff assignment, auto completion or customer outreach. The exact `admin-directory` main backend source must be deployed with JWT verification and verified. Dedicated module architecture contract: `docs/MULTI_SERVICE_INTEGRATION_ARCHITECTURE.md` — six independently enabled company service modules sharing CRM, Jobs, Finance, equipment, inventory, dispatch and HSE are future staged rollout, not live toggles.
+
 **Canonical source:** Production sessions and field capture receipts. **Boundary:** No synthetic session or automatic completion.
 
 #### 411 — Material and Equipment First-Job Trace
