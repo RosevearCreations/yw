@@ -37,7 +37,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
-  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','saved_views_search','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
@@ -989,6 +989,180 @@ serve(async (req) => {
           'Source-linked first dispatch receipt and separate exception evidence.':
           'No accepted estimate-to-first-order cohort in the complete inspected sources.'},
       authority_boundary:'Read-only. Operators retain all dispatch, crew, equipment, weather, customer and Finance decisions.'
+    },{headers:corsHeaders});
+  }
+
+  // Build 410: canonical first-job start / partial work / return receipt. No mutations.
+  if (scope === 'production_start_return_visit_proof') {
+    if(roleRank(actorRole)<roleRank('supervisor'))
+      return Response.json({ok:false,error:'Supervisor access required for production review'},{status:403,headers:corsHeaders});
+    const now=Date.now(),at=new Date(now).toISOString();
+    const [workflows,estimates,orders,schedules,sessions,quantities]=await Promise.all([
+      safeListEvidence(supabase,'v_estimate_job_invoice_workflow','estimate_id,estimate_number,client_id,client_site_id,quote_package_id,quote_accepted_at,work_order_id','estimate_number',750,true),
+      safeListEvidence(supabase,'estimates','id,client_id,client_site_id,status,approval_required,approval_status,approved_at,approved_by_profile_id,converted_work_order_id','created_at',750,false),
+      safeListEvidence(supabase,'work_orders','id,estimate_id,work_order_number,client_id,client_site_id,created_at','created_at',1000,false),
+      safeListEvidence(supabase,'v_crew_dispatch_schedule','id,work_order_id,client_id,effective_client_site_id,schedule_status,scheduled_start,scheduled_end','scheduled_start',1500,true),
+      safeListEvidence(supabase,'v_landscape_production_session_directory','job_session_id,work_order_id,dispatch_schedule_item_id,session_kind,session_status,started_at,ended_at,completion_state,unfinished_work_notes,return_visit_required,return_visit_reason,production_recorded_at,production_recorded_by_profile_id,client_id,client_site_id,production_metric_count,actual_quantity_total,execution_proof_count','session_date',1500,false),
+      safeListEvidence(supabase,'job_session_production_quantities','id,job_session_id,work_order_id,is_active,actual_quantity,completion_percent,created_at','created_at',1500,false)
+    ]);
+    const withheld=(reason:string)=>Response.json({ok:true,scope,proof_410:{state:'withheld',complete:false,retrieved_at:at,reason,records:[]},authority_boundary:'Read only; no synthetic session or automatic completion.'},{headers:corsHeaders});
+    const sources=[workflows,estimates,orders,schedules,sessions,quantities];
+    if(sources.some(r=>!r.query_ok||!Array.isArray(r.rows)||r.row_count!==r.rows.length||
+      r.row_count>=r.limit||!Number.isFinite(Date.parse(r.retrieved_at))||
+      Date.parse(r.retrieved_at)>now+300000||now-Date.parse(r.retrieved_at)>300000))
+      return withheld('Production, estimate, dispatch or field capture sources failed, are stale, or capped.');
+    const past=(v:any)=>!!v&&Number.isFinite(Date.parse(String(v)))&&Date.parse(String(v))<=now+300000;
+    const estimatesById=new Map<string,any>(),workflowById=new Map<string,any>();
+    for(const e of estimates.rows){
+      const id=String(e.id||'');
+      if(!id||!e.client_id||estimatesById.has(id))return withheld('Estimate identity/ownership missing or duplicated.');
+      estimatesById.set(id,e);
+    }
+    for(const w of workflows.rows){
+      const id=String(w.estimate_id||''),e=estimatesById.get(id);
+      if(!id||!e||workflowById.has(id)||String(e.client_id||'')!==String(w.client_id||'')||
+        String(e.client_site_id||'')!==String(w.client_site_id||''))
+        return withheld('Estimate workflow identity or customer/site scope inconsistent.');
+      workflowById.set(id,w);
+    }
+    if(workflowById.size!==estimatesById.size)return withheld('Workflow source does not cover original estimates.');
+    const ordersById=new Map<string,any>(),ordersByEstimate=new Map<string,any[]>();
+    for(const o of orders.rows){
+      const id=String(o.id||''),eid=String(o.estimate_id||'');
+      if(!id||ordersById.has(id))return withheld('Work order identity missing or duplicate.');
+      ordersById.set(id,o);
+      if(!eid)continue;
+      const e=estimatesById.get(eid);
+      if(!e||String(o.client_id||'')!==String(e.client_id||'')||
+        String(o.client_site_id||'')!==String(e.client_site_id||'')||!past(o.created_at))
+        return withheld('Work order estimate, owner/property or dated origin incomplete.');
+      const arr=ordersByEstimate.get(eid)||[];arr.push(o);ordersByEstimate.set(eid,arr);
+    }
+    const schedulesByOrder=new Map<string,any[]>(),scheduleById=new Map<string,any>();
+    const voidStates=new Set(['cancelled','canceled','superseded','void','voided']);
+    for(const d of schedules.rows){
+      const id=String(d.id||''),wid=String(d.work_order_id||'');
+      if(!id||scheduleById.has(id))return withheld('Dispatch ID missing or duplicate.');
+      scheduleById.set(id,d);
+      if(!wid)continue;
+      const o=ordersById.get(wid);
+      if(!o||String(d.client_id||'')!==String(o.client_id||'')||
+        String(d.effective_client_site_id||'')!==String(o.client_site_id||''))
+        return withheld('Dispatch owner/property or work order mismatch.');
+      const arr=schedulesByOrder.get(wid)||[];arr.push(d);schedulesByOrder.set(wid,arr);
+    }
+    const sessionsByOrder=new Map<string,any[]>(),sessionsById=new Map<string,any>();
+    for(const s of sessions.rows){
+      const id=String(s.job_session_id||''),wid=String(s.work_order_id||'');
+      if(!id||sessionsById.has(id))return withheld('Session ID missing or duplicate.');
+      sessionsById.set(id,s);
+      if(!wid)continue;
+      const o=ordersById.get(wid);
+      if(!o||String(s.client_id||'')!==String(o.client_id||'')||
+        String(s.client_site_id||'')!==String(o.client_site_id||''))
+        return withheld('Production session owner/property or work-order link mismatch.');
+      if(s.dispatch_schedule_item_id){
+        const d=scheduleById.get(String(s.dispatch_schedule_item_id));
+        if(!d||String(d.work_order_id||'')!==wid)return withheld('Production session dispatch identity mismatch.');
+      }
+      if((s.started_at&&!past(s.started_at))||(s.ended_at&&!past(s.ended_at))||
+         (s.production_recorded_at&&!past(s.production_recorded_at)))
+        return withheld('Production session has invalid or future dated evidence.');
+      if(s.started_at&&s.ended_at&&Date.parse(s.ended_at)<Date.parse(s.started_at))
+        return withheld('Production end precedes the start.');
+      if(s.started_at&&s.production_recorded_at&&Date.parse(s.production_recorded_at)<Date.parse(s.started_at))
+        return withheld('Field receipt predates production start.');
+      const arr=sessionsByOrder.get(wid)||[];arr.push(s);sessionsByOrder.set(wid,arr);
+    }
+    const quantitiesBySession=new Map<string,any[]>(),quantityIds=new Set<string>();
+    for(const q of quantities.rows){
+      const id=String(q.id||''),sid=String(q.job_session_id||''),s=sessionsById.get(sid);
+      if(!id||quantityIds.has(id)||!s||
+         String(q.work_order_id||'')!==String(s.work_order_id||''))
+        return withheld('Field quantity receipt identity or session/work-order link inconsistent.');
+      quantityIds.add(id);
+      if(q.is_active===true){
+        const arr=quantitiesBySession.get(sid)||[];arr.push(q);quantitiesBySession.set(sid,arr);
+      }
+    }
+    const records:any[]=[];
+    for(const [eid,w] of workflowById){
+      const e=estimatesById.get(eid);
+      if(String(e.status||'').toLowerCase()!=='accepted'&&!w.quote_accepted_at)continue;
+      const firstOrders=[...(ordersByEstimate.get(eid)||[])].sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at));
+      if(firstOrders.length>1&&Date.parse(firstOrders[0].created_at)===Date.parse(firstOrders[1].created_at))
+        return withheld('First work-order chronology is ambiguous.');
+      const first=firstOrders[0]||null;
+      if(e.converted_work_order_id&&!firstOrders.some(o=>String(o.id)===String(e.converted_work_order_id)))
+        return withheld('Estimate conversion work order absent from the canonical source.');
+      if(w.work_order_id&&!firstOrders.some(o=>String(o.id)===String(w.work_order_id)))
+        return withheld('Workflow work order absent from the original source.');
+      const authorized=!!first&&!!w.quote_package_id&&past(w.quote_accepted_at)&&
+        (e.approval_required===false||(e.approval_required===true&&
+         String(e.approval_status||'').toLowerCase()==='approved'&&
+         !!e.approved_by_profile_id&&past(e.approved_at)));
+      const candidates=first?[...(schedulesByOrder.get(String(first.id))||[])].filter(d=>
+        !voidStates.has(String(d.schedule_status||'').toLowerCase())):[];
+      if(candidates.some(d=>!Number.isFinite(Date.parse(String(d.scheduled_start||'')))||
+        !Number.isFinite(Date.parse(String(d.scheduled_end||'')))||
+        Date.parse(d.scheduled_end)<=Date.parse(d.scheduled_start)))
+        return withheld('A noncancelled first-work-order schedule has no valid dated window.');
+      candidates.sort((a,b)=>Date.parse(a.scheduled_start)-Date.parse(b.scheduled_start));
+      if(candidates.length>1&&Date.parse(candidates[0].scheduled_start)===Date.parse(candidates[1].scheduled_start))
+        return withheld('First schedule chronology tied: manual source review required.');
+      const firstDispatch=authorized?candidates[0]||null:null;
+      const allSessions=first?(sessionsByOrder.get(String(first.id))||[]):[];
+      const starts=firstDispatch?allSessions.filter(s=>
+        String(s.dispatch_schedule_item_id||'')===String(firstDispatch.id)&&past(s.started_at)&&
+        !voidStates.has(String(s.session_status||'').toLowerCase())):[];
+      starts.sort((a,b)=>Date.parse(a.started_at)-Date.parse(b.started_at));
+      if(starts.length>1&&Date.parse(starts[0].started_at)===Date.parse(starts[1].started_at))
+        return withheld('First started production session chronology tied.');
+      const started=starts[0]||null;
+      const captured=!!started&&past(started.production_recorded_at)&&!!started.production_recorded_by_profile_id;
+      const quantityReceipts=captured?(quantitiesBySession.get(String(started.job_session_id))||[]):[];
+      const actualLines=quantityReceipts.filter(q=>q.actual_quantity!==null&&q.actual_quantity!==undefined&&
+        Number.isFinite(Number(q.actual_quantity))&&Number(q.actual_quantity)>0).length;
+      const partialCode=String(started?.completion_state||'').toLowerCase();
+      const partial=!!captured&&(
+        ['partial','partially_complete','partially_completed','incomplete','unfinished','in_progress'].includes(partialCode)||
+        !!String(started?.unfinished_work_notes||'').trim());
+      const returnRequired=started?.return_visit_required===true;
+      const returns=started?allSessions.filter(s=>s.job_session_id!==started.job_session_id&&
+        past(s.started_at)&&Date.parse(s.started_at)>Date.parse(started.started_at)&&
+        ['return','return_visit','return-visit','follow_up','follow-up'].includes(String(s.session_kind||'').toLowerCase())&&
+        !voidStates.has(String(s.session_status||'').toLowerCase())):[];
+      returns.sort((a,b)=>Date.parse(a.started_at)-Date.parse(b.started_at));
+      if(returns.length>1&&Date.parse(returns[0].started_at)===Date.parse(returns[1].started_at))
+        return withheld('Return production session chronology tied.');
+      const returnSession=returns[0]||null;
+      const returnCaptured=!!returnSession&&past(returnSession.production_recorded_at)&&!!returnSession.production_recorded_by_profile_id;
+      records.push({
+        estimate_id:eid,estimate_number:w.estimate_number||null,
+        first_work_order_id:first?.id||null,first_work_order_number:first?.work_order_number||null,
+        first_dispatch_id:firstDispatch?.id||null,first_scheduled_start:firstDispatch?.scheduled_start||null,
+        production_proof_state:!authorized?'authorization_hold':!firstDispatch?'scheduled_dispatch_missing':
+          !started?'no_started_session':!captured?'started_at_without_field_receipt':'dated_start_and_field_receipt_recorded',
+        first_session_id:started?.job_session_id||null,first_started_at:started?.started_at||null,
+        field_receipt_recorded_at:captured?started.production_recorded_at:null,
+        first_session_completion_state:started?.completion_state||null,
+        partial_completion_state:partial?'explicit_partial_evidence_recorded':captured?'partial_completion_not_proven':'not_assessed',
+        actual_quantity_receipt_count:actualLines,
+        execution_proof_count:captured?Number(started.execution_proof_count||0):0,
+        return_required_state:returnRequired?'return_visit_required_recorded':started?'return_need_not_recorded':'not_assessed',
+        return_visit_state:returnCaptured?'dated_return_visit_receipt_recorded':returnSession?'return_started_no_field_receipt':
+          returnRequired?'return_visit_pending_no_session_receipt':'no_return_visit_proof',
+        return_session_id:returnSession?.job_session_id||null,
+        return_started_at:returnSession?.started_at||null,
+        return_field_receipt_at:returnCaptured?returnSession.production_recorded_at:null
+      });
+    }
+    if(records.length>150)return withheld('Accepted first-job cohort exceeds 150 reviewed records.');
+    return Response.json({ok:true,scope,actor_role:actorRole,
+      proof_410:{state:records.length?'recorded':'no_record',complete:true,retrieved_at:at,
+        source:'estimates + v_estimate_job_invoice_workflow + work_orders + v_crew_dispatch_schedule + v_landscape_production_session_directory + job_session_production_quantities',
+        records,reason:records.length?'Dated source production and separate return receipts.':'No accepted first jobs in complete canonical sources.'},
+      authority_boundary:'Review only. No generated session, assumed completion, dispatch, finance posting, staff assignment or safety override.'
     },{headers:corsHeaders});
   }
 
