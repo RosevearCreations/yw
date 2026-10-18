@@ -274,7 +274,9 @@
     "test:estimate-first-work-order-trace-408": "node scripts/estimate-first-work-order-trace-408-check.mjs",
     "test:browser:estimate-first-work-order-trace-408": "playwright test --config=playwright.config.mjs tests/browser/estimate-first-work-order-trace-408.spec.mjs",
     "test:first-dispatch-schedule-receipt-409": "node scripts/first-dispatch-schedule-receipt-409-check.mjs",
-    "test:browser:first-dispatch-schedule-receipt-409": "playwright test --config=playwright.config.mjs tests/browser/first-dispatch-schedule-receipt-409.spec.mjs"
+    "test:browser:first-dispatch-schedule-receipt-409": "playwright test --config=playwright.config.mjs tests/browser/first-dispatch-schedule-receipt-409.spec.mjs",
+    "test:production-start-return-visit-proof-410": "node scripts/production-start-return-visit-proof-410-check.mjs",
+    "test:browser:production-start-return-visit-proof-410": "playwright test --config=playwright.config.mjs tests/browser/production-start-return-visit-proof-410.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
