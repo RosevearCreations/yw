@@ -1213,7 +1213,10 @@ serve(async (req) => {
       if(!unique(c.id,'candidate'))return withheld('Invoice candidate identity missing or duplicated.');
       if(!c.work_order_id)continue;  // Finance may hold non-work-order candidates.
       const o=orderById.get(String(c.work_order_id));
-      if(!o||c.estimate_id&&String(c.estimate_id)!==String(o.estimate_id||''))return withheld('Invoice candidate and work-order identities conflict.');
+      if(!o||(c.estimate_id&&String(c.estimate_id)!==String(o.estimate_id||''))||
+         (c.client_id&&String(c.client_id)!==String(o.client_id))||
+         (c.client_site_id&&String(c.client_site_id)!==String(o.client_site_id||'')))
+        return withheld('Invoice candidate and work-order/customer/site identities conflict.');
       if(!dated(c.created_at))return withheld('Invoice candidate date missing or invalid.');
       const a=candidatesByOrder.get(String(o.id))||[];a.push(c);candidatesByOrder.set(String(o.id),a);
     }
@@ -1227,14 +1230,14 @@ serve(async (req) => {
     }
     const paymentById=new Map<string,any>();
     for(const p of payments.rows){
-      if(!unique(p.id,'payment')||!p.client_id||money(p.amount)===null||money(p.amount)!<0)
+      if(!unique(p.id,'payment')||!p.client_id||money(p.amount)===null||Number(money(p.amount))<0)
         return withheld('Payment identity, customer or amount invalid.');
       paymentById.set(String(p.id),p);
     }
     const applicationsByInvoice=new Map<string,any[]>();
     for(const a of applications.rows){
       if(!unique(a.id,'application')||!a.invoice_id||!a.payment_id||
-         !paymentById.has(String(a.payment_id))||money(a.applied_amount)===null||money(a.applied_amount)!<0)
+         !paymentById.has(String(a.payment_id))||money(a.applied_amount)===null||Number(money(a.applied_amount))<0)
         return withheld('Payment application identity, payment or amount invalid.');
       const p=paymentById.get(String(a.payment_id));
       const invoice=invoices.rows.find((i:any)=>String(i.id)===String(a.invoice_id));
@@ -1278,7 +1281,7 @@ serve(async (req) => {
           .filter(a=>!['void','voided','cancelled'].includes(String(a.application_status||'').toLowerCase()));
         applied=allocations.reduce((sum,a)=>sum+(money(a.applied_amount)||0),0);
         const invoiceState=String(inv.invoice_status||'').toLowerCase();
-        if(['draft','proforma','pending'].includes(invoiceState))state='invoice_not_issued';
+        if(!['issued','sent','posted','open','unpaid','partial','partially_paid','paid','overdue','closed'].includes(invoiceState))state='invoice_not_issued';
         else if(total===null||balance===null||total<0||balance<0||balance>total||
           applied<0||applied>total||Math.abs(total-applied-balance)>1)
           state='receivable_discrepancy_hold';
