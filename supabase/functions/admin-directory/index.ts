@@ -1721,7 +1721,7 @@ serve(async (req) => {
     const validCycle=(c:any)=>!!validService[String(c.season_context||'')]&&
       Number.isInteger(Number(c.season_year))&&String(c.start_date||'').length===10&&
       String(c.end_date||'').length===10&&c.start_date<=c.end_date&&
-      dateOk(c.start_date)&&dateOk(c.end_date);
+      Number.isFinite(Date.parse(String(c.start_date)))&&Number.isFinite(Date.parse(String(c.end_date)));
     for(const c of cycles.rows)if(!validCycle(c))
       return withheld('Seasonal cycle year, dates or service season invalid.');
     const cycleKeys=new Set<string>();
