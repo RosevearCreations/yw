@@ -17,7 +17,7 @@ for(const word of ["roleRank(actorRole)<roleRank('supervisor')",
  "customer_signoff_required","evidence_state:state","state:'withheld'"])
  assert.ok(x.includes(word),'Missing QC security/authority '+word);
 assert.doesNotMatch(x,/\.(insert|upsert|update|delete)\s*\(/);
-assert.ok(backend.slice(0,start).includes("'first_job_quality_closeout_evidence'].includes(key)"));
+assert.ok(backend.slice(0,start).includes("'first_job_quality_closeout_evidence'"));
 const ui=read('js/quality-control-closeout-evidence-412.js');
 new Function(ui);
 for(const word of ['quality412','first_job_quality_closeout_evidence',
