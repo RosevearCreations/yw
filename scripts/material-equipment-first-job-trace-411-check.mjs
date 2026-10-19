@@ -20,7 +20,7 @@ assert.doesNotMatch(s,/\.(insert|upsert|update|delete)\s*\(/);
 assert.ok(t.slice(0,i).includes("'material_equipment_first_job_trace'].includes(key)"));
 const ui=read('js/material-equipment-first-job-trace-411.js');new Function(ui);
 for(const word of ['materialEquipment411','material_equipment_first_job_trace',
- 'Date.now()-t<=300000','data-material411-state','current_lockout','esc(l.planned_quantity)'])
+ 'Date.now()-t<=300000','data-material411-state','safety_lockout_hold','esc(l.planned_quantity)'])
  assert.ok(ui.includes(word),'Missing UI guard '+word);
 const p=JSON.parse(read('package.json'));
 assert.equal(p.scripts['test:material-equipment-first-job-trace-411'],'node scripts/material-equipment-first-job-trace-411-check.mjs');
