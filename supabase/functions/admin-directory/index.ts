@@ -36,7 +36,7 @@ function effectiveRole(profile: any, user: any) {
 function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'finance'|'jobs'|'admin'; minimum: 'view'|'create'|'approve'|'manage' } | null {
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
-  if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
+  if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone','first_job_invoice_candidate_provenance'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof','material_equipment_first_job_trace','first_job_quality_closeout_evidence'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
@@ -1419,6 +1419,111 @@ serve(async (req) => {
     return Response.json({ok:true,scope,evidence_412:{
       state:records.length?'recorded':'no_record',complete:true,retrieved_at:at,records},
       authority_boundary:'Inspection and approval receipts only. No automatic supervisor signoff, customer contact, review request, media release or Finance posting.'
+    },{headers:corsHeaders});
+  }
+
+
+  // Build 413 — first-job approved closeout to canonical Finance invoice candidate.
+  // Candidate existence/readiness is not invoice issuance, posting or collection.
+  if(scope==='first_job_invoice_candidate_provenance'){
+    if(roleRank(actorRole)<roleRank('supervisor')||
+       !(await hasModuleAccess(supabase,actorProfile,'jobs','view')))
+      return Response.json({ok:false,error:'Supervisor Finance and Jobs view permission required.'},{status:403,headers:corsHeaders});
+    const now=Date.now(),at=new Date(now).toISOString();
+    const dated=(v:any)=>!!v&&Number.isFinite(Date.parse(String(v)))&&Date.parse(String(v))<=now+300000;
+    const [workflows,orders,closeouts,qcRuns,candidates]=await Promise.all([
+      safeListEvidence(supabase,'v_estimate_job_invoice_workflow','estimate_id,estimate_number,client_id,client_site_id,quote_package_id,quote_accepted_at,internal_approval_ready','estimate_number',750,true),
+      safeListEvidence(supabase,'work_orders','id,estimate_id,work_order_number,client_id,client_site_id,created_at','created_at',1000,true),
+      safeListEvidence(supabase,'work_order_closeout_packages','id,work_order_id,closeout_status,approved_by_profile_id,approved_at,invoice_ready_requested,invoice_readiness_status,customer_signoff_required,customer_signoff_status,signed_off_at','created_at',1500,true),
+      safeListEvidence(supabase,'v_quality_control_run_directory','id,work_order_id,run_status,review_status,reviewed_by_profile_id,reviewed_at,ready_for_closeout,required_item_count,required_item_passed_count,failed_item_count,unresolved_deficiency_count','created_at',1500,true),
+      safeListEvidence(supabase,'job_invoice_candidates','id,work_order_id,estimate_id,client_id,client_site_id,candidate_status,candidate_number,completion_review_id,created_at','created_at',1500,true)
+    ]);
+    const withheld=(reason:string)=>Response.json({ok:true,scope,trace_413:{
+      state:'withheld',complete:false,retrieved_at:at,reason,records:[]},
+      authority_boundary:'Finance candidate read-only: no invoice posting, payment, collection or provider call.'},{headers:corsHeaders});
+    const reads=[workflows,orders,closeouts,qcRuns,candidates];
+    if(reads.some(r=>!r.query_ok||!Array.isArray(r.rows)||r.row_count!==r.rows.length||
+       r.row_count>=r.limit||!dated(r.retrieved_at)||now-Date.parse(r.retrieved_at)>300000))
+      return withheld('Closeout, QC or Finance candidate sources missing, stale or capped.');
+    const indexed=(read:any,key:string)=>{const map=new Map<string,any>();
+      for(const r of read.rows){const k=String(r[key]||'');if(!k||map.has(k))return null;map.set(k,r);}return map;};
+    const estimateById=indexed(workflows,'estimate_id'),orderById=indexed(orders,'id'),
+      closeById=indexed(closeouts,'id'),qcById=indexed(qcRuns,'id'),candidateById=indexed(candidates,'id');
+    if(!estimateById||!orderById||!closeById||!qcById||!candidateById)
+      return withheld('Missing or duplicate Finance candidate/QC source keys.');
+    const closeByOrder=new Map<string,any>(),qcByOrder=new Map<string,any>(),candidateByOrder=new Map<string,any[]>();
+    for(const c of closeouts.rows){
+      const key=String(c.work_order_id||'');
+      if(!orderById.has(key)||closeByOrder.has(key)||(c.approved_at&&!dated(c.approved_at))||
+         (c.signed_off_at&&!dated(c.signed_off_at)))return withheld('Closeout work-order identity/approval date ambiguous.');
+      closeByOrder.set(key,c);
+    }
+    for(const q of qcRuns.rows){
+      const key=String(q.work_order_id||'');
+      if(!orderById.has(key)||qcByOrder.has(key)||(q.reviewed_at&&!dated(q.reviewed_at)))
+        return withheld('QC work-order identity/approval date ambiguous.');
+      qcByOrder.set(key,q);
+    }
+    for(const c of candidates.rows){
+      if(!c.work_order_id)continue; // Other Finance candidate source origins do not create a first-job identity.
+      const order=orderById.get(String(c.work_order_id));
+      if(!order||(c.estimate_id&&String(c.estimate_id)!==String(order.estimate_id||''))||
+         (c.client_id&&String(c.client_id)!==String(order.client_id))||
+         (c.client_site_id&&String(c.client_site_id)!==String(order.client_site_id||''))||
+         !dated(c.created_at))
+        return withheld('Candidate origin/date/customer/property/work-order mismatch.');
+      const k=String(order.id),arr=candidateByOrder.get(k)||[];arr.push(c);candidateByOrder.set(k,arr);
+    }
+    const records:any[]=[];
+    for(const w of workflows.rows){
+      if(!w.client_id||!w.quote_package_id||!dated(w.quote_accepted_at)||w.internal_approval_ready!==true)continue;
+      const linked=orders.rows.filter(o=>String(o.estimate_id||'')===String(w.estimate_id))
+        .sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at));
+      if(linked.some(o=>!dated(o.created_at)||String(o.client_id)!==String(w.client_id)||
+          String(o.client_site_id||'')!==String(w.client_site_id||'')))
+        return withheld('Original first-job quote/customer/site identity inconsistent.');
+      if(linked.length>1&&Date.parse(linked[0].created_at)===Date.parse(linked[1].created_at))
+        return withheld('First-job work-order chronology ambiguous.');
+      const first=linked[0];if(!first)continue;
+      const close=closeByOrder.get(String(first.id)),qc=qcByOrder.get(String(first.id));
+      const n=Number(qc?.required_item_count),p=Number(qc?.required_item_passed_count),
+        failed=Number(qc?.failed_item_count),unresolved=Number(qc?.unresolved_deficiency_count);
+      const qcready=!!qc&&[n,p,failed,unresolved].every(x=>Number.isInteger(x)&&x>=0)&&n>0&&p===n&&
+        failed===0&&unresolved===0&&qc.ready_for_closeout===true&&
+        qc.run_status==='approved'&&qc.review_status==='approved'&&
+        !!qc.reviewed_by_profile_id&&dated(qc.reviewed_at);
+      const closeready=!!close&&['approved','invoice_ready'].includes(String(close.closeout_status||'').toLowerCase())&&
+        !!close.approved_by_profile_id&&dated(close.approved_at)&&close.invoice_ready_requested===true&&
+        close.invoice_readiness_status==='ready'&&
+        (close.customer_signoff_required!==true||(close.customer_signoff_status==='signed'&&dated(close.signed_off_at)));
+      const available=(candidateByOrder.get(String(first.id))||[]).filter(c=>
+        !['rejected','void','voided','cancelled','canceled'].includes(String(c.candidate_status||'').toLowerCase()))
+        .sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at));
+      if(available.length>1&&Date.parse(available[0].created_at)===Date.parse(available[1].created_at))
+        return withheld('First Finance candidate chronology ambiguous.');
+      const candidate=available[0]||null;
+      const status=String(candidate?.candidate_status||'').toLowerCase();
+      const state=!qcready?'qc_approval_hold':!closeready?'closeout_or_signoff_hold':
+        !candidate?'finance_candidate_missing':!candidate.completion_review_id?'candidate_provenance_missing':
+        !['draft','ready','reviewed','posted'].includes(status)?'candidate_status_hold':
+        status==='draft'?'candidate_draft_pending_review':
+        status==='ready'?'candidate_ready_unposted':
+        status==='reviewed'?'candidate_reviewed_unposted':
+        'candidate_posted_requires_invoice_reconciliation';
+      records.push({estimate_id:w.estimate_id,estimate_number:w.estimate_number||null,
+        first_work_order_id:first.id,first_work_order_number:first.work_order_number,
+        qc_run_id:qc?.id||null,qc_reviewed_at:qcready?qc.reviewed_at:null,
+        closeout_id:close?.id||null,closeout_approved_at:closeready?close.approved_at:null,
+        customer_signoff_status:close?.customer_signoff_status||null,
+        invoice_candidate_id:candidate?.id||null,
+        invoice_candidate_number:candidate?.candidate_number||null,
+        candidate_status:candidate?.candidate_status||null,
+        finance_completion_review_id:candidate?.completion_review_id||null,provenance_state:state});
+    }
+    if(records.length>150)return withheld('Invoice candidate first-job source exceeds reviewed cap.');
+    return Response.json({ok:true,scope,trace_413:{
+      state:records.length?'recorded':'no_record',complete:true,retrieved_at:at,records},
+      authority_boundary:'Read-only first-job Finance candidate trace; no invoice issue/posting, collection, payment or customer outreach.'
     },{headers:corsHeaders});
   }
 
