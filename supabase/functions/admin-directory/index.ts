@@ -1830,7 +1830,7 @@ serve(async (req) => {
     const withheld=(reason:string)=>Response.json({ok:true,scope,acceptance_416:{
       state:'withheld',complete:false,retrieved_at:at,reason,records:[],unresolved_gaps:[],
       authority:'Unverified sources are not owner acceptance.'
-    },{headers:corsHeaders});
+    }},{headers:corsHeaders});
     const reads=[customers,properties,orders,dispatch,production,materials,equipment,qc,closeouts,candidates,invoices,cycles,workability];
     if(reads.some(r=>!r.query_ok||!Array.isArray(r.rows)||r.row_count!==r.rows.length||
         r.row_count>=r.limit||!dated(r.retrieved_at)||now-Date.parse(r.retrieved_at)>300000))
