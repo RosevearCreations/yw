@@ -1885,19 +1885,17 @@ serve(async (req) => {
     const firstByCustomer=new Map<string,any>();
     for(const customer of customers.rows){
       const owned=properties.rows.filter(p=>String(p.client_id)===String(customer.id));
-      const site=earliest(owned,'created_at');
-      if(!site)continue;
-      const candidateOrders=orders.rows.filter(o=>String(o.client_id)===String(customer.id)&&
-        String(o.client_site_id)===String(site.id));
-      const first=earliest(candidateOrders,'created_at');
-      if(!first)continue;
+      const allCustomerOrders=orders.rows.filter(o=>String(o.client_id)===String(customer.id));
+      const first=earliest(allCustomerOrders,'created_at')||null;
+      const site=first?prop.get(String(first.client_site_id)):(earliest(owned,'created_at')||null);
+      const candidateOrders=allCustomerOrders;
       const current=firstByCustomer.get(String(customer.id));
       if(current)return withheld('Multiple first-use selections for one customer.');
       if(candidateOrders.length>1&&
-        Date.parse(candidateOrders[0].created_at)===Date.parse(candidateOrders[1].created_at))
+        first&&Date.parse(candidateOrders[0].created_at)===Date.parse(candidateOrders[1].created_at))
         return withheld('First work-order chronology tied.');
       firstByCustomer.set(String(customer.id),first);
-      const id=String(first.id),ds=byOrder(dispatch.rows,id),
+      const id=String(first?.id||''),ds=byOrder(dispatch.rows,id),
         ps=byOrder(production.rows,id),ms=byOrder(materials.rows,id),
         es=byOrder(equipment.rows,id),qs=byOrder(qc.rows,id),
         cs=byOrder(closeouts.rows,id),candidatesForJob=byOrder(candidates.rows,id),
@@ -1907,7 +1905,7 @@ serve(async (req) => {
       const captured=ps.find(x=>dated(x.started_at)&&dated(x.production_recorded_at)&&
         !!x.production_recorded_by_profile_id&&String(x.client_id)===String(customer.id)&&
         String(x.client_site_id)===String(site.id));
-      const jobMaterial=ms.some(x=>!['draft','void','cancelled'].includes(String(x.issue_status||'').toLowerCase())&&
+      const jobMaterial=ms.some(x=>['issued','partial','closed'].includes(String(x.issue_status||'').toLowerCase())&&
         !!captured&&String(x.job_session_id||'')===String(captured.job_session_id));
       const jobEquipment=es.some(x=>dated(x.checked_out_at)&&
         !!captured&&String(x.job_session_id||'')===String(captured.job_session_id));
@@ -1935,9 +1933,9 @@ serve(async (req) => {
         String(w.work_order_id)===id&&String(w.client_site_id)===String(site.id)&&
         String(w.service_date||'')===String(captured.session_date||'')&&
         String(w.season_context)===String(cycle.season_context)&&dated(w.observed_at));
-      const proven=[dated(customer.created_at),dated(site.created_at)&&
+      const proven=[dated(customer.created_at),!!site&&dated(site.created_at)&&
         Date.parse(site.created_at)>=Date.parse(customer.created_at),
-        dated(first.created_at)&&Date.parse(first.created_at)>=Date.parse(site.created_at),
+        !!first&&!!site&&dated(first.created_at)&&Date.parse(first.created_at)>=Date.parse(site.created_at),
         acceptedDispatch,!!captured,jobMaterial||jobEquipment,
         checked&&!!close,!!close&&!!candidate,!!candidate&&!!invoice,!!cycle&&wb];
       const checklist=steps.map(([code,label],i)=>({
@@ -1951,9 +1949,9 @@ serve(async (req) => {
         ][i])
       }));
       for(const entry of checklist)if(entry.state==='unresolved')
-        gaps.push({first_work_order_id:id,handoff:entry.handoff,reason:entry.reason});
-      result.push({first_work_order_id:id,work_order_number:first.work_order_number||null,
-        customer_id:customer.id,property_id:site.id,first_order_created_at:first.created_at,
+        gaps.push({customer_id:customer.id,first_work_order_id:first?.id||null,handoff:entry.handoff,reason:entry.reason});
+      result.push({first_work_order_id:first?.id||null,work_order_number:first?.work_order_number||null,
+        customer_id:customer.id,property_id:site?.id||null,first_order_created_at:first?.created_at||null,
         steps:checklist,unresolved_count:checklist.filter(x=>x.state==='unresolved').length,
         trial_acceptance:'operator_review_required'});
     }
