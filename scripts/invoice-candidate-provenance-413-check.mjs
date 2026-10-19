@@ -11,7 +11,7 @@ for(const word of ["roleRank(actorRole)<roleRank('supervisor')",
  "r.row_count>=r.limit","internal_approval_ready","required_item_passed_count",
  "qc.ready_for_closeout===true","qc.review_status==='approved'",
  "close.invoice_readiness_status==='ready'","close.customer_signoff_required",
- "c.completion_review_id","candidate_draft_pending_review","candidate_ready_unposted",
+ "candidate.completion_review_id","candidate_draft_pending_review","candidate_ready_unposted",
  "candidate_provenance_missing","candidate_posted_requires_invoice_reconciliation",
  "String(c.client_id)!==String(order.client_id)","state:'withheld'"])
  assert.ok(s.includes(word),'Missing Finance candidate provenance guard '+word);
