@@ -38,7 +38,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone','first_job_invoice_candidate_provenance','first_invoice_receivable_confidence'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof','material_equipment_first_job_trace', 'first_job_quality_closeout_evidence','seasonal_first_use_cohort_coverage'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
-  if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
+  if (['owner_management_command','owner_first_use_trial_acceptance'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','saved_views_search','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
   return null;
@@ -1799,6 +1799,187 @@ serve(async (req) => {
       denominator_definition:'Distinct customer/property first recorded Production start within explicit seasonal cycle and same-day, matching Workability service observation; not an estimate of all customers.'
     },authority_boundary:'Read-only dated first-use evidence. No staff ranking, performance attribution, inferred zeros, weather override or customer outreach.'
     },{headers:corsHeaders});
+  }
+
+
+  // Build 416: owner-only, read-only canonical first-use handoff acceptance checklist.
+  // "Verified" is source evidence, not an owner signature or automatically accepted trial.
+  if(scope==='owner_first_use_trial_acceptance'){
+    if(roleRank(actorRole)<roleRank('admin')||
+      !(await hasModuleAccess(supabase,actorProfile,'admin','manage'))||
+      !(await hasModuleAccess(supabase,actorProfile,'jobs','view'))||
+      !(await hasModuleAccess(supabase,actorProfile,'finance','view')))
+      return Response.json({ok:false,error:'Owner/Admin manage, Jobs and Finance view permission required.'},{status:403,headers:corsHeaders});
+    const now=Date.now(),at=new Date(now).toISOString();
+    const dated=(v:any)=>!!v&&Number.isFinite(Date.parse(String(v)))&&Date.parse(String(v))<=now+300000;
+    const [customers,properties,orders,dispatch,production,materials,equipment,qc,closeouts,candidates,invoices,cycles,workability]=await Promise.all([
+      safeListEvidence(supabase,'clients','id,created_at','created_at',750,true),
+      safeListEvidence(supabase,'client_sites','id,client_id,created_at','created_at',1000,true),
+      safeListEvidence(supabase,'work_orders','id,work_order_number,client_id,client_site_id,estimate_id,created_at,status,work_type','created_at',1000,true),
+      safeListEvidence(supabase,'dispatch_schedule_items','id,work_order_id,client_site_id,schedule_status,scheduled_start,dispatched_at','scheduled_start',1000,true),
+      safeListEvidence(supabase,'v_landscape_production_session_directory','job_session_id,work_order_id,client_id,client_site_id,session_date,session_status,started_at,production_recorded_at,production_recorded_by_profile_id','session_date',1000,true),
+      safeListEvidence(supabase,'material_issues','id,work_order_id,client_site_id,issue_status,job_session_id,issue_date','created_at',1000,true),
+      safeListEvidence(supabase,'equipment_signouts','id,work_order_id,job_session_id,checked_out_at','checked_out_at',1000,true),
+      safeListEvidence(supabase,'v_quality_control_run_directory','id,work_order_id,client_id,client_site_id,run_status,review_status,required_item_count,required_item_passed_count,failed_item_count,unresolved_deficiency_count,ready_for_closeout,reviewed_at,reviewed_by_profile_id','created_at',1000,true),
+      safeListEvidence(supabase,'work_order_closeout_packages','id,work_order_id,closeout_status,approved_at,approved_by_profile_id,customer_signoff_required,customer_signoff_status,signed_off_at,invoice_readiness_status','created_at',1000,true),
+      safeListEvidence(supabase,'job_invoice_candidates','id,work_order_id,client_id,client_site_id,candidate_status,completion_review_id,created_at','created_at',1000,true),
+      safeListEvidence(supabase,'ar_invoices','id,work_order_id,client_id,invoice_status,created_at,total_amount,balance_due','created_at',1000,true),
+      safeListEvidence(supabase,'seasonal_operations_cycles','id,season_year,season_context,start_date,end_date','start_date',1000,true),
+      safeListEvidence(supabase,'workability_observations','id,work_order_id,client_site_id,service_context,season_context,service_date,observed_at','observed_at',1000,true)
+    ]);
+    const withheld=(reason:string)=>Response.json({ok:true,scope,acceptance_416:{
+      state:'withheld',complete:false,retrieved_at:at,reason,records:[],unresolved_gaps:[],
+      authority:'Unverified sources are not owner acceptance.'
+    }},{headers:corsHeaders});
+    const reads=[customers,properties,orders,dispatch,production,materials,equipment,qc,closeouts,candidates,invoices,cycles,workability];
+    if(reads.some(r=>!r.query_ok||!Array.isArray(r.rows)||r.row_count!==r.rows.length||
+        r.row_count>=r.limit||!dated(r.retrieved_at)||now-Date.parse(r.retrieved_at)>300000))
+      return withheld('A required source is unavailable, stale or capped.');
+    const uniqueMap=(items:any[],key:string)=>{const out=new Map<string,any>();
+      for(const i of items){const id=String(i[key]||'');if(!id||out.has(id))return null;out.set(id,i);}return out;};
+    const cust=uniqueMap(customers.rows,'id'),prop=uniqueMap(properties.rows,'id'),
+      ord=uniqueMap(orders.rows,'id');
+    if(!cust||!prop||!ord)return withheld('Duplicate or missing CRM/work-order identity.');
+    for(const c of customers.rows)if(!dated(c.created_at))return withheld('CRM customer first-known date missing.');
+    for(const p of properties.rows)
+      if(!cust.has(String(p.client_id))||!dated(p.created_at))
+        return withheld('CRM property customer/date link missing.');
+    for(const o of orders.rows)
+      if(!dated(o.created_at)||!cust.has(String(o.client_id))||
+        !prop.has(String(o.client_site_id))||
+        String(prop.get(String(o.client_site_id)).client_id)!==String(o.client_id))
+        return withheld('First-job customer/property identity or date conflicts.');
+    for(const [rows,key] of [[dispatch.rows,'id'],[production.rows,'job_session_id'],
+      [materials.rows,'id'],[equipment.rows,'id'],[qc.rows,'id'],[closeouts.rows,'id'],
+      [candidates.rows,'id'],[invoices.rows,'id'],[cycles.rows,'id'],[workability.rows,'id']] as any[])
+      if(!uniqueMap(rows,key))return withheld('A canonical handoff source has duplicate identity.');
+    for(const r of [...dispatch.rows,...production.rows,...materials.rows,...equipment.rows,
+      ...qc.rows,...closeouts.rows,...candidates.rows,...invoices.rows,...workability.rows]){
+      if(r.work_order_id&&!ord.has(String(r.work_order_id)))
+        return withheld('Unlinked canonical work-order evidence.');
+    }
+    for(const r of [...dispatch.rows,...production.rows,...materials.rows,...qc.rows,...candidates.rows,
+      ...workability.rows]){
+      if(r.work_order_id&&r.client_site_id&&
+        String(ord.get(String(r.work_order_id)).client_site_id)!==String(r.client_site_id))
+        return withheld('Cross-property source linkage cannot be accepted.');
+    }
+    for(const r of [...production.rows,...qc.rows,...candidates.rows]){
+      if(r.work_order_id&&r.client_id&&
+        String(ord.get(String(r.work_order_id)).client_id)!==String(r.client_id))
+        return withheld('Cross-customer source linkage cannot be accepted.');
+    }
+    for(const i of invoices.rows)
+      if(i.work_order_id&&String(ord.get(String(i.work_order_id)).client_id)!==String(i.client_id))
+        return withheld('Finance invoice customer linkage conflicts.');
+    const byOrder=(items:any[],id:string)=>items.filter(i=>String(i.work_order_id||'')===id);
+    const earliest=(items:any[],field:string)=>items.sort((a,b)=>Date.parse(a[field])-Date.parse(b[field]))[0];
+    const steps=[
+      ['406','CRM customer first-use date'],['407','Linked first property intake'],
+      ['408','First work-order identity'],['409','First dispatch receipt'],
+      ['410','Actual Production start receipt'],['411','Material/equipment first-use trace'],
+      ['412','QC and supervisor closeout'],['413','Finance invoice candidate provenance'],
+      ['414','Actual first invoice and receivable'],['415','Seasonal first-use and Workability']
+    ];
+    const result:any[]=[],gaps:any[]=[];
+    const firstByCustomer=new Map<string,any>();
+    for(const customer of customers.rows){
+      const owned=properties.rows.filter(p=>String(p.client_id)===String(customer.id));
+      const allCustomerOrders=orders.rows.filter(o=>String(o.client_id)===String(customer.id));
+      const first=earliest(allCustomerOrders,'created_at')||null;
+      const site=first?prop.get(String(first.client_site_id)):(earliest(owned,'created_at')||null);
+      const candidateOrders=allCustomerOrders;
+      const current=firstByCustomer.get(String(customer.id));
+      if(current)return withheld('Multiple first-use selections for one customer.');
+      if(candidateOrders.length>1&&
+        first&&Date.parse(candidateOrders[0].created_at)===Date.parse(candidateOrders[1].created_at))
+        return withheld('First work-order chronology tied.');
+      firstByCustomer.set(String(customer.id),first);
+      const id=String(first?.id||''),ds=byOrder(dispatch.rows,id),
+        ps=byOrder(production.rows,id),ms=byOrder(materials.rows,id),
+        es=byOrder(equipment.rows,id),qs=byOrder(qc.rows,id),
+        cs=byOrder(closeouts.rows,id),candidatesForJob=byOrder(candidates.rows,id),
+        invs=byOrder(invoices.rows,id);
+      const acceptedDispatch=ds.some(x=>dated(x.dispatched_at)&&
+        !['cancelled','canceled','void','draft'].includes(String(x.schedule_status||'').toLowerCase()));
+      const captured=ps.find(x=>dated(x.started_at)&&dated(x.production_recorded_at)&&
+        !!x.production_recorded_by_profile_id&&String(x.client_id)===String(customer.id)&&
+        String(x.client_site_id)===String(site.id));
+      const jobMaterial=ms.some(x=>['issued','partial','closed'].includes(String(x.issue_status||'').toLowerCase())&&
+        !!captured&&String(x.job_session_id||'')===String(captured.job_session_id));
+      const jobEquipment=es.some(x=>dated(x.checked_out_at)&&
+        !!captured&&String(x.job_session_id||'')===String(captured.job_session_id));
+      const checked=qs.some(q=>{const count=Number(q.required_item_count),
+        passed=Number(q.required_item_passed_count);
+        return q.run_status==='approved'&&q.review_status==='approved'&&q.ready_for_closeout===true&&
+          Number.isInteger(count)&&count>0&&passed===count&&Number(q.failed_item_count)===0&&
+          Number(q.unresolved_deficiency_count)===0&&dated(q.reviewed_at)&&!!q.reviewed_by_profile_id;});
+      const close=cs.find(c=>['approved','invoice_ready'].includes(String(c.closeout_status||'').toLowerCase())&&
+        dated(c.approved_at)&&!!c.approved_by_profile_id&&
+        (c.customer_signoff_required!==true||(c.customer_signoff_status==='signed'&&dated(c.signed_off_at))));
+      const candidate=candidatesForJob.find(c=>
+        !['void','rejected','cancelled','canceled','draft'].includes(String(c.candidate_status||'').toLowerCase())&&
+        !!c.completion_review_id&&String(c.client_id)===String(customer.id)&&
+        String(c.client_site_id)===String(site.id)&&dated(c.created_at));
+      const invoice=invs.find(v=>['issued','sent','posted','open','unpaid','partial','partially_paid','paid','overdue','closed']
+        .includes(String(v.invoice_status||'').toLowerCase())&&dated(v.created_at)&&
+        Number.isFinite(Number(v.total_amount))&&Number.isFinite(Number(v.balance_due))&&
+        Number(v.total_amount)>=0&&Number(v.balance_due)>=0&&Number(v.balance_due)<=Number(v.total_amount));
+      const cycle=cycles.rows.find(c=>captured&&
+        String(c.start_date||'')<=String(captured.session_date||'')&&
+        String(c.end_date||'')>=String(captured.session_date||'')&&
+        Number.isInteger(Number(c.season_year)));
+      const seasonServices:any={spring_summer:'mowing_landscaping',fall:'fall_cleanup',
+        winter:'snow_clearing_removal',four_season:'general_outdoor'};
+      const hasMatchingWorkability=(p:any,c:any)=>workability.rows.some(w=>
+        String(w.work_order_id||'')===String(p.work_order_id||'')&&
+        String(w.client_site_id||'')===String(p.client_site_id||'')&&
+        String(w.service_date||'')===String(p.session_date||'')&&
+        String(w.season_context||'')===String(c.season_context||'')&&
+        String(w.service_context||'')===String(seasonServices[String(c.season_context)]||'')&&
+        dated(w.observed_at));
+      const seasonSamples=new Set<string>();
+      if(cycle)for(const p of production.rows){
+        const customerOrder=ord.get(String(p.work_order_id||''));
+        if(!customerOrder||!dated(p.started_at)||!dated(p.production_recorded_at)||
+          !p.production_recorded_by_profile_id||!hasMatchingWorkability(p,cycle)||
+          String(p.session_date||'')<String(cycle.start_date||'')||
+          String(p.session_date||'')>String(cycle.end_date||''))continue;
+        const key=String(customerOrder.client_id)+':'+String(customerOrder.client_site_id);
+        const earlier=production.rows.some(v=>String(v.client_id||'')===String(customerOrder.client_id)&&
+          String(v.client_site_id||'')===String(customerOrder.client_site_id)&&
+          dated(v.started_at)&&Date.parse(v.started_at)<Date.parse(p.started_at));
+        if(!earlier)seasonSamples.add(key);
+      }
+      const wb=!!captured&&!!cycle&&hasMatchingWorkability(captured,cycle)&&seasonSamples.size>=3;
+      const proven=[dated(customer.created_at),!!site&&dated(site.created_at)&&
+        Date.parse(site.created_at)>=Date.parse(customer.created_at),
+        !!first&&!!site&&dated(first.created_at)&&Date.parse(first.created_at)>=Date.parse(site.created_at),
+        acceptedDispatch,!!captured,jobMaterial||jobEquipment,
+        checked&&!!close,!!close&&!!candidate,!!candidate&&!!invoice,!!cycle&&wb];
+      const checklist=steps.map(([code,label],i)=>({
+        handoff:code,label,state:proven[i]?'source_verified':'unresolved',
+        reason:proven[i]?null:([
+          'CRM customer date absent','Property owner/date not corroborated',
+          'Dated first work order not corroborated','Dispatched receipt missing',
+          'Actual recorded Production start missing','Material issue or equipment checkout lacks linked field receipt',
+          'QC approval or customer-safe closeout incomplete','Approved closeout or Finance candidate provenance missing',
+          'Actual issued invoice/receivable not confirmed','Dated matching season/service Workability and >=3 unique first-use samples missing'
+        ][i])
+      }));
+      for(const entry of checklist)if(entry.state==='unresolved')
+        gaps.push({customer_id:customer.id,first_work_order_id:first?.id||null,handoff:entry.handoff,reason:entry.reason});
+      result.push({first_work_order_id:first?.id||null,work_order_number:first?.work_order_number||null,
+        customer_id:customer.id,property_id:site?.id||null,first_order_created_at:first?.created_at||null,
+        steps:checklist,unresolved_count:checklist.filter(x=>x.state==='unresolved').length,
+        trial_acceptance:'operator_review_required'});
+    }
+    if(result.length>25||gaps.length>250)return withheld('Owner first-use trial review cap exceeded.');
+    return Response.json({ok:true,scope,acceptance_416:{
+      state:result.length?'recorded':'no_record',complete:true,retrieved_at:at,
+      record_count:result.length,unresolved_count:gaps.length,records:result,unresolved_gaps:gaps,
+      review_boundary:'Source-verified checks are not owner acceptance. No server-side owner signoff was recorded.'
+    },authority_boundary:'Read only; no seed data, owner role change, external outreach, customer contact, invoice or payment.'},{headers:corsHeaders});
   }
 
   if (scope === 'activity_timeline') {

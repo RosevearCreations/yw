@@ -286,7 +286,9 @@
     "test:first-invoice-receivable-confidence-414": "node scripts/first-invoice-receivable-confidence-414-check.mjs",
     "test:browser:first-invoice-receivable-confidence-414": "playwright test --config=playwright.config.mjs tests/browser/first-invoice-receivable-confidence-414.spec.mjs",
     "test:seasonal-first-use-cohort-coverage-415": "node scripts/seasonal-first-use-cohort-coverage-415-check.mjs",
-    "test:browser:seasonal-first-use-cohort-coverage-415": "playwright test --config=playwright.config.mjs tests/browser/seasonal-first-use-cohort-coverage-415.spec.mjs"
+    "test:browser:seasonal-first-use-cohort-coverage-415": "playwright test --config=playwright.config.mjs tests/browser/seasonal-first-use-cohort-coverage-415.spec.mjs",
+    "test:owner-first-use-trial-acceptance-416": "node scripts/owner-first-use-trial-acceptance-416-check.mjs",
+    "test:browser:owner-first-use-trial-acceptance-416": "playwright test --config=playwright.config.mjs tests/browser/owner-first-use-trial-acceptance-416.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
