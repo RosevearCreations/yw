@@ -276,7 +276,9 @@
     "test:first-dispatch-schedule-receipt-409": "node scripts/first-dispatch-schedule-receipt-409-check.mjs",
     "test:browser:first-dispatch-schedule-receipt-409": "playwright test --config=playwright.config.mjs tests/browser/first-dispatch-schedule-receipt-409.spec.mjs",
     "test:production-start-return-visit-proof-410": "node scripts/production-start-return-visit-proof-410-check.mjs",
-    "test:browser:production-start-return-visit-proof-410": "playwright test --config=playwright.config.mjs tests/browser/production-start-return-visit-proof-410.spec.mjs"
+    "test:browser:production-start-return-visit-proof-410": "playwright test --config=playwright.config.mjs tests/browser/production-start-return-visit-proof-410.spec.mjs",
+    "test:material-equipment-first-job-trace-411": "node scripts/material-equipment-first-job-trace-411-check.mjs",
+    "test:browser:material-equipment-first-job-trace-411": "playwright test --config=playwright.config.mjs tests/browser/material-equipment-first-job-trace-411.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
