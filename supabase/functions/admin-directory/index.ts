@@ -37,7 +37,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
-  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof','material_equipment_first_job_trace'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof','material_equipment_first_job_trace','first_job_quality_closeout_evidence'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','saved_views_search','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
@@ -1305,6 +1305,121 @@ serve(async (req) => {
     return Response.json({ok:true,scope,trace_411:{state:records.length?'recorded':'no_record',
       complete:true,retrieved_at:at,records},authority_boundary:
       'Read-only evidence: an issue or checkout is not verified consumption or safe operation. No inventory correction, lockout override, purchase, cost posting or release.'},{headers:corsHeaders});
+  }
+
+
+  // Build 412 — first-job QC and customer-safe closeout completeness, read-only.
+  // An inspection template or proposed closeout never substitutes for an approved item.
+  if(scope==='first_job_quality_closeout_evidence'){
+    if(roleRank(actorRole)<roleRank('supervisor'))
+      return Response.json({ok:false,error:'Supervisor/Jobs view access required for first-job QC review.'},{status:403,headers:corsHeaders});
+    const now=Date.now(),at=new Date(now).toISOString();
+    const dated=(v:any)=>!!v&&Number.isFinite(Date.parse(String(v)))&&Date.parse(String(v))<=now+300000;
+    const [workflows,orders,qcRuns,closeouts,proofs,gallery,assets]=await Promise.all([
+      safeListEvidence(supabase,'v_estimate_job_invoice_workflow','estimate_id,estimate_number,client_id,client_site_id,quote_package_id,quote_accepted_at,internal_approval_ready','estimate_number',750,true),
+      safeListEvidence(supabase,'work_orders','id,estimate_id,work_order_number,client_id,client_site_id,created_at','created_at',1000,true),
+      safeListEvidence(supabase,'v_quality_control_run_directory','id,work_order_id,review_status,run_status,reviewed_by_profile_id,reviewed_at,ready_for_closeout,required_item_count,required_item_passed_count,failed_item_count,unresolved_deficiency_count,before_evidence_count,after_evidence_count,detail_evidence_count,customer_safe_summary,client_id,client_site_id','created_at',1500,true),
+      safeListEvidence(supabase,'work_order_closeout_packages','id,work_order_id,closeout_status,approved_by_profile_id,approved_at,customer_summary,customer_signoff_required,customer_signoff_status,signed_off_at','created_at',1500,true),
+      safeListEvidence(supabase,'work_order_execution_proofs','id,work_order_id,proof_type,proof_status,customer_visible,approved_by_profile_id,approved_at,customer_summary','occurred_at',1500,true),
+      safeListEvidence(supabase,'work_order_closeout_gallery_items','id,closeout_package_id,visual_asset_id,gallery_role','created_at',1500,true),
+      safeListEvidence(supabase,'visual_asset_approval_items','id,asset_status,consent_status,compression_status,public_url','created_at',1500,true)
+    ]);
+    const withheld=(reason:string)=>Response.json({ok:true,scope,evidence_412:{
+      state:'withheld',complete:false,reason,retrieved_at:at,records:[]},
+      authority_boundary:'Read-only QC review; no signoff, customer message, review request or Finance posting.'},{headers:corsHeaders});
+    const sources=[workflows,orders,qcRuns,closeouts,proofs,gallery,assets];
+    if(sources.some(r=>!r.query_ok||!Array.isArray(r.rows)||r.row_count!==r.rows.length||
+      r.row_count>=r.limit||!dated(r.retrieved_at)||now-Date.parse(r.retrieved_at)>300000))
+      return withheld('QC, closeout, customer-proof or first-job source unavailable, stale or capped.');
+    const mapOf=(rows:any[],key:string,name:string)=>{const m=new Map<string,any>();
+      for(const r of rows){const id=String(r[key]||'');if(!id||m.has(id))return null;m.set(id,r);}return m;};
+    const orderMap=mapOf(orders.rows,'id','work orders'),qcMap=mapOf(qcRuns.rows,'id','QC runs'),
+      closeMap=mapOf(closeouts.rows,'id','closeouts'),proofMap=mapOf(proofs.rows,'id','proofs'),
+      galleryMap=mapOf(gallery.rows,'id','gallery'),assetMap=mapOf(assets.rows,'id','assets'),
+      workflowMap=mapOf(workflows.rows,'estimate_id','workflows');
+    if(!orderMap||!qcMap||!closeMap||!proofMap||!galleryMap||!assetMap||!workflowMap)
+      return withheld('Canonical QC/closeout/asset source has missing or duplicate keys.');
+    const qcByOrder=new Map<string,any>(),closeByOrder=new Map<string,any>(),proofsByOrder=new Map<string,any[]>(),galleryByCloseout=new Map<string,any[]>();
+    for(const q of qcRuns.rows){
+      const o=orderMap.get(String(q.work_order_id));
+      if(!o||qcByOrder.has(String(q.work_order_id))||
+        String(q.client_id)!==String(o.client_id)||String(q.client_site_id||'')!==String(o.client_site_id||''))
+        return withheld('QC run identity/owner/property ambiguous.');
+      if(q.reviewed_at&&!dated(q.reviewed_at))return withheld('QC review date invalid.');
+      qcByOrder.set(String(o.id),q);
+    }
+    for(const c of closeouts.rows){
+      const o=orderMap.get(String(c.work_order_id));
+      if(!o||closeByOrder.has(String(c.work_order_id))||(c.approved_at&&!dated(c.approved_at))||
+        (c.signed_off_at&&!dated(c.signed_off_at)))
+        return withheld('Closeout identity duplicated, unlinked or future dated.');
+      closeByOrder.set(String(o.id),c);
+    }
+    for(const p of proofs.rows){
+      const o=orderMap.get(String(p.work_order_id));
+      if(!o||(p.approved_at&&!dated(p.approved_at)))return withheld('Execution proof owner/date invalid.');
+      const arr=proofsByOrder.get(String(o.id))||[];arr.push(p);proofsByOrder.set(String(o.id),arr);
+    }
+    for(const g of gallery.rows){
+      if(!closeMap.has(String(g.closeout_package_id))||!assetMap.has(String(g.visual_asset_id)))
+        return withheld('Customer gallery evidence is orphaned.');
+      const arr=galleryByCloseout.get(String(g.closeout_package_id))||[];arr.push(g);
+      galleryByCloseout.set(String(g.closeout_package_id),arr);
+    }
+    const records:any[]=[];
+    for(const w of workflows.rows){
+      if(!w.client_id||!w.quote_package_id||!dated(w.quote_accepted_at)||w.internal_approval_ready!==true)continue;
+      const firstOrders=orders.rows.filter(o=>String(o.estimate_id||'')===String(w.estimate_id))
+        .sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at));
+      if(firstOrders.some(o=>!dated(o.created_at)||String(o.client_id)!==String(w.client_id)||
+        String(o.client_site_id||'')!==String(w.client_site_id||'')))
+        return withheld('First-job QC customer/site or chronology conflicts with accepted estimate.');
+      if(firstOrders.length>1&&Date.parse(firstOrders[0].created_at)===Date.parse(firstOrders[1].created_at))
+        return withheld('First-job QC chronology ambiguous.');
+      const first=firstOrders[0];if(!first)continue;
+      const qc=qcByOrder.get(String(first.id)),c=closeByOrder.get(String(first.id));
+      const checkCount=Number(qc?.required_item_count),passed=Number(qc?.required_item_passed_count),
+        failed=Number(qc?.failed_item_count),open=Number(qc?.unresolved_deficiency_count);
+      const checklist=!!qc&&[checkCount,passed,failed,open].every(n=>Number.isInteger(n)&&n>=0)&&
+        checkCount>0&&passed===checkCount&&failed===0&&open===0&&qc.ready_for_closeout===true;
+      const supervisor=!!qc&&qc.run_status==='approved'&&qc.review_status==='approved'&&
+        !!qc.reviewed_by_profile_id&&dated(qc.reviewed_at);
+      const closeApproved=!!c&&['approved','invoice_ready'].includes(String(c.closeout_status||'').toLowerCase())&&
+        !!c.approved_by_profile_id&&dated(c.approved_at);
+      const safeProofs=(proofsByOrder.get(String(first.id))||[]).filter(p=>p.proof_status==='approved'&&
+        p.customer_visible===true&&['completion','quality'].includes(String(p.proof_type||''))&&
+        dated(p.approved_at)&&!!p.approved_by_profile_id&&!!String(p.customer_summary||'').trim());
+      const visualItems=(galleryByCloseout.get(String(c?.id||''))||[]).filter(g=>{
+        const asset=assetMap.get(String(g.visual_asset_id));
+        return !!asset&&['approved','published'].includes(String(asset.asset_status||'').toLowerCase())&&
+          ['approved','not_required'].includes(String(asset.consent_status||'').toLowerCase())&&
+          ['ready','optimized'].includes(String(asset.compression_status||'').toLowerCase())&&
+          !!String(asset.public_url||'').trim();
+      });
+      const customerProof=!!c&&!!String(c.customer_summary||'').trim()&&safeProofs.length>0&&visualItems.length>0;
+      const signedOff=c?.customer_signoff_required!==true||(
+        c.customer_signoff_status==='signed'&&dated(c.signed_off_at));
+      const state=!qc?'qc_inspection_missing':!checklist?'qc_required_items_incomplete':
+        !supervisor?'qc_supervisor_approval_missing':!closeApproved?'closeout_approval_missing':
+        !customerProof?'customer_safe_proof_incomplete':!signedOff?'customer_signoff_pending':
+        'qc_closeout_proof_verified';
+      records.push({estimate_id:w.estimate_id,estimate_number:w.estimate_number||null,
+        first_work_order_id:first.id,first_work_order_number:first.work_order_number,
+        qc_run_id:qc?.id||null,qc_run_status:qc?.run_status||null,
+        required_item_count:qc?checkCount:null,required_item_passed_count:qc?passed:null,
+        failed_item_count:qc?failed:null,unresolved_deficiency_count:qc?open:null,
+        qc_reviewed_at:supervisor?qc.reviewed_at:null,
+        closeout_package_id:c?.id||null,closeout_approved_at:closeApproved?c.approved_at:null,
+        approved_customer_visible_proof_count:safeProofs.length,
+        approved_customer_gallery_asset_count:visualItems.length,
+        customer_signoff_state:c?.customer_signoff_status||'not_recorded',
+        evidence_state:state});
+    }
+    if(records.length>150)return withheld('First-job QC cohort exceeds reviewed limit.');
+    return Response.json({ok:true,scope,evidence_412:{
+      state:records.length?'recorded':'no_record',complete:true,retrieved_at:at,records},
+      authority_boundary:'Inspection and approval receipts only. No automatic supervisor signoff, customer contact, review request, media release or Finance posting.'
+    },{headers:corsHeaders});
   }
 
   if (scope === 'activity_timeline') {
