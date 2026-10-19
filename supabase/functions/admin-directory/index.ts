@@ -1929,10 +1929,29 @@ serve(async (req) => {
         String(c.start_date||'')<=String(captured.session_date||'')&&
         String(c.end_date||'')>=String(captured.session_date||'')&&
         Number.isInteger(Number(c.season_year)));
-      const wb=workability.rows.some(w=>!!captured&&!!cycle&&
-        String(w.work_order_id)===id&&String(w.client_site_id)===String(site.id)&&
-        String(w.service_date||'')===String(captured.session_date||'')&&
-        String(w.season_context)===String(cycle.season_context)&&dated(w.observed_at));
+      const seasonServices:any={spring_summer:'mowing_landscaping',fall:'fall_cleanup',
+        winter:'snow_clearing_removal',four_season:'general_outdoor'};
+      const hasMatchingWorkability=(p:any,c:any)=>workability.rows.some(w=>
+        String(w.work_order_id||'')===String(p.work_order_id||'')&&
+        String(w.client_site_id||'')===String(p.client_site_id||'')&&
+        String(w.service_date||'')===String(p.session_date||'')&&
+        String(w.season_context||'')===String(c.season_context||'')&&
+        String(w.service_context||'')===String(seasonServices[String(c.season_context)]||'')&&
+        dated(w.observed_at));
+      const seasonSamples=new Set<string>();
+      if(cycle)for(const p of production.rows){
+        const customerOrder=ord.get(String(p.work_order_id||''));
+        if(!customerOrder||!dated(p.started_at)||!dated(p.production_recorded_at)||
+          !p.production_recorded_by_profile_id||!hasMatchingWorkability(p,cycle)||
+          String(p.session_date||'')<String(cycle.start_date||'')||
+          String(p.session_date||'')>String(cycle.end_date||''))continue;
+        const key=String(customerOrder.client_id)+':'+String(customerOrder.client_site_id);
+        const earlier=production.rows.some(v=>String(v.client_id||'')===String(customerOrder.client_id)&&
+          String(v.client_site_id||'')===String(customerOrder.client_site_id)&&
+          dated(v.started_at)&&Date.parse(v.started_at)<Date.parse(p.started_at));
+        if(!earlier)seasonSamples.add(key);
+      }
+      const wb=!!captured&&!!cycle&&hasMatchingWorkability(captured,cycle)&&seasonSamples.size>=3;
       const proven=[dated(customer.created_at),!!site&&dated(site.created_at)&&
         Date.parse(site.created_at)>=Date.parse(customer.created_at),
         !!first&&!!site&&dated(first.created_at)&&Date.parse(first.created_at)>=Date.parse(site.created_at),
@@ -1945,7 +1964,7 @@ serve(async (req) => {
           'Dated first work order not corroborated','Dispatched receipt missing',
           'Actual recorded Production start missing','Material issue or equipment checkout lacks linked field receipt',
           'QC approval or customer-safe closeout incomplete','Approved closeout or Finance candidate provenance missing',
-          'Actual issued invoice/receivable not confirmed','Dated matching cycle and Workability observation missing'
+          'Actual issued invoice/receivable not confirmed','Dated matching season/service Workability and >=3 unique first-use samples missing'
         ][i])
       }));
       for(const entry of checklist)if(entry.state==='unresolved')
