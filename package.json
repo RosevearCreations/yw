@@ -278,7 +278,9 @@
     "test:production-start-return-visit-proof-410": "node scripts/production-start-return-visit-proof-410-check.mjs",
     "test:browser:production-start-return-visit-proof-410": "playwright test --config=playwright.config.mjs tests/browser/production-start-return-visit-proof-410.spec.mjs",
     "test:material-equipment-first-job-trace-411": "node scripts/material-equipment-first-job-trace-411-check.mjs",
-    "test:browser:material-equipment-first-job-trace-411": "playwright test --config=playwright.config.mjs tests/browser/material-equipment-first-job-trace-411.spec.mjs"
+    "test:browser:material-equipment-first-job-trace-411": "playwright test --config=playwright.config.mjs tests/browser/material-equipment-first-job-trace-411.spec.mjs",
+    "test:quality-control-closeout-evidence-412": "node scripts/quality-control-closeout-evidence-412-check.mjs",
+    "test:browser:quality-control-closeout-evidence-412": "playwright test --config=playwright.config.mjs tests/browser/quality-control-closeout-evidence-412.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
