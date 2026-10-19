@@ -194,6 +194,7 @@ jobs:
       - run: npm run test:first-dispatch-schedule-receipt-409
       - run: npm run test:production-start-return-visit-proof-410
       - run: npm run test:material-equipment-first-job-trace-411
+      - run: npm run test:quality-control-closeout-evidence-412
       - run: npm run test:management-outcome-confidence-cohort-trend
       - run: npm run test:workability-forecast-recovery-calibration
       - run: npm run test:management-decision-outcome-journal
@@ -338,6 +339,7 @@ jobs:
       - run: npm run test:browser:first-dispatch-schedule-receipt-409
       - run: npm run test:browser:production-start-return-visit-proof-410
       - run: npm run test:browser:material-equipment-first-job-trace-411
+      - run: npm run test:browser:quality-control-closeout-evidence-412
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
