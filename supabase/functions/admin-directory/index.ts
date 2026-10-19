@@ -36,7 +36,7 @@ function effectiveRole(profile: any, user: any) {
 function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'finance'|'jobs'|'admin'; minimum: 'view'|'create'|'approve'|'manage' } | null {
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
-  if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
+  if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone','first_invoice_receivable_confidence'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
   if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
@@ -1163,6 +1163,145 @@ serve(async (req) => {
         source:'estimates + v_estimate_job_invoice_workflow + work_orders + v_crew_dispatch_schedule + v_landscape_production_session_directory + job_session_production_quantities',
         records,reason:records.length?'Dated source production and separate return receipts.':'No accepted first jobs in complete canonical sources.'},
       authority_boundary:'Review only. No generated session, assumed completion, dispatch, finance posting, staff assignment or safety override.'
+    },{headers:corsHeaders});
+  }
+
+
+  // Build 414: server-authorized, bounded and complete first-invoice receivable evidence.
+  // An approved closeout/candidate is not itself an invoice, and a zero balance is not payment proof.
+  if (scope === 'first_invoice_receivable_confidence') {
+    if (roleRank(actorRole)<roleRank('supervisor') ||
+        !(await hasModuleAccess(supabase,actorProfile,'jobs','view')))
+      return Response.json({ok:false,error:'Supervisor, Finance and Jobs view access required.'},{status:403,headers:corsHeaders});
+    const now=Date.now(), at=new Date(now).toISOString(), allowedFuture=now+300000;
+    const [workflows,orders,closeouts,candidates,invoices,applications,payments]=await Promise.all([
+      safeListEvidence(supabase,'v_estimate_job_invoice_workflow','estimate_id,estimate_number,client_id,client_site_id,quote_package_id,quote_accepted_at,internal_approval_ready,work_order_id','estimate_number',750,true),
+      safeListEvidence(supabase,'work_orders','id,estimate_id,work_order_number,client_id,client_site_id,created_at','created_at',1000,true),
+      safeListEvidence(supabase,'work_order_closeout_packages','id,work_order_id,closeout_status,approved_by_profile_id,approved_at,invoice_ready_requested,invoice_readiness_status,customer_signoff_required,customer_signoff_status','created_at',1000,true),
+      safeListEvidence(supabase,'job_invoice_candidates','*','created_at',1000,true),
+      safeListEvidence(supabase,'ar_invoices','id,work_order_id,client_id,invoice_number,invoice_status,invoice_date,due_date,total_amount,balance_due,created_at','created_at',1500,true),
+      safeListEvidence(supabase,'v_ar_payment_application_directory','id,invoice_id,payment_id,applied_amount,application_status,client_id,invoice_applied_total,payment_applied_total','created_at',1500,true),
+      safeListEvidence(supabase,'ar_payments','id,client_id,amount,application_status','created_at',1500,true)
+    ]);
+    const withheld=(reason:string)=>Response.json({ok:true,scope,
+      evidence_414:{state:'withheld',complete:false,retrieved_at:at,reason,records:[]},
+      authority_boundary:'Read-only; no invoice posting, collection, payment allocation or customer follow-up.'},{headers:corsHeaders});
+    const source=[workflows,orders,closeouts,candidates,invoices,applications,payments];
+    if(source.some(r=>!r.query_ok||!Array.isArray(r.rows)||r.row_count!==r.rows.length||
+      r.row_count>=r.limit||!Number.isFinite(Date.parse(r.retrieved_at))||
+      Date.parse(r.retrieved_at)>allowedFuture||now-Date.parse(r.retrieved_at)>300000))
+      return withheld('Finance/Jobs sources failed, were capped or lack fresh complete evidence.');
+    const dated=(v:any)=>!!v&&Number.isFinite(Date.parse(String(v)))&&Date.parse(String(v))<=allowedFuture;
+    const money=(v:any)=>v===null||v===undefined||v===''?null:(Number.isFinite(Number(v))?Math.round(Number(v)*100):null);
+    const ids=new Set<string>();
+    const unique=(id:any,kind:string)=>{const k=kind+':'+String(id||'');if(!id||ids.has(k))return false;ids.add(k);return true;};
+    const orderById=new Map<string,any>(), ordersByEstimate=new Map<string,any[]>();
+    for(const o of orders.rows){
+      if(!unique(o.id,'order')||!o.client_id||!dated(o.created_at))return withheld('Work-order identity or chronology invalid.');
+      orderById.set(String(o.id),o);
+      if(o.estimate_id){const key=String(o.estimate_id),a=ordersByEstimate.get(key)||[];a.push(o);ordersByEstimate.set(key,a);}
+    }
+    const closeoutByOrder=new Map<string,any>();
+    for(const c of closeouts.rows){
+      if(!unique(c.id,'closeout')||!c.work_order_id||!orderById.has(String(c.work_order_id))||
+         closeoutByOrder.has(String(c.work_order_id)))return withheld('Closeout identity duplicate or work-order linkage missing.');
+      if(c.approved_at&&!dated(c.approved_at))return withheld('Closeout approval date invalid.');
+      closeoutByOrder.set(String(c.work_order_id),c);
+    }
+    const candidatesByOrder=new Map<string,any[]>();
+    for(const c of candidates.rows){
+      if(!unique(c.id,'candidate'))return withheld('Invoice candidate identity missing or duplicated.');
+      if(!c.work_order_id)continue;  // Finance may hold non-work-order candidates.
+      const o=orderById.get(String(c.work_order_id));
+      if(!o||c.estimate_id&&String(c.estimate_id)!==String(o.estimate_id||''))return withheld('Invoice candidate and work-order identities conflict.');
+      if(!dated(c.created_at))return withheld('Invoice candidate date missing or invalid.');
+      const a=candidatesByOrder.get(String(o.id))||[];a.push(c);candidatesByOrder.set(String(o.id),a);
+    }
+    const invoicesByOrder=new Map<string,any[]>();
+    for(const i of invoices.rows){
+      if(!unique(i.id,'invoice')||!i.client_id||!dated(i.created_at))return withheld('Invoice identity/creation date missing or duplicated.');
+      if(!i.work_order_id)continue;
+      const o=orderById.get(String(i.work_order_id));
+      if(!o||String(i.client_id)!==String(o.client_id))return withheld('Invoice customer or first-job reference does not match.');
+      const a=invoicesByOrder.get(String(o.id))||[];a.push(i);invoicesByOrder.set(String(o.id),a);
+    }
+    const paymentById=new Map<string,any>();
+    for(const p of payments.rows){
+      if(!unique(p.id,'payment')||!p.client_id||money(p.amount)===null||money(p.amount)!<0)
+        return withheld('Payment identity, customer or amount invalid.');
+      paymentById.set(String(p.id),p);
+    }
+    const applicationsByInvoice=new Map<string,any[]>();
+    for(const a of applications.rows){
+      if(!unique(a.id,'application')||!a.invoice_id||!a.payment_id||
+         !paymentById.has(String(a.payment_id))||money(a.applied_amount)===null||money(a.applied_amount)!<0)
+        return withheld('Payment application identity, payment or amount invalid.');
+      const p=paymentById.get(String(a.payment_id));
+      const invoice=invoices.rows.find((i:any)=>String(i.id)===String(a.invoice_id));
+      if(!invoice||String(p.client_id)!==String(invoice.client_id)||
+         (a.client_id&&String(a.client_id)!==String(invoice.client_id)))
+        return withheld('Payment application crosses invoice or customer identity.');
+      const k=String(a.invoice_id),list=applicationsByInvoice.get(k)||[];list.push(a);applicationsByInvoice.set(k,list);
+    }
+    const workflowIds=new Set<string>(),records:any[]=[];
+    for(const w of workflows.rows){
+      if(!unique(w.estimate_id,'workflow')||!w.client_id||!w.client_site_id)
+        return withheld('Quote workflow missing unique customer/site authority.');
+      workflowIds.add(String(w.estimate_id));
+      if(!w.quote_package_id||!dated(w.quote_accepted_at)||w.internal_approval_ready!==true)continue;
+      const related=(ordersByEstimate.get(String(w.estimate_id))||[]).sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at));
+      if(related.some(o=>String(o.client_id)!==String(w.client_id)||String(o.client_site_id||'')!==String(w.client_site_id||'')))
+        return withheld('First-job quote, owner or property identity mismatch.');
+      if(related.length>1&&Date.parse(related[0].created_at)===Date.parse(related[1].created_at))
+        return withheld('First work-order chronology is ambiguous.');
+      const first=related[0];
+      if(!first)continue;
+      if(w.work_order_id&&!related.some(o=>String(o.id)===String(w.work_order_id)))
+        return withheld('Quote workflow work-order source disagrees with canonical history.');
+      const closeout=closeoutByOrder.get(String(first.id)), cand=(candidatesByOrder.get(String(first.id))||[])
+        .sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at));
+      const ready=closeout&&['approved','invoice_ready'].includes(String(closeout.closeout_status||'').toLowerCase())&&
+        dated(closeout.approved_at)&&!!closeout.approved_by_profile_id&&closeout.invoice_ready_requested===true&&
+        String(closeout.invoice_readiness_status)==='ready'&&
+        (closeout.customer_signoff_required!==true||String(closeout.customer_signoff_status)==='signed');
+      const candidate=cand.find(c=>!['void','voided','cancelled','canceled','rejected'].includes(String(c.candidate_status||'').toLowerCase()))||null;
+      const invoiceList=(invoicesByOrder.get(String(first.id))||[])
+        .filter(i=>!['void','voided','cancelled','canceled'].includes(String(i.invoice_status||'').toLowerCase()))
+        .sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at));
+      if(invoiceList.length>1&&Date.parse(invoiceList[0].created_at)===Date.parse(invoiceList[1].created_at))
+        return withheld('First non-void invoice chronology tied.');
+      const inv=invoiceList[0]||null;
+      let state='approved_closeout_missing',total:null|number=null,balance:null|number=null,applied:null|number=null;
+      if(ready&&candidate&&inv){
+        total=money(inv.total_amount);balance=money(inv.balance_due);
+        const allocations=(applicationsByInvoice.get(String(inv.id))||[])
+          .filter(a=>!['void','voided','cancelled'].includes(String(a.application_status||'').toLowerCase()));
+        applied=allocations.reduce((sum,a)=>sum+(money(a.applied_amount)||0),0);
+        const invoiceState=String(inv.invoice_status||'').toLowerCase();
+        if(['draft','proforma','pending'].includes(invoiceState))state='invoice_not_issued';
+        else if(total===null||balance===null||total<0||balance<0||balance>total||
+          applied<0||applied>total||Math.abs(total-applied-balance)>1)
+          state='receivable_discrepancy_hold';
+        else if(balance===0&&applied>0&&total>0)state='paid_with_application_verified';
+        else if(balance>0)state='open_receivable_verified';
+        else state='zero_balance_payment_unproven';
+      }else if(!ready)state='closeout_or_customer_signoff_unapproved';
+      else if(!candidate)state='invoice_candidate_missing';
+      else if(!inv)state='issued_invoice_missing';
+      records.push({estimate_id:w.estimate_id,estimate_number:w.estimate_number||null,
+        first_work_order_id:first.id,first_work_order_number:first.work_order_number||null,
+        closeout_id:closeout?.id||null,closeout_approved_at:ready?closeout.approved_at:null,
+        invoice_candidate_id:candidate?.id||null,invoice_candidate_number:candidate?.candidate_number||null,
+        invoice_id:inv?.id||null,invoice_number:inv?.invoice_number||null,invoice_status:inv?.invoice_status||null,
+        invoice_date:inv?.invoice_date||null,due_date:inv?.due_date||null,
+        total_amount_cents:total,balance_due_cents:balance,applied_amount_cents:applied,
+        receivable_state:state});
+    }
+    if(records.length>150)return withheld('Accepted first-job receivable cohort exceeds display cap.');
+    return Response.json({ok:true,scope,evidence_414:{
+      state:records.length?'recorded':'no_record',complete:true,retrieved_at:at,
+      source:'v_estimate_job_invoice_workflow + work_orders + work_order_closeout_packages + job_invoice_candidates + ar_invoices + ar_payments + v_ar_payment_application_directory',
+      records},authority_boundary:'Read-only Finance/Jobs supervisor review; no invoice issue, posting, collection, payment allocation, reminder or provider call.'
     },{headers:corsHeaders});
   }
 
