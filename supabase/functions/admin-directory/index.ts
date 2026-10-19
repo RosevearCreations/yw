@@ -37,7 +37,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
-  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof','material_equipment_first_job_trace'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','saved_views_search','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
@@ -1164,6 +1164,147 @@ serve(async (req) => {
         records,reason:records.length?'Dated source production and separate return receipts.':'No accepted first jobs in complete canonical sources.'},
       authority_boundary:'Review only. No generated session, assumed completion, dispatch, finance posting, staff assignment or safety override.'
     },{headers:corsHeaders});
+  }
+
+
+  // Build 411 — bounded first-job material issues and equipment checkout provenance.
+  // Issued and checked-out items are not proof of on-site consumption or operated time.
+  if (scope === 'material_equipment_first_job_trace') {
+    if(roleRank(actorRole)<roleRank('supervisor'))
+      return Response.json({ok:false,error:'Supervisor access required for first-job materials/equipment review.'},{status:403,headers:corsHeaders});
+    const now=Date.now(),at=new Date(now).toISOString(),dated=(v:any)=>
+      !!v&&Number.isFinite(Date.parse(String(v)))&&Date.parse(String(v))<=now+300000;
+    const [workflows,orders,lines,issues,issueLines,signouts,items,sessions]=await Promise.all([
+      safeListEvidence(supabase,'v_estimate_job_invoice_workflow','estimate_id,estimate_number,client_id,client_site_id,quote_package_id,quote_accepted_at,internal_approval_ready','estimate_number',750,true),
+      safeListEvidence(supabase,'work_orders','id,estimate_id,client_id,client_site_id,work_order_number,created_at','created_at',1000,true),
+      safeListEvidence(supabase,'work_order_lines','id,work_order_id,material_id,equipment_master_id,unit_id,quantity,line_type,description','created_at',1500,true),
+      safeListEvidence(supabase,'material_issues','id,work_order_id,client_site_id,job_session_id,issue_status,issue_date','created_at',1500,true),
+      safeListEvidence(supabase,'material_issue_lines','id,issue_id,work_order_line_id,material_id,unit_id,quantity,planned_quantity,usage_type','created_at',1500,true),
+      safeListEvidence(supabase,'equipment_signouts','id,equipment_item_id,work_order_id,job_session_id,checked_out_at,returned_at','checked_out_at',1500,true),
+      safeListEvidence(supabase,'equipment_items','id,equipment_master_id,is_locked_out,status','created_at',1500,true),
+      safeListEvidence(supabase,'v_landscape_production_session_directory','job_session_id,work_order_id,client_id,client_site_id,started_at,production_recorded_at,production_recorded_by_profile_id','session_date',1500,true)
+    ]);
+    const withheld=(reason:string)=>Response.json({ok:true,scope,trace_411:{
+      state:'withheld',complete:false,reason,retrieved_at:at,records:[]},
+      authority_boundary:'Read only: no stock issue, return, correction, equipment release or job-cost posting.'},{headers:corsHeaders});
+    if([workflows,orders,lines,issues,issueLines,signouts,items,sessions].some(r=>
+      !r.query_ok||!Array.isArray(r.rows)||r.row_count!==r.rows.length||
+      r.row_count>=r.limit||!dated(r.retrieved_at)||now-Date.parse(r.retrieved_at)>300000))
+      return withheld('Material, equipment or first-job sources are missing, capped or stale.');
+    const unique=(rows:any[],name:string,key='id')=>{const seen=new Set<string>();
+      for(const r of rows){const id=String(r[key]||'');if(!id||seen.has(id))return false;seen.add(id);}return true;};
+    for(const [read,name,key] of [[workflows,'workflow','estimate_id'],[orders,'order','id'],
+      [lines,'work-order line','id'],[issues,'issue','id'],[issueLines,'issue line','id'],
+      [signouts,'equipment checkout','id'],[items,'equipment item','id'],[sessions,'production session','job_session_id']] as any[])
+      if(!unique(read.rows,name,key))return withheld('Duplicate or missing '+name+' source identity.');
+    const orderById=new Map(orders.rows.map(o=>[String(o.id),o]));
+    const lineById=new Map(lines.rows.map(o=>[String(o.id),o]));
+    const issueById=new Map(issues.rows.map(o=>[String(o.id),o]));
+    const itemById=new Map(items.rows.map(o=>[String(o.id),o]));
+    const sessionById=new Map(sessions.rows.map(o=>[String(o.job_session_id),o]));
+    for(const l of lines.rows)if(!orderById.has(String(l.work_order_id)))
+      return withheld('Work-order line has no canonical order.');
+    for(const issue of issues.rows){
+      const o=orderById.get(String(issue.work_order_id));
+      if(issue.work_order_id&&(!o||String(issue.client_site_id||'')!==String(o.client_site_id||'')))
+        return withheld('Material issue work-order/property identity mismatch.');
+      if(issue.job_session_id){
+        const s=sessionById.get(String(issue.job_session_id));
+        if(!s||String(s.work_order_id)!==String(issue.work_order_id))
+          return withheld('Material issue session link inconsistent.');
+      }
+    }
+    for(const l of issueLines.rows){
+      const header=issueById.get(String(l.issue_id));
+      if(!header)return withheld('Orphan material issue line.');
+      if(l.work_order_line_id){
+        const plan=lineById.get(String(l.work_order_line_id));
+        if(!plan||String(plan.work_order_id)!==String(header.work_order_id))
+          return withheld('Material issue line references wrong work order.');
+      }
+    }
+    for(const s of sessions.rows){
+      const o=orderById.get(String(s.work_order_id));
+      if(!o||String(s.client_id)!==String(o.client_id)||
+        String(s.client_site_id||'')!==String(o.client_site_id||''))
+        return withheld('Production session customer/property/work-order mismatch.');
+      if((s.started_at&&!dated(s.started_at))||(s.production_recorded_at&&!dated(s.production_recorded_at)))
+        return withheld('Production session dates invalid.');
+    }
+    for(const x of signouts.rows){
+      if(!itemById.has(String(x.equipment_item_id))||!dated(x.checked_out_at))
+        return withheld('Equipment checkout identity or date invalid.');
+      if(x.work_order_id&&!orderById.has(String(x.work_order_id)))
+        return withheld('Equipment checkout work-order identity missing.');
+      if(x.job_session_id){
+        const s=sessionById.get(String(x.job_session_id));
+        if(!s||String(s.work_order_id)!==String(x.work_order_id))
+          return withheld('Equipment checkout session/work-order mismatch.');
+      }
+    }
+    const records:any[]=[];
+    for(const w of workflows.rows){
+      if(!w.client_id||!w.quote_package_id||!dated(w.quote_accepted_at)||w.internal_approval_ready!==true)continue;
+      const list=orders.rows.filter(o=>String(o.estimate_id||'')===String(w.estimate_id))
+        .sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at));
+      if(list.some(o=>String(o.client_id)!==String(w.client_id)||
+        String(o.client_site_id||'')!==String(w.client_site_id||'')||!dated(o.created_at)))
+        return withheld('First-job estimate/customer/property/creation evidence conflicts.');
+      if(list.length>1&&Date.parse(list[0].created_at)===Date.parse(list[1].created_at))
+        return withheld('First work-order timing is ambiguous.');
+      const first=list[0];if(!first)continue;
+      const jobLines=lines.rows.filter(l=>String(l.work_order_id)===String(first.id));
+      const materialPlans=jobLines.filter(l=>l.material_id);
+      const equipmentPlans=jobLines.filter(l=>l.equipment_master_id);
+      const selectedIssues=issues.rows.filter(x=>String(x.work_order_id)===String(first.id)&&
+        !['draft','void','cancelled','canceled'].includes(String(x.issue_status||'').toLowerCase()));
+      const selectedIssueIds=new Set(selectedIssues.map(x=>String(x.id)));
+      const actualIssueLines=issueLines.rows.filter(l=>selectedIssueIds.has(String(l.issue_id))&&
+        String(l.usage_type||'')==='job_use');
+      const selectedEquipment=signouts.rows.filter(s=>String(s.work_order_id)===String(first.id));
+      const hasFieldReceipt=(sessionId:any)=>{const s=sessionById.get(String(sessionId||''));return !!s&&
+        dated(s.started_at)&&dated(s.production_recorded_at)&&!!s.production_recorded_by_profile_id;};
+      const receiptLinkedIssues=selectedIssues.filter(x=>hasFieldReceipt(x.job_session_id));
+      const receiptLinkedIssueIds=new Set(receiptLinkedIssues.map(x=>String(x.id)));
+      const matchedLines:any[]=[];
+      for(const p of materialPlans.slice(0,30)){
+        const actual=actualIssueLines.filter(l=>String(l.work_order_line_id||'')===String(p.id));
+        const total=actual.reduce((sum,l)=>sum+Number(l.quantity||0),0);
+        if(actual.some(l=>!Number.isFinite(Number(l.quantity))||Number(l.quantity)<0||
+           String(l.material_id||'')!==String(p.material_id||'')||
+           String(l.unit_id||'')!==String(p.unit_id||'')))
+          return withheld('Material issue quantity, unit or line/item identity mismatch.');
+        matchedLines.push({planned_line_id:p.id,planned_quantity:p.quantity,
+          issued_quantity:total,verified_field_receipt_lines:actual.filter(l=>receiptLinkedIssueIds.has(String(l.issue_id))).length,
+          issue_line_count:actual.length,unit_id:p.unit_id});
+      }
+      const unmatched=actualIssueLines.filter(l=>!materialPlans.some(p=>String(p.id)===String(l.work_order_line_id||'')));
+      const equipmentEvidence=selectedEquipment.map(x=>{
+        const it=itemById.get(String(x.equipment_item_id));
+        return {checkout_id:x.id,checked_out_at:x.checked_out_at,
+          planned_match:equipmentPlans.some(p=>String(p.equipment_master_id)===String(it.equipment_master_id)),
+          current_lockout:it.is_locked_out===true,
+          field_receipt_present:hasFieldReceipt(x.job_session_id),return_recorded:dated(x.returned_at)};
+      });
+      const badCheckout=equipmentEvidence.some(e=>e.current_lockout);
+      records.push({estimate_id:w.estimate_id,estimate_number:w.estimate_number||null,
+        first_work_order_id:first.id,first_work_order_number:first.work_order_number,
+        planned_material_lines:materialPlans.length,issued_material_lines:actualIssueLines.length,
+        unmatched_material_lines:unmatched.length,material_issues_with_field_receipt:receiptLinkedIssues.length,
+        material_lines:matchedLines,material_line_cap:materialPlans.length>30,
+        planned_equipment_lines:equipmentPlans.length,equipment_checkout_count:selectedEquipment.length,
+        equipment_checkout_with_field_receipt:equipmentEvidence.filter(x=>x.field_receipt_present).length,
+        equipment_plan_matches:equipmentEvidence.filter(x=>x.planned_match).length,
+        equipment_current_lockout:badCheckout,
+        trace_state:badCheckout?'safety_lockout_hold':
+          unmatched.length||materialPlans.length>30?'unmatched_or_capped_detail':
+          !receiptLinkedIssues.length&&!equipmentEvidence.some(x=>x.field_receipt_present)?'issue_or_checkout_only':
+          'field_linked_receipts_recorded'});
+    }
+    if(records.length>150)return withheld('First-job material/equipment cohort exceeds display cap.');
+    return Response.json({ok:true,scope,trace_411:{state:records.length?'recorded':'no_record',
+      complete:true,retrieved_at:at,records},authority_boundary:
+      'Read-only evidence: an issue or checkout is not verified consumption or safe operation. No inventory correction, lockout override, purchase, cost posting or release.'},{headers:corsHeaders});
   }
 
   if (scope === 'activity_timeline') {
