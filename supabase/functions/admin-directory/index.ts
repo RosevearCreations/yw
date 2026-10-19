@@ -37,7 +37,7 @@ function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'financ
   const key = String(scope || '').trim().toLowerCase();
   if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
   if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone','first_job_invoice_candidate_provenance','first_invoice_receivable_confidence'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
-  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof','material_equipment_first_job_trace','first_job_quality_closeout_evidence'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['crew','change_orders_extras','quality_control','seasonal_operations','estimate_first_work_order_trace','first_dispatch_schedule_receipt','production_start_return_visit_proof','material_equipment_first_job_trace', 'first_job_quality_closeout_evidence','seasonal_first_use_cohort_coverage'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
   if (key === 'owner_management_command') return { moduleKey: 'admin', minimum: 'manage' };
   if (['module_permissions','workforce','timekeeping','performance','onboarding'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
   if (['all','users','people','sites','assignments','notifications','operations','crm','routing','workability','material_estimator','command_center','saved_views_search','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
@@ -1665,6 +1665,139 @@ serve(async (req) => {
       state:records.length?'recorded':'no_record',complete:true,retrieved_at:at,
       source:'v_estimate_job_invoice_workflow + work_orders + work_order_closeout_packages + job_invoice_candidates + ar_invoices + ar_payments + v_ar_payment_application_directory',
       records},authority_boundary:'Read-only Finance/Jobs supervisor review; no invoice issue, posting, collection, payment allocation, reminder or provider call.'
+    },{headers:corsHeaders});
+  }
+
+
+  // Build 415: accepted first-use samples only; no season denominator inferred from plans or missing data.
+  if (scope === 'seasonal_first_use_cohort_coverage') {
+    if (roleRank(actorRole) < roleRank('supervisor') ||
+      !(await hasModuleAccess(supabase,actorProfile,'jobs','view')))
+      return Response.json({ok:false,error:'Supervisor and Jobs view permission required.'},{status:403,headers:corsHeaders});
+    const now=Date.now(),retrievedAt=new Date(now).toISOString();
+    const dateOk=(v:any)=>!!v&&Number.isFinite(Date.parse(String(v)))&&Date.parse(String(v))<=now+300000;
+    const [clients,sites,orders,sessions,observations,cycles]=await Promise.all([
+      safeListEvidence(supabase,'clients','id,created_at','created_at',1000,true),
+      safeListEvidence(supabase,'client_sites','id,client_id,created_at','created_at',1500,true),
+      safeListEvidence(supabase,'work_orders','id,client_id,client_site_id,created_at,status','created_at',1500,true),
+      safeListEvidence(supabase,'v_landscape_production_session_directory',
+        'job_session_id,work_order_id,client_id,client_site_id,session_date,session_status,started_at,production_recorded_at,production_recorded_by_profile_id',
+        'session_date',1500,true),
+      safeListEvidence(supabase,'workability_observations',
+        'id,work_order_id,client_site_id,service_date,observed_at,service_context,season_context',
+        'observed_at',1500,true),
+      safeListEvidence(supabase,'seasonal_operations_cycles',
+        'id,season_year,season_context,start_date,end_date,cycle_status',
+        'start_date',200,true)
+    ]);
+    const withheld=(reason:string)=>Response.json({ok:true,scope,coverage_415:{
+      state:'withheld',complete:false,retrieved_at:retrievedAt,reason,minimum_sample:3,cohorts:[]},
+      authority_boundary:'Read only. No performance attribution, staff rankings, inferred zeros, workability overrides or outreach.'},{headers:corsHeaders});
+    const reads=[clients,sites,orders,sessions,observations,cycles];
+    if(reads.some(r=>!r.query_ok||!Array.isArray(r.rows)||r.row_count!==r.rows.length||
+       r.row_count>=r.limit||!dateOk(r.retrieved_at)||now-Date.parse(r.retrieved_at)>300000))
+      return withheld('A CRM, seasonal, Production or Workability source is missing, capped or stale.');
+    const uniqueMap=(rows:any[],key:string)=>{const m=new Map<string,any>();
+      for(const row of rows){const id=String(row[key]||'');if(!id||m.has(id))return null;m.set(id,row);}
+      return m;};
+    const clientById=uniqueMap(clients.rows,'id'),siteById=uniqueMap(sites.rows,'id'),
+      orderById=uniqueMap(orders.rows,'id'),sessionById=uniqueMap(sessions.rows,'job_session_id'),
+      observationById=uniqueMap(observations.rows,'id'),cycleById=uniqueMap(cycles.rows,'id');
+    if(!clientById||!siteById||!orderById||!sessionById||!observationById||!cycleById)
+      return withheld('Canonical identity missing or duplicated.');
+    for(const c of clients.rows)if(!dateOk(c.created_at))return withheld('CRM customer first-known date missing.');
+    for(const s of sites.rows)
+      if(!clientById.has(String(s.client_id))||!dateOk(s.created_at))
+        return withheld('CRM property owner or first-known date missing.');
+    for(const o of orders.rows)
+      if(!clientById.has(String(o.client_id))||!siteById.has(String(o.client_site_id))||
+        String(siteById.get(String(o.client_site_id)).client_id)!==String(o.client_id)||
+        !dateOk(o.created_at))
+        return withheld('Work-order CRM identity or date missing.');
+    const validService:any={
+      spring_summer:'mowing_landscaping',fall:'fall_cleanup',
+      winter:'snow_clearing_removal',four_season:'general_outdoor'
+    };
+    const validCycle=(c:any)=>!!validService[String(c.season_context||'')]&&
+      Number.isInteger(Number(c.season_year))&&String(c.start_date||'').length===10&&
+      String(c.end_date||'').length===10&&c.start_date<=c.end_date&&
+      Number.isFinite(Date.parse(String(c.start_date)))&&Number.isFinite(Date.parse(String(c.end_date)));
+    for(const c of cycles.rows)if(!validCycle(c))
+      return withheld('Seasonal cycle year, dates or service season invalid.');
+    const cycleKeys=new Set<string>();
+    for(const c of cycles.rows){const key=c.season_year+':'+c.season_context;
+      if(cycleKeys.has(key))return withheld('Duplicate seasonal cycle/year authority.');
+      cycleKeys.add(key);
+    }
+    for(const obs of observations.rows){
+      const order=obs.work_order_id?orderById.get(String(obs.work_order_id)):null;
+      const site=obs.client_site_id?siteById.get(String(obs.client_site_id)):null;
+      if(!dateOk(obs.observed_at)||!dateOk(obs.service_date)||
+        (obs.work_order_id&&!order)||(obs.client_site_id&&!site)||
+        (order&&site&&String(order.client_site_id)!==String(site.id)))
+        return withheld('Workability observation identity or date inconsistent.');
+    }
+    const results:any[]=[];
+    const minSample=3;
+    for(const c of cycles.rows){
+      const serviceContext=validService[String(c.season_context)];
+      const samples:any[]=[];
+      let unresolved=0;
+      for(const s of sessions.rows){
+        const order=orderById.get(String(s.work_order_id||'')),
+          client=order?clientById.get(String(order.client_id)):null,
+          site=order?siteById.get(String(order.client_site_id)):null;
+        if(!order||!client||!site||
+          String(s.client_id)!==String(order.client_id)||
+          String(s.client_site_id)!==String(order.client_site_id))
+          return withheld('Production first-use customer/property/work-order linkage conflicts.');
+        if(s.started_at&&!dateOk(s.started_at))return withheld('Production start timestamp invalid.');
+        if(!s.started_at)continue;
+        const serviceDay=String(s.session_date||'').slice(0,10);
+        if(serviceDay<c.start_date||serviceDay>c.end_date)continue;
+        if(!dateOk(s.production_recorded_at)||!s.production_recorded_by_profile_id||
+          !['in_progress','completed'].includes(String(s.session_status||'').toLowerCase())||
+          Date.parse(s.started_at)<Date.parse(order.created_at)||
+          Date.parse(s.started_at)<Date.parse(client.created_at)||
+          Date.parse(s.started_at)<Date.parse(site.created_at)){
+          unresolved++;continue;
+        }
+        const linked=observations.rows.filter(o=>
+          String(o.work_order_id||'')===String(order.id)&&
+          String(o.client_site_id||'')===String(site.id)&&
+          String(o.service_date||'').slice(0,10)===serviceDay&&
+          String(o.season_context||'')===String(c.season_context)&&
+          String(o.service_context||'')===serviceContext);
+        if(!linked.length){unresolved++;continue;}
+        samples.push({client_id:client.id,site_id:site.id,
+          started_at:s.started_at,job_session_id:s.job_session_id,work_order_id:order.id});
+      }
+      const firstByProperty=new Map<string,any>();
+      for(const sample of samples){
+        const key=sample.client_id+':'+sample.site_id;
+        const old=firstByProperty.get(key);
+        if(!old||Date.parse(sample.started_at)<Date.parse(old.started_at))
+          firstByProperty.set(key,sample);
+        else if(Date.parse(sample.started_at)===Date.parse(old.started_at)&&
+          String(old.job_session_id)!==String(sample.job_session_id))
+          return withheld('First-use session chronology tied for the same customer/property.');
+      }
+      const firsts=Array.from(firstByProperty.values());
+      const eligible=unresolved===0&&firsts.length>=minSample;
+      results.push({season_year:c.season_year,season_context:c.season_context,
+        service_context:serviceContext,cycle_id:c.id,
+        first_use_denominator:eligible?firsts.length:null,
+        first_use_date_min:eligible?firsts.map(x=>x.started_at).sort()[0]:null,
+        first_use_date_max:eligible?firsts.map(x=>x.started_at).sort().at(-1):null,
+        coverage_state:unresolved?'linkage_gap_withheld':firsts.length<minSample?'insufficient_sample':'sample_supported',
+        minimum_sample:minSample});
+    }
+    if(results.length>60)return withheld('Seasonal cycle cohort count exceeds review cap.');
+    return Response.json({ok:true,scope,coverage_415:{
+      state:results.length?'recorded':'no_record',complete:true,retrieved_at:retrievedAt,
+      minimum_sample:minSample,cohorts:results,
+      denominator_definition:'Distinct customer/property first recorded Production start within explicit seasonal cycle and same-day, matching Workability service observation; not an estimate of all customers.'
+    },authority_boundary:'Read-only dated first-use evidence. No staff ranking, performance attribution, inferred zeros, weather override or customer outreach.'
     },{headers:corsHeaders});
   }
 
