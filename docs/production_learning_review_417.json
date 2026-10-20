@@ -1,0 +1,177 @@
+{
+  "item": 417,
+  "title": "Production Learning & Autonomous Roadmap Renewal V",
+  "review_date_local": "2026-10-19",
+  "observed_at_utc": "2026-10-20T03:27:31.390718Z",
+  "timezone": "America/Toronto",
+  "source_project": "jmqvkgiqlimdhcofwkxr",
+  "source_method": "Supabase Production read-only aggregate SQL on six named public tables; no row identities were returned",
+  "sources": {
+    "clients": 0,
+    "clients_last_90_days": 0,
+    "work_orders": 0,
+    "dispatch_schedule_items": 0,
+    "job_sessions": 0,
+    "work_order_closeout_packages": 0,
+    "ar_invoices": 0
+  },
+  "boundaries": [
+    "Sample does not describe all tables or external services",
+    "No comparison without two nonoverlapping cohorts of at least ten genuine first jobs each, fresh complete authorized and uncapped reads",
+    "No stage conversion rate with fewer than ten denominator events",
+    "Descriptive observation is not proof of causal improvement or ROI"
+  ],
+  "comparison": {
+    "status": "withheld",
+    "reason": "No first-job events in sampled canonical Production tables",
+    "previous_first_jobs": 0,
+    "current_first_jobs": 0,
+    "first_job_conversion_rate": null,
+    "relative_change": null,
+    "roi": null
+  },
+  "released_builds_under_review": [
+    {
+      "build": 406,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 407,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 408,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 409,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 410,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 411,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 412,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 413,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 414,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 415,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    },
+    {
+      "build": 416,
+      "code": "previously_promoted_main",
+      "first_use_outcome": "not_measured_from_current_production_sample"
+    }
+  ],
+  "next_queue": [
+    {
+      "build": 418,
+      "title": "First Live Trial Source Coverage & Owner Acceptance",
+      "source": "CRM and Jobs first-use receipts",
+      "acceptance": "Verify an actual first customer, property, job and owner handoff using only permissioned dated source records.",
+      "boundary": "No synthetic customer or automatic acceptance."
+    },
+    {
+      "build": 419,
+      "title": "Company Service Offering Entitlement Inventory",
+      "source": "Company, service catalog and tenant registries",
+      "acceptance": "Identify existing enabled offerings, live contracts, tenant boundaries and safe rollout dependencies for the six requested service modules.",
+      "boundary": "Inventory only; no entitlement or permission changes."
+    },
+    {
+      "build": 420,
+      "title": "Audited Company Service Offering Registry",
+      "source": "Company-scoped entitlements and audit",
+      "acceptance": "Create migration-reviewed owner toggles with historical read continuity, tenant isolation, audit and rollback.",
+      "boundary": "Do not terminate existing agreements or hide archived jobs."
+    },
+    {
+      "build": 421,
+      "title": "New-Work Service Entitlement Enforcement",
+      "source": "Original Jobs and estimate authorization",
+      "acceptance": "Enforce owner-enabled service selections for new estimates/work orders independently of staff role permissions.",
+      "boundary": "No retroactive cancellation or permission bypass."
+    },
+    {
+      "build": 422,
+      "title": "Cross-Service Customer & Property Continuity",
+      "source": "Original CRM customer and site records",
+      "acceptance": "Present original one-customer/many-services job history with privacy and tenant checks.",
+      "boundary": "No duplicated CRM authority or cross-tenant disclosure."
+    },
+    {
+      "build": 423,
+      "title": "Shared Equipment & Materials Allocation Proof",
+      "source": "Original Equipment, Inventory and Jobs ledgers",
+      "acceptance": "Attribute shared asset/material use to authorized work orders without duplicated consumption or cost.",
+      "boundary": "No silent stock corrections or lockout overrides."
+    },
+    {
+      "build": 424,
+      "title": "Landscaping Field Production Evidence",
+      "source": "Jobs, Production and QC sessions",
+      "acceptance": "Record site-zone, measured grounds work and dated operator field evidence for landscaping.",
+      "boundary": "No automatic completion or invoice."
+    },
+    {
+      "build": 425,
+      "title": "Construction Phase, Permit & Change Control",
+      "source": "Jobs phases, Safety and approved change orders",
+      "acceptance": "Link construction phase and permit evidence to original work orders and financial approval gates.",
+      "boundary": "No automatic permit certification, change-order approval or posting."
+    },
+    {
+      "build": 426,
+      "title": "Water Park Inspection & Safety Evidence",
+      "source": "Safety and maintenance inspection authority",
+      "acceptance": "Track dated aquatic inspection records, closure holds and follow-up receipts.",
+      "boundary": "No automated chemical dosing or unattended reopening."
+    },
+    {
+      "build": 427,
+      "title": "Snow Removal & Plowing Event Separation",
+      "source": "Dispatch, Workability, fleet and Safety",
+      "acceptance": "Track plowing and sidewalk removal as separate offerings while retaining shared storm-event histories.",
+      "boundary": "No automatic dispatch, weather override or double billing."
+    },
+    {
+      "build": 428,
+      "title": "Septic Haulage & Disposal Receipt Control",
+      "source": "Jobs, fleet, Safety and disposal evidence",
+      "acceptance": "Track measured tank volume, operator and legitimate disposal receipts against original job IDs.",
+      "boundary": "No fabricated regulatory compliance or autonomous disposal."
+    },
+    {
+      "build": 429,
+      "title": "Production Learning & Cross-Service Trial Review VI",
+      "source": "Dated canonical multi-service cohorts",
+      "acceptance": "Review genuinely comparable source-supported first-job outcomes and next bounded priorities.",
+      "boundary": "No unmeasured ROI claim, employee ranking or autonomous transactions."
+    }
+  ],
+  "no_mutations": "Build 417 only reviews aggregate data and publishes source-controlled artifacts. No customer, job, dispatch, invoice, payment, safety or role changes."
+}
