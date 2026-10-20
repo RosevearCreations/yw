@@ -17,7 +17,7 @@ test('six offerings are unverified, pricing/modules are explicitly separate and 
  await open(page);
  await expect(page.locator('[data-owner419-key]')).toHaveCount(6);
  await expect(page.locator('#owner419Status')).toContainText('Not a live tenant entitlement check');
- await expect(page.locator('#owner419Results')).toContainText('four');
+ await expect(page.locator('#owner419Results')).toContainText('Admin, jobs, finance, safety');
  await expect(page.locator('#owner419Results')).toContainText('MOW_WEEKLY');
  await expect(page.locator('#owner419Results')).toContainText('NOT VERIFIED');
  expect(await page.evaluate(()=>window.__mutations)).toBe(0);

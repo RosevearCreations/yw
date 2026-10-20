@@ -394,6 +394,16 @@
         </section>
 
 
+
+        <section class="help-section" id="company-service-inventory-419">
+          <h2>Item 419 — Company Service Offering Entitlement Inventory</h2>
+          <p><strong>Where:</strong> Admin → Management/Operations → Company Service Offering Entitlement Inventory → Load dated source inventory. This reads a static, aggregate-only SQL-audited snapshot; it does not call a live privileged database endpoint and must not be treated as current authorization.</p>
+          <p><strong>Audited as of October 20, 2026 22:53 UTC:</strong> four enabled platform permission modules (Admin, Jobs, Finance and Safety) and four active service pricing templates (weekly lawn mowing, sod installation, park maintenance and snow plowing). An active pricing template or enabled core platform module is not an independently enabled company offering. The six proposed company modules are landscaping, construction, water parks, snow removal, snow plowing and septic; all remain <strong>company-entitlement NOT VERIFIED</strong>, not enabled or disabled by this snapshot.</p>
+          <p><strong>Source limitations:</strong> the sampled Production CRM, work orders, estimates, recurring agreements and service contract documents were empty on inspection. Only inspected tables were evaluated; outside/legacy contracts cannot be ruled out. There was no company, tenant, organisation or workspace key on the nine inspected backbone tables. This does not certify the wider schema, row-level security or tenancy. Absence of evidence is not proof that other companies, obligations or modules do not exist.</p>
+          <p><strong>Next rollout gate:</strong> Item 420 requires a separately designed canonical company registry and tenant/RLS permissions review, explicit owner toggles, historical read continuity, rollback, and idempotent migrations. Job/Finance/Safety role permissions must remain independent; existing CRM, Jobs, invoices, safety records and agreements must not be hidden or deleted by new service switches.</p>
+          <p><strong>Boundaries:</strong> Dated read-only artifact; no new company table, permissions changes, tenant grant, automatic company service enablement, customer records, invoice, agreement, job, external outreach or background service. Refreshing the snapshot requires a newly authorized source audit and build review.</p>
+        </section>
+
         <section class="help-section" id="first-live-trial-418">
           <h2>Build 418 — First Live Trial Source Coverage &amp; Owner Acceptance</h2>
           <p><strong>Where:</strong> Admin → Management/Operations → First Live Trial Source Coverage &amp; Owner Acceptance. Recheck uses the original authenticated <code>owner_first_use_trial_acceptance</code> scope and the same Admin manage, Jobs view and Finance view authority as the previous owner workbench.</p>

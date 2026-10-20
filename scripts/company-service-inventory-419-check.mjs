@@ -23,7 +23,7 @@ assert.throws(()=>inspect(duplicated),/Unverified/);
 const old=JSON.parse(JSON.stringify(source));old.as_of_utc='2050-01-01T00:00:00Z';
 assert.throws(()=>inspect(old),/Invalid/);
 const ui=read('js/company-service-inventory-419.js');new Function(ui);
-for(const piece of ['NOT VERIFIED','NOT a live','source_scoped_read_only_audit','owner419','no-store',
+for(const piece of ['NOT VERIFIED','Not a live','source_scoped_read_only_audit','owner419','no-store',
  '/help.html#company-service-inventory-419']) assert.ok(ui.includes(piece),piece);
 assert.doesNotMatch(ui,/\.(upsert|insert|update|delete|manageAdminEntity)\s*\(/);
 assert.ok(read('index.html').includes('/js/company-service-inventory-419.js'));

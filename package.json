@@ -292,7 +292,9 @@
     "test:production-learning-roadmap-renewal-v": "node scripts/production-learning-roadmap-renewal-v-check.mjs",
     "test:browser:production-learning-roadmap-renewal-v": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-v.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
-    "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs"
+    "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
+    "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
+    "test:browser:company-service-inventory-419": "playwright test --config=playwright.config.mjs tests/browser/company-service-inventory-419.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
