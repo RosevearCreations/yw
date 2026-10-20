@@ -953,9 +953,11 @@ Next: **393 — Four-Season Service Template & Price Source Validation**.
 
 #### 417 — Production Learning & Autonomous Roadmap Renewal V
 
-**Acceptance:** Review actual comparable first-job outcomes, withhold claims when denominators are inadequate, and renew another bounded queue.
+**Implemented acceptance:** On 2026-10-19 at 23:27 America/Toronto a read-only Production inspection again found zero records in all six named canonical tables plus zero client intake in the preceding 90 days. Item 406–416 code has been promoted but actual comparable first-job outcomes have not been measured; **no first-job improvement**, conversion lift or ROI is claimed. The pure read-only `js/first-job-outcome-comparison-417.mjs` verifies two fresh authorized complete noncapped nonoverlapping cohorts (at least ten genuine first jobs per period) before showing descriptive rates and withholds per-stage rates when denominators are under ten. No unauthorized access, schema, roles, invoices, payments, customer communication or business transactions were introduced.
 
-**Canonical source:** Dated production cohort evidence and release records. **Boundary:** No autonomous business transactions or unauthorized data access.
+**Detailed dated source report:** `docs/production_learning_review_417.json`. **New bounded queue:** `docs/NEXT_STEPS_AND_SANITY_CHECK.md` (12 proposed releases). **Next build: 418 — First Live Trial Source Coverage & Owner Acceptance.**
+
+**Canonical source:** Dated Production source counts and released 406–416 code evidence. **Boundary:** No autonomous business transactions or unauthorized data access.
 
 
 
@@ -970,3 +972,80 @@ When the next YW technical item is requested, prefer the earliest still-valid ro
 For items 351 and later, do not default to CI-only micro-releases merely to raise the release number. Prefer measurable operator, seasonal, economic, data-quality or reliability value unless a new release-safety defect is proven. Do not turn external staging, accounting-provider or payment-provider acceptance into a blocking ordinary build. When those external prerequisites are unavailable, keep provider/payment mutation disabled and continue with the next safe repository-owned autonomous release.
 
 The target is not the highest possible release number. The target is a landscaping and yard-maintenance operating system that releases with trustworthy exact-source evidence, keeps Safety, Jobs, Equipment, Employment and Finance connected, shows real crew/job profitability, reduces repetitive office and field work, remains usable on phones and during poor connectivity, preserves audit and regulatory/accounting boundaries, and eventually closes staging/accounting/provider acceptance with genuine evidence rather than source-only confidence.
+
+
+## Renewed bounded scope after Item 417 (proposed, not deployed)
+
+#### 418 — First Live Trial Source Coverage & Owner Acceptance
+
+**Acceptance:** Verify an actual first customer, property, job and owner handoff using only permissioned dated source records.
+
+**Canonical source:** CRM and Jobs first-use receipts. **Boundary:** No synthetic customer or automatic acceptance.
+
+#### 419 — Company Service Offering Entitlement Inventory
+
+**Acceptance:** Identify existing enabled offerings, live contracts, tenant boundaries and safe rollout dependencies for the six requested service modules.
+
+**Canonical source:** Company, service catalog and tenant registries. **Boundary:** Inventory only; no entitlement or permission changes.
+
+#### 420 — Audited Company Service Offering Registry
+
+**Acceptance:** Create migration-reviewed owner toggles with historical read continuity, tenant isolation, audit and rollback.
+
+**Canonical source:** Company-scoped entitlements and audit. **Boundary:** Do not terminate existing agreements or hide archived jobs.
+
+#### 421 — New-Work Service Entitlement Enforcement
+
+**Acceptance:** Enforce owner-enabled service selections for new estimates/work orders independently of staff role permissions.
+
+**Canonical source:** Original Jobs and estimate authorization. **Boundary:** No retroactive cancellation or permission bypass.
+
+#### 422 — Cross-Service Customer & Property Continuity
+
+**Acceptance:** Present original one-customer/many-services job history with privacy and tenant checks.
+
+**Canonical source:** Original CRM customer and site records. **Boundary:** No duplicated CRM authority or cross-tenant disclosure.
+
+#### 423 — Shared Equipment & Materials Allocation Proof
+
+**Acceptance:** Attribute shared asset/material use to authorized work orders without duplicated consumption or cost.
+
+**Canonical source:** Original Equipment, Inventory and Jobs ledgers. **Boundary:** No silent stock corrections or lockout overrides.
+
+#### 424 — Landscaping Field Production Evidence
+
+**Acceptance:** Record site-zone, measured grounds work and dated operator field evidence for landscaping.
+
+**Canonical source:** Jobs, Production and QC sessions. **Boundary:** No automatic completion or invoice.
+
+#### 425 — Construction Phase, Permit & Change Control
+
+**Acceptance:** Link construction phase and permit evidence to original work orders and financial approval gates.
+
+**Canonical source:** Jobs phases, Safety and approved change orders. **Boundary:** No automatic permit certification, change-order approval or posting.
+
+#### 426 — Water Park Inspection & Safety Evidence
+
+**Acceptance:** Track dated aquatic inspection records, closure holds and follow-up receipts.
+
+**Canonical source:** Safety and maintenance inspection authority. **Boundary:** No automated chemical dosing or unattended reopening.
+
+#### 427 — Snow Removal & Plowing Event Separation
+
+**Acceptance:** Track plowing and sidewalk removal as separate offerings while retaining shared storm-event histories.
+
+**Canonical source:** Dispatch, Workability, fleet and Safety. **Boundary:** No automatic dispatch, weather override or double billing.
+
+#### 428 — Septic Haulage & Disposal Receipt Control
+
+**Acceptance:** Track measured tank volume, operator and legitimate disposal receipts against original job IDs.
+
+**Canonical source:** Jobs, fleet, Safety and disposal evidence. **Boundary:** No fabricated regulatory compliance or autonomous disposal.
+
+#### 429 — Production Learning & Cross-Service Trial Review VI
+
+**Acceptance:** Review genuinely comparable source-supported first-job outcomes and next bounded priorities.
+
+**Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
+
+**Next queued: Item 418 — First Live Trial Source Coverage & Owner Acceptance.** No new operator grant or business mutation is conveyed by this roadmap.
