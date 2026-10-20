@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
+const read=p=>fs.readFileSync(p,'utf8');const source=JSON.parse(read('public/data/company-service-inventory-419.json'));
+const context={window:{},document:{readyState:'loading',addEventListener(){}}};
+vm.runInNewContext(read('js/company-service-inventory-419.js'),context);
+const inspect=context.window.YWI419.inspect;
+assert.equal(inspect(source),source);
+assert.equal(source.company_offerings.length,6);
+assert.deepEqual(source.company_offerings.map(x=>x.key),
+ ['landscape','construction','water_parks','snow_removal','snow_plowing','septic']);
+assert.equal(source.company_offerings.every(x=>x.company_entitlement===null),true);
+assert.equal(source.source_counts.enabled_app_modules,4);
+assert.equal(source.source_counts.service_pricing_templates,4);
+assert.equal(source.observed_contracts.checked_recurring_agreement_rows,0);
+assert.equal(source.observed_contracts.checked_contract_document_rows,0);
+assert.equal(source.inspection_scope.tenant_key_matches,0);
+assert.equal(source.live_endpoint,false);
+const changed=JSON.parse(JSON.stringify(source));changed.company_offerings[0].company_entitlement=true;
+assert.throws(()=>inspect(changed),/Unverified/);
+const unknown=JSON.parse(JSON.stringify(source));unknown.inspection_scope.tenant_key_matches=1;
+assert.throws(()=>inspect(unknown),/Invalid/);
+const duplicated=JSON.parse(JSON.stringify(source));duplicated.company_offerings[1].key='landscape';
+assert.throws(()=>inspect(duplicated),/Unverified/);
+const old=JSON.parse(JSON.stringify(source));old.as_of_utc='2050-01-01T00:00:00Z';
+assert.throws(()=>inspect(old),/Invalid/);
+const ui=read('js/company-service-inventory-419.js');new Function(ui);
+for(const piece of ['NOT VERIFIED','NOT a live','source_scoped_read_only_audit','owner419','no-store',
+ '/help.html#company-service-inventory-419']) assert.ok(ui.includes(piece),piece);
+assert.doesNotMatch(ui,/\.(upsert|insert|update|delete|manageAdminEntity)\s*\(/);
+assert.ok(read('index.html').includes('/js/company-service-inventory-419.js'));
+assert.ok(read('help.html').includes('id="company-service-inventory-419"'));
+const pkg=JSON.parse(read('package.json'));
+assert.equal(pkg.scripts['test:company-service-inventory-419'],'node scripts/company-service-inventory-419-check.mjs');
+assert.ok(pkg.scripts['test:browser:company-service-inventory-419'].includes('company-service-inventory-419.spec.mjs'));
+const ci=read('.github/workflows/staging-browser-integration.yml');
+assert.ok(ci.includes('npm run test:company-service-inventory-419'));
+assert.ok(ci.includes('npm run test:browser:company-service-inventory-419'));
+console.log('Item 419 source/tenant/permission/static-audit guard gates PASS');
