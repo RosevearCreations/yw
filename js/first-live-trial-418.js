@@ -38,7 +38,7 @@ function inspect(response,now=Date.now()){
   const jobVerified=r.steps[2].state==='source_verified';
   const orderTime=date(r.first_order_created_at);
   if(jobVerified&&(!job||!propertyVerified||!customerVerified||
-    !String(r.property_id||'')||!Number.isFinite(orderTime)||orderTime>t))
+    !String(r.property_id||'')||!Number.isFinite(orderTime)||orderTime>t+300000||orderTime>Date.now()+300000))
    return failure('First work-order identity/date cannot be corroborated');
   if(propertyVerified&&(!customerVerified||!String(r.property_id||'')))
    return failure('Property owner evidence is inconsistent');
