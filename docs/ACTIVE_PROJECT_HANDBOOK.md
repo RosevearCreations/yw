@@ -387,3 +387,10 @@ Item 405 uses the dated, privacy-safe six-source count snapshot in `docs/product
 ## Item 417 — dated learning review and roadmap renewal V
 
 Read-only YW Production inspection at 2026-10-19 23:27 Toronto: zero rows in six inspected operational tables and zero client entries in the prior 90 days. This is not a census of unrelated tables or external systems. Although Builds 406–416 have been merged to Production code, actual first-job conversion or ROI cannot be measured without genuine dated customer/job events. A guarded, descriptive-only cohort comparator rejects missing permissions, stale/incomplete/capped sources and denominators below ten. **No first-job improvement or ROI is claimed.** Exact count report: `docs/production_learning_review_417.json`; 12 bounded new releases: `docs/NEXT_STEPS_AND_SANITY_CHECK.md`. **Next queued: Item 418 — First Live Trial Source Coverage & Owner Acceptance.** No schema, user permissions, customer messages, Finance postings or source authority changed in Item 417.
+
+
+## Item 418 — live first-use source coverage and manual owner review
+
+A new Admin owner workbench uses only the already authorized `owner_first_use_trial_acceptance` scope. It verifies dated first-customer, owned-property, unique first-order and ten canonical handoff identities; caps, freshness and unresolved evidence are fail-closed. Operators may manually copy a **follow-up-with-gaps** receipt. Only if all ten source checks are verified, and an owner explicitly checks confirmation and types ACCEPT, can a **manual unsigned clipboard acceptance candidate** be copied. Nothing is stored, signed or approved by the server. An empty original CRM/Jobs source remains no live trial; no synthetic customer, dispatch or Finance changes. Read more in `/help.html#first-live-trial-418`.
+
+Existing Safety, Finance, Jobs and Admin authority stays separate. No automatic Production action; all actual business changes require deliberate operator workflows, with provider calls and Finance posting fail-closed/OFF until separately authorized. **Next proposed item: 419 — Company Service Offering Entitlement Inventory.**
