@@ -186,6 +186,7 @@ jobs:
       - run: npm run test:production-learning-roadmap-renewal-ii
       - run: npm run test:production-learning-roadmap-renewal-iii
       - run: npm run test:production-learning-roadmap-renewal-iv
+      - run: npm run test:production-learning-roadmap-renewal-v
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -348,6 +349,7 @@ jobs:
       - run: npm run test:browser:first-invoice-receivable-confidence-414
       - run: npm run test:browser:seasonal-first-use-cohort-coverage-415
       - run: npm run test:browser:owner-first-use-trial-acceptance-416
+      - run: npm run test:browser:production-learning-roadmap-renewal-v
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
