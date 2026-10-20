@@ -986,9 +986,11 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 419 — Company Service Offering Entitlement Inventory
 
-**Acceptance:** Identify existing enabled offerings, live contracts, tenant boundaries and safe rollout dependencies for the six requested service modules.
+**Implementation:** A dated, read-only Production aggregate source audit at `public/data/company-service-inventory-419.json` is shown in the Admin source-inventory panel. The inspected Production evidence reported four permission-driven modules (Admin/Jobs/Finance/Safety) enabled, four active price templates, zero CRM customers/properties/work orders/estimates/recurring agreements/contract documents in the sampled sources and zero company/tenant key matches across nine inspected backbone tables. **No independent company service entitlement can be inferred or verified from those source facts.** All six specialist offerings are displayed as NOT VERIFIED, with landscaping and plowing-related price templates distinguished from entitlement authority. Missing tenant identity/isolation, canonical company registry, safe defaults, historical read-through and owner audit are explicit prerequisites for Item 420. This static snapshot is not a live entitlement API. No Supabase change or permission grant. Source and mobile-browser tests are CI-gated.
 
-**Canonical source:** Company, service catalog and tenant registries. **Boundary:** Inventory only; no entitlement or permission changes.
+**Acceptance:** Inventory existing platform/module and pricing evidence, live-contract source coverage and tenant-boundary gaps for all six independently selectable services.
+
+**Canonical source:** Dated Production SQL audit, shared CRM/Jobs/Pricing/Agreement sources and active platform handbook. **Boundary:** Inventory only; no entitlement or permission changes.
 
 #### 420 — Audited Company Service Offering Registry
 
@@ -1050,4 +1052,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 418 — First Live Trial Source Coverage & Owner Acceptance.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 420 — Audited Company Service Offering Registry.** No new operator grant or business mutation is conveyed by this roadmap.
