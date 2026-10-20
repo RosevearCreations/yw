@@ -978,6 +978,8 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 418 — First Live Trial Source Coverage & Owner Acceptance
 
+**Implementation:** New Admin owner-controlled workbench `js/owner-first-live-trial-418.js` consumes only the existing authenticated `owner_first_use_trial_acceptance` receipt; `js/first-live-trial-418.js` validates the permissioned dated customer, original owned property, first job, ten unique ordered handoffs, source totals and reconciled gap provenance. Only an explicitly checked and confirmed fully verified sample may prepare a **manual, unsigned clipboard acceptance candidate**. Samples with missing proof can export a gap-review receipt only. Clipboard output is neither backend acceptance nor a saved owner signature. A denied, stale, unknown, incomplete or capped source fails closed and an empty Production source does not invent a live trial. No Supabase RPC, schema, Edge Function or business writes. Mobile/browser and source regressions run in CI. **Next queued: Item 419 — Company Service Offering Entitlement Inventory.**
+
 **Acceptance:** Verify an actual first customer, property, job and owner handoff using only permissioned dated source records.
 
 **Canonical source:** CRM and Jobs first-use receipts. **Boundary:** No synthetic customer or automatic acceptance.
