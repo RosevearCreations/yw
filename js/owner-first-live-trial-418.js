@@ -27,6 +27,10 @@ function mount(){
  '<button type="button" class="secondary" id="owner418Copy" disabled>Copy manual owner decision receipt</button>'+
  '<p aria-live="polite" id="owner418CopyStatus"></p></div></div>';
  host.appendChild(panel);
+ panel.style.maxWidth='100%';panel.style.minWidth='0';panel.style.boxSizing='border-box';panel.style.overflowWrap='anywhere';
+ panel.querySelectorAll('select,textarea,input:not([type="checkbox"])').forEach(control=>{
+  control.style.width='100%';control.style.maxWidth='100%';control.style.minWidth='0';control.style.boxSizing='border-box';
+ });
  const refresh=byId('owner418Refresh'),status=byId('owner418Status'),results=byId('owner418Results'),
  review=byId('owner418Review'),selector=byId('owner418Choice'),decision=byId('owner418Decision'),
  note=byId('owner418Note'),confirm=byId('owner418Confirm'),phrase=byId('owner418Phrase'),copy=byId('owner418Copy'),
