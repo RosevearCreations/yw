@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {reviewComparableFirstJobs} from '../js/first-job-outcome-comparison-417.mjs';
 const review=JSON.parse(fs.readFileSync('docs/production_learning_review_417.json','utf8'));
-const roadmap=fs.readFileSync('docs/RENEWED_ROADMAP_418_429.md','utf8');
+const roadmap=fs.readFileSync('docs/NEXT_STEPS_AND_SANITY_CHECK.md','utf8');
 assert.equal(review.item,417);
 assert.equal(review.observed_at_utc,'2026-10-20T03:27:31.390718Z');
 assert.deepEqual(Object.values(review.sources),Array(7).fill(0));
@@ -11,7 +11,7 @@ assert.equal(review.comparison.roi,null);
 assert.equal(review.released_builds_under_review.length,11);
 assert.deepEqual(review.next_queue.map(x=>x.build),Array.from({length:12},(_,i)=>i+418));
 for(const x of review.next_queue){
- assert.ok(roadmap.includes('### '+x.build+' — '+x.title));
+ assert.ok(roadmap.includes('#### '+x.build+' — '+x.title));
  assert.ok(x.source.length>10&&x.acceptance.length>35&&x.boundary.length>20);
 }
 const now='2026-10-20T03:27:00Z';
