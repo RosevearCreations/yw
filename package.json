@@ -290,7 +290,9 @@
     "test:owner-first-use-trial-acceptance-416": "node scripts/owner-first-use-trial-acceptance-416-check.mjs",
     "test:browser:owner-first-use-trial-acceptance-416": "playwright test --config=playwright.config.mjs tests/browser/owner-first-use-trial-acceptance-416.spec.mjs",
     "test:production-learning-roadmap-renewal-v": "node scripts/production-learning-roadmap-renewal-v-check.mjs",
-    "test:browser:production-learning-roadmap-renewal-v": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-v.spec.mjs"
+    "test:browser:production-learning-roadmap-renewal-v": "playwright test --config=playwright.config.mjs tests/browser/production-learning-roadmap-renewal-v.spec.mjs",
+    "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
+    "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
