@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "inventory_kind": "source_scoped_read_only_audit",
+  "item": 419,
+  "source": "Production Supabase SQL evidence and YW active handbook",
+  "as_of_utc": "2026-10-20T22:53:08.472822Z",
+  "live_endpoint": false,
+  "stored_personal_data": false,
+  "company_entitlement_registry_present_in_inspected_schema": false,
+  "inspection_scope": {
+    "tables": [
+      "clients",
+      "client_sites",
+      "work_orders",
+      "estimates",
+      "recurring_service_agreements",
+      "service_contract_documents",
+      "service_pricing_templates",
+      "app_module_contracts",
+      "app_core_entity_contracts"
+    ],
+    "tenant_key_columns_tested": [
+      "company_id",
+      "tenant_id",
+      "organization_id",
+      "workspace_id"
+    ],
+    "tenant_key_matches": 0,
+    "disclaimer": "Absence in inspected tables is NOT a comprehensive schema or row-level security audit; tenant separation and entitlement enforcement remain unverified."
+  },
+  "source_counts": {
+    "clients": 0,
+    "client_sites": 0,
+    "work_orders": 0,
+    "estimates": 0,
+    "recurring_service_agreements": 0,
+    "service_contract_documents": 0,
+    "service_pricing_templates": 4,
+    "app_module_contracts": 4,
+    "enabled_app_modules": 4,
+    "app_core_entity_contracts": 7
+  },
+  "platform_modules": [
+    {
+      "key": "admin",
+      "is_enabled": true
+    },
+    {
+      "key": "jobs",
+      "is_enabled": true
+    },
+    {
+      "key": "finance",
+      "is_enabled": true
+    },
+    {
+      "key": "safety",
+      "is_enabled": true
+    }
+  ],
+  "pricing_templates": [
+    {
+      "code": "MOW_WEEKLY",
+      "name": "Weekly Lawn Mowing",
+      "family": "landscaping_recurring",
+      "active": true
+    },
+    {
+      "code": "SOD_INSTALL",
+      "name": "Sod Installation",
+      "family": "landscaping_standard",
+      "active": true
+    },
+    {
+      "code": "PARK_MAINT",
+      "name": "Park Maintenance Visit",
+      "family": "park_maintenance",
+      "active": true
+    },
+    {
+      "code": "SNOW_PLOW",
+      "name": "Snow Plowing Visit",
+      "family": "snow",
+      "active": true
+    }
+  ],
+  "company_offerings": [
+    {
+      "key": "landscape",
+      "label": "Landscaping, lawn and grounds",
+      "company_entitlement": null,
+      "company_entitlement_state": "not_verifiable",
+      "related_pricing_templates": [
+        "MOW_WEEKLY",
+        "SOD_INSTALL"
+      ],
+      "evidence_note": "Existing lawn/grounds pricing; no company-level entitlement proof"
+    },
+    {
+      "key": "construction",
+      "label": "Small construction and repairs",
+      "company_entitlement": null,
+      "company_entitlement_state": "not_verifiable",
+      "related_pricing_templates": [],
+      "evidence_note": "No source-backed company entitlement or construction-specific price template"
+    },
+    {
+      "key": "water_parks",
+      "label": "Water parks and aquatic facilities",
+      "company_entitlement": null,
+      "company_entitlement_state": "not_verifiable",
+      "related_pricing_templates": [
+        "PARK_MAINT"
+      ],
+      "evidence_note": "Park maintenance pricing is not evidence of aquatic/water-park operations"
+    },
+    {
+      "key": "snow_removal",
+      "label": "Snow removal and de-icing",
+      "company_entitlement": null,
+      "company_entitlement_state": "not_verifiable",
+      "related_pricing_templates": [],
+      "evidence_note": "No separately enabled removal/de-icing offering proven"
+    },
+    {
+      "key": "snow_plowing",
+      "label": "Snow plowing",
+      "company_entitlement": null,
+      "company_entitlement_state": "not_verifiable",
+      "related_pricing_templates": [
+        "SNOW_PLOW"
+      ],
+      "evidence_note": "Existing snow plowing price template; no company-level entitlement proof"
+    },
+    {
+      "key": "septic",
+      "label": "Septic and vacuum services",
+      "company_entitlement": null,
+      "company_entitlement_state": "not_verifiable",
+      "related_pricing_templates": [],
+      "evidence_note": "No source-backed company entitlement or septic-specific price template"
+    }
+  ],
+  "observed_contracts": {
+    "recorded_active_company_contracts": null,
+    "checked_recurring_agreement_rows": 0,
+    "checked_contract_document_rows": 0,
+    "explanation": "Zero rows in the two inspected agreement/document sources does not prove the absence of every possible outside or legacy contract."
+  },
+  "prerequisites_for_420": [
+    "Identify canonical company/tenant identity and explicit owner authority; do not equate employee roles with company offering entitlements.",
+    "Perform migration/RLS/tenant-isolation review before offering any company switches.",
+    "Define reviewed default entitlements for existing work and audit trail, with safe rollback.",
+    "Preserve historical service documents, Jobs, Finance, Safety, staff, equipment and shared CRM even when new-work offering is disabled.",
+    "Require independently authenticated, server-enforced company service permissions for new writes, without allowing client UI toggles as authority.",
+    "Validate real historical company agreements against a complete company-scoped source before auto-enabling any offering."
+  ],
+  "authority_boundary": "Information-only dated snapshot, not live detection, company authorization, tenant isolation certification, new service enablement, customer migration, or Finance/Jobs action."
+}
