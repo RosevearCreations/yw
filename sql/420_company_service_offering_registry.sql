@@ -59,28 +59,34 @@ grant select on public.ywi_company_service_modules to authenticated;
 grant update(enabled) on public.ywi_company_service_modules to authenticated;
 grant select on public.ywi_company_service_module_audit to authenticated;
 
+drop policy if exists ywi_company_owner_read_420 on public.ywi_companies;
 create policy ywi_company_owner_read_420 on public.ywi_companies
  for select to authenticated using (owner_user_id = (select auth.uid()));
+drop policy if exists ywi_company_owner_create_420 on public.ywi_companies;
 create policy ywi_company_owner_create_420 on public.ywi_companies
  for insert to authenticated with check (
    owner_user_id = (select auth.uid()) and (select auth.uid()) is not null
    and coalesce((auth.jwt()->>'is_anonymous')::boolean,false)=false
  );
+drop policy if exists ywi_company_owner_update_420 on public.ywi_companies;
 create policy ywi_company_owner_update_420 on public.ywi_companies
  for update to authenticated
  using (owner_user_id = (select auth.uid()))
  with check (owner_user_id = (select auth.uid()));
 
+drop policy if exists ywi_company_modules_owner_read_420 on public.ywi_company_service_modules;
 create policy ywi_company_modules_owner_read_420 on public.ywi_company_service_modules
  for select to authenticated
  using (exists (select 1 from public.ywi_companies c
                where c.id=company_id and c.owner_user_id=(select auth.uid())));
+drop policy if exists ywi_company_modules_owner_toggle_420 on public.ywi_company_service_modules;
 create policy ywi_company_modules_owner_toggle_420 on public.ywi_company_service_modules
  for update to authenticated
  using (exists (select 1 from public.ywi_companies c
                where c.id=company_id and c.owner_user_id=(select auth.uid())))
  with check (exists (select 1 from public.ywi_companies c
                where c.id=company_id and c.owner_user_id=(select auth.uid())));
+drop policy if exists ywi_company_audit_owner_read_420 on public.ywi_company_service_module_audit;
 create policy ywi_company_audit_owner_read_420 on public.ywi_company_service_module_audit
  for select to authenticated
  using (exists (select 1 from public.ywi_companies c
@@ -93,6 +99,7 @@ create or replace function public.ywi_company_registry_touch_420()
    return new;
  end;
  $$;
+drop trigger if exists ywi_company_touch_420 on public.ywi_companies;
 create trigger ywi_company_touch_420 before update on public.ywi_companies
  for each row execute function public.ywi_company_registry_touch_420();
 
@@ -113,6 +120,7 @@ create or replace function public.ywi_company_service_touch_420()
    return new;
  end;
  $$;
+drop trigger if exists ywi_company_service_touch_420 on public.ywi_company_service_modules;
 create trigger ywi_company_service_touch_420 before update on public.ywi_company_service_modules
  for each row execute function public.ywi_company_service_touch_420();
 
@@ -134,9 +142,11 @@ create or replace function public.ywi_company_service_audit_420()
    return null;
  end;
  $$;
+drop trigger if exists ywi_company_service_audit_insert_420 on public.ywi_company_service_modules;
 create trigger ywi_company_service_audit_insert_420
  after insert on public.ywi_company_service_modules
  for each row execute function public.ywi_company_service_audit_420();
+drop trigger if exists ywi_company_service_audit_update_420 on public.ywi_company_service_modules;
 create trigger ywi_company_service_audit_update_420
  after update of enabled on public.ywi_company_service_modules
  for each row when (old.enabled is distinct from new.enabled)
@@ -153,6 +163,7 @@ create or replace function public.ywi_company_service_seed_420()
    return null;
  end;
  $$;
+drop trigger if exists ywi_company_service_seed_420 on public.ywi_companies;
 create trigger ywi_company_service_seed_420
  after insert on public.ywi_companies
  for each row execute function public.ywi_company_service_seed_420();

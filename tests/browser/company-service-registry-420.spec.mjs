@@ -19,7 +19,7 @@ async function setup(page, options={}){
    from(table){
     const record={table,kind:'select',filters:[],request:null};window.__reads.push(record);
     const query={
-     select(){return this},order(){return this},limit(){let data=qs[table]||[];if(record.kind==='update'){if(record.filters.some(([k,v])=>k==='enabled'&&v!==false))return Promise.resolve({data:[],error:null});data=[{...data[0],enabled:record.request.enabled}];window.__writes.push({table,payload:record.request});}return Promise.resolve({data,error:null})},
+     select(){if(record.kind==='update'){window.__writes.push({table,payload:record.request});return Promise.resolve({data:[{...qs[table][0],enabled:record.request.enabled}],error:null});}return this},order(){return this},limit(){return Promise.resolve({data:qs[table]||[],error:null})},
      eq(k,v){record.filters.push([k,v]);return this},
      update(payload){record.kind='update';record.request=payload;return this},
      insert(payload){window.__writes.push({table,payload});return {select:async()=>({data:[{id:'new',name:payload.name}],error:null})}}

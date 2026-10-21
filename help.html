@@ -395,6 +395,16 @@
 
 
 
+        
+        <section class="help-section" id="company-service-registry-420">
+          <h2>Item 420 — Audited Company Service Offering Registry</h2>
+          <p><strong>Where:</strong> Admin → Management/Operations → 420 · Audited Company Service Offering Registry. Sign in with the owner identity, refresh, optionally create an explicitly named company, and confirm each ENABLE or DISABLE decision. Every new company receives exactly six disabled offerings. This control is not a replacement for staff or module-role permissions.</p>
+          <p><strong>Owner authority:</strong> Server-side Supabase RLS uses the authenticated user ID and company ownership; a user can only view or change the registry records for companies they own. Cross-company reads and updates are denied. Each owner change records an append-only server audit. The browser displays the newest 25 records only; older audited records remain on the server.</p>
+          <p><strong>Legacy continuity:</strong> Historical customers, sites, jobs, contracts, Safety and Finance records are not attached, re-partitioned, disabled or deleted by this registry. The new company identity is not yet a migration or isolation boundary for existing Shared Core data.</p>
+          <p><strong>Important limitation:</strong> Enabling a company switch currently records owner intent, but does not independently authorize a new quote, work order, dispatch or invoice. Item 421 must implement independent, server-enforced new-work checks and company assignment after a separate data migration review. Do not rely on UI or the enabled flag alone for real-world service authorization.</p>
+          <p><strong>Rollback:</strong> The SQL reversal is recorded at sql/420_company_service_offering_registry_rollback.sql. It explicitly refuses to erase any company, switch or audit history. If records already exist, preserve them and make a forward repair instead. Always review migrations and production access before changing schema.</p>
+        </section>
+
         <section class="help-section" id="company-service-inventory-419">
           <h2>Item 419 — Company Service Offering Entitlement Inventory</h2>
           <p><strong>Where:</strong> Admin → Management/Operations → Company Service Offering Entitlement Inventory → Load dated source inventory. This reads a static, aggregate-only SQL-audited snapshot; it does not call a live privileged database endpoint and must not be treated as current authorization.</p>
