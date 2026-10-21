@@ -17,6 +17,7 @@ async function setup(page,opts={}){
 }
 test('enabled service only, company is authenticated, mobile safe',async({page})=>{
  await setup(page);
+ await expect(page.locator('#owner421Status')).toContainText('Server-controlled services loaded');
  await expect(page.locator('[data-owner421Create]')).toHaveCount(1);
  await expect(page.locator('[data-owner421Service] option')).toHaveCount(1);
  expect(await page.evaluate(()=>window.__actions)).toHaveLength(0);
@@ -24,6 +25,7 @@ test('enabled service only, company is authenticated, mobile safe',async({page})
 });
 test('owner explicitly confirms authorized draft, RPC governs create',async({page})=>{
  await setup(page);
+ await expect(page.locator('#owner421Status')).toContainText('Server-controlled services loaded');
  await page.locator('[data-owner421Title]').fill('Seasonal first visit');
  page.once('dialog',d=>d.accept());
  await page.locator('[data-owner421Create]').click();
