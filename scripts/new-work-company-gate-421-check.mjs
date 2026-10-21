@@ -15,7 +15,7 @@ for(const term of ['before insert or update on public.estimates','before insert 
 'app_profile_module_permissions','is_active is true','foreign key (company_id,service_module_key)',
 'ywi_rpc_create_scoped_estimate_421','ywi_rpc_create_scoped_work_order_421',
 'old.company_id is distinct from new.company_id','old.client_id is distinct from new.client_id',
-'legacy','ywi_new_work_gate_receipts_421','auth.uid()','security definer'])
+'Existing historical rows','ywi_new_work_gate_receipts_421','auth.uid()','security definer'])
  assert.ok(sql.includes(term),term);
 assert.ok(!sql.includes('truncate public.'));
 assert.ok(read('index.html').includes('/js/new-work-company-gate-421.js'));

@@ -396,6 +396,16 @@
 
 
         
+        
+        <section class="help-section" id="new-work-entitlement-421" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
+          <h2>Item 421 — New-Work Service Entitlement Enforcement</h2>
+          <p><strong>Where:</strong> Admin → Management/Operations → 421 · New-Work Service Entitlement Enforcement. Refresh under your authenticated company-owner account. Select an enabled company service, choose draft estimate or draft work order, enter a description, and explicitly confirm. The server creates a draft only when the company owner is authenticated, active, has Jobs create access, and that service is currently enabled.</p>
+          <p><strong>Enforcement:</strong> The original canonical estimates and work_orders tables have two new company/service fields, guarded by mandatory BEFORE INSERT triggers. Missing identity, disabled service, wrong company owner, denied staff Jobs permission, unmatched estimate company/service, or cross-tenant customer association fails closed. Existing historical rows are not retroactively bound or disabled; newer scoped rows cannot silently change company, service, customer, or source estimate.</p>
+          <p><strong>Customer/property hold:</strong> The existing Shared Core customer/site data is not company-partitioned yet. To prevent falsely attaching a customer or property to another company's new job, this first release creates draft shells with no customer/site, dispatch, payments or invoices. Item 422 must verify cross-service customer/property associations under actual tenant authorization before connecting them. Existing legacy forms that cannot supply verified company/service identity are deliberately blocked from creating new canonical estimates/work orders. Use this guided owner flow until those forms are migrated.</p>
+          <p><strong>Server proof:</strong> Each successfully authorized new draft has an append-only, RLS-restricted gate receipt. Failed checks do not create an estimate, work order or receipt. This is not a substitute for Finance posting or Safety approval.</p>
+          <p><strong>Rollback:</strong> The reviewed SQL is at sql/company_new_work_entitlement_421.sql. The manual rollback at sql/company_new_work_entitlement_421_rollback.sql refuses to erase live company-scoped work or receipts. Do not execute automatically.</p>
+        </section>
+
         <section class="help-section" id="company-service-registry-420">
           <h2>Item 420 — Audited Company Service Offering Registry</h2>
           <p><strong>Where:</strong> Admin → Management/Operations → 420 · Audited Company Service Offering Registry. Sign in with the owner identity, refresh, optionally create an explicitly named company, and confirm each ENABLE or DISABLE decision. Every new company receives exactly six disabled offerings. This control is not a replacement for staff or module-role permissions.</p>

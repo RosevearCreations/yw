@@ -1002,9 +1002,11 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 421 — New-Work Service Entitlement Enforcement
 
-**Acceptance:** Enforce owner-enabled service selections for new estimates/work orders independently of staff role permissions.
+**Implementation:** SQL migration `sql/company_new_work_entitlement_421.sql` creates mandatory INSERT-time company/service identity on new canonical Estimates and Work Orders, rejects missing/disabled/cross-company service keys, and verifies both the authentic company owner and the independent active Jobs create/approve/manage role authority. Existing historical rows retain original read/update behavior, and scoped records cannot silently change company/service. Linked estimate/work-order company and module must agree; no legacy company inference. The guided Admin draft flow calls authenticated, owner-verified SQL RPCs for new draft estimates and work orders. Each authorized insert records a server-owned append-only entitlement receipt. Customer/site linking is intentionally blocked until Item 422 independently verifies existing Shared Core customer ownership; no dispatch, payment, invoicing, auto-conversion or cancellation. Unscoped legacy forms creating new canonical estimates/work orders fail closed instead of bypassing the service switch. Browser, source, and Help mobile CI are mandatory. Rollback file refuses deletion if scoped business work or receipts exist.
 
-**Canonical source:** Original Jobs and estimate authorization. **Boundary:** No retroactive cancellation or permission bypass.
+**Acceptance:** Verify enabled company offerings independently of Jobs employee permissions for all new canonical estimate/work-order INSERT paths; retain historical work and explicit source-consistency protection.
+
+**Canonical source:** Owner-only service switch from Item 420, authenticated profile/Jobs permissions, original Estimates/Work Orders, and receipt audit. **Boundary:** No retroactive cancellation, cross-tenant customer mapping or permission bypass.
 
 #### 422 — Cross-Service Customer & Property Continuity
 
@@ -1054,4 +1056,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 421 — New-Work Service Entitlement Enforcement.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 422 — Cross-Service Customer & Property Continuity.** No new operator grant or business mutation is conveyed by this roadmap.
