@@ -11,7 +11,7 @@ assert.equal(ctx.window.YWI420.verifyRows(company,original).length,6);
 assert.throws(()=>ctx.window.YWI420.verifyRows(company,original.slice(1)),/incomplete/);
 assert.throws(()=>ctx.window.YWI420.verifyRows(company,original.map((r,i)=>i? r:{...r,company_id:'other'})),/invalid/);
 assert.throws(()=>ctx.window.YWI420.verifyRows(company,original.map((r,i)=>i? r:{...r,enabled:'true'})),/invalid/);
-const sql=read('sql/420_company_service_offering_registry.sql');
+const sql=read('sql/company_service_offering_registry_420.sql');
 for(const table of ['ywi_companies','ywi_company_service_modules','ywi_company_service_module_audit']){
  assert.ok(sql.includes('create table if not exists public.'+table),table);
  assert.ok(sql.includes('alter table public.'+table+' enable row level security;'),table);
