@@ -18,18 +18,18 @@ async function setup(page,opts={}){
 test('enabled service only, company is authenticated, mobile safe',async({page})=>{
  await setup(page);
  await expect(page.locator('#owner421Status')).toContainText('Server-controlled services loaded');
- await expect(page.locator('[data-owner421Create]')).toHaveCount(1);
- await expect(page.locator('[data-owner421Service] option')).toHaveCount(1);
+ await expect(page.locator('[data-owner421-create]')).toHaveCount(1);
+ await expect(page.locator('[data-owner421-service] option')).toHaveCount(1);
  expect(await page.evaluate(()=>window.__actions)).toHaveLength(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 });
 test('owner explicitly confirms authorized draft, RPC governs create',async({page})=>{
  await setup(page);
  await expect(page.locator('#owner421Status')).toContainText('Server-controlled services loaded');
- await page.locator('[data-owner421Title]').fill('Seasonal first visit');
+ await page.locator('[data-owner421-title]').fill('Seasonal first visit');
  page.once('dialog',d=>d.accept());
- await page.locator('[data-owner421Create]').click();
- await expect(page.locator('[data-owner421Receipt]')).toContainText('server-authorized draft');
+ await page.locator('[data-owner421-create]').click();
+ await expect(page.locator('[data-owner421-receipt]')).toContainText('server-authorized draft');
  const list=await page.evaluate(()=>window.__actions);
  expect(list).toHaveLength(1);
  expect(list[0]).toEqual({name:'ywi_rpc_create_scoped_estimate_421',
@@ -38,10 +38,10 @@ test('owner explicitly confirms authorized draft, RPC governs create',async({pag
 test('wrong tenant and incomplete source withhold new work',async({page})=>{
  await setup(page,{foreign:true});
  await expect(page.locator('#owner421Status')).toContainText('WITHHELD');
- await expect(page.locator('[data-owner421Create]')).toHaveCount(0);
+ await expect(page.locator('[data-owner421-create]')).toHaveCount(0);
 });
 test('signed-out users cannot load or draft',async({page})=>{
  await setup(page,{noAuth:true});
  await expect(page.locator('#owner421Status')).toContainText('WITHHELD');
- await expect(page.locator('[data-owner421Create]')).toHaveCount(0);
+ await expect(page.locator('[data-owner421-create]')).toHaveCount(0);
 });
