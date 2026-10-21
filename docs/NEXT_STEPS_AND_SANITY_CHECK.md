@@ -994,9 +994,11 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 420 — Audited Company Service Offering Registry
 
-**Acceptance:** Create migration-reviewed owner toggles with historical read continuity, tenant isolation, audit and rollback.
+**Implementation:** Create owner-scoped companies with six disabled-by-default service switches, server-enforced RLS ownership, exact authenticated identity verification, explicit owner confirmation per toggle, and append-only audit history. Reviewed additive migration lives in `sql/company_service_offering_registry_420.sql` with a guarded empty-only rollback in `sql/company_service_offering_registry_420_rollback.sql`. The Admin panel reads owned companies and the server's authoritative current toggle and audit rows, failing closed on gaps/cross-tenant mismatches. Source and browser gates run through existing CI. Existing Shared Core Customers/Jobs/Finance/Safety/equipment records and staff module-role grants are untouched; this is NOT a retrofit of older records to a tenant partition. Enablement governs owner intent only until Item 421 server-side new-work authorization.
 
-**Canonical source:** Company-scoped entitlements and audit. **Boundary:** Do not terminate existing agreements or hide archived jobs.
+**Acceptance:** Establish audited owner toggles and isolated *new registry* records while retaining historical read continuity; prove no auto-enable or deletion, and preserve guarded rollback.
+
+**Canonical source:** Authenticated owner company registry, six company service rows and immutable server audit. **Boundary:** Do not terminate existing agreements, hide archived jobs, or interpret toggles as permission for new service work.
 
 #### 421 — New-Work Service Entitlement Enforcement
 
@@ -1052,4 +1054,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 420 — Audited Company Service Offering Registry.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 421 — New-Work Service Entitlement Enforcement.** No new operator grant or business mutation is conveyed by this roadmap.
