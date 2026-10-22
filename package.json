@@ -298,7 +298,9 @@
     "test:company-service-registry-420": "node scripts/company-service-registry-420-check.mjs",
     "test:browser:company-service-registry-420": "playwright test --config=playwright.config.mjs tests/browser/company-service-registry-420.spec.mjs",
     "test:new-work-company-gate-421": "node scripts/new-work-company-gate-421-check.mjs",
-    "test:browser:new-work-company-gate-421": "playwright test --config=playwright.config.mjs tests/browser/new-work-company-gate-421.spec.mjs"
+    "test:browser:new-work-company-gate-421": "playwright test --config=playwright.config.mjs tests/browser/new-work-company-gate-421.spec.mjs",
+    "test:cross-service-continuity-422": "node scripts/cross-service-continuity-422-check.mjs",
+    "test:browser:cross-service-continuity-422": "playwright test --config=playwright.config.mjs tests/browser/cross-service-continuity-422.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
