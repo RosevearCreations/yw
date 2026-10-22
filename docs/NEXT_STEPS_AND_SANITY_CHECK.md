@@ -1034,6 +1034,8 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 425 — Construction Phase, Permit & Change Control
 
+**Implementation:** Add owner-only append-only construction *phase references* for an original Jobs company-scoped construction work order, with a unique phase key, sequence, factual scope and optional original work-order plan-line link. Add one immutable, uniquely keyed operator-reported permit-evidence receipt per phase/category/reference, with observed date, source document reference, notes and optional existing same-work-order Safety plan and change-order links. Server guards require enabled construction entitlement, independent Jobs create access, owner/tenant and original customer-property evidence. A bounded owner dashboard reads original Safety stop-work/supervisor reviews, signed Finance release and source change-order supervisor/customer approvals and budget application. All permit statuses are operator reports, NEVER issued-certification; outstanding source approvals produce HOLD and source fingerprints detect later changes without automatic clearance. No payment, permit, Safety, Finance, Jobs completion or change-order mutation. Reviewed SQL `sql/construction_phase_permit_change_control_425.sql`, Admin workbench, mobile Help and protected source/browser tests. Production currently has no construction-scoped work orders, original change orders, Safety plans or Finance release reviews; browser fixtures test bounded synthetic cases, not fictitious live completion.
+
 **Acceptance:** Link construction phase and permit evidence to original work orders and financial approval gates.
 
 **Canonical source:** Jobs phases, Safety and approved change orders. **Boundary:** No automatic permit certification, change-order approval or posting.
@@ -1062,4 +1064,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 425 — Construction Phase, Permit & Change Control.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 426 — Water Park Inspection & Safety Evidence.** No new operator grant or business mutation is conveyed by this roadmap.
