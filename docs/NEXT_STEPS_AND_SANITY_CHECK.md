@@ -1018,7 +1018,9 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 423 — Shared Equipment & Materials Allocation Proof
 
-**Acceptance:** Attribute shared asset/material use to authorized work orders without duplicated consumption or cost.
+**Implementation:** Add the reviewed `sql/shared_equipment_material_allocation_proof_423.sql` as an immutable, owner-scoped allocation *receipt*, keyed uniquely to exactly one original `material_issue_lines` ID or `equipment_signouts` ID. A guarded RPC rechecks active owner, independent Jobs creation permission, enabled company service, Item 422 canonical customer/property proof, exact work-order link, material source status and quantities, matching plan line, equipment safety/lockout and overlapping-checkout holds. A separate bounded RPC returns only company work orders, canonical source candidates and their one-time proof state, including a source fingerprint that detects later ledger changes. Owner confirmation in Admin records the proof once; repeated identical requests are idempotent, cross-order/different-source-attribution attempts fail. Phone/mobile rendered acceptance and static CI contracts are mandatory. The receipt never deducts stock, posts job costs or account journals, books equipment hours, overrides safety, auto-merges legacy work or invoices; displayed material amounts are the original issued amounts and not another accounting charge. If the original source changes, HOLD requires human review.
+
+**Acceptance:** Attribute original shared-asset/material issue evidence to authorized company work orders exactly once, retaining original source and cost authority, and withhold unverified/changed/foreign/locked-out data. Production currently contains no material issue or equipment signout rows, so the protected browser tests use synthetic fixtures and live SQL verifies schema/privileges rather than claiming live operational consumption.
 
 **Canonical source:** Original Equipment, Inventory and Jobs ledgers. **Boundary:** No silent stock corrections or lockout overrides.
 
@@ -1058,4 +1060,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 423 — Shared Equipment & Materials Allocation Proof.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 424 — Landscaping Field Production Evidence.** No new operator grant or business mutation is conveyed by this roadmap.
