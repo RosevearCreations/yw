@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 35215)
+Total output lines: 1069
+
 # Next Steps and Sanity Check
 
 ## Restart checkpoint
@@ -468,159 +471,7 @@ The Owner / Management Command Centre now includes a read-only reconciliation qu
 
 Duplicate customer candidates require deterministic evidence: exact normalized email or phone, or normalized customer name plus postal code. Duplicate property candidates use normalized service address/postal or rounded coordinates. Matching contact values are used only for comparison and are not returned by the management workbench. Every candidate retains the original source IDs and references.
 
-Reference checks surface active job/dispatch/recurring links that are unavailable in complete loaded canonical sources, customer/property ownership mismatches, expired-but-active crew memberships, equipment assigned to inactive crews, and active dispatch assignments that use unavailable or lockout/replacement-hold equipment. If a required reference source reaches its configured row cap, reference-gap findings are withheld rather than treating unloaded rows as missing records.
-
-Four-season service/season checks compare explicit service context with the established spring/summer landscaping and lawn, fall cleanup/leaf, and winter snow/ice taxonomy. The workbench is advisory only: it cannot merge/delete records, delete history, rewrite foreign keys, reassign crews/equipment, clear lockouts or mutate Jobs, CRM, Finance or Safety authority.
-
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
-
-#### **361 — Mobile, Offline & Read-Budget Reliability Optimization** is implemented
-
-Mobile Crew now resolves Jobs and Safety permissions once each, keeps post-auth business reads to a documented maximum of 13, removes route/live-update history that the phone cards did not use, returns production/material/proof summary counts instead of bulky history arrays, and reports its payload/read-budget evidence in the response metadata.
-
-The Today surface no longer turns its 30-second local render timer into a background server refresh. Mobile Crew live context uses a five-minute freshness window with a four-hour signed-in session snapshot for poor-connectivity fallback; route activation, reconnect, foreground return, explicit refresh and successful writes remain deliberate freshness triggers.
-
-Offline action replay is profile-isolated, single-flight and capped at 12 actions per batch. Existing conflicts are held for explicit recovery instead of being replayed repeatedly, while Keep Mine, Merge and Retry still return a reviewed action to the normal replay path. Identical Admin directory reads are coalesced for three seconds per signed-in profile and invalidated before Admin mutation.
-
-The current release shell cache is reused for same-origin static assets while navigation remains network-first and Auth/API/Storage/Supabase traffic remains uncached. Source and rendered regression gates enforce the read, refresh, replay, cache and 390px mobile contracts without weakening module authorization, release evidence or offline conflict safety.
-
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
-
-#### **362 — Production Learning & Autonomous Roadmap Renewal** is implemented
-
-Item 362 reviews the production-learning evidence from items 351–361 and records the next autonomous sequence in `docs/production_learning_review_362.json`. The review keeps the current canonical business authorities intact and identifies the next gaps as outcome learning rather than more disconnected dashboards: decision closure/recurrence, schedule recovery, route plan-vs-actual, renewal conversion/churn, estimate accuracy, invoice/cash cycle time, labour capture completeness, equipment downtime economics, material-use variance, communication follow-up outcomes, data-quality recurrence, mobile/read-budget trend, and four-season capacity/margin mix.
-
-The renewed sequence is deliberately repository-owned and non-interactive. Ordinary releases must not require provider credentials, live payments, real customer messages, external staging acceptance or manual signoff to complete. Finance posting, payment/provider mutation, Auth control changes, destructive reconciliation, and provider delivery remain separately authorized rails.
-
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
-
-#### **363 — Management Decision Outcome Journal & Learning Loop** is implemented
-
-The Operations Needs Attention workspace now carries a private Admin-manage learning journal linked to the existing canonical source key. A management decision records the recommendation, chosen safe action, decision time, source status/priority/due state at review and triage score without copying source business payloads.
-
-Later outcome review records pending/resolved/improved/recurring/no-change/superseded state, recurrence signal, follow-up date and bounded evidence/reference. Defer/resolve disposition also leaves a learning trace while the existing attention state remains separate from the canonical Jobs, Safety, Finance, Equipment, Employment or CRM record.
-
-Schema 236 keeps the journal and its read view private behind RLS/service authority. The two management-learning writes are explicit Admin-manage contracts. The journal cannot dispatch work, change Finance, resolve Safety, clear equipment state, send customer/provider messages or create customer/vendor commitments.
-
-The next planned autonomous item is **364 — Workability-to-Schedule Recovery Outcomes**.
-
-<!-- Historical item 362 queue markers retained for regression provenance: #### 364 — Workability-to-Schedule Recovery Outcomes | renewed autonomous queue now continues with **364–376** -->
-
-#### **364 — Workability-to-Schedule Recovery Outcomes** is implemented
-
-The Owner / Management Command Centre now includes a read-only 90-day outcome layer over canonical Workability, Dispatch and Production evidence. Recorded constraint episodes are deduplicated to the latest evidence for the affected dispatch/work-order/date and classified as same-day completed, completed after recovery, partial/return visit, rescheduled pending, proposed reschedule pending or unresolved.
-
-Recovery time is measured only from the recorded constrained service date to a recorded later schedule/completion date. Completed-capacity evidence uses only Production `duration_minutes`; missing durations, productivity assumptions and jobs-per-crew targets are not invented. Spring/summer landscaping/lawn work, fall cleanup/leaf work, winter snow/ice work and general four-season work retain separate recovery summaries.
-
-Workability observations/decisions remain human/source-authoritative. The outcome layer does not query an external weather provider and cannot change Workability decisions, move/dispatch schedule items, complete work, send customer messages, clear Safety/equipment state or alter Finance.
-
-<!-- Historical item 364 handoff marker retained for regression provenance: The next planned autonomous item is **365 — Route Plan-vs-Actual & Stop-Sequence Learning**. -->
-<!-- Historical item 362 queue marker retained for regression provenance: #### 365 — Route Plan-vs-Actual & Stop-Sequence Learning -->
-
-#### **365 — Route Plan-vs-Actual & Stop-Sequence Learning** is implemented
-
-The Owner / Management Command Centre now extends the existing route-efficiency evidence into repeated plan-versus-actual learning. Planned stop position is compared with the sequence supported by recorded Production start times, while recorded service-duration variance, delay minutes, return visits, Workability effects, planned travel allowance and linked crew-travel evidence stay attached to each route-day comparison.
-
-Stable friction requires the same recorded friction type on at least two service dates for a route. Candidate sequencing review is stricter: the same planned-position versus recorded-start-position difference must recur on at least two dates. These are review signals only; YW does not rewrite routes, reorder stops, infer GPS or vehicle travel facts, score employees, dispatch crews or change Workability/source records.
-
-<!-- Historical item 365 handoff marker retained for regression provenance: The next planned autonomous item is **366 — Recurring Renewal Conversion & Churn Outcomes**. -->
-<!-- Historical item 362 queue marker retained for regression provenance: #### 366 — Recurring Renewal Conversion & Churn Outcomes -->
-
-#### **366 — Recurring Renewal Conversion & Churn Outcomes** is implemented
-
-The Owner / Management Command Centre now includes a read-only recurring-renewal outcome layer over recurring agreements, CRM interaction/renewal evidence, seasonal rollover decisions and permission-scoped profitability. Renewed and declined outcomes require explicit recorded renewal-decision evidence (or an explicitly renewal-related cancellation reason); ordinary active, overdue, cancelled or future status does not become a renewal decision by inference.
-
-Held outcomes require recorded pause/hold evidence. Expired outcomes require recorded ended/expired lifecycle evidence or an already-passed end date on a non-active lifecycle. Ambiguous or incomplete records remain unresolved. The recorded conversion rate uses only explicit renewed plus declined decisions, while recorded churn counts explicit declined plus expired outcomes.
-
-Finance evidence remains optional and permission-scoped. The outcome layer does not invent target profitability or retention value and cannot renew/cancel agreements, change prices, contact customers, resolve complaints or mutate CRM, recurring-service, rollover or Finance records.
-
-<!-- Historical item 366 handoff marker retained for regression provenance: The next planned autonomous item is **367 — Estimate Accuracy & Change-Order Margin Calibration**. -->
-<!-- Historical item 362 queue marker retained for regression provenance: #### 367 — Estimate Accuracy & Change-Order Margin Calibration -->
-
-#### **367 — Estimate Accuracy & Change-Order Margin Calibration** is implemented
-
-The Owner / Management Command Centre now compares accepted estimate assumption baselines with recorded Production and job-cost evidence. The accepted work-order assumption snapshot is preferred; current estimate assumptions are an explicitly disclosed fallback only when no accepted snapshot is available. Labour, material and equipment cost variance remains source-bounded, and labour hours are compared only where both estimate and Production evidence are recorded in hours.
-
-Customer-approved and applied change-order estimated cost deltas can adjust the comparison baseline without rewriting the accepted estimate. Approved but unapplied changes remain visible without changing that baseline. Recorded estimate margin can be compared with recorded actual job margin, but no target margin, markup recommendation, pricing threshold or automatic calibration is invented.
-
-Recurring calibration patterns require the same recorded variance direction on at least two comparable estimates within the same recorded template/group. This calibration layer is read-only and cannot edit estimates, approve extras, change pricing, mutate job-cost closeout or post Finance.
-
-<!-- Historical item 367 handoff marker retained for regression provenance: The next planned autonomous item is **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion**. -->
-<!-- Historical item 362 queue marker retained for regression provenance: #### 368 — Completed-to-Invoiced Cycle-Time & Cash Conversion -->
-
-#### **368 — Completed-to-Invoiced Cycle-Time & Cash Conversion** is implemented
-
-The Owner / Management Command Centre now measures recorded elapsed time from explicit completed Production evidence or approved closeout through invoice-candidate readiness, A/R invoice creation, payment application and full collection. Completion, closeout approval, invoice readiness and invoice creation use their recorded milestone timestamps rather than generic status or update times.
-
-Cash collection requires both recorded payment-application evidence and a recorded A/R balance at or below zero. Missing milestone evidence remains unavailable rather than becoming zero elapsed time. Open lifecycle stages are grouped into descriptive 0–1, 2–3, 4–7 and 8+ day cohorts without turning those buckets into service-level targets or automatic collection rules.
-
-The timing layer is read-only and cannot create invoices, apply payments, send collection messages, post journals, change closeout approvals or mutate payment/provider state.
-
-<!-- Historical item 368 handoff marker retained for regression provenance: The next planned autonomous item is **369 — Labour Capture Completeness & Payroll Exception Reduction**. -->
-<!-- Historical item 362 queue marker retained for regression provenance: #### 369 — Labour Capture Completeness & Payroll Exception Reduction -->
-
-#### **369 — Labour Capture Completeness & Payroll Exception Reduction** is implemented
-
-The Owner / Management Command Centre now matches the last 30 completed calendar days of scheduled/Production crew-job evidence to canonical timekeeping and payroll-readiness evidence. A work unit is complete only when matching time entries exist and every matched entry is payroll-ready; missing capture, open shifts, pending corrections, attendance review, supervisor approval and other unready evidence remain distinct.
-
-Late capture is counted only from explicitly recorded late/missed/untimely payroll exception or review codes rather than an invented elapsed-time threshold. The most recent 14 completed days are compared with the preceding 14 completed days to show recorded exception-rate movement without turning the comparison into a worker-performance target.
-
-The management response remains aggregated to crew/job/service-date and repeated crew/job patterns. It excludes individual employee names, employee numbers, explanations, supervisor notes and approver identities, and cannot edit time entries, approve payroll/corrections, change pay codes, rank workers, make employment decisions or override Safety restrictions.
-
-<!-- Historical item 369 handoff marker retained for regression provenance: The next planned autonomous item is **370 — Equipment Downtime Cost & Replacement Readiness**. -->
-<!-- Historical item 362 queue marker retained for regression provenance: #### 370 — Equipment Downtime Cost & Replacement Readiness -->
-
-#### **370 — Equipment Downtime Cost & Replacement Readiness** is implemented
-
-The Owner / Management Command Centre now combines equipment registry state with 365-day historical fleet downtime, recorded maintenance history, service tasks, signout/use evidence and optional linked job-level Finance context. Downtime exposure uses recorded event start/end timestamps; open downtime is measured only from its recorded start through evidence-generation time.
-
-Registry all-time service/lifecycle cost rollups remain separate from 365-day maintenance-history and service-task costs so the layer does not add overlapping sources together. Linked job repair/replacement/delay totals remain explicitly job-level context and are not attributed to an asset unless the Finance source already provides asset attribution.
-
-Replacement readiness preserves the existing replacement state, target date, reason and estimated cost. Repeated downtime means at least two recorded downtime events and repeated maintenance means at least two recorded maintenance/service events; these are lifecycle-review signals rather than replacement or purchasing recommendations. Lockout/return-to-service, maintenance execution, equipment purchasing/replacement, vendor commitments and Finance posting remain under their existing authorities.
-
-<!-- Historical item 370 handoff marker retained for regression provenance: The next planned autonomous item is **371 — Material Usage Variance & Reorder Calibration**. -->
-<!-- Historical item 362 queue marker retained for regression provenance: #### 371 — Material Usage Variance & Reorder Calibration -->
-
-#### **371 — Material Usage Variance & Reorder Calibration** is implemented
-
-The Owner / Management Command Centre now compares canonical Landscape Material Estimator planned quantities with recorded actual-use evidence, distinguishing material-issue-linked usage from production actual-use evidence without an issue link. A line is comparable only when all recorded actual-use events use the planned unit or carry a non-default explicit conversion factor to the planned unit; unresolved unit mismatches withhold variance rather than guessing.
-
-Repeated over-use or under-use requires at least two comparable estimator lines for the same material, service context and season with the same direction. The calibration view keeps current Materials Control stock-on-hand, reorder-required state, reorder point, reorder quantity and target stock beside those patterns, including recorded stockout evidence, but does not invent a replacement reorder value.
-
-Estimator assumptions, actual-use events, inventory quantities, reorder settings and purchasing remain under their existing authorities. This calibration layer cannot create purchase orders, contact suppliers, reserve stock or create vendor commitments.
-
-<!-- Historical item 371 handoff marker retained for regression provenance: The next planned autonomous item is **372 — Customer Communication Outcome & Follow-Up Effectiveness**. -->
-
-<!-- Historical item 362 queue marker retained for regression provenance: #### 372 — Customer Communication Outcome & Follow-Up Effectiveness -->
-
-#### **372 — Customer Communication Outcome & Follow-Up Effectiveness** is implemented
-
-The Owner / Management Command Centre now measures recorded communication outcomes from canonical CRM interactions, CRM follow-ups, approved/invoice-ready closeouts and protected notification-delivery evidence. A recorded customer response requires a later inbound CRM interaction on the same work order; missing linkage or missing inbound evidence remains unknown rather than being inferred as silence, failure or success.
-
-Follow-up effectiveness keeps completion status and timing explicit by comparing recorded completed_at with due_at. Cancelled work is not counted as completed, overdue open follow-up stays open, and CRM outcome/status remains separate from response evidence. Provider sent state is delivery evidence only and is never treated as customer read/reply proof.
-
-Repeated unresolved outreach means at least two recorded outbound CRM interactions for the same work order with no later recorded inbound interaction after the first outbound. It is an operational review signal only, never a customer-quality score or staff-performance rating. This layer cannot send or retry messages, create/close CRM records, change customer consent/preferences, publish customer updates, reschedule work, collect payment or contact a provider.
-
-<!-- Historical item 372 handoff marker retained for regression provenance: The next planned autonomous item is **373 — Data Quality Remediation Outcome & Recurrence Prevention**. -->
-
-<!-- Historical item 362 queue marker retained for regression provenance: #### 373 — Data Quality Remediation Outcome & Recurrence Prevention -->
-
-#### **373 — Data Quality Remediation Outcome & Recurrence Prevention** is implemented
-
-The Owner / Management Command Centre now gives every current data-quality reconciliation signal a stable <code>admin:data_quality_signal</code> source identity and joins current findings to the existing private Management Decision Outcome Journal. Current findings are separated into tracked open, untracked open and recurring states without changing the canonical source record.
-
-A prior resolved/improved journal outcome is counted as confirmed resolved by absence only when every source required by the current data-quality scan completed successfully and remained below its configured query cap. Partial or capped source coverage therefore withholds resolution instead of treating an unseen row as repaired.
-
-A current source key becomes recurring when recurrence was explicitly recorded or when the same key reappears after a resolved/improved outcome. Duplicate, broken-reference, stale-assignment and four-season-tag recurrence receives advisory prevention review guidance only. The layer cannot auto-merge/delete identities, rewrite foreign keys, reassign crews/equipment, clear lockouts, rewrite historical tags or automatically mutate management-journal rows.
-
-<!-- Historical item 373 handoff retained for regression provenance: The next planned autonomous item is **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes**. -->
-
-<!-- Historical item 362 queue heading retained for regression provenance: #### 374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes -->
-#### **374 — Mobile Offline Reliability Trend & Read-Budget Guardrail Outcomes** is implemented
-
-The Mobile Crew reliability card now compares the retained item 361 release contract with the current release for the business-read ceiling, payload budget, live-refresh interval, signed-in-session cache window, offline replay batch and Admin read-coalescing window. The rendered outcome also classifies the current payload-size band and reports a local offline-action conflict rate from aggregate queue counts only.
-
-The release gate fails closed when a later change raises the business-read or payload ceiling, increases replay batch size, makes automatic refresh more aggressive, extends the stale-cache window, shortens Admin read coalescing, or produces an over-budget Mobile Crew payload. Clearing a regression requires repairing the source behavior; the gate does not silently accept a larger budget.
+Reference checks surface active job/dispatch/recurring links that are unavailable in complete loaded canonical sources, customer/property ownership mismatches, expired-but-active crew memberships, equipment assigned to inactive crews, and active dispatch assignments that use unavailable or lockout/replacement-hold equipment. If a required reference source reaches its configured r…5215 tokens truncated…avior; the gate does not silently accept a larger budget.
 
 Runtime evidence is privacy-bounded: no customer names, addresses, notes, queued payload bodies, server payload bodies or device identifiers are retained by the trend view. Existing Jobs, Safety, Auth, offline-recovery and release-source authorities remain canonical, and the evidence layer cannot replay, merge, discard or mutate queued work.
 
@@ -1042,6 +893,8 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 426 — Water Park Inspection & Safety Evidence
 
+**Implementation:** The immutable, owner-only `ywi_aquatic_inspections_426` and `ywi_aquatic_followups_426` tables attach operator-reported dated aquatic area observations and follow-up action receipts to the **original** company-scoped `water_parks` Jobs work order, with original Item 422 customer/property proof and independent Jobs create permission/entitlement. Source optional site Safety plans must belong to the identical work order and property. The receipt stores original source log reference, factual notes, optional observed pH/sanitizer/temperature *without threshold interpretation*, and reported concern/closure only; no verified regulatory inspection is implied. The original Jobs/Safety fingerprint yields `source_changed_hold` on changes. Reported concerns/closure, missing or unapproved Safety plans remain on HOLD. An operator-reported follow-up **never** lifts a closure; independent Safety authorization remains required. Repeating an identical key/request is idempotent, changed payloads conflict. Admin owner UI at phone/desktop with Help, reviewed `sql/water_park_inspection_safety_evidence_426.sql`, source/browser tests; no automated dosing, facility reopening, compliance certification, Safety mutation, job closure, inventory/Finance posting or invoice. Production's actual aquatic work/inspection counts must be verified before claiming a live inspection.
+
 **Acceptance:** Track dated aquatic inspection records, closure holds and follow-up receipts.
 
 **Canonical source:** Safety and maintenance inspection authority. **Boundary:** No automated chemical dosing or unattended reopening.
@@ -1064,4 +917,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 426 — Water Park Inspection & Safety Evidence.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 427 — Snow Removal & Plowing Event Separation.** No new operator grant or business mutation is conveyed by this roadmap.

@@ -208,6 +208,7 @@ jobs:
       - run: npm run test:shared-allocation-proof-423
       - run: npm run test:landscape-field-evidence-424
       - run: npm run test:construction-phase-permit-425
+      - run: npm run test:water-park-inspection-426
       - run: npm run test:management-outcome-confidence-cohort-trend
       - run: npm run test:workability-forecast-recovery-calibration
       - run: npm run test:management-decision-outcome-journal
@@ -361,6 +362,7 @@ jobs:
       - run: npm run test:browser:shared-allocation-proof-423
       - run: npm run test:browser:landscape-field-evidence-424
       - run: npm run test:browser:construction-phase-permit-425
+      - run: npm run test:browser:water-park-inspection-426
       - run: npm run test:browser:production-learning-roadmap-renewal-v
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
