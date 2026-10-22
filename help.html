@@ -397,6 +397,14 @@
 
         
         
+        <section class="help-section" id="shared-allocation-proof-423" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
+          <h2>Item 423 — Shared Equipment &amp; Materials Allocation Proof</h2>
+          <p><strong>Where:</strong> Admin → Management/Operations/Jobs → 423 · Shared Equipment &amp; Materials Allocation Proof. Sign in as the company owner, refresh the verified company list and select an existing company-scoped work order that was explicitly linked to its original customer/property in Item 422. Only original material issue lines and equipment sign-outs tied to that work order can appear.</p>
+          <p><strong>Record one source:</strong> A material issue must be in issued/partial/closed status, have positive job-use quantity, a matching material and property, and a valid source line. An equipment checkout needs the original work-order assignment, a verified arrival/return, passed or not-required safety test, no current lockout and no overlapping asset booking. The server checks independent Jobs create permission and an enabled specialist service. Review the exact source before confirming the append-only receipt.</p>
+          <p><strong>Do not double-count:</strong> Each original material issue line or equipment signout can have at most one proof globally. A repeat for the same unchanged source is idempotent; a cross-order attempt is blocked. The displayed material issue-line amount is an *original issued source amount*, not proof of field consumption or an additional cost entry. Equipment presence is not equipment-hour billing. If original evidence changes, the receipt becomes HOLD for manual inspection.</p>
+          <p><strong>No automatic business action:</strong> This screen never changes stock, creates material adjustments, modifies equipment sign-outs or lockouts, posts GL/job costs, sends notifications, dispatches a crew or invoices a customer. Source and receipt limits are fail-closed; denied, partial or foreign data is withheld. Original unscoped legacy work cannot be claimed automatically. Reviewed migration: `sql/shared_equipment_material_allocation_proof_423.sql`.</p>
+        </section>
+
         <section class="help-section" id="cross-service-continuity-422" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
           <h2>Item 422 — Cross-Service Customer &amp; Property Continuity</h2>
           <p><strong>Where:</strong> Admin → Management/Operations → 422 · Cross-Service Customer &amp; Property Continuity. Sign in as the company owner and refresh. Select the verified company, then create a new canonical customer and property under it, or select one of the already linked customer/property records. The original customer identity can be shared across landscaping, construction, water parks, snow removal, snow plowing and septic services without creating six separate customer cards.</p>

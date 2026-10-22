@@ -300,7 +300,9 @@
     "test:new-work-company-gate-421": "node scripts/new-work-company-gate-421-check.mjs",
     "test:browser:new-work-company-gate-421": "playwright test --config=playwright.config.mjs tests/browser/new-work-company-gate-421.spec.mjs",
     "test:cross-service-continuity-422": "node scripts/cross-service-continuity-422-check.mjs",
-    "test:browser:cross-service-continuity-422": "playwright test --config=playwright.config.mjs tests/browser/cross-service-continuity-422.spec.mjs"
+    "test:browser:cross-service-continuity-422": "playwright test --config=playwright.config.mjs tests/browser/cross-service-continuity-422.spec.mjs",
+    "test:shared-allocation-proof-423": "node scripts/shared-allocation-proof-423-check.mjs",
+    "test:browser:shared-allocation-proof-423": "playwright test --config=playwright.config.mjs tests/browser/shared-allocation-proof-423.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
