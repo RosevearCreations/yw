@@ -302,7 +302,9 @@
     "test:cross-service-continuity-422": "node scripts/cross-service-continuity-422-check.mjs",
     "test:browser:cross-service-continuity-422": "playwright test --config=playwright.config.mjs tests/browser/cross-service-continuity-422.spec.mjs",
     "test:shared-allocation-proof-423": "node scripts/shared-allocation-proof-423-check.mjs",
-    "test:browser:shared-allocation-proof-423": "playwright test --config=playwright.config.mjs tests/browser/shared-allocation-proof-423.spec.mjs"
+    "test:browser:shared-allocation-proof-423": "playwright test --config=playwright.config.mjs tests/browser/shared-allocation-proof-423.spec.mjs",
+    "test:landscape-field-evidence-424": "node scripts/landscape-field-evidence-424-check.mjs",
+    "test:browser:landscape-field-evidence-424": "playwright test --config=playwright.config.mjs tests/browser/landscape-field-evidence-424.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
