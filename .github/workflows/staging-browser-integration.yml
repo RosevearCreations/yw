@@ -236,18 +236,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for source_file in /etc/apt/sources.list.d/*; do
-            if [ -f "$source_file" ] && grep -q 'dl.google.com/linux/chrome-stable/deb' "$source_file"; then
-              sudo mv "$source_file" "${source_file}.ywi-disabled"
-            fi
-          done
-          if [ -f /etc/apt/sources.list ]; then
-            sudo sed -i '\|dl.google.com/linux/chrome-stable/deb|s|^|# YWI CI disabled: |' /etc/apt/sources.list
-          fi
+          # GitHub's Ubuntu runner already provides Chromium's system libraries.
+          # Playwright --with-deps spawns apt-get, which can outlive a bounded
+          # timeout and lock dpkg across retries, leaving all browser gates skipped.
+          # Install only the pinned Playwright browser; never start an APT writer.
           install_ok=false
           for attempt in 1 2 3; do
             echo "Chromium install attempt ${attempt}/3"
-            if timeout --kill-after=15s 300s npx playwright install --with-deps chromium; then
+            if timeout --kill-after=10s 150s npx playwright install chromium; then
               install_ok=true
               break
             fi
