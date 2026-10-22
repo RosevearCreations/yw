@@ -304,7 +304,9 @@
     "test:shared-allocation-proof-423": "node scripts/shared-allocation-proof-423-check.mjs",
     "test:browser:shared-allocation-proof-423": "playwright test --config=playwright.config.mjs tests/browser/shared-allocation-proof-423.spec.mjs",
     "test:landscape-field-evidence-424": "node scripts/landscape-field-evidence-424-check.mjs",
-    "test:browser:landscape-field-evidence-424": "playwright test --config=playwright.config.mjs tests/browser/landscape-field-evidence-424.spec.mjs"
+    "test:browser:landscape-field-evidence-424": "playwright test --config=playwright.config.mjs tests/browser/landscape-field-evidence-424.spec.mjs",
+    "test:construction-phase-permit-425": "node scripts/construction-phase-permit-425-check.mjs",
+    "test:browser:construction-phase-permit-425": "playwright test --config=playwright.config.mjs tests/browser/construction-phase-permit-425.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

@@ -397,6 +397,15 @@
 
         
         
+        <section class="help-section" id="construction-phase-permit-425" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
+          <h2>Item 425 — Construction Phase, Permit &amp; Change Control</h2>
+          <p><strong>Where:</strong> Admin → Management/Operations/Jobs → 425 · Construction Phase, Permit &amp; Change Control. An authenticated active company owner with Jobs create rights and an enabled construction service may select only company-scoped original construction work orders with Item 422 customer/property links. The source Jobs work order and work-order lines remain canonical.</p>
+          <p><strong>Phases:</strong> Append a uniquely keyed, sequenced phase reference with factual scope and optional original Jobs plan line. A repeated unchanged entry returns the same receipt. Phase records are immutable planning evidence, not a new dispatch, work order, construction approval or completion.</p>
+          <p><strong>Permit reports:</strong> Choose a phase and record the category, operator-reported stage, observed date, source document reference and factual notes. A reported “issued” stage is NOT independently certified. Each phase/category/reference has at most one immutable evidence receipt. Optional Safety-plan and change-order IDs must belong to the same original work order; Safety's site property must match. No third-party permit portal is queried and no public compliance claim is made.</p>
+          <p><strong>Independent Safety and Finance holds:</strong> The original Safety plan retains stop-work and supervisor review authority. Finance release requires an existing signed release review with allowed status and passing threshold. Original change orders must retain separate supervisor pricing, customer authorization and applied budget evidence; a pending or rejected change remains on HOLD. Original-source changes after a receipt make its fingerprint stale and show HOLD for manual reconciliation. Even a displayed source-verified gate is <em>not</em> permit approval or work authorization.</p>
+          <p><strong>Never automated:</strong> This workbench cannot issue or certify a permit, grant an inspection sign-off, change a Safety plan, approve or apply a change order, override spending limits, change pricing, dispatch work, release a project, post costs or invoice. Direct browser writes to the two private evidence tables are denied. Reviewed SQL is <code>sql/construction_phase_permit_change_control_425.sql</code>. Empty Production sources are NOT proof of a real permit or field review.</p>
+        </section>
+
         <section class="help-section" id="landscape-field-evidence-424" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
           <h2>Item 424 — Landscaping Field Production Evidence</h2>
           <p><strong>Where:</strong> Admin → Management/Operations/Jobs → 424 · Landscaping Field Production Evidence. Sign in as the company owner, refresh the verified company and choose an original landscaping work order with a customer and property explicitly linked by Item 422.</p>
