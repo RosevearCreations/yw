@@ -60,5 +60,5 @@ test('changed original source emits HOLD instead of silent cost attribution',asy
  await setup(page,{hold:true});await page.locator('#owner423Order').selectOption(ids.order);
  page.once('dialog',d=>d.accept());await page.locator('[data-owner423-kind="material"] button').click();
  await expect(page.locator('[data-owner423-proof="hold"]')).toHaveCount(1);
- await expect(page.locator('[data-owner423-hold]')).toContainText('manual inspection');
+ await expect(page.locator('[data-owner423-hold]')).toContainText('Review original ledger');
 });
