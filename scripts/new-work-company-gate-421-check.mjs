@@ -24,5 +24,5 @@ const pkg=JSON.parse(read('package.json'));const ci=read('.github/workflows/stag
 assert.equal(pkg.scripts['test:new-work-company-gate-421'],'node scripts/new-work-company-gate-421-check.mjs');
 assert.ok(ci.includes('npm run test:new-work-company-gate-421'));
 assert.ok(ci.includes('npm run test:browser:new-work-company-gate-421'));
-assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('Next queued: Item 422'));
+assert.ok(/Next queued: Item 42[23]/.test(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md')));
 console.log('Item 421: strict canonical SQL INSERT guards, staff Jobs permission, owner service, historical continuity PASS');

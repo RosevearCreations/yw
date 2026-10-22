@@ -204,6 +204,7 @@ jobs:
       - run: npm run test:company-service-inventory-419
       - run: npm run test:company-service-registry-420
       - run: npm run test:new-work-company-gate-421
+      - run: npm run test:cross-service-continuity-422
       - run: npm run test:management-outcome-confidence-cohort-trend
       - run: npm run test:workability-forecast-recovery-calibration
       - run: npm run test:management-decision-outcome-journal
@@ -357,6 +358,7 @@ jobs:
       - run: npm run test:browser:company-service-inventory-419
       - run: npm run test:browser:company-service-registry-420
       - run: npm run test:browser:new-work-company-gate-421
+      - run: npm run test:browser:cross-service-continuity-422
       - run: npm run test:browser:production-learning-roadmap-renewal-v
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration

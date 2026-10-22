@@ -1010,6 +1010,8 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 422 — Cross-Service Customer & Property Continuity
 
+**Implementation:** Add owner-only immutable provenance links from the existing `clients` and `client_sites` identities to an explicitly owned company. Reviewed SQL is in `sql/company_customer_property_continuity_422.sql`; its customer/property creation RPCs insert the *original* CRM rows and their tenant proof atomically, and its history RPC reads only that company's verified links and original scoped Estimates/Work Orders. A second server function permits a one-time customer/property assignment to the company's draft, while the original Item 421 Jobs-create and enabled-service checks still run. The app's 422 owner workbench supports safe creation, authenticated readback, an all-services timeline, and explicit draft attachment. Historical unscoped data remains unchanged and cannot be implicitly claimed from names, addresses, phone numbers or matching service records. Earlier company drafts can stay unlinked; disabled services remain visible in verified historical timeline but cannot authorize new attachment. No new CRM identity table or invoice/dispatch route is introduced. Source/browser gates and phone Help acceptance are mandatory.
+
 **Acceptance:** Present original one-customer/many-services job history with privacy and tenant checks.
 
 **Canonical source:** Original CRM customer and site records. **Boundary:** No duplicated CRM authority or cross-tenant disclosure.
@@ -1056,4 +1058,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 422 — Cross-Service Customer & Property Continuity.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 423 — Shared Equipment & Materials Allocation Proof.** No new operator grant or business mutation is conveyed by this roadmap.
