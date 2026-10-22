@@ -1026,6 +1026,8 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 424 — Landscaping Field Production Evidence
 
+**Implementation:** A private append-only field attestation keyed uniquely to an original `job_session_production_quantities` record; the owning landscaping company's original Jobs work order, dated session, verified client-property zone, recorded operator and positive measured activity/unit must all match. The owner-signed, dated observation may reference existing Execution Proof and QC run IDs only when they belong to the same session/order. Source fingerprints detect later original-quantity, session or site-zone changes and move the displayed receipt to HOLD. Original Production, Jobs, QC and media stay authoritative; no user-provided operator signature or timestamp is trusted. Owner-only Admin panel with mobile layout and Help link; new SQL `sql/landscaping_field_production_evidence_424.sql`, source and browser CI regression. A permissioned empty Production directory is *not* evidence that any field work was completed. No automatic completion, QC approval, invoice or financial posting.
+
 **Acceptance:** Record site-zone, measured grounds work and dated operator field evidence for landscaping.
 
 **Canonical source:** Jobs, Production and QC sessions. **Boundary:** No automatic completion or invoice.
@@ -1060,4 +1062,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 424 — Landscaping Field Production Evidence.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 425 — Construction Phase, Permit & Change Control.** No new operator grant or business mutation is conveyed by this roadmap.
