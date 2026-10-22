@@ -397,6 +397,14 @@
 
         
         
+        <section class="help-section" id="landscape-field-evidence-424" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
+          <h2>Item 424 — Landscaping Field Production Evidence</h2>
+          <p><strong>Where:</strong> Admin → Management/Operations/Jobs → 424 · Landscaping Field Production Evidence. Sign in as the company owner, refresh the verified company and choose an original landscaping work order with a customer and property explicitly linked by Item 422.</p>
+          <p><strong>Canonical field sources:</strong> The original Jobs Production session and production quantity must name a real site zone belonging to the same property, an original operator, a past or present session date, an active measurable landscaping activity, a positive actual quantity and an explicit unit. The source work is neither invented nor modified by the new receipt. Non-landscaping services and cancelled sessions are excluded. An optional Execution Proof or QC run must belong to the exact same work order and field session.</p>
+          <p><strong>Operator evidence:</strong> The original production-quantity author is shown as the source operator; the authenticated company owner supplies a dated, factual observation of 20–1000 characters and confirms it. That owner attestation is <em>unreviewed</em> and cannot impersonate a worker's signature or substitute for the original media/QC evidence. The server alone sets the signing identity and timestamp. The receipt is append-only and globally unique per original quantity, and repeated identical requests return the original ID.</p>
+          <p><strong>Review hold:</strong> If an original quantity, linked session or site zone changes later, its fingerprint no longer matches and the receipt displays HOLD, requiring manual reconciliation. Missing, foreign, incomplete or over-limit sources are withheld. No automated work-order or session completion, QC approval, Safety sign-off, payroll adjustment, invoice, inventory movement or Finance posting is authorized. Reviewed SQL: <code>sql/landscaping_field_production_evidence_424.sql</code>.</p>
+        </section>
+
         <section class="help-section" id="shared-allocation-proof-423" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
           <h2>Item 423 — Shared Equipment &amp; Materials Allocation Proof</h2>
           <p><strong>Where:</strong> Admin → Management/Operations/Jobs → 423 · Shared Equipment &amp; Materials Allocation Proof. Sign in as the company owner, refresh the verified company list and select an existing company-scoped work order that was explicitly linked to its original customer/property in Item 422. Only original material issue lines and equipment sign-outs tied to that work order can appear.</p>
