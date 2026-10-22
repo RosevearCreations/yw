@@ -59,7 +59,12 @@ jobs:
           fi
 
           if ! git merge-base --is-ancestor "$current_dev" "$current_main"; then
-            echo 'Refusing reconciliation: dev history diverged from current main.' >&2
+            if git diff --quiet "$current_dev" "$current_main" --; then
+              echo 'Refusing reconciliation: dev and main have identical trees but diverged commit ancestry (likely a squash/rebase Production merge).' >&2
+              echo 'Repair through a protected dev-to-main PR using a merge commit; do not force-push either branch.' >&2
+            else
+              echo 'Refusing reconciliation: dev history diverged from current main.' >&2
+            fi
             exit 1
           fi
 
