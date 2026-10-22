@@ -397,6 +397,14 @@
 
         
         
+        <section class="help-section" id="water-park-inspection-426" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
+          <h2>Item 426 — Water Park Inspection &amp; Safety Evidence</h2>
+          <p><strong>Where:</strong> Admin → Management/Operations/Safety/Jobs → 426 · Water Park Inspection &amp; Safety Evidence. An authenticated active company owner with Jobs create rights and an enabled water-parks service may select only original company work orders linked to their canonical customer and property.</p>
+          <p><strong>Inspect:</strong> Append a dated, uniquely keyed, operator-reported inspection for a named aquatic area. Record an original observation or test-log reference, factual site notes, the reported concern/closure stage and optional measured pH, sanitizer in mg/L and water temperature in °C. These are unverified field readings: no threshold automatically certifies water as safe. A linked original Safety plan must belong to the same work order and property. Missing or pending supervisor review remains on HOLD.</p>
+          <p><strong>Closures and follow-ups:</strong> Reported concerns or closures retain HOLD. Append a uniquely keyed, dated action reference and follow-up observations against the original inspection; even an operator report marked “addressed” does NOT release a closure. Independent Safety authority must review and authorize any real-world reopening through its own existing process. Original Jobs/Safety changes after an inspection produce a fingerprint HOLD requiring manual reconciliation. The screen provides no reopening button.</p>
+          <p><strong>Never automated:</strong> No chemical dosing, equipment control, compliance certification, unattended opening/reopening, incident clearance, Safety plan modification, job completion or invoice. Direct table writes are denied; new evidence is append-only and owner-scoped. Reviewed SQL is <code>sql/water_park_inspection_safety_evidence_426.sql</code>. An empty Production source is not proof an aquatic facility was inspected.</p>
+        </section>
+
         <section class="help-section" id="construction-phase-permit-425" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
           <h2>Item 425 — Construction Phase, Permit &amp; Change Control</h2>
           <p><strong>Where:</strong> Admin → Management/Operations/Jobs → 425 · Construction Phase, Permit &amp; Change Control. An authenticated active company owner with Jobs create rights and an enabled construction service may select only company-scoped original construction work orders with Item 422 customer/property links. The source Jobs work order and work-order lines remain canonical.</p>

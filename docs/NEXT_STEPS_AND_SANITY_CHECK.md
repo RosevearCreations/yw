@@ -1042,6 +1042,8 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 426 — Water Park Inspection & Safety Evidence
 
+**Implementation:** The immutable, owner-only `ywi_aquatic_inspections_426` and `ywi_aquatic_followups_426` tables attach operator-reported dated aquatic area observations and follow-up action receipts to the **original** company-scoped `water_parks` Jobs work order, with original Item 422 customer/property proof and independent Jobs create permission/entitlement. Source optional site Safety plans must belong to the identical work order and property. The receipt stores original source log reference, factual notes, optional observed pH/sanitizer/temperature *without threshold interpretation*, and reported concern/closure only; no verified regulatory inspection is implied. The original Jobs/Safety fingerprint yields `source_changed_hold` on changes. Reported concerns/closure, missing or unapproved Safety plans remain on HOLD. An operator-reported follow-up **never** lifts a closure; independent Safety authorization remains required. Repeating an identical key/request is idempotent, changed payloads conflict. Admin owner UI at phone/desktop with Help, reviewed `sql/water_park_inspection_safety_evidence_426.sql`, source/browser tests; no automated dosing, facility reopening, compliance certification, Safety mutation, job closure, inventory/Finance posting or invoice. Production's actual aquatic work/inspection counts must be verified before claiming a live inspection.
+
 **Acceptance:** Track dated aquatic inspection records, closure holds and follow-up receipts.
 
 **Canonical source:** Safety and maintenance inspection authority. **Boundary:** No automated chemical dosing or unattended reopening.
@@ -1064,4 +1066,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 426 — Water Park Inspection & Safety Evidence.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 427 — Snow Removal & Plowing Event Separation.** No new operator grant or business mutation is conveyed by this roadmap.
