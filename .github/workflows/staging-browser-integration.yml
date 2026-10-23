@@ -188,6 +188,7 @@ jobs:
       - run: npm run test:production-learning-roadmap-renewal-iv
       - run: npm run test:production-learning-roadmap-renewal-v
       - run: npm run test:cross-service-production-learning-429
+      - run: npm run test:six-service-owner-trial-430
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -370,6 +371,7 @@ jobs:
       - run: npm run test:browser:septic-disposal-428
       - run: npm run test:browser:production-learning-roadmap-renewal-v
       - run: npm run test:browser:cross-service-production-learning-429
+      - run: npm run test:browser:six-service-owner-trial-430
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
