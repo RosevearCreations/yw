@@ -28,7 +28,7 @@ test('phone owner workflow uses original data, never auto-creates a first job',a
  await expect(page.locator('#owner430Status')).toContainText('Every service still requires');
  await page.locator('#owner430Customer').selectOption('customer-1');
  await expect(page.locator('[data-owner430-service="landscape"]')).toContainText('job-1');
- await expect(page.locator('[data-owner430-service="landscape"]')).toContainText('review');
+ await expect(page.locator('[data-owner430-service="landscape"]')).toContainText('REVIEW PENDING');
  await expect(page.locator('[data-owner430-service="construction"]')).toContainText('NEEDS WORK ORDER');
  expect(await page.evaluate(()=>window.__reads)).toEqual(expect.arrayContaining(['ywi_companies','ywi_company_service_modules',
   'ywi_rpc_company_customers_422','ywi_rpc_customer_history_422']));
