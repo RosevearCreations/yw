@@ -1058,6 +1058,8 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 428 — Septic Haulage & Disposal Receipt Control
 
+**Implementation:** Original company-owned `septic` Jobs orders, original Dispatch crew assignments and trucks, original Jobs execution-proof media for the actual disposal ticket, Fleet readiness and site Safety remain canonical. An authenticated owner with Jobs create permission and enabled septic service can append one immutable `ywi_septic_disposal_receipts_428` evidence receipt per uploaded source artifact and unique facility/receipt number, with an assigned active operator, dated collection/disposal, measured tank litres, method and measurement log, waste stream, real facility name and document number. The actual receipt image must be a stored original Jobs proof-media asset and cannot be an arbitrary typed URL; the image is still operator-attested, not independently authenticated by the disposal facility. Duplicate source/facility receipt reuse is blocked; identical replay is idempotent, changed source fingerprints mark HOLD. Missing/unready Fleet and unapproved Safety remain HOLD. An independently reviewable origin is NOT legal or environmental compliance, completion, disposal authorization, automatic truck dispatch, payroll, costing or invoicing. The owner-only Admin workbench, Help, additive SQL and source/mobile-browser tests are release-gated. Actual Production field acceptance needs genuine work orders and source documents; empty history is not success.
+
 **Acceptance:** Track measured tank volume, operator and legitimate disposal receipts against original job IDs.
 
 **Canonical source:** Jobs, fleet, Safety and disposal evidence. **Boundary:** No fabricated regulatory compliance or autonomous disposal.
@@ -1068,4 +1070,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 428 — Septic Haulage & Disposal Receipt Control.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 429 — Production Learning & Cross-Service Trial Review VI.** No new operator grant or business mutation is conveyed by this roadmap.

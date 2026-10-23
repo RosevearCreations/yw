@@ -48,7 +48,7 @@ for(const key of ['owner427','owner427Form','owner427Results','owner427Record','
  assert.ok(js.includes(key),`Missing client guard: ${key}`);
 assert.ok(read('index.html').includes('snow-removal-plowing-427.js'));
 assert.ok(read('help.html').includes('id="snow-service-events-427"'));
-assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('Next queued: Item 428'));
+assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('#### 428 — Septic Haulage & Disposal Receipt Control'));
 assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('### Item 427'));
 for(const key of ['test:snow-service-events-427','test:browser:snow-service-events-427']){
  assert.ok(read('package.json').includes(key));
