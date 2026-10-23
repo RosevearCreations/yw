@@ -58,7 +58,7 @@ for(const s of ['owner428','owner428Form','owner428Results','owner428Record','ow
 assert.ok(read('index.html').includes('septic-haulage-disposal-428.js'));
 assert.ok(read('help.html').includes('id="septic-disposal-428"'));
 assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('## Item 428'));
-assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('Next queued: Item 429'));
+assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('#### 429 — Production Learning & Cross-Service Trial Review VI'));
 for(const key of ['test:septic-disposal-428','test:browser:septic-disposal-428']){
  assert.ok(read('package.json').includes(key));
  assert.ok(read('.github/workflows/staging-browser-integration.yml').includes(`npm run ${key}`));
