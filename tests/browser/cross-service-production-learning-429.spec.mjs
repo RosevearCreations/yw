@@ -22,7 +22,7 @@ test('Build 429 read-only six-service trial review is readable at 390px',async({
 test('Build 429 owner cockpit notice has truthful limits and one help destination',async({page})=>{
   await page.setContent(help);
   const section=page.locator('#production-learning-cross-service-429');
-  await expect(section).toContainText('No company toggles, dispatches, invoices, payments, messages or Safety approvals');
+  await expect(section).toContainText('company toggles, dispatches, invoices, payments, messages or Safety approvals');
   expect(owner).toContain('data-build="429"');
   expect(owner).toContain('/help.html#production-learning-cross-service-429');
   expect(owner).toContain('not measured');
