@@ -190,6 +190,7 @@ jobs:
       - run: npm run test:cross-service-production-learning-429
       - run: npm run test:six-service-owner-trial-430
       - run: npm run test:service-site-intake-431
+      - run: npm run test:cross-service-estimate-job-handoff-432
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -374,6 +375,7 @@ jobs:
       - run: npm run test:browser:cross-service-production-learning-429
       - run: npm run test:browser:six-service-owner-trial-430
       - run: npm run test:browser:service-site-intake-431
+      - run: npm run test:browser:cross-service-estimate-job-handoff-432
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
