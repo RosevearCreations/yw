@@ -24,7 +24,7 @@ for(const q of report.new_bounded_queue){
   assert.ok(q.acceptance.length>65&&q.source.length>25&&q.boundary.length>25);
   assert.ok(roadmap.includes('#### '+q.build+' — '+q.title));
 }
-assert.ok(roadmap.includes('Next queued: Item 430'));
+assert.ok(roadmap.includes('#### 430 — Six-Service Owner Trial Intake & Source-Coverage Runbook'));
 assert.ok(handbook.includes('Item 429 — Production Learning & Cross-Service Trial Review VI'));
 assert.ok(help.includes('id="production-learning-cross-service-429"'));
 assert.ok(owner.includes('data-build="429"'));

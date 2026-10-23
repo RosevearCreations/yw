@@ -1080,6 +1080,8 @@ The priority order below reflects *prerequisites and operational readiness*, not
 
 **Priority P0. Acceptance:** Guide owner company/entitlement setup and genuine first customer/property/job trial, expose authoritative missing-source holds and avoid replay duplicates. **Canonical source:** Company registry, original CRM/Jobs, Item 429 gap report. **Boundary:** No synthetic first jobs, auto-entitlements or unauthorized records.
 
+**Implemented:** The owner-only, mobile-safe `js/six-service-owner-trial-430.js` renders an interactive six-offering intake checklist using signed-in Supabase owner verification, 420 company/entitlement rows and owner-scoped 422 customer/site/work-order RPCs. The source reducer fails closed on stale, denied, duplicate, foreign or capped company/customer/history data. A real original Jobs link is reported as present with specialist proof and owner acceptance still **unverified**; each service points to the appropriate 424–428 source workflow. The operator deliberately performs all creation/linkage in audited 420–422 screens; this read-only feature has no insert/update/delete or success-forcing action. Source and phone-browser regression tests are release gates. As of Item 429's dated Production sample, no first-job outcome was measured; do not treat this new screen or browser fixtures as an actual business trial.
+
 #### 431 — Service-Specific Intake Templates & Verified Site Constraints
 
 **Priority P0. Acceptance:** Show per-service factual site requirements and missing Safety evidence using the same original CRM customer/property IDs. **Canonical source:** Original property/site registry, templates and Safety. **Boundary:** No guessed measurements, duplicated CRM authority or automatic Safety pass.
@@ -1128,4 +1130,4 @@ The priority order below reflects *prerequisites and operational readiness*, not
 
 **Priority P2. Acceptance:** Reinspect real company-scoped service-specific first jobs, withhold insufficient comparisons, and renew a bounded operator-value-driven roadmap. **Canonical source:** Dated original Jobs/Production/Finance and service receipts. **Boundary:** No unmeasured improvement, ROI, employee score or business mutation.
 
-**Next queued: Item 430 — Six-Service Owner Trial Intake & Source-Coverage Runbook.** No operator authorization or business mutation is conferred by this roadmap.
+**Next queued: Item 431 — Service-Specific Intake Templates & Verified Site Constraints.** No operator authorization or business mutation is conferred by this roadmap.
