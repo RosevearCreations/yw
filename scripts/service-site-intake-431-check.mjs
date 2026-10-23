@@ -58,8 +58,8 @@ for(const token of ['ywi_companies','ywi_company_service_modules','ywi_rpc_custo
  assert.ok(js.includes(token),token);
 assert.ok(read('index.html').includes('js/service-site-intake-431.js'));
 assert.ok(read('help.html').includes('id="service-site-intake-431"'));
-assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('Next queued: Item 432'));
-assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('Next queued: Item 432'));
+assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('## Item 431'));
+assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('#### 432'));
 for(const script of ['test:service-site-intake-431','test:browser:service-site-intake-431']){
  assert.ok(JSON.parse(read('package.json')).scripts[script]);
  assert.ok(read('.github/workflows/staging-browser-integration.yml').includes('npm run '+script));
