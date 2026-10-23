@@ -210,6 +210,7 @@ jobs:
       - run: npm run test:construction-phase-permit-425
       - run: npm run test:water-park-inspection-426
       - run: npm run test:snow-service-events-427
+      - run: npm run test:septic-disposal-428
       - run: npm run test:management-outcome-confidence-cohort-trend
       - run: npm run test:workability-forecast-recovery-calibration
       - run: npm run test:management-decision-outcome-journal
@@ -365,6 +366,7 @@ jobs:
       - run: npm run test:browser:construction-phase-permit-425
       - run: npm run test:browser:water-park-inspection-426
       - run: npm run test:browser:snow-service-events-427
+      - run: npm run test:browser:septic-disposal-428
       - run: npm run test:browser:production-learning-roadmap-renewal-v
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration

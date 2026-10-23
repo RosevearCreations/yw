@@ -397,6 +397,14 @@
 
         
         
+        <section class="help-section" id="septic-disposal-428" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
+          <h2>Item 428 — Septic Haulage &amp; Disposal Receipt Control</h2>
+          <p><strong>Where:</strong> Admin → Management/Operations/Safety/Jobs → 428 · Septic Haulage &amp; Disposal Receipt Control. Select a company we own and an original <code>septic</code> Jobs work order. Only active owners with Jobs create permission and an enabled septic entitlement can append evidence.</p>
+          <p><strong>Original evidence:</strong> Select the same-order Dispatch, an operator already assigned to that Dispatch, and an existing uploaded Jobs execution-proof media item containing the actual facility receipt. A typed URL or newly invented receipt number alone cannot replace the uploaded artifact. Enter the tank volume in litres, measurement method and original measurement reference, collection/disposal dates, waste type, facility and actual receipt number. Use one source receipt image per original entry, preventing re-attribution to another job.</p>
+          <p><strong>Independent review:</strong> Optionally link same-dispatch Fleet truck readiness and same-site Safety plan. Missing, blocked, unapproved or later-changed canonical sources remain <strong>HOLD</strong>. Even a ready source requires an independent facility receipt and Safety review. Replaying identical evidence is idempotent; conflicting entries, duplicated receipt numbers or media reuse are blocked. The report is immutable and owner-readable.</p>
+          <p><strong>Not a certificate:</strong> A facility name, uploaded image and owner report do not verify a licensed operator, statutory manifest, environmental disposal authorization or actual legal compliance. This workbench never autonomously disposes waste, schedules a truck, signs Safety approval, completes a job, posts payroll/inventory/costs or invoices a client. See <code>sql/septic_haulage_disposal_receipts_428.sql</code>. No actual field acceptance exists until genuine Production septic jobs and documents are recorded and reviewed.</p>
+        </section>
+
         <section class="help-section" id="snow-service-events-427" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
           <h2>Item 427 — Snow Removal &amp; Plowing Event Separation</h2>
           <p><strong>Where:</strong> Admin → Management/Operations/Safety/Jobs → 427 · Snow Removal &amp; Plowing Event Separation. Select an owned company, then an original Jobs order. The snow-removal offering covers sidewalk, walkway, entrance and steps; snow-plowing covers driveway, parking area and roadway. The same original storm can include both services, but each requires its own original dispatch and separately keyed receipt.</p>
