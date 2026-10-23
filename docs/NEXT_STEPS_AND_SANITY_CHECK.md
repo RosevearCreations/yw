@@ -1070,4 +1070,62 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 429 — Production Learning & Cross-Service Trial Review VI.** No new operator grant or business mutation is conveyed by this roadmap.
+**Implemented:** On October 23, 2026 at 16:00 UTC, a read-only Production query inspected seventeen named original and specialist tables. Each had zero rows, including company records, Jobs/Production/Dispatch, AR invoices and the six specialized service-proof families. The reviewed sources therefore contain no real first jobs, and conversion, cross-service impact, ROI and employee outcomes are withheld, not zero-valued outcomes. The pure comparison in `js/cross-service-first-job-review-429.mjs` checks fresh, authorized, complete, uncapped, nonoverlapping company/service first-job cohorts, canonical customer/property/work-order identity, duplicate-source exclusion, chronology and at least ten first jobs per service per period; it emits only descriptive stage differences. A source-controlled dated snapshot in `docs/production_learning_review_429.json`, Admin owner read-only notice, Help explanation and CI source/mobile-browser gates document the evidence boundary. No backend schema, operator grant, customer/job, dispatch, payment, Safety or Finance mutation. The next **thirteen proposed builds (430–442)** intentionally focus on real operator adoption and work-flow integration, not synthetic performance improvement.
+
+## Renewed bounded scope after Item 429 (proposed, not deployed)
+
+The priority order below reflects *prerequisites and operational readiness*, not measured ROI. In the absence of live Production customer/job events, none is an empirically proven savings opportunity. Each future release must re-check source authority and existing capabilities before adding new tables or flows.
+
+#### 430 — Six-Service Owner Trial Intake & Source-Coverage Runbook
+
+**Priority P0. Acceptance:** Guide owner company/entitlement setup and genuine first customer/property/job trial, expose authoritative missing-source holds and avoid replay duplicates. **Canonical source:** Company registry, original CRM/Jobs, Item 429 gap report. **Boundary:** No synthetic first jobs, auto-entitlements or unauthorized records.
+
+#### 431 — Service-Specific Intake Templates & Verified Site Constraints
+
+**Priority P0. Acceptance:** Show per-service factual site requirements and missing Safety evidence using the same original CRM customer/property IDs. **Canonical source:** Original property/site registry, templates and Safety. **Boundary:** No guessed measurements, duplicated CRM authority or automatic Safety pass.
+
+#### 432 — Cross-Service Estimate-to-Authorized-Job Handoff Audit
+
+**Priority P0. Acceptance:** Trace original estimate, approved scope/price and enabled-service authorization into a true work-order handoff, with explicit unresolved approvals. **Canonical source:** Original Estimates, Jobs and entitlement audit. **Boundary:** No autonomous customer acceptance or new agreement.
+
+#### 433 — Mobile Field Evidence Capture & Offline Replay Acceptance
+
+**Priority P0. Acceptance:** Test reliable phone photo/document capture, stable retries and offline replay without duplicate specialist/source receipts. **Canonical source:** Existing Offline, Jobs proof-media and service-specific records. **Boundary:** Do not treat a local pending upload as server completion.
+
+#### 434 — Service Dispatch, Crew, Workability & Safety Preflight Review
+
+**Priority P0. Acceptance:** Provide an original-source per-job operator preflight for crew, equipment, weather, site Safety and schedule holds. **Canonical source:** Dispatch, Workability, Fleet, Jobs and Safety. **Boundary:** No auto-dispatch, weather bypass, lockout clearance or work authorization.
+
+#### 435 — Shared Crew, Fleet, Equipment & Materials Conflict Review
+
+**Priority P1. Acceptance:** Identify dated overlaps and one-source/one-cost attribution gaps before scheduling across services. **Canonical source:** Existing assignments, equipment and material-issue evidence. **Boundary:** No automatic reallocation or double charging.
+
+#### 436 — Service-Native Production & Evidence Completion Review
+
+**Priority P1. Acceptance:** Review original recorded quantities, phase/ticket/event/inspection receipts and required missing originals for each enabled service without conflating work types. **Canonical source:** Original Production/Jobs and 424–428 receipts. **Boundary:** No invented field measurement, completion or regulatory certification.
+
+#### 437 — Quality-Control, Exception & Customer Handoff Acceptance
+
+**Priority P1. Acceptance:** Trace source QC approvals, unresolved objections, job closeout and authentic customer sign-off with clear manual gates. **Canonical source:** QC and original Jobs closeout. **Boundary:** No silent signature, customer messaging or site reopening.
+
+#### 438 — Six-Service Job-Cost Provenance & Price Variance Review
+
+**Priority P1. Acceptance:** Reconcile original job price, hours, materials, assets and valid Finance totals by service where permission and denominator allow, exposing gaps explicitly. **Canonical source:** Timekeeping, Materials, Equipment, Estimates, Finance. **Boundary:** No duplicated expenses, unsupported ROI or staff ranking.
+
+#### 439 — Owner-Gated Invoice Candidate & Receivable Trace
+
+**Priority P1. Acceptance:** Show per-service invoice readiness and original AR provenance only after genuine QC/owner reviews. **Canonical source:** Jobs closeout, invoice and AR. **Boundary:** No autonomous invoice creation, payment collection or charge.
+
+#### 440 — Seasonal Contracts, Plowing Events & Recurring First-Use Continuity
+
+**Priority P2. Acceptance:** Keep the original customer/property, seasonal agreement, storm activation and per-visit evidence unambiguous across renewals and weather events. **Canonical source:** Recurring, Storm, Dispatch and entitlements. **Boundary:** No invented storm, automatic renewal, bill or dispatch.
+
+#### 441 — Live Field Trial Integrity, Privacy & Release-Readiness Audit
+
+**Priority P2. Acceptance:** Verify owner company isolation, source freshness/completeness, responsive operator screens and exact GitHub/Vercel release evidence for actual trial readiness. **Canonical source:** RLS/identity, canonical receipts and CI/deployment proof. **Boundary:** No trial success or owner approval inferred from source-only green checks.
+
+#### 442 — Production Learning & Cross-Service Trial Review VII
+
+**Priority P2. Acceptance:** Reinspect real company-scoped service-specific first jobs, withhold insufficient comparisons, and renew a bounded operator-value-driven roadmap. **Canonical source:** Dated original Jobs/Production/Finance and service receipts. **Boundary:** No unmeasured improvement, ROI, employee score or business mutation.
+
+**Next queued: Item 430 — Six-Service Owner Trial Intake & Source-Coverage Runbook.** No operator authorization or business mutation is conferred by this roadmap.
