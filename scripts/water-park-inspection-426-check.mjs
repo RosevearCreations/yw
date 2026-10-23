@@ -45,7 +45,7 @@ for(const mark of ['owner426','owner426Refresh','owner426Order','owner426Inspect
  assert.ok(js.includes(mark),`JS boundary missing: ${mark}`);
 for(const mark of ['water-park-inspection-safety-426.js'])assert.ok(read('index.html').includes(mark));
 assert.ok(read('help.html').includes('id="water-park-inspection-426"'));
-assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('Next queued: Item 427'));
+assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('#### 427 — Snow Removal & Plowing Event Separation'));
 assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('Item 426'));
 for(const t of ['test:water-park-inspection-426','test:browser:water-park-inspection-426']){
  assert.ok(read('package.json').includes(t));assert.ok(read('.github/workflows/staging-browser-integration.yml').includes(`npm run ${t}`));}
