@@ -295,6 +295,8 @@
     "test:browser:cross-service-production-learning-429": "playwright test --config=playwright.config.mjs tests/browser/cross-service-production-learning-429.spec.mjs",
     "test:six-service-owner-trial-430": "node scripts/six-service-owner-trial-430-check.mjs",
     "test:browser:six-service-owner-trial-430": "playwright test --config=playwright.config.mjs tests/browser/six-service-owner-trial-430.spec.mjs",
+    "test:service-site-intake-431": "node scripts/service-site-intake-431-check.mjs",
+    "test:browser:service-site-intake-431": "playwright test --config=playwright.config.mjs tests/browser/service-site-intake-431.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
