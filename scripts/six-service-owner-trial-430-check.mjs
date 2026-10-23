@@ -53,6 +53,6 @@ for(const key of ['test:six-service-owner-trial-430','test:browser:six-service-o
 }
 assert.ok(read('index.html').includes('/js/six-service-owner-trial-430.js'));
 assert.ok(read('help.html').includes('id="six-service-owner-trial-430"'));
-assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('Next queued: Item 431'));
-assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('Next queued: Item 431'));
+assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('Item 430 — Six-Service Owner Trial'));
+assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('#### 431 — Service-Specific Intake Templates'));
 console.log('Item 430 owner six-service source coverage, tenant boundaries, read-only and missing-source holds: PASS');
