@@ -1050,6 +1050,8 @@ The target is not the highest possible release number. The target is a landscapi
 
 #### 427 — Snow Removal & Plowing Event Separation
 
+**Implementation:** Append-only, owner-only storm service receipts bind two independent company offerings (`snow_removal` sidewalk/entrance work and `snow_plowing` driveway/roadway work) to original Jobs work orders and their separate Dispatch schedule item IDs. They can share the same canonical `seasonal_storm_events` entry only if each original dispatch route has the corresponding `seasonal_storm_route_activations` link. Independent Jobs create/tenant/entitlement and Item 422 property guards apply; an original dispatch ID can belong to **only one receipt globally**, rejecting cross-service double attribution. A repeated identical request is idempotent; changed evidence conflicts. The original Dispatch/storm activation, workability observation/latest decision, site Safety plan, and optional assigned-truck Fleet readiness all contribute to a source fingerprint; edits display `source_changed_hold`. Missing independent Safety/Workability/Fleet authority or inactive dispatch/storm yields HOLD. Even with sources nominally ready, the result remains independent review required, not a release command. The responsive Admin workbench `js/snow-removal-plowing-427.js`, `help.html#snow-service-events-427`, additive SQL `sql/snow_removal_plowing_event_separation_427.sql`, source and browser tests are release-gated. An unverified operator pass report does not complete jobs, claim cleared sidewalks, change routes, move materials, charge clients, pay crews or certify winter safety.
+
 **Acceptance:** Track plowing and sidewalk removal as separate offerings while retaining shared storm-event histories.
 
 **Canonical source:** Dispatch, Workability, fleet and Safety. **Boundary:** No automatic dispatch, weather override or double billing.
@@ -1066,4 +1068,4 @@ The target is not the highest possible release number. The target is a landscapi
 
 **Canonical source:** Dated canonical multi-service cohorts. **Boundary:** No unmeasured ROI claim, employee ranking or autonomous transactions.
 
-**Next queued: Item 427 — Snow Removal & Plowing Event Separation.** No new operator grant or business mutation is conveyed by this roadmap.
+**Next queued: Item 428 — Septic Haulage & Disposal Receipt Control.** No new operator grant or business mutation is conveyed by this roadmap.

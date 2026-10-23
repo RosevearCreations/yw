@@ -397,6 +397,13 @@
 
         
         
+        <section class="help-section" id="snow-service-events-427" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
+          <h2>Item 427 — Snow Removal &amp; Plowing Event Separation</h2>
+          <p><strong>Where:</strong> Admin → Management/Operations/Safety/Jobs → 427 · Snow Removal &amp; Plowing Event Separation. Select an owned company, then an original Jobs order. The snow-removal offering covers sidewalk, walkway, entrance and steps; snow-plowing covers driveway, parking area and roadway. The same original storm can include both services, but each requires its own original dispatch and separately keyed receipt.</p>
+          <p><strong>Original sources:</strong> Select a storm already linked to an original dispatched route. Optionally attach same-order winter Workability observation and original Safety plan; plowing may attach the truck's original Fleet readiness check. Missing or changed sources, unsafe holds and unresolved decisions remain HOLD. The recorded passes are operator-reported, not measured or independently approved completion.</p>
+          <p><strong>No double billing:</strong> One dispatch may have only one service receipt across both offerings; a replay with identical evidence is idempotent, and conflicting evidence is rejected. Immutable owner-only receipts are not invoices, payroll, equipment consumption, route activation or work completion. No automatic dispatch, weather override, Safety clearance or customer contact is performed. See <code>sql/snow_removal_plowing_event_separation_427.sql</code>. Empty Production sources mean no real field-event acceptance has been proven.</p>
+        </section>
+
         <section class="help-section" id="water-park-inspection-426" style="min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word">
           <h2>Item 426 — Water Park Inspection &amp; Safety Evidence</h2>
           <p><strong>Where:</strong> Admin → Management/Operations/Safety/Jobs → 426 · Water Park Inspection &amp; Safety Evidence. An authenticated active company owner with Jobs create rights and an enabled water-parks service may select only original company work orders linked to their canonical customer and property.</p>
