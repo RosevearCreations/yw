@@ -89,7 +89,9 @@ for(const token of ['ywi_422_assert_link','work_orders','ywi_company_service_mod
  'work_order_release_reviews','dispatch_schedule_items','v_crew_dispatch_schedule',
  'crews','crew_members','v_fleet_vehicle_operations','equipment_items',
  'workability_observations','workability_decisions','linked_hse_packets',
- '20-record limit','security definer','revoke all','to authenticated'])
+ '20-record limit','ywi_434_dispatch_work_order_idx','p.is_active is true',
+ 'o.client_site_id is null','p.client_site_id is null',
+ 'security definer','revoke all','to authenticated'])
  assert.ok(sql.includes(token),token);
 assert.ok(!/\b(insert into|update public\.|delete from|drop table|alter table)\b/i.test(sql),'read-only SQL');
 assert.ok(!/\.(insert|update|delete|upsert)\s*\(/.test(script),'no client writes');

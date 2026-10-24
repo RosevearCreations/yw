@@ -2,6 +2,11 @@
 -- Requires the 420/421/422 owner and Jobs-read boundaries. No operational writes.
 begin;
 
+-- Exact original-work-order lookups use this bounded, non-mutating index.
+create index if not exists ywi_434_dispatch_work_order_idx
+  on public.dispatch_schedule_items(work_order_id,scheduled_start desc,id)
+  where work_order_id is not null;
+
 create or replace function public.ywi_rpc_job_dispatch_preflight_434(
   p_company_id uuid, p_client_id uuid, p_site_id uuid, p_work_order_id uuid
 ) returns jsonb language plpgsql security definer set search_path='' as $$
@@ -47,11 +52,13 @@ begin
     select c.id,c.crew_status into v_crew from public.crews c
       where c.id=v_dispatch.crew_id;
     select count(*) into v_crew_members from public.crew_members cm
+      join public.profiles p on p.id=cm.profile_id and p.is_active is true
       where cm.crew_id=v_dispatch.crew_id;
     select s.conflict_count,s.dispatch_readiness into v_conflict
       from public.v_crew_dispatch_schedule s where s.id=v_dispatch.id;
     select * into v_observation from public.workability_observations o
       where o.dispatch_schedule_item_id=v_dispatch.id and o.work_order_id=v_job.id
+        and (o.client_site_id is null or o.client_site_id=p_site_id)
       order by o.observed_at desc,o.id desc limit 1;
     v_decision := null;
     if v_observation.id is not null then
@@ -60,9 +67,11 @@ begin
         order by d.decision_at desc,d.id desc limit 1;
     end if;
     select count(*) into v_packet_count from public.linked_hse_packets p
-      where p.work_order_id=v_job.id;
+      where p.work_order_id=v_job.id and
+        (p.client_site_id is null or p.client_site_id=p_site_id);
     select * into v_packet from public.linked_hse_packets p
-      where p.work_order_id=v_job.id
+      where p.work_order_id=v_job.id and
+        (p.client_site_id is null or p.client_site_id=p_site_id)
       order by (p.id=v_observation.linked_hse_packet_id) desc,p.created_at desc,p.id desc limit 1;
 
     -- One original equipment item per ID, with latest original Fleet readiness.
