@@ -1134,6 +1134,8 @@ The priority order below reflects *prerequisites and operational readiness*, not
 
 **Priority P1. Acceptance:** Show per-service invoice readiness and original AR provenance only after genuine QC/owner reviews. **Canonical source:** Jobs closeout, invoice and AR. **Boundary:** No autonomous invoice creation, payment collection or charge.
 
+**Implemented as read-only owner review:** `js/owner-invoice-receivable-439.js` composes existing owner-guarded 437 QC/closeout and 438 Jobs/Finance RPCs for the same original company, service and work order. It independently requires QC and real portal/supervisor gates, the recorded `ready` closeout state, original approved price/estimate, and one-to-one invoice candidate → dated Finance posting → AR receipt lineage. Draft/rejected candidates, absent or multiple documents, reversals, mismatched amounts, unbalanced receivables and missing human signoff remain HOLD; foreign, malformed, duplicated/capped or mismatched source is WITHHELD. The panel cannot invoice, post, collect, charge, message or authorize Finance. It adds no new SQL authority; synthetic source/mobile-browser checks cover the safety boundary. An operator must still independently review current Finance authorities before a real transaction, and no actual owner invoice has been accepted by this source-only build.
+
 #### 440 — Seasonal Contracts, Plowing Events & Recurring First-Use Continuity
 
 **Priority P2. Acceptance:** Keep the original customer/property, seasonal agreement, storm activation and per-visit evidence unambiguous across renewals and weather events. **Canonical source:** Recurring, Storm, Dispatch and entitlements. **Boundary:** No invented storm, automatic renewal, bill or dispatch.
