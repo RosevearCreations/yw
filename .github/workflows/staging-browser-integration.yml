@@ -200,6 +200,7 @@ jobs:
       - run: npm run test:quality-customer-handoff-437
       - run: npm run test:six-service-job-cost-provenance-438
       - run: npm run test:owner-invoice-receivable-439
+      - run: npm run test:seasonal-contract-continuity-440
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -392,6 +393,7 @@ jobs:
       - run: npm run test:browser:quality-customer-handoff-437
       - run: npm run test:browser:six-service-job-cost-provenance-438
       - run: npm run test:browser:owner-invoice-receivable-439
+      - run: npm run test:browser:seasonal-contract-continuity-440
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
