@@ -45,6 +45,7 @@ test('foreign profile cannot view captured files and missing canonical upload ad
   await page.locator('#field433Refresh').click();await page.locator('#field433Order').selectOption(dispatch);
   await page.locator('#field433File').setInputFiles({name:'gate.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF mock')});
   await page.locator('#field433Save').click();
+  await expect(page.locator('#field433Items article')).toHaveCount(1);
   const result=await page.evaluate(async()=>{
     const id=(await window.YWI433.owned())[0].id;
     try{await window.YWI433.replay(id);return 'UNSAFE';}catch(e){return e.message;}
@@ -58,6 +59,7 @@ test('only matching original canonical receipt can confirm, never an uncertain n
   await boot(page);await page.locator('#field433Refresh').click();await page.locator('#field433Order').selectOption(dispatch);
   await page.locator('#field433File').setInputFiles({name:'site.png',mimeType:'image/png',buffer:Buffer.from('photo 433')});
   await page.locator('#field433Save').click();
+  await expect(page.locator('#field433Items article')).toHaveCount(1);
   const result=await page.evaluate(async()=>{
     const row=(await window.YWI433.owned())[0];
     const receipt={ok:true,canonical_source:'work_order_execution_proof_media',
@@ -77,6 +79,7 @@ test('uncertain delivery reconciles by original intent before retrying the binar
   await boot(page);await page.locator('#field433Refresh').click();await page.locator('#field433Order').selectOption(dispatch);
   await page.locator('#field433File').setInputFiles({name:'crew.webp',mimeType:'image/webp',buffer:Buffer.from('field safety photo')});
   await page.locator('#field433Save').click();
+  await expect(page.locator('#field433Items article')).toHaveCount(1);
   const result=await page.evaluate(async()=>{
     const row=(await window.YWI433.owned())[0],calls=[];
     const receipt={ok:true,canonical_source:'work_order_execution_proof_media',
