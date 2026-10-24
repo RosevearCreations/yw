@@ -31,7 +31,7 @@ function panel(){
  p.style.cssText='min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere';
  p.appendChild(el('summary','420 · Audited Company Service Offering Registry'));
  const body=el('div');body.className='admin-panel-block';
- const n=el('p','Owner-only company registry. Each new company starts with all six services DISABLED. Staff roles and shared CRM, Jobs, Finance and Safety records remain unchanged. Offering switches do not enforce new-work creation until Item 421.');
+ const n=el('p','Owner-only company registry. Each new company starts with all six services DISABLED. Staff roles and shared CRM, Jobs, Finance and Safety records remain unchanged. Build 421 enforces these company offering switches for NEW Jobs work. Historical jobs and contracts remain intact; future Property Maintenance System specialties and confidential Accounting/Payroll access are not provisioned by these six switches.');
  body.appendChild(n);
  const controls=el('div');controls.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-width:0';
  const refresh=el('button','Refresh companies');refresh.id='owner420Refresh';refresh.type='button';refresh.className='secondary';

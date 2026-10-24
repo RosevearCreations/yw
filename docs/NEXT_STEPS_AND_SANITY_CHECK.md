@@ -1140,6 +1140,8 @@ The priority order below reflects *prerequisites and operational readiness*, not
 
 **Priority P2. Acceptance:** Keep the original customer/property, seasonal agreement, storm activation and per-visit evidence unambiguous across renewals and weather events. **Canonical source:** Recurring, Storm, Dispatch and entitlements. **Boundary:** No invented storm, automatic renewal, bill or dispatch.
 
+**Implemented as conservative owner read-only source review:** The new Property Maintenance System Admin directory distinguishes the six already-provisioned company offering switches (`420/421`) from upcoming service modules. The 440 reviewer combines owner-scoped agreement/visit/snow-trigger sources from `sql/seasonal_contract_first_use_continuity_440.sql` with the original 424 lawn/427 snow field dashboards. It requires the SAME owner, company, original Jobs work order, customer, property and source route. Only original recurring agreements personally created by the verified owner are exposed because the legacy agreement table is NOT independently company-scoped; missing/multiple/ambiguous renewals remain HOLD. First-use is earliest *reported* original field receipt, not completion. Agreement snow triggers and operational storm events cannot be linked by date alone; explicit event-ID continuity remains HOLD until an approved canonical bridge exists. No renewal, dispatch, field completion, Finance or payroll operation is performed. SQL migration and live owner acceptance are not inferred from source/browser GREEN tests.
+
 #### 441 — Live Field Trial Integrity, Privacy & Release-Readiness Audit
 
 **Priority P2. Acceptance:** Verify owner company isolation, source freshness/completeness, responsive operator screens and exact GitHub/Vercel release evidence for actual trial readiness. **Canonical source:** RLS/identity, canonical receipts and CI/deployment proof. **Boundary:** No trial success or owner approval inferred from source-only green checks.
@@ -1147,5 +1149,38 @@ The priority order below reflects *prerequisites and operational readiness*, not
 #### 442 — Production Learning & Cross-Service Trial Review VII
 
 **Priority P2. Acceptance:** Reinspect real company-scoped service-specific first jobs, withhold insufficient comparisons, and renew a bounded operator-value-driven roadmap. **Canonical source:** Dated original Jobs/Production/Finance and service receipts. **Boundary:** No unmeasured improvement, ROI, employee score or business mutation.
+
+### Property Maintenance System — modular platform direction (owner request 2026-10-24)
+
+**Name:** The multi-company software platform is **Property Maintenance System (PMS)**. **Yard Workers** remains the first tenant and existing public brand; renaming the public company/domain is NOT authorized. Distinguish company/tenant from its customer accounts and locations. A company chooses its service offerings; employee access remains governed separately by roles and per-resource server permissions.
+
+**Current state / sanity check:** The primary staff navigation still has four broad areas (Safety/OHSA, Finance, Jobs, Admin); equipment is nested and specialist service panels are in Admin/Jobs. Six independent owner-audited company service switches already exist: `landscape`, `snow_removal`, `snow_plowing`, `septic`, `construction`, `water_parks`. 421 restricts NEW work according to those switches. They do not yet behave as independent routed service workspaces, and future specialties are not implemented. Existing CRM/Contracts, Employees, Payroll exports, GL/AR/AP, Costs and Equipment functions are partially present but need consistent ownership, UI grouping and field-level access validation; "robust payroll/accounting" cannot be declared complete.
+
+**Target hierarchy:**
+
+- **Operations Core (shared):** Client & Properties (multiple customers/sites/assets/contact preferences), Jobs & Estimates, Contracts/Renewals, Calendar & Dispatch, Equipment/Fleet/Materials, Safety/OHSA, Media/Documents, Customer portal, Audit/Help and owner/tenant administration.
+- **Company-selectable Services:** Lawn & Grounds; Snow Removal/De-icing; Plowing/Salting; Septic/Pumping/Disposal; Light Construction/Repairs; Water Parks/Aquatic; Arboriculture/Tree Care; Concrete/Formwork/Finishing; Fibre/Telecom & Utility Trenching/Locates; Land Clearing/Grading; Excavation/Ditch Digging/Drainage; Hardscaping/Retaining; Fencing/Decks/Structures; Commercial Property Inspections. Each specialty needs its own job forms, units, estimate rules, equipment, certificates, permits, field proof and Help, but reuses original company/client/site, Jobs, Dispatch, Finance and Safety authority.
+- **Accounting & Business:** Accounting top-level workspace with sub-screens for Cost Book, Job Costs, Quotes/Billing, A/R, A/P, Chart of Accounts/GL, Bank Reconciliation, Sales Tax, Payroll, Reports and Period Close. HR/Employees sub-screens include employment status, emergency contact, credential expiry, wages/history, leave, timesheets, performance development, training and role permissions. Employee and payroll can be presented under Accounting for convenience, but PII, salaries, banking, payroll approval and employment decision permissions MUST be independently enforced. Non-accounting staff cannot infer secret wage data from costs or reports. Internal work cost rates may be aggregated/redacted separately.
+
+**Module entitlements are not cosmetic:** Per company, immutable/stable module keys with audited disabled-by-default activation; server-side new-work/endpoint validation; auth role + field permission + tenant RLS; context navigation (desktop/mobile) generated only from allowed modules. Company module OFF removes entry points and blocks new transactions but cannot erase historical obligations, invoices, payroll/tax receipts or audit; retain restricted legal reads, export and reopen review. Safety obligations and audit/security core cannot be switched off. Supplier payments, payroll runs, tax submissions and customer charging always require separately authorized human approvals. No automatic utility excavation without permits/locates or arborist rigging without training/insurance.
+
+**Follow-on queue after 441–442 (proposed, not delivered):**
+
+| Build | Independently testable scope and acceptance boundary |
+| --- | --- |
+| 443 | PMS tenant/module navigation registry: show/hide permitted desktop & mobile routes; company OFF blocks server writes; legacy records remain accessible to authorized auditors. |
+| 444 | Client & Property 360: company-scoped clients, contacts, site assets, contracts, photos, history and consent; prove cross-tenant rejection. |
+| 445 | Detailed Employee/HR: private profile, certifications, shifts, onboarding, leave, training and records retention; wages hidden by default. |
+| 446 | Payroll readiness: approved time, rates, deductions/benefits/vacation, corrections and confidential access; **no live direct deposits or CRA filings** without accountant review. |
+| 447 | Accounting shell and financial access matrix: GL, A/R, A/P, quotes, costs, payments, tax and reports, separate payroll and bank permissions. |
+| 448 | Native double-entry GL, period locks and reconciliation: idempotent postings, liability control, review/reversal, non-posting test mode first. |
+| 449 | Lawn Care & Grounds standalone module: recurring visits, zones/measurements, routes, materials, notes, pricing and field QC. |
+| 450 | Winter Snow Removal & Plowing standalone modules: contracts/per-storm thresholds, de-icing, route activation, passes, weather/Safety/Fleet gates and per-site records. |
+| 451 | Septic & Arboriculture workspaces: manifests/disposal chain and tree inventory, risk zones, equipment, crew credentials and permits. |
+| 452 | Construction/Concrete/Fibre/Excavation workspaces: phases, quantities, materials, inspections, ground-disturbance permits, utility locates, subcontractors and change orders; explicitly bounded safe pilots. |
+| 453 | Multi-company cost allocation, workforce burden, profitability and financial report parity without leaking wage/other-company information. |
+| 454 | End-to-end modular acceptance: company ON/OFF, cross-tenant denial, 390px/mobile Help, historical preservation and Production GREEN release gate. |
+
+**Release approach:** Keep the legacy four-top-level shell intact through 440–442 to avoid breaking module-runtime and permissions. Starting 443, introduce the new nav shell and entitlement guardrails before migrating individual existing/brand-new service modules. No invented first-use, ledger posting, regulatory certification or live field pilot acceptance.
 
 **Release sequence:** Item 433 guards device-local capture while canonical upload/replay remains on HOLD pending an idempotent server endpoint and real field acceptance. After guarded 433 is deployed and independently verified, promote the read-only 434 preflight, then 435 conflict review. No operator authorization or business mutation is conferred by this roadmap.

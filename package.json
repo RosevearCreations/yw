@@ -315,6 +315,8 @@
     "test:browser:six-service-job-cost-provenance-438": "playwright test --config=playwright.config.mjs tests/browser/six-service-job-cost-provenance-438.spec.mjs",
     "test:owner-invoice-receivable-439": "node scripts/owner-invoice-receivable-439-check.mjs",
     "test:browser:owner-invoice-receivable-439": "playwright test --config=playwright.config.mjs tests/browser/owner-invoice-receivable-439.spec.mjs",
+    "test:seasonal-contract-continuity-440": "node scripts/seasonal-contract-continuity-440-check.mjs",
+    "test:browser:seasonal-contract-continuity-440": "playwright test --config=playwright.config.mjs tests/browser/seasonal-contract-continuity-440.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
