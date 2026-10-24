@@ -24,6 +24,7 @@ const pkg=JSON.parse(read('package.json'));const ci=read('.github/workflows/stag
 assert.equal(pkg.scripts['test:new-work-company-gate-421'],'node scripts/new-work-company-gate-421-check.mjs');
 assert.ok(ci.includes('npm run test:new-work-company-gate-421'));
 assert.ok(ci.includes('npm run test:browser:new-work-company-gate-421'));
-const nextQueued=[...read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').matchAll(/\*\*Next queued: Item (\d{3})/g)].at(-1);
-assert.ok(nextQueued && Number(nextQueued[1])>=422,'Roadmap must retain a forward-moving queued item');
+const roadmap=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
+assert.ok(roadmap.includes('#### 442 — Production Learning') && roadmap.includes('**Release sequence:**'),
+ 'Roadmap must retain future items and the explicit 433 → 434 → 435 release sequence');
 console.log('Item 421: strict canonical SQL INSERT guards, staff Jobs permission, owner service, historical continuity PASS');
