@@ -91,8 +91,8 @@ for(const token of ['owner432','owner432Results','ywi_companies','ywi_rpc_custom
  'ywi_rpc_estimate_job_handoff_432','auth.getUser','ywi:auth-changed'])assert.ok(ui.includes(token),token);
 assert.ok(read('index.html').includes('js/cross-service-estimate-job-handoff-432.js'));
 assert.ok(read('help.html').includes('id="cross-service-estimate-job-handoff-432"'));
-assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('Next queued: Item 433'));
-assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('Next queued: Item 433'));
+assert.ok(read('docs/ACTIVE_PROJECT_HANDBOOK.md').includes('## Item 433 — Mobile Field Evidence Capture'));
+assert.ok(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').includes('#### 433 — Mobile Field Evidence Capture'));
 for(const key of ['test:cross-service-estimate-job-handoff-432','test:browser:cross-service-estimate-job-handoff-432']){
  assert.ok(JSON.parse(read('package.json')).scripts[key]);
  assert.ok(read('.github/workflows/staging-browser-integration.yml').includes('npm run '+key));

@@ -299,6 +299,8 @@
     "test:browser:service-site-intake-431": "playwright test --config=playwright.config.mjs tests/browser/service-site-intake-431.spec.mjs",
     "test:cross-service-estimate-job-handoff-432": "node scripts/cross-service-estimate-job-handoff-432-check.mjs",
     "test:browser:cross-service-estimate-job-handoff-432": "playwright test --config=playwright.config.mjs tests/browser/cross-service-estimate-job-handoff-432.spec.mjs",
+    "test:mobile-field-evidence-433": "node scripts/mobile-field-evidence-433-check.mjs",
+    "test:browser:mobile-field-evidence-433": "playwright test --config=playwright.config.mjs tests/browser/mobile-field-evidence-433.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
