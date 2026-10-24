@@ -1102,6 +1102,8 @@ The priority order below reflects *prerequisites and operational readiness*, not
 
 **Priority P0. Acceptance:** Provide an original-source per-job operator preflight for crew, equipment, weather, site Safety and schedule holds. **Canonical source:** Dispatch, Workability, Fleet, Jobs and Safety. **Boundary:** No auto-dispatch, weather bypass, lockout clearance or work authorization.
 
+**Item 434 candidate:** Admin owner panel `js/service-dispatch-safety-preflight-434.js` uses the 420/422-verified company, customer, property and exact original Jobs work order. The additive read-only `ywi_rpc_job_dispatch_preflight_434` source bridge reuses the 422 owner + Jobs-view + active site link checks, reads original Jobs release, up to 20 linked dispatches, crew/member and schedule, existing conflict view, up to 20 extra assigned equipment items, current Fleet readiness/expiry, exact dispatch observation/signed workability decision and linked original work-order HSE packet. Disabled offering, unsigned release, missing crew/schedule, conflicts, lockout, Fleet expiry, missing/stale conditions, adverse supervisor decision, unaccepted HSE and incomplete required HSE monitoring/sign-off are explicit HOLD. Denial, malformed/capped/foreign or stale source is WITHHELD. Absence of holds remains REVIEW — never automatic dispatch, a site-open or Safety/permit clearance, or a job action. Source/mobile tests and an ⓘ Help guide cover the boundary. Real field acceptance and Supabase migration verification are still required at controlled release time. Item 433 must first reach Production and reconcile `dev/main` before 434 promotion.
+
 #### 435 — Shared Crew, Fleet, Equipment & Materials Conflict Review
 
 **Priority P1. Acceptance:** Identify dated overlaps and one-source/one-cost attribution gaps before scheduling across services. **Canonical source:** Existing assignments, equipment and material-issue evidence. **Boundary:** No automatic reallocation or double charging.
@@ -1134,4 +1136,4 @@ The priority order below reflects *prerequisites and operational readiness*, not
 
 **Priority P2. Acceptance:** Reinspect real company-scoped service-specific first jobs, withhold insufficient comparisons, and renew a bounded operator-value-driven roadmap. **Canonical source:** Dated original Jobs/Production/Finance and service receipts. **Boundary:** No unmeasured improvement, ROI, employee score or business mutation.
 
-**Next queued: Item 433 — Mobile Field Evidence Capture & Offline Replay Acceptance.** No operator authorization or business mutation is conferred by this roadmap.
+**Next queued: Item 433 — Mobile Field Evidence Capture & Offline Replay Acceptance.** Item 434 is prepared separately and cannot promote until 433 is accepted; after 434 is fully promoted, Item 435 follows. No operator authorization or business mutation is conferred by this roadmap.
