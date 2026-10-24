@@ -4,6 +4,8 @@
   "version": "2026.09.04",
   "type": "module",
   "scripts": {
+    "build:vercel": "node scripts/build-vercel-site.mjs",
+    "test:vercel-static-output": "node scripts/vercel-static-output-check.mjs",
     "test:repo": "node scripts/repo-smoke-check.mjs",
     "test:material-demand-stockout-transition": "node scripts/material-demand-stockout-transition-check.mjs",
     "test:communication-followup-consent-aging": "node scripts/communication-followup-consent-aging-check.mjs",
