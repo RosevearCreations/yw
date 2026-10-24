@@ -1136,4 +1136,4 @@ The priority order below reflects *prerequisites and operational readiness*, not
 
 **Priority P2. Acceptance:** Reinspect real company-scoped service-specific first jobs, withhold insufficient comparisons, and renew a bounded operator-value-driven roadmap. **Canonical source:** Dated original Jobs/Production/Finance and service receipts. **Boundary:** No unmeasured improvement, ROI, employee score or business mutation.
 
-**Next queued: Item 433 — Mobile Field Evidence Capture & Offline Replay Acceptance.** No operator authorization or business mutation is conferred by this roadmap.
+**Release sequence:** Complete guarded Item 433 source/phone and live-upload prerequisites before independently promoting 434 and then 435. No operator authorization or business mutation is conferred by this roadmap.
