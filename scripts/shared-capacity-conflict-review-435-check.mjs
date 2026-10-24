@@ -62,6 +62,9 @@ state({dispatches:[],dispatch_count:0,signouts:[],signout_count:0,materials:[],m
 for(const [name,change] of [
  ['foreign company',{company_id:'foreign'}],['stale source',{retrieved_at:date(23,10)}],
  ['future source',{retrieved_at:date(25,12)}],['invented charges',{cost_posting:true}],
+ ['unsafely broad source',{company_scope_only:false}],
+ ['wrong selected UTC interval',{window_end:'2026-11-01T00:00:00Z'}],
+ ['invented stock movement',{stock_adjustment:true}],
  ['invented Dispatch',{dispatch_authorized:true}],['incomplete',{sources_complete:false}],
  ['count mismatch',{dispatch_count:5}],['duplicate dispatch',{dispatches:[one,one]}],
  ['duplicate material',{materials:[proof,proof],material_count:2}],
@@ -76,6 +79,8 @@ for(const token of ['ywi_422_assert_owner','work_orders','dispatch_schedule_item
  'security definer','set search_path','revoke all','to authenticated','14 days',
  'company_id=p_company_id','v_count>80','v_count>120'])
  assert.ok(sql.includes(token),token);
+assert.equal((sql.match(/p\.company_id=p_company_id/g)||[]).length,2,
+ 'Both source proof joins must prevent cross-company receipt disclosure');
 assert.ok(!/\b(insert into|update public\.|delete from|drop table|alter table|truncate)\b/i.test(sql),'RPC has no business writes');
 assert.ok(!/\.(insert|update|delete|upsert)\s*\(/.test(js),'browser has no business writes');
 for(const token of ['owner435','ywi_rpc_shared_capacity_review_435','auth.getUser','ywi:auth-changed','company_scope_only'])

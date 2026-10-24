@@ -101,7 +101,8 @@ begin
   ) order by es.checked_out_at,es.id),'[]'::jsonb) into v_signouts
   from public.equipment_signouts es
   join public.work_orders w on w.id=es.work_order_id and w.company_id=p_company_id
-  left join public.ywi_work_order_allocation_proofs_423 p on p.equipment_signout_id=es.id
+  left join public.ywi_work_order_allocation_proofs_423 p
+    on p.equipment_signout_id=es.id and p.company_id=p_company_id
   where es.checked_out_at<p_window_end and
         coalesce(es.returned_at,'infinity'::timestamptz)>p_window_start;
 
@@ -128,7 +129,8 @@ begin
   from public.material_issue_lines ml
   join public.material_issues mi on mi.id=ml.issue_id
   join public.work_orders w on w.id=mi.work_order_id and w.company_id=p_company_id
-  left join public.ywi_work_order_allocation_proofs_423 p on p.material_issue_line_id=ml.id
+  left join public.ywi_work_order_allocation_proofs_423 p
+    on p.material_issue_line_id=ml.id and p.company_id=p_company_id
   where exists(select 1 from public.dispatch_schedule_items d
     where d.work_order_id=w.id and d.scheduled_start<p_window_end
       and d.scheduled_end>p_window_start);
