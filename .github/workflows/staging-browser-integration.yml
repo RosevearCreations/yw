@@ -41,6 +41,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Verify Vercel production static output
+        run: npm run test:vercel-static-output
       - name: Validate Development / Production promotion shape
         env:
           YWI_GITHUB_EVENT_NAME: ${{ github.event_name }}
