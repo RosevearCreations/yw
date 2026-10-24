@@ -303,6 +303,8 @@
     "test:browser:mobile-field-evidence-433": "playwright test --config=playwright.config.mjs tests/browser/mobile-field-evidence-433.spec.mjs",
     "test:service-dispatch-safety-preflight-434": "node scripts/service-dispatch-safety-preflight-434-check.mjs",
     "test:browser:service-dispatch-safety-preflight-434": "playwright test --config=playwright.config.mjs tests/browser/service-dispatch-safety-preflight-434.spec.mjs",
+    "test:shared-capacity-conflict-review-435": "node scripts/shared-capacity-conflict-review-435-check.mjs",
+    "test:browser:shared-capacity-conflict-review-435": "playwright test --config=playwright.config.mjs tests/browser/shared-capacity-conflict-review-435.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",

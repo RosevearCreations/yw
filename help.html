@@ -644,6 +644,15 @@
           <p><strong>Deployment note:</strong> The new owner-guarded <code>ywi_rpc_job_dispatch_preflight_434</code> is required in Supabase before the live card can read these facts. If not installed, the card shows WITHHELD rather than a fabricated result.</p>
         </section>
 
+        <section class="help-section" id="shared-capacity-conflict-review-435" style="min-width:0;max-width:100%;overflow-wrap:anywhere">
+          <h2>Build 435 — Shared Crew, Fleet, Equipment &amp; Materials Conflict Review</h2>
+          <p><strong>Owner workflow:</strong> In Admin → Management open 435, refresh the authenticated owner-company list, select an original company and UTC start date, then refresh again to review seven days of actual Dispatch, custody and material-issue sources. Other companies and unscheduled work are outside this check. Existing Jobs, Dispatch, Fleet, Equipment, Materials and 423 proof workflows remain authoritative.</p>
+          <p><strong>HOLD:</strong> Overlapping dated active crew/individual/vehicle/equipment assignments across any services, duplicate asset checkouts, missing or inconsistent company resource evidence, equipment lockouts/Fleet expiry, or an issued material or equipment checkout without the same original work-order 423 receipt. Changed proof fingerprints and original issue/site/quantity problems also require manual reconciliation. No automatic reallocation, reassignment, material reservation or stock deduction occurs.</p>
+          <p><strong>WITHHELD:</strong> Unauthenticated or foreign company, denied Jobs access, incomplete, duplicate, malformed, stale or capped source, or a date outside the bounded server interval. Never mistake missing original records for zero conflicts.</p>
+          <p><strong>REVIEW:</strong> Even when no sampled conflict is detected, another owner company, unscheduled Jobs, changed assignments and physical stock availability have <em>not</em> been cleared. Check 434 Safety/workability before any dispatch and the 423 original proof before job costing. Each issue-line amount is an original evidence value only: this screen calculates no multi-job total, invoice, labour/equipment charge, duplicated expense, or ROI.</p>
+          <p><strong>Deployment boundary:</strong> The owner-guarded read-only <code>ywi_rpc_shared_capacity_review_435</code> SQL must be installed and permission-reviewed in a controlled release after 433/434; until then the panel safely shows WITHHELD. Source/browser tests are synthetic acceptance, not measured field usage or Production GREEN.</p>
+        </section>
+
         <section class="help-section" id="production-learning-cross-service-429">
           <h2>Build 429 — Production Learning &amp; Cross-Service Trial Review VI</h2>
           <p><strong>Dated source check:</strong> on October 23, 2026 (16:00 UTC), a permissioned read-only Production query confirmed zero rows in seventeen inspected original or specialist tables: clients, Jobs work orders, Production sessions, Dispatch items, invoices, company registry and source receipts. This is only the named-table sample; no absence of work outside these tables is inferred.</p>
