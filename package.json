@@ -311,6 +311,8 @@
     "test:browser:service-native-production-review-436": "playwright test --config=playwright.config.mjs tests/browser/service-native-production-review-436.spec.mjs",
     "test:quality-customer-handoff-437": "node scripts/quality-customer-handoff-437-check.mjs",
     "test:browser:quality-customer-handoff-437": "playwright test --config=playwright.config.mjs tests/browser/quality-customer-handoff-437.spec.mjs",
+    "test:six-service-job-cost-provenance-438": "node scripts/six-service-job-cost-provenance-438-check.mjs",
+    "test:browser:six-service-job-cost-provenance-438": "playwright test --config=playwright.config.mjs tests/browser/six-service-job-cost-provenance-438.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
