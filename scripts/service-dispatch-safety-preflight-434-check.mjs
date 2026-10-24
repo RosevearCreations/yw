@@ -51,6 +51,7 @@ const hold=(name,item,needle)=>{
  assert.equal(result.authorized,false,name);
 };
 hold('unsigned Jobs',jobSource({release_signed:false}),'release');
+hold('completed Jobs',jobSource({work_order_status:'completed'}),'closed or completed');
 hold('disabled',jobSource({service_enabled:false}),'disabled');
 hold('no schedule',jobSource({dispatch_count:0,dispatches:[]}), 'No original Dispatch');
 hold('crew',dispatchSource({crew_members:0}),'Active assigned crew');
@@ -58,6 +59,7 @@ hold('overlap',dispatchSource({conflict_count:1}),'overlap');
 hold('workability',dispatchSource({workability_state:'blocked'}),'workability');
 hold('supervisor blocked',dispatchSource({decision:{...dispatch.decision,state:'postpone'}}),'postpone');
 hold('outdated weather',dispatchSource({observation:{...dispatch.observation,observed_at:'2026-10-20T18:00:00Z'}}),'weather');
+hold('empty observation',dispatchSource({observation:{...dispatch.observation,weather_condition:'',condition_tags:[]}}),'Substantive');
 hold('missing HSE',dispatchSource({hse:null}),'HSE');
 hold('HSE monitoring',dispatchSource({hse:{...dispatch.hse,weather_done:false}}),'weather monitoring');
 hold('fleet lockout',dispatchSource({equipment:[{...truck,locked_out:true}]}),'locked out');

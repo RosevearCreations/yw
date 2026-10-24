@@ -38,8 +38,8 @@ function inspect(input,now=Date.now()){
  const overview=[];
  if(!entitlement?.enabled||!source.service_enabled)overview.push('Company service disabled — new work is not entitled');
  if(!source.release_signed)overview.push('Independent original Jobs release has not been signed');
- if(['draft','cancelled','canceled','closed'].includes(String(source.work_order_status||'').toLowerCase()))
-  overview.push('Original work order is draft, cancelled or closed');
+ if(!source.work_order_status||['draft','cancelled','canceled','closed','complete','completed','done','archived'].includes(String(source.work_order_status).toLowerCase()))
+  overview.push('Original work order is missing, draft, cancelled, closed or completed');
  if(!source.dispatch_count)overview.push('No original Dispatch schedule attached to this work order');
  const results=[];
  for(const d of source.dispatches){
@@ -70,7 +70,7 @@ function inspect(input,now=Date.now()){
    const asset=d.equipment.find(e=>String(e.id)===id);
    if(!asset){holds.push('Assigned equipment '+id+' is absent from original registry');continue;}
    if(asset.locked_out===true||isRestricted(asset.status)||isRestricted(asset.fleet_status)||
-     /unavailable|out.of.service|maintenance|repair|failed|inactive/i.test(String(asset.status||'')+' '+String(asset.fleet_status||''))||
+     /unavailable|out.of.service|maintenance|repair|failed|inactive|retired|decommissioned|unsafe/i.test(String(asset.status||'')+' '+String(asset.fleet_status||''))||
      Number(asset.fleet_downtime||0)>0)holds.push('Equipment unavailable or locked out: '+(asset.name||id));
    if(String(id)===String(d.truck_id)||String(id)===String(d.trailer_id)){
     if(!asset.fleet_status||!asset.fleet_readiness||!dateOK(asset.fleet_checked_at,now)||
@@ -91,7 +91,11 @@ function inspect(input,now=Date.now()){
     now-time(o.observed_at)>24*3600000)
    holds.push('Fresh, exact-Dispatch weather/ground observation missing (24-hour window)');
   else {
-   if(!String(o.weather_condition||'').trim()&&!Array.isArray(o.condition_tags))
+   if(!String(o.weather_condition||'').trim()&&
+      !(Array.isArray(o.condition_tags)&&o.condition_tags.length>0)&&
+      !['icy','saturated','snow_covered'].includes(o.ground_state)&&
+      !['possible','observed'].includes(o.ice_state)&&
+      !['watch','nearby','observed'].includes(o.storm_state))
     holds.push('Substantive recorded site/weather conditions absent');
    if(['icy','saturated'].includes(o.ground_state)||['possible','observed'].includes(o.ice_state)||
       ['nearby','observed'].includes(o.storm_state))reviews.push('Recorded adverse site/weather conditions require Safety review');
