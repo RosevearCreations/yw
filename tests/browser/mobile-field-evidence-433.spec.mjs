@@ -17,6 +17,7 @@ async function boot(page,profile=owner){
     window.YWIAPI={fetchMobileCrewContext:async()=>{window.__fetches++;return server;}};
   },{owner:profile,server:server(profile)});
   await page.addScriptTag({content:source});
+  await page.locator('#field433').evaluate(panel=>{panel.open=true;});
 }
 test('phone capture stays local, deduplicates, persists across a page refresh, and never calls upload',async({page})=>{
   await boot(page);
@@ -35,6 +36,7 @@ test('phone capture stays local, deduplicates, persists across a page refresh, a
   await page.evaluate(({owner,server})=>{window.__profile=owner;window.YWI_AUTH={getState:()=>({isAuthenticated:true,profile:{id:owner}})};
     window.YWIAPI={fetchMobileCrewContext:async()=>server};},{owner,server:server()});
   await page.addScriptTag({content:source});
+  await page.locator('#field433').evaluate(panel=>{panel.open=true;});
   await expect(page.locator('#field433Items article')).toHaveCount(1);
   await expect(page.locator('#field433Items')).toContainText('LOCAL ONLY');
 });
