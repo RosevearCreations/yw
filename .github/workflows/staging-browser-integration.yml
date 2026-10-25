@@ -208,6 +208,7 @@ jobs:
       - run: npm run test:pms-hr-garbage-445
       - run: npm run test:pms-payroll-446
       - run: npm run test:pms-accounting-447
+      - run: npm run test:pms-double-entry-gl-448
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -408,6 +409,7 @@ jobs:
       - run: npm run test:browser:pms-hr-garbage-445
       - run: npm run test:browser:pms-payroll-446
       - run: npm run test:browser:pms-accounting-447
+      - run: npm run test:browser:pms-double-entry-gl-448
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
