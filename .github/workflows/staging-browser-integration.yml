@@ -205,6 +205,7 @@ jobs:
       - run: npm run test:cross-service-learning-442
       - run: npm run test:pms-module-navigation-443
       - run: npm run test:pms-client-property-360-444
+      - run: npm run test:pms-hr-garbage-445
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -402,6 +403,7 @@ jobs:
       - run: npm run test:browser:cross-service-learning-442
       - run: npm run test:browser:pms-module-navigation-443
       - run: npm run test:browser:pms-client-property-360-444
+      - run: npm run test:browser:pms-hr-garbage-445
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help

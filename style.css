@@ -3698,3 +3698,12 @@ body[data-authenticated="false"] .module-section-nav {
 .pms444-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;min-width:0}
 .pms444-dossier .notice{min-width:0;max-width:100%;overflow-wrap:anywhere;box-sizing:border-box;margin:8px 0}
 #owner444{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+/* PMS 445 — owner-only employee dossiers and optional garbage collection. */
+#owner445HR,#owner445Garbage{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+.pms445-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px;margin:12px 0;min-width:0}
+.pms445-grid label{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
+.pms445-grid input,.pms445-grid select,.pms445-grid textarea{display:block;width:100%;max-width:100%;box-sizing:border-box;min-width:0}
+.pms445-actions{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.pms445-actions button,#owner445HR button,#owner445Garbage button{white-space:normal;overflow-wrap:anywhere;min-height:44px;max-width:100%}
+#pms445HRRoster,#pms445GarbageHistory{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:10px;min-width:0;margin:12px 0}
+#pms445HRRoster .notice,#pms445GarbageHistory .notice{box-sizing:border-box;max-width:100%;min-width:0;overflow-wrap:anywhere}
