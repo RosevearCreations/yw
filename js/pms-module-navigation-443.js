@@ -7,8 +7,8 @@ const modules=Object.freeze([
  {key:'landscape',label:'Lawn & Grounds',target:'owner449'},
  {key:'construction',label:'Light Construction',target:'owner425'},
  {key:'water_parks',label:'Aquatic Facilities',target:'owner426'},
- {key:'snow_removal',label:'Snow Removal',target:'owner427'},
- {key:'snow_plowing',label:'Snow Plowing',target:'owner427'},
+ {key:'snow_removal',label:'Snow Removal',target:'owner450Snow'},
+ {key:'snow_plowing',label:'Snow Plowing',target:'owner450Plow'},
  {key:'septic',label:'Septic Services',target:'owner428'}
 ]);
 const planned=Object.freeze(['Arboriculture & Tree Care','Concrete Pouring','Fibre / Utility Trenching',
