@@ -4,7 +4,7 @@
 (()=>{'use strict';
 const keys=Object.freeze(['landscape','construction','water_parks','snow_removal','snow_plowing','septic']);
 const modules=Object.freeze([
- {key:'landscape',label:'Lawn & Grounds',target:'owner424'},
+ {key:'landscape',label:'Lawn & Grounds',target:'owner449'},
  {key:'construction',label:'Light Construction',target:'owner425'},
  {key:'water_parks',label:'Aquatic Facilities',target:'owner426'},
  {key:'snow_removal',label:'Snow Removal',target:'owner427'},
@@ -88,7 +88,9 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
   for(const item of rows){const opt=element('option',item.name);opt.value=item.id;company.append(opt);}
   if(rows.some(r=>r.id===prior))company.value=prior;else if(rows.length===1)company.value=rows[0].id;}
  function go(key){if(review?.state!=='verified_navigation_only'||!review.services.some(s=>s.key===key))return;
-  const target=modules.find(m=>m.key===key);const section=document.getElementById(target?.target);
+  const target=modules.find(m=>m.key===key);
+  const section=document.getElementById(target?.target)||
+    (key==='landscape'?document.getElementById('owner424'):null);
   if(section?.tagName==='DETAILS'){section.open=true;section.scrollIntoView?.({block:'start',behavior:'smooth'});}
   else status.textContent='Service entry point is not yet installed here; original Jobs and audits remain available under their own permissions.';}
  function render(value){review=value;desktop.replaceChildren();mobile.replaceChildren();
