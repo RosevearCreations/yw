@@ -1173,6 +1173,7 @@ The priority order below reflects *prerequisites and operational readiness*, not
 | Build | Independently testable scope and acceptance boundary |
 | --- | --- |
 | 443 | PMS tenant/module navigation registry: show/hide permitted desktop & mobile routes; company OFF blocks server writes; legacy records remain accessible to authorized auditors. |
+
 | 444 | Client & Property 360: company-scoped clients, contacts, site assets, contracts, photos, history and consent; prove cross-tenant rejection. |
 | 445 | Detailed Employee/HR: private profile, certifications, shifts, onboarding, leave, training and records retention; wages hidden by default. |
 | 446 | Payroll readiness: approved time, rates, deductions/benefits/vacation, corrections and confidential access; **no live direct deposits or CRA filings** without accountant review. |
@@ -1184,6 +1185,8 @@ The priority order below reflects *prerequisites and operational readiness*, not
 | 452 | Construction/Concrete/Fibre/Excavation workspaces: phases, quantities, materials, inspections, ground-disturbance permits, utility locates, subcontractors and change orders; explicitly bounded safe pilots. |
 | 453 | Multi-company cost allocation, workforce burden, profitability and financial report parity without leaking wage/other-company information. |
 | 454 | End-to-end modular acceptance: company ON/OFF, cross-tenant denial, 390px/mobile Help, historical preservation and Production GREEN release gate. |
+
+**Item 443 implementation (2026-10-24):** New `js/pms-module-navigation-443.js` adds an Admin-hosted Property Maintenance System company selector with matching responsive desktop and mobile navigation sourced exclusively from an owner-bound, six-service database RPC (`sql/pms_tenant_module_navigation_443.sql`). This is a navigation registry, not a permission grant. Services switched OFF are omitted from both menus. Existing Item 421 database triggers and RPCs continue to reject newly created estimates/Jobs for disabled company services; existing historical reads follow their original authorization. Unimplemented future specialty, Accounting/Payroll, HR and Client CRM modules remain explicitly PLANNED. The `Yard Rosevear` company administrator is synthetic test-only, with no real account duplication or Production seed. Owner field acceptance remains HOLD pending real original-job evidence; software Production GREEN is independently verified after promotion.
 
 **Release approach:** Keep the legacy four-top-level shell intact through 440–442 to avoid breaking module-runtime and permissions. Starting 443, introduce the new nav shell and entitlement guardrails before migrating individual existing/brand-new service modules. No invented first-use, ledger posting, regulatory certification or live field pilot acceptance.
 
