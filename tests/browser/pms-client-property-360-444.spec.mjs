@@ -11,6 +11,9 @@ async function setup(page,options={}){
  </head><body><div id="admin"></div></body></html>`);
  await page.evaluate(({options,company,ownerId,companyId,customerId,propertyId,source})=>{
   window.__opts=options;window.__calls=[];window.__writes=[];
+  // about:blank is an insecure synthetic test page; real HTTPS supplies this API.
+  if(!window.crypto?.randomUUID)Object.defineProperty(window.crypto,'randomUUID',
+   {configurable:true,value:()=> 'f4440000-0000-4444-8444-000000000002'});
   window.__ownerSignedOut=!!options.signedOut;
   window.__fakeDossier=source;
   window.confirm=()=>!options.cancel;
