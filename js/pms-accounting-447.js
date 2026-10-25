@@ -114,6 +114,12 @@ function mount(){const host=document.getElementById('admin');if(!host||document.
     continue;
    }
    const items=data.drafts.filter(x=>categories[x.category]===k);
+   if(k==='reports'){
+    const link=btn(area,'pms447OpenGL','Open double-entry GL, period locks & reconciliation (test mode)');
+    link.onclick=()=>{if(!valid()||!data.enabled||!data.access.reports)return;
+     const t=document.getElementById('owner448GL');if(t?.tagName==='DETAILS'){
+      t.open=true;t.scrollIntoView?.({block:'start',behavior:'smooth'});} };
+   }
    area.append(el('p',items.length+' operator-reported drafts. Amounts are not posted to any real ledger.'));
    for(const x of items){const card=el('article');card.className='notice';card.dataset.pms447Draft=x.id;
     card.append(el('strong',x.category+' · '+x.title),
