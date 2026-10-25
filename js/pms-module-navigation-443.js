@@ -13,7 +13,7 @@ const modules=Object.freeze([
 ]);
 const planned=Object.freeze(['Arboriculture & Tree Care','Concrete Pouring','Fibre / Utility Trenching',
  'Land Clearing','Excavation & Ditching','Hardscaping','Fencing & Decks','Commercial Property Inspections',
- 'Accounting & Payroll','HR & Employee Records','Client CRM']);
+ 'Accounting & Payroll','HR & Employee Records','Advanced CRM Automation']);
 const uuid=s=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
 const withheld=reason=>({state:'withheld',reason,services:[],planned:[],historicalRead:false,newWorkAllowed:false});
 function inspect(source,{companyId,now=Date.now(),jobsAllowed=false}={}){
@@ -56,12 +56,18 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
  const mobile=element('select');mobile.id='pms443Mobile';mobile.setAttribute('aria-label','Company service modules (mobile)');
  mobileLabel.append(mobile);body.append(mobileLabel);
  const archived=element('p');archived.id='pms443History';body.append(archived);
+ const shared=element('button','Client & Property 360 · shared workspace');shared.type='button';
+ shared.id='pms443Client360';shared.className='secondary';shared.hidden=true;
+ shared.onclick=()=>{if(review?.state!=='verified_navigation_only')return;
+  const target=document.getElementById('owner444');
+  if(target?.tagName==='DETAILS'){target.open=true;target.scrollIntoView?.({block:'start',behavior:'smooth'});}
+  else status.textContent='Client & Property 360 is not installed in this version.';};body.append(shared);
  const later=element('details');later.id='pms443Planned';later.append(element('summary','Planned service and business modules (not available yet)'));
  const plannedList=element('ul');for(const name of planned)plannedList.append(element('li',name+' · PLANNED'));
  later.append(plannedList);body.append(later);
  panel.append(body);root.append(panel);
  let epoch=0,identity=null,roster=[],busy=false,review=null;
- const clear=()=>{company.replaceChildren();desktop.replaceChildren();mobile.replaceChildren();archived.replaceChildren();review=null;};
+ const clear=()=>{company.replaceChildren();desktop.replaceChildren();mobile.replaceChildren();archived.replaceChildren();shared.hidden=true;review=null;};
  function companyOptions(rows){const prior=company.value;company.replaceChildren();const placeholder=element('option','Choose owner company');placeholder.value='';company.append(placeholder);
   for(const item of rows){const opt=element('option',item.name);opt.value=item.id;company.append(opt);}
   if(rows.some(r=>r.id===prior))company.value=prior;else if(rows.length===1)company.value=rows[0].id;}
@@ -71,7 +77,8 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
   else status.textContent='Service entry point is not yet installed here; original Jobs and audits remain available under their own permissions.';}
  function render(value){review=value;desktop.replaceChildren();mobile.replaceChildren();
   const placeholder=element('option','Choose an enabled service');placeholder.value='';mobile.append(placeholder);
-  if(value.state!=='verified_navigation_only'){status.textContent='WITHHELD: '+value.reason;archived.replaceChildren();return;}
+  if(value.state!=='verified_navigation_only'){status.textContent='WITHHELD: '+value.reason;archived.replaceChildren();shared.hidden=true;return;}
+  shared.hidden=false;
   status.textContent='VERIFIED MENU ONLY: '+value.services.length+' enabled / '+value.disabled.length+' disabled. No new-work authorization was granted.';
   for(const service of value.services){const button=element('button',service.label);button.type='button';button.className='secondary';
    button.dataset.pms443Service=service.key;button.onclick=()=>go(service.key);desktop.append(button);
@@ -106,7 +113,7 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
  company.onchange=()=>{epoch++;render(withheld('Company changed; refresh and verify the new company registry'));};
  mobile.onchange=()=>{const key=mobile.value;mobile.value='';go(key);};
  document.addEventListener('ywi:auth-changed',()=>{epoch++;identity=null;roster=[];clear();status.textContent='Company identity changed; menu cleared.';});
- document.addEventListener('ywi:module-permissions-changed',()=>{epoch++;desktop.replaceChildren();mobile.replaceChildren();review=null;status.textContent='Module permissions changed; reverify company menu.';});
+ document.addEventListener('ywi:module-permissions-changed',()=>{epoch++;desktop.replaceChildren();mobile.replaceChildren();shared.hidden=true;review=null;status.textContent='Module permissions changed; reverify company menu.';});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();

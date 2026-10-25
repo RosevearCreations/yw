@@ -3689,3 +3689,12 @@ body[data-authenticated="false"] .module-section-nav {
 .pms443-mobile-label{display:none;min-width:0;margin:12px 0}
 #pms443{min-width:0;max-width:100%;overflow-wrap:anywhere}
 @media(max-width:600px){.pms443-desktop{display:none}.pms443-mobile-label{display:grid;gap:6px}}
+.pms444-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:12px;min-width:0;margin:12px 0}
+.pms444-fields label{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
+.pms444-fields input,.pms444-fields select,.pms444-fields textarea{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+.pms444-actions{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.pms444-actions button{white-space:normal;min-height:44px;max-width:100%}
+.pms444-dossier{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.pms444-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;min-width:0}
+.pms444-dossier .notice{min-width:0;max-width:100%;overflow-wrap:anywhere;box-sizing:border-box;margin:8px 0}
+#owner444{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
