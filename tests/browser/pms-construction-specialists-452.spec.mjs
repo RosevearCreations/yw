@@ -78,6 +78,7 @@ test('specialty evidence records quantities and stays operator-reported only',as
  await page.locator('#pms452Append').click();
  expect(await page.evaluate(()=>window.__writes)).toEqual([]);
  await page.locator('#pms452Refresh').click();
+ await expect(page.locator('#pms452Activity')).toHaveValue('pour');
  await page.locator('#pms452Safety').fill('original-site-Safety-reference');
  await page.locator('#pms452Append').click();
  await expect(page.locator('#pms452Status')).toContainText('independent approval');
@@ -96,6 +97,7 @@ test('fibre/excavation field evidence requires both Safety and locate sources',a
  await page.locator('#pms452Safety').fill('original-site-safety');
  await page.locator('#pms452Append').click();expect(await page.evaluate(()=>window.__writes)).toEqual([]);
  await page.locator('#pms452Refresh').click();
+ await expect(page.locator('#pms452Activity')).toHaveValue('trench');
  await page.locator('#pms452FieldUtility').fill('original-one-call-locate');
  await page.locator('#pms452Append').click();
  expect(await page.evaluate(()=>window.__writes)).toMatchObject([

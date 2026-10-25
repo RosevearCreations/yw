@@ -116,7 +116,7 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
  body.append(el('p','Original Item 425 construction phases, permit decisions, independent Safety, utility locating, inspections, Finance releases, site authorization and Dispatch remain separate review requirements.'));
  const original=el('a','Open original 425 construction permit & change controls');original.href='#owner425';body.append(original);
  panel.append(body);root.append(panel);
- let epoch=0,busy=false,identity=null,roster=[],snapshot=null;
+ let epoch=0,busy=false,identity=null,roster=[],snapshot=null,chosenActivity='';
  const controls=[refresh,add,append];
  const alive=(uid,e)=>epoch===e&&window.YWI_AUTH?.getState?.()?.isAuthenticated===true&&window.YWI_AUTH.getState().user?.id===uid;
  const clear=()=>{snapshot=null;history.replaceChildren();order.replaceChildren();project.replaceChildren();activity.replaceChildren();};
@@ -130,9 +130,10 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
    ' · '+selected.replaceAll('_',' ')+' · '+rows.length+' scope(s) · independent permits, Safety, locates, Dispatch and Finance HOLD.';
   pick(order,snapshot.orders,'Choose canonical construction order',x=>x.number+' · '+x.site_name);
   pick(project,snapshot.projects.filter(x=>x.specialty===selected),'Select owned '+selected+' scope',x=>x.scope_label+' · '+x.site_name);
-  const opts=activities[selected],oldActivity=activity.value;
+  const opts=activities[selected],oldActivity=activity.value||chosenActivity;
   activity.replaceChildren();choices(activity,opts);
   if(opts.includes(oldActivity))activity.value=oldActivity;
+  chosenActivity=activity.value;
   for(const x of rows){const card=el('article');card.className='notice';card.dataset.pms452Project=x.id;
    card.append(el('strong',x.client_name+' · '+x.site_name+' · '+x.scope_label));
    card.append(el('p',x.scope_notes+' · original order '+x.work_order_id));
@@ -161,7 +162,8 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
   try{await fn(e)}catch(error){clear();status.textContent='WITHHELD: '+(error?.message||String(error));}
   finally{busy=false;controls.forEach(x=>x.disabled=false);}}
  refresh.onclick=()=>run(load);
- company.onchange=()=>{epoch++;clear();status.textContent='Company changed · reverify original owner scope';};
+ company.onchange=()=>{epoch++;chosenActivity='';clear();status.textContent='Company changed · reverify original owner scope';};
+ activity.onchange=()=>{chosenActivity=activity.value;};
  for(const [key,b] of tabs)b.onclick=()=>{selected=key;subtype.value=key;for(const [k,x] of tabs)x.setAttribute('aria-pressed',String(k===key));if(snapshot)render();};
  subtype.value=selected;
  add.onclick=()=>run(async e=>{allowed();const wo=snapshot.orders.find(x=>x.id===order.value);
@@ -193,7 +195,7 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
    p_evidence_source:evidence.value.trim(),p_notes:notes.value.trim()||null});
   if(!uuid(id)||!alive(ctx.uid,e))throw Error('Original field source receipt missing');
   await load(e);status.textContent='Field evidence recorded, independent approval and Dispatch HOLD.';});
- const invalidate=()=>{epoch++;identity=null;roster=[];company.replaceChildren();clear();status.textContent='Session or permission changed · reverify before construction access';};
+ const invalidate=()=>{epoch++;identity=null;roster=[];chosenActivity='';company.replaceChildren();clear();status.textContent='Session or permission changed · reverify before construction access';};
  document.addEventListener('ywi:auth-changed',invalidate);
  document.addEventListener('ywi:module-permissions-changed',invalidate);
 }
