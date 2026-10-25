@@ -335,6 +335,8 @@
     "test:browser:pms-double-entry-gl-448": "playwright test --config=playwright.config.mjs tests/browser/pms-double-entry-gl-448.spec.mjs",
     "test:pms-lawn-grounds-449": "node scripts/pms-lawn-grounds-449-check.mjs",
     "test:browser:pms-lawn-grounds-449": "playwright test --config=playwright.config.mjs tests/browser/pms-lawn-grounds-449.spec.mjs",
+    "test:pms-winter-snow-plowing-450": "node scripts/pms-winter-snow-plowing-450-check.mjs",
+    "test:browser:pms-winter-snow-plowing-450": "playwright test --config=playwright.config.mjs tests/browser/pms-winter-snow-plowing-450.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
