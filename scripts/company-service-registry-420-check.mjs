@@ -4,10 +4,10 @@ const ui=read('js/company-service-registry-420.js');new Function(ui);
 const ctx={window:{},document:{readyState:'loading',addEventListener(){}}};
 vm.runInNewContext(ui,ctx);
 const keys=Array.from(ctx.window.YWI420.keys);
-assert.deepEqual(keys,['landscape','construction','water_parks','snow_removal','snow_plowing','septic']);
+assert.deepEqual(keys,['landscape','construction','water_parks','snow_removal','snow_plowing','septic','arboriculture']);
 const company={id:'c-1'};
 const original=keys.map(module_key=>({company_id:'c-1',module_key,enabled:false,created_at:'2026-10-20Z',updated_at:'2026-10-20Z'}));
-assert.equal(ctx.window.YWI420.verifyRows(company,original).length,6);
+assert.equal(ctx.window.YWI420.verifyRows(company,original).length,7);
 assert.throws(()=>ctx.window.YWI420.verifyRows(company,original.slice(1)),/incomplete/);
 assert.throws(()=>ctx.window.YWI420.verifyRows(company,original.map((r,i)=>i? r:{...r,company_id:'other'})),/invalid/);
 assert.throws(()=>ctx.window.YWI420.verifyRows(company,original.map((r,i)=>i? r:{...r,enabled:'true'})),/invalid/);
@@ -17,7 +17,7 @@ for(const table of ['ywi_companies','ywi_company_service_modules','ywi_company_s
  assert.ok(sql.includes('alter table public.'+table+' enable row level security;'),table);
  assert.ok(sql.includes('revoke all on public.'+table+' from public,anon,authenticated;'),table);
 }
-for(const x of keys)assert.ok(sql.includes("'"+x+"'"));
+for(const x of keys)assert.ok((sql+read('sql/pms_septic_arboriculture_451.sql')).includes("'"+x+"'"));
 for(const must of ['owner_user_id = (select auth.uid())','security definer','ywi_company_service_seed_420','enabled boolean not null default false',
 'update(enabled)','for update to authenticated','after update of enabled','on delete restrict','previous_enabled','next_enabled'])
  assert.ok(sql.includes(must),must);
