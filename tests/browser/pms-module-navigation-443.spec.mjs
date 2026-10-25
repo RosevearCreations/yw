@@ -7,7 +7,7 @@ async function setup(page,options={}){
  const response=fixture({now:Date.now(),enabled:options.allOff?[]:undefined});
  if(options.foreignPayload)response.services[0].company_id='a4420000-0000-4442-8442-000000000002';
  await page.setViewportSize({width:options.desktop?1100:390,height:844});
- await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.pms443-desktop{display:grid;gap:5px;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr))}.pms443-mobile-label{display:none}@media(max-width:600px){.pms443-desktop{display:none}.pms443-mobile-label{display:grid}}</style></head><body style="margin:8px"><div id="admin"><details id="owner424"><summary>Lawn</summary></details><details id="owner450Snow"><summary>Snow Removal</summary></details><details id="owner450Plow"><summary>Snow Plowing</summary></details><details id="owner428"><summary>Septic</summary></details></div></body></html>');
+ await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.pms443-desktop{display:grid;gap:5px;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr))}.pms443-mobile-label{display:none}@media(max-width:600px){.pms443-desktop{display:none}.pms443-mobile-label{display:grid}}</style></head><body style="margin:8px"><div id="admin"><details id="owner424"><summary>Lawn</summary></details><details id="owner450Snow"><summary>Snow Removal</summary></details><details id="owner450Plow"><summary>Snow Plowing</summary></details><details id="owner451Septic"><summary>Septic</summary></details><details id="owner451Arbor"><summary>Tree Care</summary></details></div></body></html>');
  await page.evaluate(({response,options,company,ownerId,companyAdminTest})=>{
   window.__calls=[];window.__writes=[];window.__signedOut=!!options.signedOut;
   window.YWISecurity={canViewModule:(module,role)=>module==='jobs'&&role==='admin'&&!options.noJobs};
@@ -30,9 +30,9 @@ async function setup(page,options={}){
  await page.locator('#pms443 summary').first().click();
  await page.locator('#pms443Refresh').click();
 }
-test('Yard Rosevear six-switch owner tenant displays matching mobile options, with OFF hidden',async({page})=>{
+test('Yard Rosevear seven-switch owner tenant displays matching mobile options, with OFF hidden',async({page})=>{
  await setup(page);
- await expect(page.locator('#pms443Status')).toContainText('3 enabled / 3 disabled');
+ await expect(page.locator('#pms443Status')).toContainText('3 enabled / 4 disabled');
  await expect(page.locator('[data-pms443-service]')).toHaveCount(3);
  expect(await page.locator('[data-pms443-service]').evaluateAll(xs=>xs.map(x=>x.dataset.pms443Service)))
   .toEqual(['landscape','snow_removal','septic']);

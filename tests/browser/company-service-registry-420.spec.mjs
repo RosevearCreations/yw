@@ -1,6 +1,6 @@
 import{test,expect}from'@playwright/test';import fs from'node:fs';
 const ui=fs.readFileSync('js/company-service-registry-420.js','utf8');
-const keys=['landscape','construction','water_parks','snow_removal','snow_plowing','septic'];
+const keys=['landscape','construction','water_parks','snow_removal','snow_plowing','septic','arboriculture'];
 async function setup(page, options={}){
  await page.setViewportSize({width:390,height:844});
  await page.setContent('<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="admin"></div></body></html>');
@@ -31,12 +31,12 @@ async function setup(page, options={}){
  await page.addScriptTag({content:ui});
  await page.locator('#owner420 summary').click();
 }
-test('owner sees six switches, disabled state and immutable source history, mobile safe',async({page})=>{
+test('owner sees seven switches, disabled state and immutable source history, mobile safe',async({page})=>{
  await setup(page);
  await page.locator('#owner420Refresh').click();
- await expect(page.locator('[data-owner420-key]')).toHaveCount(6);
- await expect(page.locator('[data-owner420-enabled="false"]')).toHaveCount(6);
- await expect(page.locator('[data-owner420-audit] li')).toHaveCount(6);
+ await expect(page.locator('[data-owner420-key]')).toHaveCount(7);
+ await expect(page.locator('[data-owner420-enabled="false"]')).toHaveCount(7);
+ await expect(page.locator('[data-owner420-audit] li')).toHaveCount(7);
  expect(await page.evaluate(()=>window.__writes.length)).toBe(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 });
