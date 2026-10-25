@@ -212,6 +212,7 @@ jobs:
       - run: npm run test:pms-lawn-grounds-449
       - run: npm run test:pms-winter-snow-plowing-450
       - run: npm run test:pms-septic-arboriculture-451
+      - run: npm run test:pms-construction-specialists-452
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -416,6 +417,7 @@ jobs:
       - run: npm run test:browser:pms-lawn-grounds-449
       - run: npm run test:browser:pms-winter-snow-plowing-450
       - run: npm run test:browser:pms-septic-arboriculture-451
+      - run: npm run test:browser:pms-construction-specialists-452
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help

@@ -3739,6 +3739,16 @@ body[data-authenticated="false"] .module-section-nav {
 .pms451-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .pms451-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,275px),1fr));gap:12px;min-width:0}
 .pms451-cards .notice{min-width:0;overflow-wrap:anywhere}
+/* PMS 452 · original construction order specialists, accessible desktop/mobile. */
+#owner452Construction{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+.pms452-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px;min-width:0;margin:12px 0}
+.pms452-grid label{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
+.pms452-grid input,.pms452-grid select,.pms452-grid textarea{box-sizing:border-box;display:block;width:100%;max-width:100%;min-width:0}
+.pms452-tabs,.pms452-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;min-width:0}
+.pms452-tabs button,.pms452-actions button,#owner452Construction button{max-width:100%;min-height:44px;overflow-wrap:anywhere;white-space:normal}
+.pms452-tabs button[aria-pressed="true"]{border-color:var(--color-primary,#b38638);box-shadow:inset 0 0 0 2px currentColor}
+.pms452-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;min-width:0}
+.pms452-cards .notice{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
 .pms450-actions{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
 #owner450Snow button,#owner450Plow button{max-width:100%;min-height:44px;overflow-wrap:anywhere;white-space:normal}
 .pms450-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px;min-width:0;margin:12px 0}
