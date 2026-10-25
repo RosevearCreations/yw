@@ -23,7 +23,8 @@ assert.deepEqual(Array.from(pass.services,s=>s.key),['landscape','snow_removal',
 assert.deepEqual([...pass.disabled],['construction','water_parks','snow_plowing']);
 assert.equal(pass.historicalRead,true);assert.equal(pass.newWorkAllowed,false);
 assert.ok(pass.planned.includes('Concrete Pouring'));
-assert.ok(pass.planned.includes('Accounting & Payroll'));
+assert.ok(!pass.planned.includes('Accounting & Payroll'));
+assert.ok(read('js/pms-module-navigation-443.js').includes('pms443Accounting'));
 assert.ok(planned.includes('Fibre / Utility Trenching'));
 const zero=inspect(fixture({now,enabled:[]}),options);
 assert.equal(zero.state,'verified_navigation_only');assert.equal(zero.services.length,0);
