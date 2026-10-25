@@ -7,7 +7,7 @@ async function setup(page,options={}){
  const response=fixture({now:Date.now(),enabled:options.allOff?[]:undefined});
  if(options.foreignPayload)response.services[0].company_id='a4420000-0000-4442-8442-000000000002';
  await page.setViewportSize({width:options.desktop?1100:390,height:844});
- await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.pms443-desktop{display:grid;gap:5px;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr))}.pms443-mobile-label{display:none}@media(max-width:600px){.pms443-desktop{display:none}.pms443-mobile-label{display:grid}}</style></head><body style="margin:8px"><div id="admin"><details id="owner424"><summary>Lawn</summary></details><details id="owner427"><summary>Snow</summary></details><details id="owner428"><summary>Septic</summary></details></div></body></html>');
+ await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.pms443-desktop{display:grid;gap:5px;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr))}.pms443-mobile-label{display:none}@media(max-width:600px){.pms443-desktop{display:none}.pms443-mobile-label{display:grid}}</style></head><body style="margin:8px"><div id="admin"><details id="owner424"><summary>Lawn</summary></details><details id="owner450Snow"><summary>Snow Removal</summary></details><details id="owner450Plow"><summary>Snow Plowing</summary></details><details id="owner428"><summary>Septic</summary></details></div></body></html>');
  await page.evaluate(({response,options,company,ownerId,companyAdminTest})=>{
   window.__calls=[];window.__writes=[];window.__signedOut=!!options.signedOut;
   window.YWISecurity={canViewModule:(module,role)=>module==='jobs'&&role==='admin'&&!options.noJobs};
@@ -43,7 +43,7 @@ test('Yard Rosevear six-switch owner tenant displays matching mobile options, wi
  expect(await page.evaluate(()=>window.__writes)).toEqual([]);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
  await page.locator('#pms443Mobile').selectOption('snow_removal');
- expect(await page.locator('#owner427').evaluate(e=>e.open)).toBe(true);
+ expect(await page.locator('#owner450Snow').evaluate(e=>e.open)).toBe(true);
  expect(await page.evaluate(()=>window.__syntheticCompanyAdmin.real_auth_account)).toBe(false);
 });
 test('desktop has exactly enabled service buttons, retaining original entry points',async({page})=>{
