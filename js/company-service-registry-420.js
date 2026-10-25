@@ -1,14 +1,14 @@
-/* YW Item 420 — authenticated, company-owned six service switches.
+/* YW Item 420/451 — authenticated, company-owned service switches.
    Server grants, constraints, trigger audit and RLS are authoritative. Item 421 governs new work. */
 (()=>{'use strict';
-const keys=Object.freeze(['landscape','construction','water_parks','snow_removal','snow_plowing','septic']);
+const keys=Object.freeze(['landscape','construction','water_parks','snow_removal','snow_plowing','septic','arboriculture']);
 const labels=Object.freeze({landscape:'Landscaping, lawn and grounds',construction:'Small construction and repairs',
 water_parks:'Water parks and aquatic facilities',snow_removal:'Snow removal and de-icing',
-snow_plowing:'Snow plowing',septic:'Septic and vacuum services'});
+snow_plowing:'Snow plowing',septic:'Septic and vacuum services',arboriculture:'Arboriculture and tree care'});
 const $=id=>document.getElementById(id);
 const el=(tag,text)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=String(text);return x;};
 function verifyRows(company, rows){
- if(!company?.id||!Array.isArray(rows)||rows.length!==6)throw Error('Registry incomplete; writes withheld');
+ if(!company?.id||!Array.isArray(rows)||rows.length!==keys.length)throw Error('Registry incomplete; writes withheld');
  const seen=new Set();
  for(const r of rows){if(r.company_id!==company.id||!keys.includes(r.module_key)||
  seen.has(r.module_key)||typeof r.enabled!=='boolean'||!r.created_at||!r.updated_at)
@@ -31,7 +31,7 @@ function panel(){
  p.style.cssText='min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere';
  p.appendChild(el('summary','420 · Audited Company Service Offering Registry'));
  const body=el('div');body.className='admin-panel-block';
- const n=el('p','Owner-only company registry. Each new company starts with all six services DISABLED. Staff roles and shared CRM, Jobs, Finance and Safety records remain unchanged. Build 421 enforces these company offering switches for NEW Jobs work. Historical jobs and contracts remain intact; future Property Maintenance System specialties and confidential Accounting/Payroll access are not provisioned by these six switches.');
+ const n=el('p','Owner-only company registry. New companies start with all seven services DISABLED. Arboriculture is an independently audited company service added in Build 451. Staff roles and shared CRM, Jobs, Finance and Safety records remain unchanged. Build 421 independently enforces service switches for NEW Jobs work; historical jobs and contracts remain intact.');
  body.appendChild(n);
  const controls=el('div');controls.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-width:0';
  const refresh=el('button','Refresh companies');refresh.id='owner420Refresh';refresh.type='button';refresh.className='secondary';
@@ -56,7 +56,7 @@ function panel(){
    if(q.data.some(c=>c.owner_user_id!==uid||!c.id||!c.name))throw Error('Tenant identity mismatch');
    const models=[];
    for(const c of q.data){
-    const m=await sb.from('ywi_company_service_modules').select('company_id,module_key,enabled,created_at,updated_at').eq('company_id',c.id).limit(7);
+    const m=await sb.from('ywi_company_service_modules').select('company_id,module_key,enabled,created_at,updated_at').eq('company_id',c.id).limit(8);
     if(m.error)throw Error('Company service registry inaccessible');
     const services=verifyRows(c,m.data);
     const a=await sb.from('ywi_company_service_module_audit').select('id,company_id,module_key,action,previous_enabled,next_enabled,recorded_at').eq('company_id',c.id).order('id',{ascending:false}).limit(26);
@@ -113,7 +113,7 @@ function panel(){
   if(busy)return;
   const name=newName.value.trim();
   if(name.length<2||name.length>120){notice('Enter a company name between 2 and 120 characters.');return;}
-  if(!window.confirm('Create company "'+name+'" with all six service offerings DISABLED?'))return;
+  if(!window.confirm('Create company "'+name+'" with all seven service offerings DISABLED?'))return;
   busy=true;create.disabled=true;refresh.disabled=true;
   try{
    const {sb}=await ownerSession();

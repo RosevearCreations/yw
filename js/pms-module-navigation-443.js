@@ -2,16 +2,17 @@
  * The client is never an authorization boundary; 420 RLS, 422 owner assertion and
  * 421 server-side Jobs/estimate inserts remain authoritative. */
 (()=>{'use strict';
-const keys=Object.freeze(['landscape','construction','water_parks','snow_removal','snow_plowing','septic']);
+const keys=Object.freeze(['landscape','construction','water_parks','snow_removal','snow_plowing','septic','arboriculture']);
 const modules=Object.freeze([
  {key:'landscape',label:'Lawn & Grounds',target:'owner449'},
  {key:'construction',label:'Light Construction',target:'owner425'},
  {key:'water_parks',label:'Aquatic Facilities',target:'owner426'},
  {key:'snow_removal',label:'Snow Removal',target:'owner450Snow'},
  {key:'snow_plowing',label:'Snow Plowing',target:'owner450Plow'},
- {key:'septic',label:'Septic Services',target:'owner428'}
+ {key:'septic',label:'Septic Services',target:'owner451Septic'},
+ {key:'arboriculture',label:'Arboriculture & Tree Care',target:'owner451Arbor'}
 ]);
-const planned=Object.freeze(['Arboriculture & Tree Care','Concrete Pouring','Fibre / Utility Trenching',
+const planned=Object.freeze(['Concrete Pouring','Fibre / Utility Trenching',
  'Land Clearing','Excavation & Ditching','Hardscaping','Fencing & Decks','Commercial Property Inspections',
  'Advanced CRM Automation']);
 const uuid=s=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
@@ -23,8 +24,8 @@ function inspect(source,{companyId,now=Date.now(),jobsAllowed=false}={}){
   source.historical_audit_retained!==true||source.privacy_minimized!==true||
   source.mutation_authorized!==false||source.synthetic!==false||
   !Number.isFinite(t)||!Number.isFinite(now)||t>now+60000||now-t>300000||
-  !Array.isArray(source.services)||source.services.length!==6||
-  new Set(source.services.map(s=>s.module_key)).size!==6||
+  !Array.isArray(source.services)||source.services.length!==keys.length||
+  new Set(source.services.map(s=>s.module_key)).size!==keys.length||
   source.services.some(s=>s.company_id!==companyId||!keys.includes(s.module_key)||typeof s.enabled!=='boolean')||
   jobsAllowed!==true)
   return withheld('Authenticated company ownership, complete fresh registry or Jobs viewing permission not verified');
@@ -43,7 +44,7 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
  panel.style.cssText='min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere';
  panel.append(element('summary','443 · Property Maintenance System · Company Module Navigator'));
  const body=element('div');body.className='admin-panel-block';
- body.append(element('p','Choose an owned company to see only its enabled service entry points. Desktop and mobile show the same six-service entitlements. This is navigation, not permission to create work. Existing authorized historical reviews remain available when an offering is OFF.'));
+ body.append(element('p','Choose an owned company to see only its enabled service entry points. Desktop and mobile show the same seven-service entitlements. This is navigation, not permission to create work. Existing authorized historical reviews remain available when an offering is OFF.'));
  const help=element('a','ⓘ Module navigation Help');help.href='/help.html#pms-tenant-module-navigation-443';body.append(help);
  const row=element('div');row.className='pms443-toolbar';
  const label=element('label','Verified owner company');const company=element('select');company.id='pms443Company';
