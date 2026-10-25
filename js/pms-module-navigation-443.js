@@ -5,15 +5,14 @@
 const keys=Object.freeze(['landscape','construction','water_parks','snow_removal','snow_plowing','septic','arboriculture']);
 const modules=Object.freeze([
  {key:'landscape',label:'Lawn & Grounds',target:'owner449'},
- {key:'construction',label:'Light Construction',target:'owner425'},
+ {key:'construction',label:'Construction, Concrete, Fibre & Excavation',target:'owner452Construction'},
  {key:'water_parks',label:'Aquatic Facilities',target:'owner426'},
  {key:'snow_removal',label:'Snow Removal',target:'owner450Snow'},
  {key:'snow_plowing',label:'Snow Plowing',target:'owner450Plow'},
  {key:'septic',label:'Septic Services',target:'owner451Septic'},
  {key:'arboriculture',label:'Arboriculture & Tree Care',target:'owner451Arbor'}
 ]);
-const planned=Object.freeze(['Concrete Pouring','Fibre / Utility Trenching',
- 'Land Clearing','Excavation & Ditching','Hardscaping','Fencing & Decks','Commercial Property Inspections',
+const planned=Object.freeze(['Hardscaping','Fencing & Decks','Commercial Property Inspections',
  'Advanced CRM Automation']);
 const uuid=s=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
 const withheld=reason=>({state:'withheld',reason,services:[],planned:[],historicalRead:false,newWorkAllowed:false});

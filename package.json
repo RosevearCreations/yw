@@ -339,6 +339,8 @@
     "test:browser:pms-winter-snow-plowing-450": "playwright test --config=playwright.config.mjs tests/browser/pms-winter-snow-plowing-450.spec.mjs",
     "test:pms-septic-arboriculture-451": "node scripts/pms-septic-arboriculture-451-check.mjs",
     "test:browser:pms-septic-arboriculture-451": "playwright test --config=playwright.config.mjs tests/browser/pms-septic-arboriculture-451.spec.mjs",
+    "test:pms-construction-specialists-452": "node scripts/pms-construction-specialists-452-check.mjs",
+    "test:browser:pms-construction-specialists-452": "playwright test --config=playwright.config.mjs tests/browser/pms-construction-specialists-452.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
