@@ -13,7 +13,7 @@ const modules=Object.freeze([
 ]);
 const planned=Object.freeze(['Arboriculture & Tree Care','Concrete Pouring','Fibre / Utility Trenching',
  'Land Clearing','Excavation & Ditching','Hardscaping','Fencing & Decks','Commercial Property Inspections',
- 'Accounting & Payroll','Advanced CRM Automation']);
+ 'Advanced CRM Automation']);
 const uuid=s=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
 const withheld=reason=>({state:'withheld',reason,services:[],planned:[],historicalRead:false,newWorkAllowed:false});
 function inspect(source,{companyId,now=Date.now(),jobsAllowed=false}={}){
@@ -66,7 +66,12 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
  hrLink.id='pms443HR';hrLink.className='secondary';hrLink.hidden=true;
  const garbageLink=element('button','Rural Garbage Collection · sticker and contract pickups');garbageLink.type='button';
  garbageLink.id='pms443Garbage';garbageLink.className='secondary';garbageLink.hidden=true;
- for(const [button,targetId] of [[hrLink,'owner445HR'],[garbageLink,'owner445Garbage']]){
+ const payrollLink=element('button','Payroll Readiness · confidential planning');payrollLink.type='button';
+ payrollLink.id='pms443Payroll';payrollLink.className='secondary';payrollLink.hidden=true;
+ const accountingLink=element('button','Accounting · company financial controls');accountingLink.type='button';
+ accountingLink.id='pms443Accounting';accountingLink.className='secondary';accountingLink.hidden=true;
+ for(const [button,targetId] of [[hrLink,'owner445HR'],[garbageLink,'owner445Garbage'],
+  [payrollLink,'owner446Payroll'],[accountingLink,'owner447Accounting']]){
   button.onclick=()=>{if(review?.state!=='verified_navigation_only')return;
    const target=document.getElementById(targetId);
    if(target?.tagName==='DETAILS'){target.open=true;target.scrollIntoView?.({block:'start',behavior:'smooth'});}
@@ -78,7 +83,7 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
  later.append(plannedList);body.append(later);
  panel.append(body);root.append(panel);
  let epoch=0,identity=null,roster=[],busy=false,review=null;
- const clear=()=>{company.replaceChildren();desktop.replaceChildren();mobile.replaceChildren();archived.replaceChildren();shared.hidden=true;hrLink.hidden=true;garbageLink.hidden=true;review=null;};
+ const clear=()=>{company.replaceChildren();desktop.replaceChildren();mobile.replaceChildren();archived.replaceChildren();shared.hidden=true;hrLink.hidden=true;garbageLink.hidden=true;payrollLink.hidden=true;accountingLink.hidden=true;review=null;};
  function companyOptions(rows){const prior=company.value;company.replaceChildren();const placeholder=element('option','Choose owner company');placeholder.value='';company.append(placeholder);
   for(const item of rows){const opt=element('option',item.name);opt.value=item.id;company.append(opt);}
   if(rows.some(r=>r.id===prior))company.value=prior;else if(rows.length===1)company.value=rows[0].id;}
@@ -88,8 +93,12 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
   else status.textContent='Service entry point is not yet installed here; original Jobs and audits remain available under their own permissions.';}
  function render(value){review=value;desktop.replaceChildren();mobile.replaceChildren();
   const placeholder=element('option','Choose an enabled service');placeholder.value='';mobile.append(placeholder);
-  if(value.state!=='verified_navigation_only'){status.textContent='WITHHELD: '+value.reason;archived.replaceChildren();shared.hidden=true;hrLink.hidden=true;garbageLink.hidden=true;return;}
+  if(value.state!=='verified_navigation_only'){status.textContent='WITHHELD: '+value.reason;archived.replaceChildren();shared.hidden=true;hrLink.hidden=true;garbageLink.hidden=true;payrollLink.hidden=true;accountingLink.hidden=true;return;}
   shared.hidden=false;hrLink.hidden=false;garbageLink.hidden=false;
+  const role=window.YWI_AUTH?.getState?.()?.role;
+  const financial=window.YWISecurity?.canViewModule?.('admin',role,'manage')&&
+   window.YWISecurity?.canViewModule?.('finance',role,'manage');
+  payrollLink.hidden=!financial;accountingLink.hidden=!financial;
   status.textContent='VERIFIED MENU ONLY: '+value.services.length+' enabled / '+value.disabled.length+' disabled. No new-work authorization was granted.';
   for(const service of value.services){const button=element('button',service.label);button.type='button';button.className='secondary';
    button.dataset.pms443Service=service.key;button.onclick=()=>go(service.key);desktop.append(button);
