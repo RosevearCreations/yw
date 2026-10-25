@@ -321,6 +321,8 @@
     "test:browser:live-field-trial-integrity-441": "playwright test --config=playwright.config.mjs tests/browser/live-field-trial-integrity-441.spec.mjs",
     "test:cross-service-learning-442": "node scripts/cross-service-learning-442-check.mjs",
     "test:browser:cross-service-learning-442": "playwright test --config=playwright.config.mjs tests/browser/cross-service-learning-442.spec.mjs",
+    "test:pms-module-navigation-443": "node scripts/pms-module-navigation-443-check.mjs",
+    "test:browser:pms-module-navigation-443": "playwright test --config=playwright.config.mjs tests/browser/pms-module-navigation-443.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
