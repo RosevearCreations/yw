@@ -130,7 +130,9 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
    ' · '+selected.replaceAll('_',' ')+' · '+rows.length+' scope(s) · independent permits, Safety, locates, Dispatch and Finance HOLD.';
   pick(order,snapshot.orders,'Choose canonical construction order',x=>x.number+' · '+x.site_name);
   pick(project,snapshot.projects.filter(x=>x.specialty===selected),'Select owned '+selected+' scope',x=>x.scope_label+' · '+x.site_name);
-  const opts=activities[selected];activity.replaceChildren();choices(activity,opts);
+  const opts=activities[selected],oldActivity=activity.value;
+  activity.replaceChildren();choices(activity,opts);
+  if(opts.includes(oldActivity))activity.value=oldActivity;
   for(const x of rows){const card=el('article');card.className='notice';card.dataset.pms452Project=x.id;
    card.append(el('strong',x.client_name+' · '+x.site_name+' · '+x.scope_label));
    card.append(el('p',x.scope_notes+' · original order '+x.work_order_id));
