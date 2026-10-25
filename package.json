@@ -331,6 +331,8 @@
     "test:browser:pms-payroll-446": "playwright test --config=playwright.config.mjs tests/browser/pms-payroll-446.spec.mjs",
     "test:pms-accounting-447": "node scripts/pms-accounting-447-check.mjs",
     "test:browser:pms-accounting-447": "playwright test --config=playwright.config.mjs tests/browser/pms-accounting-447.spec.mjs",
+    "test:pms-double-entry-gl-448": "node scripts/pms-double-entry-gl-448-check.mjs",
+    "test:browser:pms-double-entry-gl-448": "playwright test --config=playwright.config.mjs tests/browser/pms-double-entry-gl-448.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
