@@ -9,6 +9,13 @@ const labels=Object.freeze({company_verified:'Owner company & identity',module_r
  customer_property_reviewed:'Canonical customer/property first use',jobs_draft_reviewed:'Original Jobs/estimate gate first use',
  field_observation:'Field observation — reported, NOT accepted'});
 const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
+function secureRequestId(){const api=globalThis.crypto;
+ if(api?.randomUUID)return api.randomUUID();
+ if(!api?.getRandomValues)throw Error('Secure random source unavailable');
+ const bytes=api.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+ const hex=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+ return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
+}
 const el=(tag,value)=>{const node=document.createElement(tag);if(value!==undefined)node.textContent=value;return node;};
 function inspectIntake(read,{companyId,enabled,now=Date.now()}={}){
  const at=Date.parse(read?.captured_at),arr=read?.entries;
@@ -147,7 +154,7 @@ function mount(){const host=document.getElementById('admin');if(!host||document.
    if(!alive(ctx,before,id)||fresh.error||!fresh.data?.services||
      fresh.data.services.length!==7||fresh.data.services.some(s=>s.enabled!==review.enabled.includes(s.module_key)))
     throw Error('Current service toggles changed; no evidence was saved');
-   const requestId=globalThis.crypto?.randomUUID?.();if(!uuid(requestId))throw Error('Secure request ID unavailable');
+   const requestId=secureRequestId();if(!uuid(requestId))throw Error('Secure request ID unavailable');
    const result=await ctx.sb.rpc('ywi_rpc_append_owner_first_use_455',{
     p_company_id:id,p_request_id:requestId,p_checkpoint:kind,p_module_key:mod,
     p_observed_enabled:enabled,p_reference:ref,p_notes:notes||null,p_disposition:disp});

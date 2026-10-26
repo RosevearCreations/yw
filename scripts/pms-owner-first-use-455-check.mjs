@@ -47,7 +47,7 @@ for(const token of ['enable row level security','revoke all on public.ywi_owner_
 assert.ok(!/grant\s+(insert|update|delete)\s+on\s+public\.ywi_owner_first_use_entries_455\s+to\s+authenticated/i.test(sql));
 for(const token of ['YWI454.inspect','YWI454?.rosterOwned','auth.getUser',
  'ywi_rpc_pms_navigation_443','ywi_rpc_owner_first_use_455','ywi_rpc_append_owner_first_use_455',
- 'pms455Append','ywi:company-service-offering-changed','window.confirm','crypto?.randomUUID'])
+ 'pms455Append','ywi:company-service-offering-changed','window.confirm','getRandomValues','randomUUID'])
  assert.ok(source.includes(token),token);
 assert.ok(read('index.html').includes('js/pms-owner-first-use-455.js'));
 assert.ok(read('help.html').includes('id="pms-owner-first-use-455"'));

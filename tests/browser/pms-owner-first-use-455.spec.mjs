@@ -78,7 +78,7 @@ test('no company, foreign owner/journal, mismatch, unauthenticated, denied sourc
   {mismatchJournal:true},{badAuth:true},{noJobs:true},{signedOut:true},{rpcDenied:true}]){
   await setup(page,options);
   await expect(page.locator('#pms455Status')).toContainText(options.noCompany?'HOLD':'WITHHELD');
-  await expect(page.locator('#pms455Intake')).toBeDisabled();
+  await expect(page.locator('#pms455Append')).toBeDisabled();
   expect(await page.evaluate(()=>window.__writes)).toEqual([]);
  }
 });
@@ -86,7 +86,7 @@ test('toggle and owner identity change disable intake; uncertain append does not
  await setup(page,{appendDenied:true});
  await page.evaluate(()=>document.dispatchEvent(new Event('ywi:company-service-offering-changed')));
  await expect(page.locator('#pms455Status')).toContainText('HOLD');
- await expect(page.locator('#pms455Intake')).toBeDisabled();
+ await expect(page.locator('#pms455Append')).toBeDisabled();
  await page.locator('#pms455Load').click();
  await expect(page.locator('#pms455Status')).toContainText('SOURCE VERIFIED');
  await page.locator('#pms455Source').fill('OWNER-REF-UNCERTAIN');
@@ -94,5 +94,5 @@ test('toggle and owner identity change disable intake; uncertain append does not
  await expect(page.locator('#pms455Status')).toContainText('WITHHELD');
  expect(await page.evaluate(()=>window.__writes)).toHaveLength(1);
  await page.evaluate(()=>{window.__signedOut=true;document.dispatchEvent(new Event('ywi:auth-changed'));});
- await expect(page.locator('#pms455Intake')).toBeDisabled();
+ await expect(page.locator('#pms455Append')).toBeDisabled();
 });
