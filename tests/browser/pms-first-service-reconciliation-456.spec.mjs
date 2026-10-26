@@ -49,7 +49,7 @@ async function setup(page,options={}){
 test('390px owner reconciliation shows original receipt, observation and advisory HOLD',async({page})=>{
  await setup(page);
  await expect(page.locator('#pms456Status')).toContainText('SOURCE VERIFIED: 1 original Jobs/estimate receipts');
- await expect(page.locator('#pms456Matrix')).toContainText('7');
+ await expect(page.locator('#pms456Matrix')).toContainText('3 ON / 4 OFF');
  await expect(page.locator('.pms456-review')).toHaveCount(1);
  await expect(page.locator('#pms456Release')).toContainText('HOLD');
  expect(await page.evaluate(()=>window.__writes)).toEqual([]);
@@ -101,7 +101,7 @@ test('OFF switch denies readiness, server denial keeps no automatic retry, signo
  expect(await page.evaluate(()=>window.__writes)).toHaveLength(0);
  await page.locator('#pms456Outcome').selectOption('blocked');
  page.once('dialog',d=>d.accept());await page.locator('#pms456Append').click();
- await expect(page.locator('#pms456Status')).toContainText('WITHHELD: Jobs approve denied');
+ await expect(page.locator('#pms456Status')).toContainText('WITHHELD: Server receipt unverifiable');
  expect(await page.evaluate(()=>window.__writes)).toHaveLength(1);
  await page.evaluate(()=>{window.__signedOut=true;document.dispatchEvent(new Event('ywi:auth-changed'));});
  await expect(page.locator('#pms456Append')).toBeDisabled();
