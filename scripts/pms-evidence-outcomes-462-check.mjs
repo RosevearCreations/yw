@@ -41,7 +41,7 @@ for(const s of ['enable row level security','revoke all on public.ywi_evidence_o
  "('approve','manage')",'on conflict(company_id,operation_id) do nothing',
  "'outbound_actions',false","'release_green',false"])assert.ok(sql.includes(s),s);
 assert.ok(!/grant\s+(select|insert|update|delete)\s+on\s+public\.ywi_evidence_outcomes_462\s+to\s+authenticated/i.test(sql));
-for(const s of ['pms462Form','pms462Hold','window.confirm','ywi:auth-changed','ywi:module-permissions-changed','ywi:company-service-offering-changed'])assert.ok(src.includes(s),s);
+for(const s of ['pms462Form','pms462Hold','getRandomValues','window.confirm','ywi:auth-changed','ywi:module-permissions-changed','ywi:company-service-offering-changed'])assert.ok(src.includes(s),s);
 assert.ok(read('index.html').includes('js/pms-evidence-outcomes-462.js'));
 assert.ok(read('help.html').includes('id="pms-evidence-outcomes-462"'));
 assert.ok(read('style.css').includes('.pms462-controls'));

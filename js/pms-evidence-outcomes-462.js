@@ -3,6 +3,9 @@
 const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
 const node=(tag,value)=>{const e=document.createElement(tag);if(value!==undefined)e.textContent=value;return e;};
 const outcomes=['evidence_received','clarification_pending','continued_hold'];
+function operationId(){const c=globalThis.crypto;if(c?.randomUUID)return c.randomUUID();if(!c?.getRandomValues)throw Error('Secure operation ID unavailable');
+ const b=c.getRandomValues(new Uint8Array(16));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
+ const s=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');return [s.slice(0,8),s.slice(8,12),s.slice(12,16),s.slice(16,20),s.slice(20)].join('-');}
 function inspect(base,ledger,{companyId,userId}={}){
  const prior=window.YWI461?.inspect(base,{companyId,userId});
  if(prior?.state!=='source_verified'||ledger?.company_id!==companyId||ledger.viewer_id!==userId||ledger.is_owner!==true||
@@ -65,7 +68,7 @@ function mount(){const host=document.getElementById('admin');if(!host||document.
   if(!r||r.outcome||!r.enabled||!outcomes.includes(outcome.value)||ref.length<4||ref.length>250||memo.length>500){status.textContent='WITHHELD: valid open request and source reference required';return;}
   if(!window.confirm('Record an INTERNAL documentary outcome? No messages, evidence certification, independent approval or work authorization.'))return;
   busy=true;form.disabled=refresh.disabled=true;try{const ctx=await session();if(ctx.uid!==principal||ticket!==version||company.value!==id)throw Error('Owner identity changed');
-   const operation=globalThis.crypto?.randomUUID?.();if(!uuid(operation))throw Error('Secure operation ID unavailable');
+   const operation=operationId();if(!uuid(operation))throw Error('Secure operation ID unavailable');
    const result=await ctx.sb.rpc('ywi_rpc_record_evidence_outcome_462',{p_company_id:id,p_operation_id:operation,p_request_id:r.request.id,p_outcome:outcome.value,p_source_reference:ref,p_notes:memo||null});
    if(result.error||!uuid(result.data?.id)||result.data.company_id!==id||result.data.recorded!==true||!['field_accepted','service_authorized','independent_reapproval','release_green','outbound_actions'].every(k=>result.data[k]===false))throw Error('Unverified receipt');
    reference.value=notes.value='';await reconcile();
