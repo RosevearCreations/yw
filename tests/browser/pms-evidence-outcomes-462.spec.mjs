@@ -29,6 +29,7 @@ async function setup(page,options={}){
    },from(){window.__writes.push({name:'forbidden-table-write'});return {};}};
  },{f,ledger,ownerId,companyId,options});
  await page.addScriptTag({content:prev});await page.addScriptTag({content:src});
+ await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded')));
  await page.locator('#evidence462 > summary').click();await page.locator('#pms462Refresh').click();
 }
 test('mobile owner request remains HOLD until documentary outcome',async({page})=>{
