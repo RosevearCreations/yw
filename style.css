@@ -3741,6 +3741,9 @@ body[data-authenticated="false"] .module-section-nav {
 .pms451-cards .notice{min-width:0;overflow-wrap:anywhere}
 /* PMS 452 · original construction order specialists, accessible desktop/mobile. */
 #owner452Construction{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+#owner453JobCost{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+#owner453JobCost .notice,#owner453JobCost .pms-finance-cards{min-width:0;overflow-wrap:anywhere}
+#owner453JobCost button{min-height:44px;max-width:100%;white-space:normal}
 .pms452-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px;min-width:0;margin:12px 0}
 .pms452-grid label{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
 .pms452-grid input,.pms452-grid select,.pms452-grid textarea{box-sizing:border-box;display:block;width:100%;max-width:100%;min-width:0}
