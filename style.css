@@ -3700,7 +3700,7 @@ body[data-authenticated="false"] .module-section-nav {
 .pms454-module{display:flex;flex-direction:column;gap:6px;border:1px solid #64748b;border-radius:8px;padding:12px;min-width:0;overflow-wrap:anywhere}
 .pms454 :is(button,select,a):focus-visible{outline:3px solid #f4bc55;outline-offset:3px}
 @media(max-width:600px){.pms454-controls,.pms454-module-list{grid-template-columns:minmax(0,1fr)}.pms454 a{display:inline-flex;align-items:center;min-height:44px}}
-.pms455,#owner455{min-width:0;max-width:100%;width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+.pms455,#owner455{min-width:0;max-width:100%;width:100%;box-sizing:border-box;overflow-wrap:anywhere;overflow-x:clip}
 .pms455>*,.pms455 :is(section,article,ol,li,fieldset,legend){min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
 .pms455-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px;align-items:end;margin:14px 0;min-width:0}
 .pms455 label{display:grid;gap:6px;min-width:0;margin-bottom:10px}

@@ -50,7 +50,11 @@ test('390px actual-owner onboarding shows separate first-use steps and never fie
  await expect(page.locator('.pms455-entry')).toHaveCount(1);
  await expect(page.locator('#pms455Release')).toContainText('HOLD');
  expect(await page.evaluate(()=>window.__writes)).toEqual([]);
- expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+ const geometry=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+  offenders:[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>
+   document.documentElement.clientWidth+1).slice(0,12).map(e=>({tag:e.tagName,id:e.id,
+   className:typeof e.className==='string'?e.className:'',right:Math.round(e.getBoundingClientRect().right)}))}));
+ expect(geometry.overflow,JSON.stringify(geometry.offenders)).toBeLessThanOrEqual(1);
  expect(await page.locator('#pms455Load').evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
  await expect(page.locator('a[href="/help.html#pms-owner-first-use-455"]')).toHaveCount(1);
  await page.locator('#pms455Company').focus();await page.keyboard.press('Tab');
