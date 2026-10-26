@@ -53,8 +53,8 @@ async function setup(page,options={}){
 test('390px distinct reviewer sees own handoff and HOLD; keyboard Help remains accessible',async({page})=>{
  await setup(page,{reviewer:true});
  await expect(page.locator('#pms457Status')).toContainText('SOURCE VERIFIED: 1 independent handoffs');
- await expect(page.locator('#pms457OwnerForm')).toBeDisabled();
- await expect(page.locator('#pms457ReviewerForm')).toBeEnabled();
+ await expect(page.locator('#pms457OwnerForm')).toHaveJSProperty('disabled',true);
+ await expect(page.locator('#pms457ReviewerForm')).toHaveJSProperty('disabled',false);
  await expect(page.locator('#pms457Release')).toContainText('HOLD');
  const geometry=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
  expect(geometry).toBeLessThanOrEqual(1);
@@ -66,8 +66,8 @@ test('390px distinct reviewer sees own handoff and HOLD; keyboard Help remains a
 });
 test('owner can assign a distinct reviewer without claiming service approval',async({page})=>{
  await setup(page,{unassigned:true});
- await expect(page.locator('#pms457OwnerForm')).toBeEnabled();
- await expect(page.locator('#pms457ReviewerForm')).toBeDisabled();
+ await expect(page.locator('#pms457OwnerForm')).toHaveJSProperty('disabled',false);
+ await expect(page.locator('#pms457ReviewerForm')).toHaveJSProperty('disabled',true);
  await page.locator('#pms457Ready').selectOption(readyId);
  await page.locator('#pms457Reviewer').fill(reviewerId);
  await page.locator('#pms457OwnerRef').fill('OWNER-HANDOFF-EVIDENCE');
@@ -100,8 +100,8 @@ test('foreign identity, company, signed-out, missing original and denied access 
   {reviewer:true,foreignHandoff:true},{reviewer:true,badAuth:true},
   {reviewer:true,denied:true},{reviewer:true,signedOut:true},{reviewer:true,noJobs:true}]){
   await setup(page,options);
-  await expect(page.locator('#pms457OwnerForm')).toBeDisabled();
-  await expect(page.locator('#pms457ReviewerForm')).toBeDisabled();
+  await expect(page.locator('#pms457OwnerForm')).toHaveJSProperty('disabled',true);
+  await expect(page.locator('#pms457ReviewerForm')).toHaveJSProperty('disabled',true);
   expect(await page.evaluate(()=>window.__writes)).toEqual([]);
  }
 });
@@ -114,5 +114,5 @@ test('server denial never auto-replays; OFF service blocks closure and signout i
  await expect(page.locator('#pms457Status')).toContainText('WITHHELD: Unverifiable server response');
  expect(await page.evaluate(()=>window.__writes)).toHaveLength(1);
  await page.evaluate(()=>{window.__signedOut=true;document.dispatchEvent(new Event('ywi:auth-changed'));});
- await expect(page.locator('#pms457ReviewerForm')).toBeDisabled();
+ await expect(page.locator('#pms457ReviewerForm')).toHaveJSProperty('disabled',true);
 });
