@@ -3689,6 +3689,17 @@ body[data-authenticated="false"] .module-section-nav {
 .pms443-mobile-label{display:none;min-width:0;margin:12px 0}
 #pms443{min-width:0;max-width:100%;overflow-wrap:anywhere}
 @media(max-width:600px){.pms443-desktop{display:none}.pms443-mobile-label{display:grid;gap:6px}}
+
+/* Build 454: source-gated modular tenancy acceptance, including 390px touch and keyboard use. */
+#owner454{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+.pms454{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.pms454-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px;align-items:end;margin:14px 0;min-width:0}
+.pms454-controls label{display:grid;gap:6px;min-width:0}
+.pms454-controls select,.pms454-controls button{width:100%;max-width:100%;min-width:0;min-height:44px;box-sizing:border-box}
+.pms454-module-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px;list-style:none;padding:0;margin:12px 0;min-width:0}
+.pms454-module{display:flex;flex-direction:column;gap:6px;border:1px solid #64748b;border-radius:8px;padding:12px;min-width:0;overflow-wrap:anywhere}
+.pms454 :is(button,select,a):focus-visible{outline:3px solid #f4bc55;outline-offset:3px}
+@media(max-width:600px){.pms454-controls,.pms454-module-list{grid-template-columns:minmax(0,1fr)}.pms454 a{display:inline-flex;align-items:center;min-height:44px}}
 .pms444-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:12px;min-width:0;margin:12px 0}
 .pms444-fields label{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
 .pms444-fields input,.pms444-fields select,.pms444-fields textarea{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box}

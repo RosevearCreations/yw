@@ -3,7 +3,7 @@ const read=x=>fs.readFileSync(x,'utf8');const code=read('js/new-work-company-gat
 new Function(code);
 const context={window:{},document:{readyState:'loading',addEventListener(){}}};vm.runInNewContext(code,context);
 const keys=Array.from(context.window.YWI421.keys);
-assert.deepEqual(keys,['landscape','construction','water_parks','snow_removal','snow_plowing','septic']);
+assert.deepEqual(keys,['landscape','construction','water_parks','snow_removal','snow_plowing','septic','arboriculture']);
 const rows=keys.map(module_key=>({company_id:'abc',module_key,enabled:false}));
 assert.equal(context.window.YWI421.validate({id:'abc'},rows).length,0);
 assert.equal(context.window.YWI421.validate({id:'abc'},rows.map((x,i)=>i===0?{...x,enabled:true}:x)).length,1);
