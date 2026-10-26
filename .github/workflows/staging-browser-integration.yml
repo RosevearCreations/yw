@@ -223,6 +223,7 @@ jobs:
       - run: npm run test:pms-retest-discrepancy-460
       - run: npm run test:pms-reassessment-followup-461
       - run: npm run test:pms-evidence-outcomes-462
+      - run: npm run test:pms-independent-recheck-463
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -438,6 +439,7 @@ jobs:
       - run: npm run test:browser:pms-retest-discrepancy-460
       - run: npm run test:browser:pms-reassessment-followup-461
       - run: npm run test:browser:pms-evidence-outcomes-462
+      - run: npm run test:browser:pms-independent-recheck-463
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
