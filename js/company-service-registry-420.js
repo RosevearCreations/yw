@@ -91,6 +91,9 @@ function panel(){
         .eq('company_id',m.company.id).eq('module_key',service.module_key)
         .eq('enabled',service.enabled).select('company_id,module_key,enabled,created_at,updated_at');
        if(res.error||res.data?.length!==1||res.data[0].enabled!==desired)throw Error('Change not confirmed; re-read required');
+       // A successful server-confirmed toggle invalidates all visible entitlement snapshots.
+       document.dispatchEvent(new CustomEvent('ywi:company-service-offering-changed',
+        {detail:{company_id:m.company.id,module_key:service.module_key}}));
        busy=false;notice('Saved under owner identity; reloading authoritative registry and audit…');
        await load();
       }catch(err){busy=false;notice('WITHHELD: '+(err?.message||err)+'. Refresh to reconcile.');toggle.disabled=true;refresh.disabled=false;create.disabled=false;}
@@ -119,6 +122,8 @@ function panel(){
    const {sb}=await ownerSession();
    const r=await sb.from('ywi_companies').insert({name}).select('id,name');
    if(r.error||r.data?.length!==1)throw Error('Company creation unconfirmed');
+   document.dispatchEvent(new CustomEvent('ywi:company-service-offering-changed',
+    {detail:{company_id:r.data[0].id}}));
    busy=false;newName.value='';await load();
   }catch(err){busy=false;notice('WITHHELD: '+(err?.message||err)+'. Refresh and confirm server records.');create.disabled=false;refresh.disabled=false;}
  });

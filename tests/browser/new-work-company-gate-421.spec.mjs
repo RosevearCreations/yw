@@ -1,5 +1,5 @@
 import{test,expect}from'@playwright/test';import fs from'node:fs';
-const src=fs.readFileSync('js/new-work-company-gate-421.js','utf8'),keys=['landscape','construction','water_parks','snow_removal','snow_plowing','septic'];
+const src=fs.readFileSync('js/new-work-company-gate-421.js','utf8'),keys=['landscape','construction','water_parks','snow_removal','snow_plowing','septic','arboriculture'];
 async function setup(page,opts={}){
  await page.setViewportSize({width:390,height:844});
  await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="admin"></div></body></html>');
@@ -8,7 +8,7 @@ async function setup(page,opts={}){
    window.YWI_AUTH={getState:()=>({isAuthenticated:!opts.noAuth,user:{id:uid}})};
    const values={
    ywi_companies:[{id:'company-1',name:'Yard Workers Company',owner_user_id:opts.foreign?'outsider':uid}],
-   ywi_company_service_modules:(opts.partial?keys.slice(0,5):keys).map((module_key,i)=>({company_id:'company-1',module_key,enabled:i===0}))};
+   ywi_company_service_modules:(opts.partial?keys.slice(0,6):keys).map((module_key,i)=>({company_id:'company-1',module_key,enabled:i===0}))};
    window.YWI_SB={auth:{getUser:async()=>({data:{user:{id:uid}}})},from(table){const data=values[table];
    return {select(){return this},order(){return this},eq(){return this},limit(){return Promise.resolve({data,error:null})}};},
    rpc:async(name,args)=>{window.__actions.push({name,args});return {data:'draft-created-uuid',error:null}}};

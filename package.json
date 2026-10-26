@@ -343,6 +343,8 @@
     "test:browser:pms-construction-specialists-452": "playwright test --config=playwright.config.mjs tests/browser/pms-construction-specialists-452.spec.mjs",
     "test:pms-company-job-cost-453": "node scripts/pms-company-job-cost-453-check.mjs",
     "test:browser:pms-company-job-cost-453": "playwright test --config=playwright.config.mjs tests/browser/pms-company-job-cost-453.spec.mjs",
+    "test:pms-modular-acceptance-454": "node scripts/pms-modular-acceptance-454-check.mjs",
+    "test:browser:pms-modular-acceptance-454": "playwright test --config=playwright.config.mjs tests/browser/pms-modular-acceptance-454.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",

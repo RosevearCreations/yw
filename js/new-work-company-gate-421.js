@@ -1,13 +1,13 @@
 /* YW Item 421 — a guided caller for server-gated new draft estimate/work order.
    The SQL triggers and RPCs decide authorization. No optimistic "enabled" write. */
 (()=>{'use strict';
-const keys=['landscape','construction','water_parks','snow_removal','snow_plowing','septic'];
+const keys=['landscape','construction','water_parks','snow_removal','snow_plowing','septic','arboriculture'];
 const labels={landscape:'Landscaping',construction:'Construction',water_parks:'Water parks',
-snow_removal:'Snow removal',snow_plowing:'Snow plowing',septic:'Septic services'};
+snow_removal:'Snow removal',snow_plowing:'Snow plowing',septic:'Septic services',arboriculture:'Arboriculture & tree care'};
 function validate(company,services){
- if(!company?.id||!services||services.length!==6||
+ if(!company?.id||!services||services.length!==keys.length||
   services.some(r=>r.company_id!==company.id||!keys.includes(r.module_key)||typeof r.enabled!=='boolean')||
-  new Set(services.map(r=>r.module_key)).size!==6)throw Error('Incomplete tenant-scoped service entitlement evidence');
+  new Set(services.map(r=>r.module_key)).size!==keys.length)throw Error('Incomplete tenant-scoped service entitlement evidence');
  return services.filter(r=>r.enabled);
 }
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);return n;};
@@ -22,7 +22,7 @@ function mount(){
  body.appendChild(el('p','Create company-scoped draft estimates or work orders only when the owner has enabled the offering and holds active Jobs create permission. The database independently checks each write. No customer or site is linked until tenant ownership is verified. Existing historical work is unaffected.'));
  const action=el('button','Refresh authenticated company services');action.id='owner421Refresh';action.className='secondary';action.type='button';body.appendChild(action);
  const help=el('a','ⓘ Help');help.href='/help.html#new-work-entitlement-421';help.style.marginLeft='8px';body.appendChild(help);
- const status=el('p','Refresh to check the current signed-in owner and six service switches.');
+ const status=el('p','Refresh to check the current signed-in owner and seven service switches.');
  status.id='owner421Status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');body.appendChild(status);
  const workspace=el('div');workspace.id='owner421Results';workspace.style.cssText='min-width:0;overflow-wrap:anywhere';body.appendChild(workspace);
  panel.appendChild(body);host.appendChild(panel);
@@ -45,7 +45,7 @@ function mount(){
    if(resp.data.some(c=>!c?.id||c.owner_user_id!==uid))throw Error('Foreign company ownership in response');
    const models=[];
    for(const company of resp.data){
-    const r=await sb.from('ywi_company_service_modules').select('company_id,module_key,enabled').eq('company_id',company.id).limit(7);
+    const r=await sb.from('ywi_company_service_modules').select('company_id,module_key,enabled').eq('company_id',company.id).limit(8);
     if(r.error)throw Error('Company service source unavailable');
     models.push({company,enabled:validate(company,r.data)});
    }
@@ -93,6 +93,7 @@ function mount(){
  }
  action.addEventListener('click',load);
  document.addEventListener('ywi:auth-changed',()=>{loaded=null;workspace.replaceChildren();note('Session changed. Recheck company and service authority.');});
+ document.addEventListener('ywi:company-service-offering-changed',()=>{loaded=null;workspace.replaceChildren();note('Service switches changed. Refresh under current company authority.');});
 }
 window.YWI421=Object.freeze({keys,validate});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
