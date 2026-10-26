@@ -361,6 +361,8 @@
     "test:browser:pms-reassessment-followup-461": "playwright test --config=playwright.config.mjs tests/browser/pms-reassessment-followup-461.spec.mjs",
     "test:pms-evidence-outcomes-462": "node scripts/pms-evidence-outcomes-462-check.mjs",
     "test:browser:pms-evidence-outcomes-462": "playwright test --config=playwright.config.mjs tests/browser/pms-evidence-outcomes-462.spec.mjs",
+    "test:pms-independent-recheck-463": "node scripts/pms-independent-recheck-463-check.mjs",
+    "test:browser:pms-independent-recheck-463": "playwright test --config=playwright.config.mjs tests/browser/pms-independent-recheck-463.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
