@@ -13,7 +13,7 @@ async function setup(page,options={}){
  if(options.foreignSwitch)value.registry[0].company_id=foreignCompanyId;
  if(options.mismatch)value.registry[0].enabled=!value.registry[0].enabled;
  if(options.foreignReceipt)value.receipts[0].company_id=foreignCompanyId;
- await page.evaluate(({value,company,ownerId,options})=>{
+ await page.evaluate(({value,company,ownerId,foreignCompanyId,options})=>{
   window.__calls=[];window.__writes=[];window.__signedOut=!!options.signedOut;
   window.YWISecurity={canViewModule:(key)=>key==='jobs'&&!options.noJobs};
   window.YWI_AUTH={getState:()=>({isAuthenticated:!window.__signedOut,user:{id:ownerId},role:'admin'})};
@@ -26,7 +26,7 @@ async function setup(page,options={}){
      table==='ywi_company_service_module_audit'?value.audit:table==='ywi_new_work_gate_receipts_421'?value.receipts:[]));},
     insert(){window.__writes.push('insert')},update(){window.__writes.push('update')},delete(){window.__writes.push('delete')}};},
    rpc:async name=>{window.__calls.push(name);return options.rpcDenied?{data:null,error:{message:'denied'}}:ok(value.menu)}};
- },{value,company,ownerId,options});
+ },{value,company,ownerId,foreignCompanyId,options});
  await page.addScriptTag({content:source});
  await page.locator('#owner454 summary').click();
  await page.locator('#pms454Run').click();
