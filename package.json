@@ -349,6 +349,8 @@
     "test:browser:pms-owner-first-use-455": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-first-use-455.spec.mjs",
     "test:pms-first-service-reconciliation-456": "node scripts/pms-first-service-reconciliation-456-check.mjs",
     "test:browser:pms-first-service-reconciliation-456": "playwright test --config=playwright.config.mjs tests/browser/pms-first-service-reconciliation-456.spec.mjs",
+    "test:pms-first-service-independent-457": "node scripts/pms-first-service-independent-457-check.mjs",
+    "test:browser:pms-first-service-independent-457": "playwright test --config=playwright.config.mjs tests/browser/pms-first-service-independent-457.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
