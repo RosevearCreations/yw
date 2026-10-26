@@ -6,6 +6,11 @@ const read=x=>readFileSync(x,'utf8');
 const prev=read('js/pms-reassessment-followup-461.js'),src=read('js/pms-evidence-outcomes-462.js');
 const sandbox={window:{},document:{readyState:'loading',addEventListener(){}},Date};
 vm.runInNewContext(prev,sandbox);vm.runInNewContext(src,sandbox);
+// Exercise mount, not only parsing: strict-mode declarations can fail at runtime.
+class ElementStub{constructor(){this.dataset={};this.children=[];}append(...x){this.children.push(...x);}replaceChildren(...x){this.children=x;}setAttribute(){}addEventListener(){}}
+const admin=new ElementStub();
+const mounting={window:{},document:{readyState:'complete',createElement:()=>new ElementStub(),getElementById:id=>id==='admin'?admin:null,addEventListener(){}}};
+vm.runInNewContext(src,mounting);assert.equal(admin.children.length,1,'Build 462 Admin panel mounts');
 const inspect=sandbox.window.YWI462.inspect;
 const now=Date.now();const f=fixture({now,requested:true});
 const outcome={id:'a4620000-0000-4462-8462-000000000001',company_id:companyId,request_id:f.request.id,

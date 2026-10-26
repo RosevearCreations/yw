@@ -30,7 +30,7 @@ function mount(){const host=document.getElementById('admin');if(!host||document.
  panel.append(node('summary','462 · Evidence Follow-Up Outcomes & Recheck Readiness'));
  const body=node('div');body.className='admin-panel-block pms462';body.append(node('p','Owner documentary outcomes only. “Handoff ready” means a reference was logged for independent examination; it does not prove evidence quality, resolve a discrepancy, dispatch a reviewer or authorize work.'));
  const help=node('a','ⓘ Evidence outcomes Help');help.href='/help.html#pms-evidence-outcomes-462';body.append(help);
- const controls=node('div');controls.className='pms462-controls',label=node('label','Owned company'),company=node('select'),refresh=node('button','Verify outcome sources');
+ const controls=node('div'),label=node('label','Owned company'),company=node('select'),refresh=node('button','Verify outcome sources');controls.className='pms462-controls';
  company.id='pms462Company';label.append(company);refresh.id='pms462Refresh';refresh.type='button';refresh.className='secondary';controls.append(label,refresh);body.append(controls);
  const status=node('p','HOLD: verify owner and real evidence sources.');status.id='pms462Status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');body.append(status);
  const results=node('section');results.id='pms462Results';body.append(results);
