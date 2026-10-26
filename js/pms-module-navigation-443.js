@@ -136,6 +136,7 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
  mobile.onchange=()=>{const key=mobile.value;mobile.value='';go(key);};
  document.addEventListener('ywi:auth-changed',()=>{epoch++;identity=null;roster=[];clear();status.textContent='Company identity changed; menu cleared.';});
  document.addEventListener('ywi:module-permissions-changed',()=>{epoch++;desktop.replaceChildren();mobile.replaceChildren();shared.hidden=true;review=null;status.textContent='Module permissions changed; reverify company menu.';});
+ document.addEventListener('ywi:company-service-offering-changed',()=>{epoch++;clear();status.textContent='Company services changed; refresh to verify current ON/OFF menu.';});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
