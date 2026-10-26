@@ -216,6 +216,7 @@ jobs:
       - run: npm run test:pms-company-job-cost-453
       - run: npm run test:pms-modular-acceptance-454
       - run: npm run test:pms-owner-first-use-455
+      - run: npm run test:pms-first-service-reconciliation-456
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -424,6 +425,7 @@ jobs:
       - run: npm run test:browser:pms-company-job-cost-453
       - run: npm run test:browser:pms-modular-acceptance-454
       - run: npm run test:browser:pms-owner-first-use-455
+      - run: npm run test:browser:pms-first-service-reconciliation-456
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
