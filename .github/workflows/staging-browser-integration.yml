@@ -228,6 +228,7 @@ jobs:
       - run: npm run test:pms-independent-handoff-465
       - run: npm run test:pms-comparison-followup-467
       - run: npm run test:pms-followup-renewal-468
+      - run: npm run test:pms-renewal-reassessment-469
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -448,6 +449,7 @@ jobs:
       - run: npm run test:browser:pms-independent-handoff-465
       - run: npm run test:browser:pms-comparison-followup-467
       - run: npm run test:browser:pms-followup-renewal-468
+      - run: npm run test:browser:pms-renewal-reassessment-469
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
