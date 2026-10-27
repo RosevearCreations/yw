@@ -3931,5 +3931,6 @@ body[data-authenticated="false"] .module-section-nav {
 .pms471 select,.pms471 input,.pms471 textarea,.pms471 button{min-height:44px;min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;white-space:normal}
 .pms471 select,.pms471 input,.pms471 textarea{width:100%}
 .pms471 fieldset{width:100%}
+.pms471 legend,#exception471>summary{max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere}
 .pms471-entry{border:1px solid var(--border-color,#9d9d9d);border-radius:10px;padding:12px;margin:10px 0;overflow-wrap:anywhere}
 @media(max-width:680px){.pms471-controls{grid-template-columns:minmax(0,1fr)}.pms471-controls button{width:100%}}
