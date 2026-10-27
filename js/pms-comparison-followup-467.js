@@ -12,7 +12,8 @@ const flags=['field_accepted','service_authorized','independent_reapproval','rea
 const ref=x=>typeof x==='string'&&x.trim().length>=4&&x.trim().length<=250;
 function inspect(x,{companyId,userId}={}){
  const base=window.YWI465?.inspect?.(x?.handoff_source,{companyId,userId});if(base?.state!=='source_verified')return {state:'withheld',reason:base?.reason||'465 source gate unavailable'};
- if(x.company_id!==companyId||x.viewer_id!==userId||!before(x.handoff_source.captured_at,x.captured_at)||Date.now()-time(x.captured_at)>300000||
+ if(x.company_id!==companyId||x.viewer_id!==userId||!before(x.handoff_source.captured_at,x.captured_at)||
+  time(x.captured_at)>Date.now()+60000||Date.now()-time(x.captured_at)>300000||
   !flags.every(k=>x[k]===false)||!Array.isArray(x.original_baselines)||x.original_baselines.length!==base.cases.length||
   !sample(x.comparisons,x.comparison_total,x.comparison_sample_capped)||!sample(x.outcomes,x.outcome_total,x.outcome_sample_capped)||
   !sample(x.followups,x.followup_total,x.followup_sample_capped))return {state:'withheld',reason:'466/467 source incomplete or falsely authorizing'};
@@ -105,7 +106,9 @@ function mount(){const host=document.getElementById('admin');if(!host||document.
  async function write(name,args,id){const ctx=await session();if(ctx.uid!==principal||company.value!==id)throw Error('Identity changed');
   const out=await ctx.sb.rpc(name,args);if(out.error||!uuid(out.data?.id)||out.data.company_id!==id||out.data.recorded!==true||
    !['field_accepted','service_authorized','independent_reapproval','reassignment_executed','release_green','outbound_actions'].every(k=>out.data[k]===false))throw Error('Unverified documentary receipt');await reconcile();}
- function operationId(){if(!globalThis.crypto?.randomUUID)throw Error('Secure operation identifier unavailable');return globalThis.crypto.randomUUID();}
+ function operationId(){const c=globalThis.crypto;if(c?.randomUUID)return c.randomUUID();if(!c?.getRandomValues)throw Error('Secure operation identifier unavailable');
+  const b=c.getRandomValues(new Uint8Array(16));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const s=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
+  return [s.slice(0,8),s.slice(8,12),s.slice(12,16),s.slice(16,20),s.slice(20)].join('-');}
  compare.addEventListener('click',async()=>{const d=verified,id=company.value,r=d?.receipts.find(r=>r.id===receipt.value),h=r&&d.handoffs.find(h=>h.id===r.handoff_id),b=h&&d.baselines.find(b=>b.proposal_id===h.proposal_id),source=independent.value.trim(),notes=reviewNotes.value.trim();
   if(busy||d?.state!=='source_verified'||!d.isReviewer||!r||!h||r.reviewer_user_id!==d.userId||r.response!=='acknowledged_for_review'||
    !b||d.comparisons.some(c=>c.receipt_id===r.id)||!ref(source)||source===b.original_source_reference||notes.length>500||!alignments.includes(alignment.value))return status.textContent='WITHHELD: verified reviewer source comparison required';
