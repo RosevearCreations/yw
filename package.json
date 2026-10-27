@@ -367,6 +367,8 @@
     "test:browser:pms-recheck-discrepancy-464": "playwright test --config=playwright.config.mjs tests/browser/pms-recheck-discrepancy-464.spec.mjs",
     "test:pms-independent-handoff-465": "node scripts/pms-independent-handoff-465-check.mjs",
     "test:browser:pms-independent-handoff-465": "playwright test --config=playwright.config.mjs tests/browser/pms-independent-handoff-465.spec.mjs",
+    "test:pms-comparison-followup-467": "node scripts/pms-comparison-followup-467-check.mjs",
+    "test:browser:pms-comparison-followup-467": "playwright test --config=playwright.config.mjs tests/browser/pms-comparison-followup-467.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
