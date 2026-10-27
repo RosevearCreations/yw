@@ -3925,3 +3925,9 @@ body[data-authenticated="false"] .module-section-nav {
 #owner450Snow button,#owner450Plow button{max-width:100%;min-height:44px;overflow-wrap:anywhere;white-space:normal}
 .pms450-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px;min-width:0;margin:12px 0}
 .pms450-cards .notice{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+.pms471{max-width:100%;overflow-wrap:anywhere}
+.pms471-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end}
+.pms471 label,.pms471 fieldset{display:grid;gap:6px;min-width:0}
+.pms471 select,.pms471 input,.pms471 textarea,.pms471 button{min-height:44px;max-width:100%}
+.pms471-entry{border:1px solid var(--border-color,#9d9d9d);border-radius:10px;padding:12px;margin:10px 0;overflow-wrap:anywhere}
+@media(max-width:680px){.pms471-controls{grid-template-columns:minmax(0,1fr)}.pms471-controls button{width:100%}}
