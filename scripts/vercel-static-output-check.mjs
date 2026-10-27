@@ -34,10 +34,25 @@ for (const page of ['index.html', 'help.html']) {
 
 // Internal files may not accidentally be included in the public deployment.
 for (const forbidden of [
-  'api', 'docs', 'scripts', 'sql', 'supabase', 'tests', '.github',
+  'docs', 'scripts', 'sql', 'supabase', 'tests', '.github',
   'package.json', 'package-lock.json', 'README.md', '.env',
 ]) {
   assert.ok(!existsSync(join(output, forbidden)), `Private path exposed: ${forbidden}`);
+}
+// Exactly two harmless integration discovery documents; no private API source
+// or tenant/business response may ever be emitted by the static publisher.
+const discovery = join(output, 'api', 'integration', 'v1');
+assert.deepEqual(readdirSync(join(output, 'api')), ['integration']);
+assert.deepEqual(readdirSync(join(output, 'api', 'integration')), ['v1']);
+assert.deepEqual(readdirSync(discovery).sort(), ['capabilities.json', 'health.json']);
+for (const filename of ['health.json', 'capabilities.json']) {
+  const payload = JSON.parse(readFileSync(join(discovery, filename), 'utf8'));
+  assert.equal(payload.app_id, 'yard-workers');
+  assert.equal(payload.connection_status, 'HOLD');
+  assert.equal(payload.commands_enabled, false);
+  assert.equal(payload.events_enabled, false);
+  assert.ok(!('customer' in payload) && !('tenant_id' in payload) && !('secret' in payload));
+  if (filename === 'capabilities.json') assert.ok(payload.capabilities.every(x => x.enabled === false));
 }
 assert.ok(readdirSync(output).includes('index.html'), 'Site root would be a 404');
 console.log('YW Vercel output verified: root page, assets and private-file boundary');

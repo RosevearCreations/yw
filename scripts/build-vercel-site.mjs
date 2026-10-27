@@ -40,5 +40,26 @@ if (existsSync(publicDirectory)) {
   }
 }
 
+// This project deploys dist/ as a static site, not Vercel Functions. Publish
+// build-time, non-sensitive v1 discovery documents through exact GET rewrites.
+// Protected tenant/module APIs must NOT be added to this static output.
+const integrationDir = join(output, 'api', 'integration', 'v1');
+mkdirSync(integrationDir, { recursive: true });
+const environment = ['production', 'preview', 'development'].includes(process.env.VERCEL_ENV)
+  ? process.env.VERCEL_ENV : 'unknown';
+const common = { contract_version: '1', app_id: 'yard-workers', app_version: '471',
+  environment, connection_status: 'HOLD', events_enabled: false, commands_enabled: false };
+const documents = {
+  'health.json': { ...common, health: 'available', authenticated: false },
+  'capabilities.json': { ...common, tenant_scope: 'required_before_connection',
+    service_module_scope: 'required_before_connection', owner_approval_required: true,
+    capabilities: ['read_client', 'read_property', 'read_estimate', 'read_job',
+      'read_route', 'read_equipment', 'create_handoff', 'update_job_status']
+      .map(name => ({ name, enabled: false })) },
+};
+for (const [name, payload] of Object.entries(documents)) {
+  writeFileSync(join(integrationDir, name), JSON.stringify(payload) + '\n');
+}
+
 writeFileSync(join(output, marker), 'Generated website output. Do not edit this directory.\n');
 console.log(`YW Vercel static website generated in ${output}`);
