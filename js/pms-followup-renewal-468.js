@@ -6,6 +6,11 @@ const ref=x=>typeof x==='string'&&x.trim().length>=4&&x.trim().length<=250;
 const when=x=>Date.parse(x);
 const before=(a,b)=>Number.isFinite(when(a))&&Number.isFinite(when(b))&&when(a)<=when(b);
 const el=(tag,content)=>{const n=document.createElement(tag);if(content!==undefined)n.textContent=content;return n;};
+function operationId(){const c=globalThis.crypto;if(c?.randomUUID)return c.randomUUID();
+ if(!c?.getRandomValues)throw Error('Secure operation identifier unavailable');
+ const bytes=c.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+ const hex=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+ return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join('-');}
 function inspect(x,{companyId,userId}={}){
  const base=window.YWI467?.inspect?.(x,{companyId,userId});
  if(base?.state!=='source_verified')return {state:'withheld',reason:base?.reason||'467 source unavailable'};
@@ -92,8 +97,7 @@ function mount(){const host=document.getElementById('admin');if(!host||document.
   if(!window.confirm('Record an INTERNAL independent documentary renewal? Field and Jobs/Safety approval remain on HOLD.'))return;
   busy=true;form.disabled=refresh.disabled=true;
   try{const ctx=await session();if(ctx.uid!==principal||id!==company.value)throw Error('Independent reviewer changed');
-   if(!globalThis.crypto?.randomUUID)throw Error('Secure operation identifier unavailable');
-   const receipt=await ctx.sb.rpc('ywi_rpc_review_followup_468',{p_company_id:id,p_operation_id:globalThis.crypto.randomUUID(),
+   const receipt=await ctx.sb.rpc('ywi_rpc_review_followup_468',{p_company_id:id,p_operation_id:operationId(),
     p_followup_id:f.id,p_decision:decision.value,p_source_reference:value,p_notes:note||null});
    if(receipt.error||!uuid(receipt.data?.id)||receipt.data.company_id!==id||receipt.data.recorded!==true||
     !['field_accepted','service_authorized','independent_reapproval','reassignment_executed','release_green','outbound_actions'].every(k=>receipt.data[k]===false))
