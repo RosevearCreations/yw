@@ -3936,3 +3936,14 @@ body[data-authenticated="false"] .module-section-nav {
 .pms471 legend,#exception471>summary{max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere}
 .pms471-entry{border:1px solid var(--border-color,#9d9d9d);border-radius:10px;padding:12px;margin:10px 0;overflow-wrap:anywhere}
 @media(max-width:680px){.pms471-controls{grid-template-columns:minmax(0,1fr)}.pms471-controls button{width:100%}}
+.pms472,#recheck472{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-wrap:anywhere}
+#recheck472{overflow-x:clip}
+#recheck472 .pms472 *{max-width:100%;min-width:0;box-sizing:border-box}
+.pms472-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;max-width:100%}
+.pms472 label,.pms472 fieldset{display:grid;gap:6px;min-width:0;max-width:100%;box-sizing:border-box}
+.pms472 fieldset{width:100%}
+.pms472 legend,#recheck472>summary{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.pms472 select,.pms472 input,.pms472 textarea{display:block;width:100%;min-height:44px}
+.pms472 button{min-height:44px;white-space:normal;overflow-wrap:anywhere}
+.pms472-entry{border:1px solid var(--border-color,#9d9d9d);border-radius:10px;padding:12px;margin:10px 0;overflow-wrap:anywhere}
+@media(max-width:680px){.pms472-controls{grid-template-columns:minmax(0,1fr)}.pms472-controls button{width:100%}}

@@ -378,6 +378,8 @@
     "test:pms-continuity-exception-471": "node scripts/pms-continuity-exception-471-check.mjs",
     "test:browser:pms-continuity-exception-471": "playwright test --config=playwright.config.mjs tests/browser/pms-continuity-exception-471.spec.mjs",
     "test:integration-contract-471": "node scripts/rosevear-integration-contract-471-check.mjs",
+    "test:pms-owner-renewal-recheck-472": "node scripts/pms-owner-renewal-recheck-472-check.mjs",
+    "test:browser:pms-owner-renewal-recheck-472": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-renewal-recheck-472.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
