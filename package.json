@@ -371,6 +371,8 @@
     "test:browser:pms-comparison-followup-467": "playwright test --config=playwright.config.mjs tests/browser/pms-comparison-followup-467.spec.mjs",
     "test:pms-followup-renewal-468": "node scripts/pms-followup-renewal-468-check.mjs",
     "test:browser:pms-followup-renewal-468": "playwright test --config=playwright.config.mjs tests/browser/pms-followup-renewal-468.spec.mjs",
+    "test:pms-renewal-reassessment-469": "node scripts/pms-renewal-reassessment-469-check.mjs",
+    "test:browser:pms-renewal-reassessment-469": "playwright test --config=playwright.config.mjs tests/browser/pms-renewal-reassessment-469.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
