@@ -21,7 +21,7 @@ async function setup(page,opts={}){
      window.__writes.push({name,args});if(opts.writeDenied)return {data:null,error:{message:'denied review'}};
      const row={id:args.p_operation_id,company_id:companyId,recheck_outcome_id:args.p_recheck_outcome_id,owner_user_id:ownerId,
       decision:args.p_decision,proposed_reviewer_user_id:args.p_proposed_reviewer_user_id,source_reference:args.p_source_reference,
-      created_at:new Date().toISOString()};f.view.reviews.push(row);f.view.review_total++;
+      created_at:new Date().toISOString()};f.view.reviews.push(row);f.view.review_total++;f.view.captured_at=row.created_at;
      return ok({id:row.id,company_id:companyId,recorded:true,field_accepted:false,service_authorized:false,
       independent_reapproval:false,reassignment_executed:false,release_green:false,outbound_actions:false});
     }
