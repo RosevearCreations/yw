@@ -41,7 +41,9 @@ async function setup(page,opts={}){
      f.view.reviewer_followup_receipt_total++;
      const age=(row,date)=>{row.age_days=Math.max(0,Math.floor((Date.parse(recorded)-Date.parse(date))/86400000));
       row.band=row.age_days>=15?'overdue':row.age_days>=8?'aging':'current';};
-     age(f.view.aging[0],f.followup.created_at);
+     // Build 476 also exposes a `followup` fixture field; its 476 receipt must
+     // not replace the older 467 source used by the 468 aging contract.
+     age(f.view.aging[0],f.view.followups[0].created_at);
      age(f.view.renewal_aging[0],f.renewal.created_at);
      age(f.view.reassessment_aging[0],f.reassessment.created_at);
      age(f.view.exception_aging[0],f.confirmation.created_at);
