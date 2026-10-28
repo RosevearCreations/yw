@@ -469,6 +469,7 @@ jobs:
       - run: npm run test:rosevear-ql246-source-proof-478
       - run: npm run test:rosevear-ql247-six-app-479
       - run: npm run test:rosevear-ql248-proof-commit-480
+      - run: npm run test:rosevear-ql249-origin-schedule-481
       - run: npm run test:rosevear-ql245-source-evidence-477
       - run: npm run test:browser:pms-owner-renewal-reviewer-followup-476
       - run: npm run test:browser:pms-owner-reviewer-followup-477
