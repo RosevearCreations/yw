@@ -26,6 +26,7 @@ async function setup(page,options={}){
    window.__writes.push(name);return {data:null,error:{message:'unexpected RPC'}};}};
  },{f,user,denied:options.denied});
  for(const file of files)await page.addScriptTag({content:readFileSync(file,'utf8')});
+ await page.locator('#receipt477 > summary').click();
 }
 test('owner reads overdue reviewer receipt and QL-245 stays DISCONNECTED',async({page})=>{
  await setup(page,{owner:true});
