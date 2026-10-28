@@ -41,6 +41,6 @@ const html=read('index.html'),pkg=JSON.parse(read('package.json')),ci=read('.git
 assert.ok(html.includes('js/pms-owner-reviewer-followup-477.js'));
 for(const k of ['test:pms-owner-reviewer-followup-477','test:browser:pms-owner-reviewer-followup-477']){
  assert.ok(pkg.scripts[k]);assert.ok(ci.includes('npm run '+k));}
-const doc=read('docs/YW_BUILD_477_QL245_EVIDENCE_RETURN.md');
+const doc=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 for(const word of ['UNVERIFIED','NOT PROVISIONED','DISCONNECTED / HOLD','NOT GIVEN','seven'])assert.ok(doc.includes(word),word);
 console.log('YW 477 source, receipt aging, original owner response and QL-245 truthful HOLD: PASS');
