@@ -412,6 +412,7 @@
     "test:septic-disposal-428": "node scripts/septic-disposal-428-check.mjs",
     "test:browser:septic-disposal-428": "playwright test --config=playwright.config.mjs tests/browser/septic-disposal-428.spec.mjs",
     "test:pms-owner-reviewer-followup-477": "node scripts/pms-owner-reviewer-followup-477-check.mjs",
+    "test:rosevear-ql246-source-proof-478": "node scripts/rosevear-ql246-source-proof-478-check.mjs",
     "test:rosevear-ql245-source-evidence-477": "node scripts/rosevear-ql245-source-evidence-477-check.mjs",
     "test:browser:pms-owner-reviewer-followup-477": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-reviewer-followup-477.spec.mjs"
   },
