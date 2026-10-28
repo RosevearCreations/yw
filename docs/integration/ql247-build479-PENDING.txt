@@ -1,0 +1,20 @@
+# YW Build 479 / QL-247 six-app nonproduction connection-test readiness
+
+Status: **DISCONNECTED / HOLD**. This is a source-only, non-secret operator reconciliation and is not a successful authenticated API test.
+
+| Application | Repository | Evidence state |
+| --- | --- | --- |
+| AI Data Platform | RosevearCreations/ai-data-platform | UNVERIFIED |
+| Devil n Dove | RosevearCreations/devilndove-site | UNVERIFIED |
+| Rosie Dazzlers | RosevearCreations/rosiedazzlers | UNVERIFIED |
+| Yard Workers | RosevearCreations/yw | QL-246 proof NOT PROVISIONED; original tenant UNVERIFIED |
+| iCamp | RosevearCreations/iCamp | UNVERIFIED |
+| Rosevear AI Hub | RosevearCreations/rosevear-ai-hub | Private approved runner NOT PROVISIONED |
+
+Each source must independently supply its current 40-character main SHA, exact CI run, genuine issued nonproduction tenant, separately pinned Ed25519 signer, scoped nonproduction approval, HMAC key registry (key ID only), real authenticated GET receipts, seven independently witnessed negative-case traces, durable restarted audit, revocation/rollback witness, independent reviewer and final signed QL-246 source proof. A source-revision or CI result from another commit is not accepted.
+
+Permitted test scope after separate owner authorization: **GET /api/integration/v1/health** and **GET /api/integration/v1/capabilities** only. No key material belongs in GitHub, logs, browser code or this file. Neither a shared GitHub owner nor an offline passing fixture proves API trust. The signer SPKI fingerprint must be authenticated out of band. The seven actual denials are nonce replay, stale timestamp, cross-business, cross-tenant, revoked key, prohibited write and dispatch denial. Do not mark any VERIFIED without original source and independent witness.
+
+Phase A can collect public immutable source and signer-readiness information. Phase B needs separate named nonproduction approval, destination, tenant, reviewer, expiry, rollback and scoped secrets before any external calls. Final QL-246 signed proof follows genuine Phase B observations, not a fabricated file. The Rosevear AI Hub additionally needs an approved private runner; no household network topology may be published.
+
+Even if all thirteen source statuses are marked VERIFIED in the local reducer, its result remains INDEPENDENT_REVIEW_REQUIRED and actual connection DISCONNECTED. Separate owner pilot approval: **NOT GIVEN**. All operational businesses remain HOLD; customer, product, gate, job, payroll, device, Finance, phone/SMS and dispatch writes remain disabled. A GREEN software Production deployment is not external integration authorization.
