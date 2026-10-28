@@ -31,7 +31,7 @@ for(const override of [{source_system:'icamp'},{connection_state:'CONNECTED'},
  assert.throws(()=>verifyPublic({...packet,payload:{...p,...override}},trust),/QL246_HOLD_/);
 assert.throws(()=>verifyPublic(packet,{...trust,pinSha256:'f'.repeat(64)}),/QL246_HOLD_/);
 assert.throws(()=>verifyPublic({...packet,signature:'a'.repeat(86)},trust),/QL246_HOLD_/);
-const docs=readFileSync('docs/integration/ql246-build478-PENDING.md','utf8');
+const docs=readFileSync('docs/integration/ql246-build478-PENDING.txt','utf8');
 assert.match(docs,/NOT PROVISIONED/);
 const pkg=JSON.parse(readFileSync('package.json','utf8'));
 assert.ok(pkg.scripts['test:rosevear-ql246-source-proof-478']);
