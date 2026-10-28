@@ -382,6 +382,8 @@
     "test:browser:pms-owner-renewal-recheck-472": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-renewal-recheck-472.spec.mjs",
     "test:pms-recheck-outcome-clarification-473": "node scripts/pms-recheck-outcome-clarification-473-check.mjs",
     "test:browser:pms-recheck-outcome-clarification-473": "playwright test --config=playwright.config.mjs tests/browser/pms-recheck-outcome-clarification-473.spec.mjs",
+    "test:pms-owner-clarification-continuity-474": "node scripts/pms-owner-clarification-continuity-474-check.mjs",
+    "test:browser:pms-owner-clarification-continuity-474": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-clarification-continuity-474.spec.mjs",
     "test:first-live-trial-418": "node scripts/first-live-trial-418-check.mjs",
     "test:browser:first-live-trial-418": "playwright test --config=playwright.config.mjs tests/browser/first-live-trial-418.spec.mjs",
     "test:company-service-inventory-419": "node scripts/company-service-inventory-419-check.mjs",
