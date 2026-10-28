@@ -466,6 +466,7 @@ jobs:
       - run: npm run test:browser:pms-owner-clarification-continuity-474
       - run: npm run test:browser:pms-continuity-finding-owner-renewal-475
       - run: npm run test:pms-owner-reviewer-followup-477
+      - run: npm run test:rosevear-ql245-source-evidence-477
       - run: npm run test:browser:pms-owner-renewal-reviewer-followup-476
       - run: npm run test:browser:pms-owner-reviewer-followup-477
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
