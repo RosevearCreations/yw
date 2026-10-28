@@ -238,6 +238,8 @@ jobs:
       - run: npm run test:pms-continuity-finding-owner-renewal-475
       - run: npm run test:rosevear-ql243-nonproduction-contract-475
       - run: npm run test:pms-owner-renewal-reviewer-followup-476
+      - run: npm run test:pms-reviewer-receipt-aging-477
+      - run: npm run test:rosevear-ql245-source-evidence-477
       - run: npm run test:first-use-readiness-verified-intake
       - run: npm run test:guided-customer-property-creation
       - run: npm run test:first-customer-intake-receipt-406
@@ -466,6 +468,7 @@ jobs:
       - run: npm run test:browser:pms-owner-clarification-continuity-474
       - run: npm run test:browser:pms-continuity-finding-owner-renewal-475
       - run: npm run test:browser:pms-owner-renewal-reviewer-followup-476
+      - run: npm run test:browser:pms-reviewer-receipt-aging-477
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help
