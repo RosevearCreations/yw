@@ -3969,3 +3969,14 @@ body[data-authenticated="false"] .module-section-nav {
 .pms474 button{min-height:44px;white-space:normal;overflow-wrap:anywhere}
 .pms474-entry{border:1px solid var(--border-color,#9d9d9d);border-radius:10px;padding:12px;margin:10px 0;overflow-wrap:anywhere}
 @media(max-width:680px){.pms474-controls{grid-template-columns:minmax(0,1fr)}.pms474-controls button{width:100%}}
+.pms475,#renewal475{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-wrap:anywhere}
+#renewal475{overflow-x:clip}
+#renewal475 .pms475 *{max-width:100%;min-width:0;box-sizing:border-box}
+.pms475-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;max-width:100%}
+.pms475 label,.pms475 fieldset{display:grid;gap:6px;min-width:0;max-width:100%;box-sizing:border-box}
+.pms475 fieldset{width:100%}
+.pms475 legend,#renewal475>summary{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.pms475 select,.pms475 input,.pms475 textarea{display:block;width:100%;min-height:44px}
+.pms475 button{min-height:44px;white-space:normal;overflow-wrap:anywhere}
+.pms475-entry{border:1px solid var(--border-color,#9d9d9d);border-radius:10px;padding:12px;margin:10px 0;overflow-wrap:anywhere}
+@media(max-width:680px){.pms475-controls{grid-template-columns:minmax(0,1fr)}.pms475-controls button{width:100%}}
