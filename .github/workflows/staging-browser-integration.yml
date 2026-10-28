@@ -465,7 +465,9 @@ jobs:
       - run: npm run test:browser:pms-recheck-outcome-clarification-473
       - run: npm run test:browser:pms-owner-clarification-continuity-474
       - run: npm run test:browser:pms-continuity-finding-owner-renewal-475
+      - run: npm run test:pms-owner-reviewer-followup-477
       - run: npm run test:browser:pms-owner-renewal-reviewer-followup-476
+      - run: npm run test:browser:pms-owner-reviewer-followup-477
       - run: npm run test:browser:management-outcome-confidence-cohort-trend
       - run: npm run test:browser:workability-forecast-recovery-calibration
       - run: npm run test:browser:contextual-help

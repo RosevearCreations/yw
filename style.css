@@ -3991,3 +3991,15 @@ body[data-authenticated="false"] .module-section-nav {
 .pms476 button{min-height:44px;white-space:normal;overflow-wrap:anywhere}
 .pms476-entry{border:1px solid var(--border-color,#9d9d9d);border-radius:10px;padding:12px;margin:10px 0;overflow-wrap:anywhere}
 @media(max-width:680px){.pms476-controls{grid-template-columns:minmax(0,1fr)}.pms476-controls button{width:100%}}
+
+/* YW 477 independent reviewer receipt and owner response: mobile, fail-closed admin form */
+#owner477{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-wrap:anywhere;overflow-x:clip}
+#owner477 .pms477 *{max-width:100%;min-width:0;box-sizing:border-box}
+.pms477-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end}
+.pms477 label,.pms477 fieldset{display:grid;gap:6px;min-width:0;max-width:100%;box-sizing:border-box}
+.pms477 fieldset{width:100%}
+.pms477 legend,#owner477>summary{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.pms477 select,.pms477 input,.pms477 textarea{display:block;width:100%;min-height:44px}
+.pms477 button{min-height:44px;white-space:normal;overflow-wrap:anywhere}
+.pms477-entry{border:1px solid var(--border-color,#ccc);padding:12px;margin:10px 0;border-radius:8px;overflow-wrap:anywhere}
+@media(max-width:680px){.pms477-controls{grid-template-columns:minmax(0,1fr)}}
