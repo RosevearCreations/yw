@@ -56,7 +56,7 @@ candidate.negativeTests.wrong_tenant.actuallyExecuted=false;
 assert.ok(assessSourceEvidence(candidate).remaining_gaps.includes('DENIAL_WRONG_TENANT_UNVERIFIED'));
 assert.ok(!read('server/rosevear-ql245-source-evidence-477.mjs').includes('createPrivateKey'));
 assert.ok(read('index.html').includes('pms-reviewer-receipt-aging-477.js'));
-assert.ok(read('docs/ROSEVEAR_QL245_YW_BUILD477_HOLD.md').includes('NOT PROVISIONED'));
+assert.ok(read('docs/ROSEVEAR_QL245_YW_BUILD477_HOLD.txt').includes('NOT PROVISIONED'));
 const scripts=JSON.parse(read('package.json')).scripts,ci=read('.github/workflows/staging-browser-integration.yml');
 for(const name of ['test:pms-reviewer-receipt-aging-477','test:browser:pms-reviewer-receipt-aging-477'])
  {assert.ok(scripts[name]);assert.ok(ci.includes('npm run '+name));}
