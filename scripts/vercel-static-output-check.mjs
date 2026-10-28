@@ -34,7 +34,7 @@ for (const page of ['index.html', 'help.html']) {
 
 // Internal files may not accidentally be included in the public deployment.
 for (const forbidden of [
-  'docs', 'scripts', 'sql', 'supabase', 'tests', '.github',
+  'docs', 'scripts', 'server', 'sql', 'supabase', 'tests', '.github',
   'package.json', 'package-lock.json', 'README.md', '.env',
 ]) {
   assert.ok(!existsSync(join(output, forbidden)), `Private path exposed: ${forbidden}`);
