@@ -23,7 +23,11 @@ try {
   process.stdout.write(JSON.stringify(verified,null,2)+'\n');
   process.stdout.write('Independent private registry provenance and tenant isolation still require human verification.\n');
 } catch (err) {
-  process.stderr.write('QL256_488_OPERATOR_HOLD: '+
-    String(err?.message||'UNVERIFIED').replace(/[\r\n]/g,' ').slice(0,120)+'\n');
+  const message=String(err?.message||'UNVERIFIED');
+  // Filesystem/JSON exceptions can contain private paths or contents. Expose
+  // only our own fixed error codes, never raw exception text.
+  const safe=/^(?:QL256_488_HOLD_[A-Z0-9_]+|ABSOLUTE_PRIVATE_FILE_REQUIRED|REPOSITORY_PATH_FORBIDDEN|PRIVATE_FILE_OR_DIRECTORY_PERMISSIONS|PRIVATE_EVIDENCE_TOO_LARGE|REQUIRES_PRIVATE_CUSTODY_PACKET_AND_SEPARATE_REGISTRY)$/.test(message)
+    ? message : 'PRIVATE_EVIDENCE_UNAVAILABLE_OR_INVALID';
+  process.stderr.write('QL256_488_OPERATOR_HOLD: '+safe+'\n');
   process.exitCode=2;
 }
