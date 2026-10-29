@@ -15,8 +15,7 @@ revoke all on public.ywi_platform_administrators_489 from public, anon, authenti
 insert into public.ywi_platform_administrators_489(user_id,assignment_reference)
 select p.id,'Owner-requested primary administrator — Build 489'
 from public.profiles p join auth.users u on u.id=p.id
-where p.id='d2985f2e-7d18-4499-98d5-df0c8ef72d35'::uuid
-  and lower(p.email)='veardev@live.ca'
+where lower(p.email)='veardev@live.ca'
   and lower(u.email)='veardev@live.ca' and p.role='admin'
 on conflict (user_id) do nothing;
 
