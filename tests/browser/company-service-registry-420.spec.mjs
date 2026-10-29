@@ -3,7 +3,7 @@ const ui=fs.readFileSync('js/company-service-registry-420.js','utf8');
 const keys=['landscape','construction','water_parks','snow_removal','snow_plowing','septic','arboriculture'];
 async function setup(page, options={}){
  await page.setViewportSize({width:390,height:844});
- await page.setContent('<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="admin"></div></body></html>');
+ await page.setContent('<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="settings"></div><div id="admin"></div></body></html>');
  await page.evaluate(({keys,options})=>{
   const userId='owner-1', companyId='company-1';
   window.__writes=[];window.__reads=[];
@@ -29,6 +29,8 @@ async function setup(page, options={}){
   };
  },{keys,options});
  await page.addScriptTag({content:ui});
+ await expect(page.locator('#settings #owner420')).toHaveCount(1);
+ await expect(page.locator('#admin #owner420')).toHaveCount(0);
  await page.locator('#owner420 summary').click();
 }
 test('owner sees seven switches, disabled state and immutable source history, mobile safe',async({page})=>{
