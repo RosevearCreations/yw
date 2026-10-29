@@ -1,0 +1,15 @@
+# YW Build 483 — QL-249 renewal disposition and QL-252 public-proof blocker
+
+Status: DISCONNECTED / HOLD. Owner nonproduction GET authorization: NOT GIVEN.
+
+The QL-252 Comms Hub handoff (28 October 2026 Eastern) reports HTTP 404 at the exact immutable public source-proof path docs/integration/ql246-source-proof.json for Yard Workers main a4fceebafea8f09fb1f0e71eb1ad99a7a77e3168. Treat this as the handoff's reported observation, not a new independent remote fetch. This build intentionally does not create a placeholder signed JSON or counterfeit private custody and witness receipts.
+
+Publication requires a real CI-passing source SHA A, independently held Ed25519 signer and original nonproduction challenge (maximum one hour), authentic QL-248 canonical payload and negative-test metadata, then a descendant proof commit B containing docs/integration/ql246-source-proof.json and promoted to dev/main. Its signed subject is source SHA A, not proof commit B. Independently obtain the raw immutable B URL response (HTTP 200), exact bytes SHA-256, matching source CI head SHA, public ancestor comparison, public SPKI fingerprint and separately authenticated custodian/witness attestations. A public key fingerprint in GitHub is untrusted until independently pinned. Do not treat configured negative tests as actual executed denials.
+
+Build 483 adds deterministic offline revalidation of source SHA A, proof commit B, source CI identity, proof publication status and receipt presence, plus overdue private owner/reviewer follow-up escalation across the fourteen Build 482 categories. A plausible receipt ID or claimed approval is not independent authentication. Even a completely populated synthetic candidate remains HOLD.
+
+After independently verified source proof, ask for a separate authenticated owner decision scoped to a named, issued Yard Workers nonproduction tenant, GET /api/integration/v1/health and GET /api/integration/v1/capabilities only, and a future UTC window no longer than thirty minutes. No real GET is scheduled or executed. No live HMAC/Ed25519 private keys, customer/employee/job records, payment, dispatch, payroll, booking, gates, private gateway URLs or device actions are included.
+
+QL-252 public return fields currently: application_name=Yard Workers; repository=RosevearCreations/yw; source_sha_A=NOT_AVAILABLE; source_ci_run_url=NOT_AVAILABLE; proof_commit_sha_B=NOT_AVAILABLE; immutable_public_proof_url=NOT_AVAILABLE (reported 404); exact_proof_bytes_sha256=NOT_AVAILABLE; public_spki_sha256=NOT_AVAILABLE; out_of_band_custody_receipt_id=NOT_AVAILABLE; distinct_witness_receipt_id=NOT_AVAILABLE; owner_test_decision=NOT_GIVEN; owner_test_receipt_id=NOT_AVAILABLE; actual_gateway_test=NOT_RUN; connection_state=DISCONNECTED.
+
+Release of software to Production GREEN must never be misreported as QL-252 trust release, integration readiness or owner pilot authorization.
