@@ -421,6 +421,7 @@
     "test:rosevear-ql252-proof-custody-484": "node scripts/rosevear-ql252-proof-custody-484-check.mjs",
     "test:rosevear-ql253-origin-registry-485": "node scripts/rosevear-ql253-origin-registry-485-check.mjs",
     "test:rosevear-ql254-proof-relay-486": "node scripts/rosevear-ql254-proof-relay-486-check.mjs",
+    "test:rosevear-ql256-signer-provisioning-487": "node scripts/rosevear-ql256-signer-provisioning-487-check.mjs",
     "test:rosevear-ql245-source-evidence-477": "node scripts/rosevear-ql245-source-evidence-477-check.mjs",
     "test:browser:pms-owner-reviewer-followup-477": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-reviewer-followup-477.spec.mjs"
   },
