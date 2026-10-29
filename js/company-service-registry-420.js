@@ -25,11 +25,13 @@ async function ownerSession(){
  return {sb,uid:data.user.id};
 }
 function panel(){
- const host=$('admin');if(!host||$('owner420'))return;
+ // Company management belongs to every authenticated company owner in
+ // Settings, never to the application-wide Admin console.
+ const host=$('settings');if(!host||$('owner420'))return;
  const p=el('details');p.id='owner420';p.className='admin-hub-detail';
  p.dataset.adminHubTitle='Company Service Registry';p.dataset.adminHubGroups='management operations';
  p.style.cssText='min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere';
- p.appendChild(el('summary','420 · Audited Company Service Offering Registry'));
+ p.appendChild(el('summary','My Companies · Services & Modules'));
  const body=el('div');body.className='admin-panel-block';
  const n=el('p','Owner-only company registry. New companies start with all seven services DISABLED. Arboriculture is an independently audited company service added in Build 451. Staff roles and shared CRM, Jobs, Finance and Safety records remain unchanged. Build 421 independently enforces service switches for NEW Jobs work; historical jobs and contracts remain intact.');
  body.appendChild(n);

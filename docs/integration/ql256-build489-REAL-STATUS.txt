@@ -1,0 +1,37 @@
+Yard Workers Build 489 — QL-256 genuine role and signer evidence return
+Repository: RosevearCreations/yw
+2026-10-29, Eastern
+
+Primary Administrator: veardev@live.ca — platform-wide oversight; trusted server
+membership in ywi_platform_administrators_489; no company ownership required.
+Jordan Rosevear: jfrosevear@outlook.com — owner of the single test company
+Rosevear Landscaping. The global application admin role MUST be removed from
+Jordan in both profiles.role and profiles.staff_tier before calling isolation
+complete. Company ownership is ywi_companies.owner_user_id, not a global role.
+
+Database: current connected project jmqvkgiqlimdhcofwkxr is PRODUCTION.
+PRODUCTION DATA IS NOT A NONPRODUCTION TENANT. A test company row here
+does NOT verify QL-256 isolation and must not authorize a network trial.
+
+Read-only platform company directory uses a private, server-curated admin
+membership table and security-definer RPC. Company owner registry stays RLS
+owner-scoped. The Settings panel allows Jordan to view owned companies and
+toggle their company-specific modules; platform-wide Admin remains separate.
+
+Proof-B publication gate: CLOSED. NO ORIGINAL SIGNER OR WITNESS has been
+authenticated in a separately witnessed private registry. No legitimate
+private signer, original signature, independently attested custodian/pin,
+independent witness, proof-B immutable main SHA, or separate staging project
+has been supplied. No file is published to
+docs/integration/ql246-source-proof.json merely to make HTTP 200 appear.
+No mini-server relay deployed. No authenticated connection test approved.
+
+Next specific blocker: the owner must identify an ACTUAL operator responsible
+for the original Ed25519 proof signer and a DISTINCT independently authenticated
+custodian/witness, both outside GitHub/chat; then provide a real isolated
+nonproduction Supabase project and consent to an explicitly scoped TEST-only
+read-only GET challenge. Never share or commit private signing keys.
+
+Source and production deploy status must be recorded from the actual GitHub
+and Vercel Build 489 run after promotion. This document itself is not evidence
+that a signer, test, CI run or production promotion occurred.
