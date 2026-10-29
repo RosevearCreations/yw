@@ -1,0 +1,34 @@
+# Yard Workers Build 487 — real QL-256 source, signer and custody preparation
+
+App: Yard Workers
+Current main SHA at start of Build 487: 2c7b07037beb1b0ac239eb1b994cb6a87fd1923e
+Verified audited source SHA A: 2c7b07037beb1b0ac239eb1b994cb6a87fd1923e
+Matching completed GREEN source CI: https://github.com/RosevearCreations/yw/actions/runs/40884395920 (actual head_sha equals A)
+Signer provisioning decision: SIGNER_STATUS_UNKNOWN (Vercel env inventory has zero names, but an independently maintained external operator key may exist; no proof of its custody was supplied).
+Verified isolated company tenant ID: NOT_AVAILABLE. The connected Supabase project list shows the production YardWeasels project ref jmqvkgiqlimdhcofwkxr; neither a separate Yard Workers staging project nor the proposed Yard Rosevear company isolation has been authenticated.
+Custodian / independent witness / reviewer: NOT_ASSIGNED / PRIVATE_REVIEW_REQUESTED.
+Proof commit B + public digest + independently trusted key pin: NOT_AVAILABLE. Exact docs/integration/ql246-source-proof.json returned HTTP 404 at the prior immutable main. Do not invent proof commit B.
+Owner TEST-only authorization: NOT_GIVEN.
+Genuine gateway GET and original seven denial receipts: NOT_RUN / NOT_VERIFIED.
+Connection: DISCONNECTED / HOLD.
+
+Existing known nonsecret config:
+- GitHub repo RosevearCreations/yw; branches dev and main.
+- Vercel project yw; project ID prj_qqjary7NMn04Bv5epI9rOM4XM34W; team ID team_77mBUmJKBlSKp9TZc9TP04pl; production alias yw-alpha.vercel.app.
+- Supabase production project jmqvkgiqlimdhcofwkxr, project URL https://jmqvkgiqlimdhcofwkxr.supabase.co. These are public identifiers, not credentials.
+- Vercel project environment variable inventory returned zero entries (no verified signer or tenant binding there).
+- Repository references SUPABASE_URL or SB_URL, SUPABASE_ANON_KEY or SB_ANON_KEY, server-only SUPABASE_SERVICE_ROLE_KEY, staging YWI_STAGING_PROJECT_REF and run gates; references do not prove live secret presence.
+- Public integration health and capabilities endpoints advertise connection_status HOLD and disabled operations, with no authenticated business data.
+
+QL-256 new operator-only proposed settings (NOT SET):
+- YWI_QL256_SIGNER_PASSPHRASE: strong private operator secret (not to be stored in GitHub source, chat, CI logs or browser client).
+- YWI_QL256_SIGNER_PRIVATE_KEY_ENCRYPTED: encrypted Ed25519 PKCS8 file, not a plaintext environment value; stored only under an authorized private operator secure directory.
+- YWI_QL256_SIGNER_PUBLIC_SPKI_SHA256: public fingerprint from the genuine operator key, independently verified outside GitHub by a different witness.
+- YWI_QL256_NONPRODUCTION_TENANT_ID: real tenant ID only after verifying isolation.
+- YWI_QL256_CUSTODIAN_RECEIPT_ID, YWI_QL256_WITNESS_RECEIPT_ID and YWI_QL256_OWNER_TEST_RECEIPT_ID: distinct opaque receipt references, not substitutes for independently verified private attestations.
+
+Real private signer creation is supported by `node scripts/rosevear-ql256-signer-private-operator.mjs /absolute/private/operator/directory` on an authorized private host with YWI_QL256_SIGNER_PASSPHRASE injected by a private secret store. The directory must already exist outside the repository with owner-only permissions 0700. This generates a genuine Ed25519 key, AES-256-CBC-encrypted PKCS8 private key mode 0600, public SPKI and SHA256 fingerprint. It verifies a real Ed25519 sign/verify cycle. It does not create a signed integration proof or assign independent custody. Do not run it in CI, shared ChatGPT workspace or app production without a named authorized key custodian and secure storage decision.
+
+Next concrete blocker: Name and privately authenticate an authorized Yard Workers signing-key custodian and a different witness/reviewer, select the isolated nonproduction tenant and private key storage host. Until that choice is documented, no legitimate key custody can be attested and the genuine QL-246 proof commit B cannot be created.
+
+Subsequent original-source gates: custodian generates real signer, witness separately verifies SPKI fingerprint against a private registry and signs a five-minute nonce bound to source A / proof B / tenant; owner separately approves a <=30 minute future UTC TEST-only GET window; only then execute authorized health and capabilities GETs and original denial/audit checks. No current permission for live GETs, payroll, dispatch, customer data or home-server modifications.
