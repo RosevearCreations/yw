@@ -1,0 +1,17 @@
+# YW Build 486 — QL-254 original signed proof, witness exception aging and private relay readiness
+
+Status: DISCONNECTED / HOLD. Separate owner TEST-only decision: NOT_GIVEN.
+
+Independent public GitHub API query returned 404 / NOT_FOUND for docs/integration/ql246-source-proof.json at immutable Yard Workers main 37cac7dc25caa153088f0b58a76df98b23539730. The Comms Hub QL-254 handoff independently reported the same 404 at that SHA. A new revision requires a fresh independent proof query. Normal CI or software Production GREEN cannot substitute for signed integration proof.
+
+To clear public source proof: identify real tested source SHA A with matching successful source CI head_sha; produce a genuine QL-248 canonical Ed25519 envelope with securely held key for the approved nonproduction YW tenant, GET-only health/capabilities paths and honest negative-test metadata; commit it at exactly docs/integration/ql246-source-proof.json in descendant proof commit B (A != B); independently verify immutable B HTTP 200, exact bytes SHA-256, signature, source ancestry and CI. No placeholder proof is published.
+
+To clear private trust: an independently authenticated custodian and different witness must privately verify the original public SPKI pin against a separately controlled registry, sign a fresh five-minute nonce bound to A/B/tenant/registry snapshot and return distinct nonsecret receipt IDs. Claimed fingerprints and receipt-shaped strings do not establish trusted custody. No real original health/capabilities GET, seven negative denials, durable audit, revocation or owner pilot consent are supplied.
+
+Build 486 ages eleven independent original-proof/CI/ancestry/signature/registry/witness/owner/GET/denial/audit evidence classes. Missing or stale items trigger owner-safe original-source renewal or escalation. Fixture tests never certify private evidence.
+
+The Rosevear AI Hub Windows PC is only a possible later private 24/7 relay. Build 486 simulates in-memory start, stop, revocation and restoration with 30–300-second health-check configuration. It does not install a Windows service, start a process, open a public port, expose Tailscale/Home Assistant/cameras/vault/devices, provision credentials or contact any gateway. Real deployment needs separately verified host health, patch/recovery plan, owner approval, least-privilege service account, outbound-only/private routing, per-app keys, isolation, rollback and independent TEST authorization.
+
+Sanitized QL-254 response: application_name=Yard Workers; repository=RosevearCreations/yw; observed_main_sha=37cac7dc25caa153088f0b58a76df98b23539730; source_sha_A=NOT_AVAILABLE; matching_source_green_ci_run_url=NOT_AVAILABLE; proof_commit_sha_B=NOT_AVAILABLE; immutable_proof_url=HTTP 404; proof_http_status_at_B=NOT_AVAILABLE; exact_raw_proof_sha256=NOT_AVAILABLE; public_signer_spki_sha256=NOT_AVAILABLE; private_registry_snapshot_sha256=NOT_AVAILABLE; independent_registry_custody_receipt_id=NOT_AVAILABLE; separate_witness_receipt_id=NOT_AVAILABLE; independent_witness_real_world_identity_verified=NOT_VERIFIED; owner_test_decision=NOT_GIVEN; actual_nonproduction_gateway_gets=NOT_RUN; real_original_seven_denial_cases=NOT_VERIFIED; connection_state=DISCONNECTED.
+
+Software production promotion and integration authorization are separate gates. All integration connections remain DISCONNECTED / HOLD.

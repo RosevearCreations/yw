@@ -474,6 +474,7 @@ jobs:
       - run: npm run test:rosevear-ql249-renewal-483
       - run: npm run test:rosevear-ql252-proof-custody-484
       - run: npm run test:rosevear-ql253-origin-registry-485
+      - run: npm run test:rosevear-ql254-proof-relay-486
       - run: npm run test:rosevear-ql245-source-evidence-477
       - run: npm run test:browser:pms-owner-renewal-reviewer-followup-476
       - run: npm run test:browser:pms-owner-reviewer-followup-477
