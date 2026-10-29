@@ -1,0 +1,17 @@
+# YW Build 484 — QL-252 publication recheck and private authorization HOLD
+
+Status: DISCONNECTED / HOLD. Owner TEST-only authorization: NOT GIVEN.
+
+At the Build 484 recheck, the GitHub contents API returned 404 for docs/integration/ql246-source-proof.json at exact main SHA 65068a739e5b28894b00226d4967a0dac241407c. This is a real public source observation, not evidence of an active gateway or a successful signature. The 28 October 2026 QL-252 handoff also recorded 404 at the earlier main revision. No invented or sample signature is committed.
+
+Required original public proof: tested source SHA A and its exact green CI URL; authentic, securely produced Ed25519 signature over canonical QL-248 rosevear.integration.v1 evidence naming A; descendant proof commit B at the exact path; independently fetched HTTP 200 at immutable B; raw SHA-256, public SPKI fingerprint, and independently checked A-to-B ancestry. Do not claim an independently witnessed negative test based on fixture metadata.
+
+Required private trust: separately authenticated custodian and distinct reviewer/witness, distinct fingerprints and original out-of-band attestations, a fresh 5-minute nonce and an original witness signature binding exact A/B, issued nonproduction Yard Workers tenant, and response hash. Public receipt-shaped strings do not verify identity or custody. QL-252 operator-supplied channel/receipt claims are candidates only.
+
+Required owner choice: distinct authenticated owner TEST-only approval with a named nonproduction tenant, future UTC window of 30 minutes or less, GET /api/integration/v1/health and GET /api/integration/v1/capabilities only. No real authenticated owner approval is in this source tree, and no gateway request is scheduled or executed. Later actual denials, tenant isolation, durable audit, rollback and separate pilot release remain outstanding.
+
+Build 484 introduces strict offline custody and TEST-only scope/nonce checks, plus cross-record A/B/tenant consistency. Even synthetic fully-populated candidate records return HOLD and do not provision credentials, issue GETs, trigger dispatch, or release a pilot.
+
+Public non-secret return: application_name=Yard Workers; repository=RosevearCreations/yw; source_sha_A=NOT_AVAILABLE; source_ci_run_url=NOT_AVAILABLE; proof_commit_sha_B=NOT_AVAILABLE; immutable_public_proof_url=NOT_AVAILABLE (404); exact_proof_bytes_sha256=NOT_AVAILABLE; public_spki_sha256=NOT_AVAILABLE; out_of_band_custody_receipt_id=NOT_AVAILABLE; distinct_witness_receipt_id=NOT_AVAILABLE; owner_test_decision=NOT_GIVEN; owner_test_receipt_id=NOT_AVAILABLE; actual_gateway_test=NOT_RUN; connection_state=DISCONNECTED.
+
+Application production GREEN is a software deployment outcome and does not change integration DISCONNECTED / HOLD.
