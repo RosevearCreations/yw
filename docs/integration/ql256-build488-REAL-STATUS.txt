@@ -1,0 +1,58 @@
+# Yard Workers Build 488 — QL-256 real custody and nonproduction isolation status
+
+**Date:** 29 October 2026 (Eastern)  
+**Repository:** `RosevearCreations/yw`  
+**Source A:** `2c7b07037beb1b0ac239eb1b994cb6a87fd1923e`  
+**Matching original CI:** https://github.com/RosevearCreations/yw/actions/runs/40884395920
+
+## Direct read-only findings (NOT simulated)
+
+1. **SOURCE A:** The original CI's `head_sha` equals A and its conclusion is success. A subsequent `main` promotion does not change the identity of A.
+2. **HTTP 404:** GitHub contents lookup for `docs/integration/ql246-source-proof.json` at `main` still returned HTTP 404. No real signed proof-B commit, raw proof hash, trusted key pin or public immutable B URL is available.
+3. **SIGNER_STATUS_UNKNOWN:** No authenticated private source-signer custodian, separate witness, private registry pin, or genuine signing-key storage handoff was supplied. No Ed25519 identity key was generated on a real authorized operator host. Build 487's key-generation test used a disposable synthetic fixture only.
+4. **NO VERIFIED NONPRODUCTION TENANT:** The connected Supabase account shows one `YardWeasels` production project (`jmqvkgiqlimdhcofwkxr`, healthy) and `RosieDazzlers`; the other connected account lists iCamp and `rosevearcreations Project`, not a separately identified Yard Workers staging project. A read-only metadata query found `public.ywi_companies` in the production project with RLS enabled, and a read-only `name = 'Yard Rosevear'` lookup returned **zero rows**. That does not prove isolated staging exists; no nonproduction tenant may be claimed as verified.
+5. **TEST authorization NOT_GIVEN:** No separately authenticated owner approval for a bounded GET-only window is on record. No authenticated gateway calls or relay installation were performed. All integrations remain `DISCONNECTED / HOLD`.
+
+## Actual Build 488 capability
+
+`server/rosevear-ql256-custody-isolation-488.mjs` provides a fail-closed cryptographic receipt verifier:
+
+- Accepts independently provided Ed25519 SPKI pins and verifies **distinct** custodian and witness signatures on an identical, source-A/CI/tenant/signer/nonce-bound statement.
+- Rejects reused witnesses, changed tenant IDs, bad signatures, wrong trusted pins, missing private receipts, a production project disguised as nonproduction, and a challenge outside its maximum five-minute window.
+- Distinguishes pinned cryptographic matching from independently authenticated *human identity and custody origin*: a matching signature alone is **not** authentication of the human, tenant isolation or permission to connect.
+- Allows a provider-confirmed **separate project candidate** to be recorded without mislabeling its isolation as established; actual owner/reviewer security checks still need original evidence.
+- Uses only disposable offline fixtures in CI; neither test keys nor synthetic signatures are source proof or real custodian/witness receipts.
+
+For an authorized private operator, `node scripts/rosevear-ql256-verify-private-custody-488.mjs /absolute/private/custody-packet.json /absolute/private/trusted-registry.json` verifies pinned signatures without uploading the private files. Both files and their parent directories must have owner-only permissions, remain outside the repository, and be obtained through separate authenticated channels. The command reports only cryptographic consistency; it does not authenticate human custody or clear tenant/owner gates.
+
+## Real private actions that remain
+
+1. Owner must **name and privately authenticate** a Yard Workers key custodian, **distinct witness** and independent reviewer; authorize the exact non-repository private key host and trusted pin-registry process.
+2. Owner must identify a **real isolated nonproduction project/company tenant**. Verify separate project ID, user permissions, scoped RLS, write restrictions and non-access to production data using original read-only evidence and an independent reviewer. Do not use production project `jmqvkgiqlimdhcofwkxr` for trial connection testing.
+3. The authorized custodian (not CI or this chat) runs the existing genuine `scripts/rosevear-ql256-signer-private-operator.mjs` on that private host, maintains encrypted private material, and returns only a public SPKI hash and a nonsecret custody receipt ID through the trusted registry.
+4. The distinct witness signs a new five-minute nonce bound to **SOURCE A**, matching CI, candidate nonproduction project/tenant, and signer fingerprint. Keep private proof and identity records outside public GitHub.
+5. After independent witness approval, create genuine signed QL-246 JSON referring to **A** and commit as descendant **B** to `docs/integration/ql246-source-proof.json`; verify the immutable public raw B URL returns 200, compute byte-exact SHA256, validate source CI ancestry, and return the authentic two-SHA packet.
+6. Obtain a **separate, privately authenticated owner TEST-only decision** naming a future <=30-minute UTC window, nonproduction tenant, GET-only `/api/integration/v1/health` and `/api/integration/v1/capabilities`. No gateway calls before that authorization.
+
+## Evidence return (actual only)
+
+```yaml
+application_name: Yard Workers
+repository: RosevearCreations/yw
+source_sha_A: 2c7b07037beb1b0ac239eb1b994cb6a87fd1923e
+source_ci_run_url: https://github.com/RosevearCreations/yw/actions/runs/40884395920
+proof_commit_sha_B: NOT_AVAILABLE
+immutable_public_proof_url: NOT_AVAILABLE
+exact_proof_bytes_sha256: NOT_AVAILABLE
+public_spki_sha256: NOT_AVAILABLE
+signer_status: SIGNER_STATUS_UNKNOWN
+out_of_band_custody_receipt_id: NOT_AVAILABLE
+distinct_witness_receipt_id: NOT_AVAILABLE
+nonproduction_tenant_id: NOT_VERIFIED
+owner_test_decision: NOT_GIVEN
+owner_test_receipt_id: NOT_AVAILABLE
+actual_gateway_test: NOT_RUN
+connection_state: DISCONNECTED
+```
+
+**Next specific blocker:** A named independent private signer custodian and witness **plus** an actual isolated nonproduction Yard Workers project/tenant with authenticated evidence. These human and environmental choices are not replaceable with deployment GREEN, synthetic crypto, or another HOLD report.
