@@ -1,0 +1,9 @@
+# YW Build 482 — QL-249 independent origin follow-up and authorization gap aging
+
+Status: **DISCONNECTED / HOLD**. Real external proof and authorization remain **UNVERIFIED**.
+
+Build 482 adds a deterministic, source-only age/recheck register for fourteen separately scoped evidence classes: source SHA/CI, immutable proof commit and raw digest, independently authenticated signer pin, two-SHA consumer agreement, real issued YW company tenant, named nonproduction destination, owner test approval, independent reviewer, scoped server key registry, private runner, rollback/revocation, signed health/capabilities GET receipts, seven actual denials and durable audit after restart. There are no real receipts bundled here.
+
+The register accepts only explicit PENDING / UNVERIFIED / NOT_PROVISIONED / BLOCKED / REVIEWED states, bounded timestamps and nonsecret reviewer IDs. Missing, stale, unreviewed, duplicate, foreign or future-dated evidence cannot become a release. A recently marked REVIEWED row is a **revalidation candidate**, never independent proof. An overdue row requests original evidence again and preserves any previously recorded owner follow-up date. Neither age nor a receipt-shaped string validates a signer, authenticated owner, source-of-truth audit, or actual gateway response.
+
+Only separately authorized nonproduction **GET /api/integration/v1/health** and GET /api/integration/v1/capabilities may be considered in a future witnessed window; this build performs neither. Owner pilot approval: **NOT GIVEN**. No HMAC/Ed25519 secrets, customer data, payroll, job, dispatch, SMS, Finance, booking/gate, marketplace, private-network or device changes. All live connections remain disabled. Release of software to GREEN is entirely separate from the reversible operational HOLD.
