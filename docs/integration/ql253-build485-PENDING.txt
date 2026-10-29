@@ -1,0 +1,19 @@
+# YW Build 485 — QL-253 immutable proof retry, CI ancestry and private registry HOLD
+
+Status: DISCONNECTED / HOLD. Owner TEST-only authorization: NOT_GIVEN.
+
+Independent public GitHub contents retry: the exact docs/integration/ql246-source-proof.json at Yard Workers main SHA 25436da1c91a374f7ebd195508a33fdee259873e returned 404 / NOT_FOUND. The QL-253 handoff of 28 October 2026 10:43 p.m. Eastern independently reported the same 404 at that SHA. This is a public source result, not a signature, owner approval or authenticated gateway test.
+
+Publication gate: identify real tested source SHA A with green Actions head_sha=A; sign the genuine canonical QL-248 nonproduction evidence with a privately held Ed25519 key; publish a distinct descendant proof commit B to docs/integration/ql246-source-proof.json; independently fetch immutable B as HTTP 200, compare exact proof bytes digest, validate JSON/signature, A-to-B ancestry, exact CI head SHA, repository and tenant, challenge expiry and negative-test configuration metadata. A signed-looking fixture is not original source proof.
+
+Private trust gate: independently verify custodian and distinct witness identities outside GitHub and the signer public SPKI SHA-256 against a private maintained pin registry; obtain registry snapshot digest and distinct nonsecret receipt references, fresh five-minute nonce and original witness signature bound to A/B/business/tenant/response. Source repository metadata alone never authenticates a pin, registry or witness.
+
+Owner TEST gate: obtain a separate, privately authenticated owner decision limited to one issued Yard Workers nonproduction tenant, future <=30-minute UTC window, GET only and the two integration v1 health/capabilities endpoints. No decision is recorded here. No actual GET, seven denial receipts, credential provisioning, app connection or owner pilot release occurs in Build 485.
+
+Private 24/7 relay: Rosevear AI Hub Windows server is a future possible outbound-only or existing private Tailscale relay. This build neither deploys a daemon nor exposes home/vault/camera/device endpoints, ports, master credentials or remote shell. Separate host, trust, owner, service-account and rollback approval is required.
+
+Build 485 adds fail-closed offline reconciliation for public-proof HTTP result, exact A/CI/B consistency, signature validity claims, private pin registry and distinct receipts, owner scope and cross-record tenant binding. Even a fully populated synthetic record always retains HOLD until independently authenticated original receipts are separately assessed.
+
+Comms Hub sanitized return: application_name=Yard Workers; repository=RosevearCreations/yw; source_sha_A=NOT_AVAILABLE; source_ci_run_url=NOT_AVAILABLE; proof_commit_sha_B=NOT_AVAILABLE; immutable_public_proof_url=HTTP 404; exact_proof_bytes_sha256=NOT_AVAILABLE; public_spki_sha256=NOT_AVAILABLE; out_of_band_registry_snapshot_sha256=NOT_AVAILABLE; out_of_band_registry_receipt_id=NOT_AVAILABLE; out_of_band_custody_receipt_id=NOT_AVAILABLE; distinct_independent_witness_receipt_id=NOT_AVAILABLE; owner_test_decision=NOT_GIVEN; owner_test_receipt_id=NOT_AVAILABLE; real_health_and_capabilities_get_receipts=NOT_RUN; original_seven_negative_denial_receipts=NOT_VERIFIED; connection_state=DISCONNECTED.
+
+Software Production GREEN is independent of external integration DISCONNECTED / HOLD.
