@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {readFileSync,existsSync} from 'node:fs';
+import {categories,assessEvidenceFollowup,pendingFollowup} from '../server/rosevear-ql249-evidence-aging-482.mjs';
+const now=1790000000000;
+const pending=pendingFollowup(now),report=assessEvidenceFollowup(pending,{now});
+assert.equal(categories.length,14);
+assert.equal(report.unresolved,14);assert.equal(report.decision,'HOLD');
+assert.equal(report.connection_state,'DISCONNECTED');assert.equal(report.owner_pilot_authorized,false);
+assert.equal(report.credentials_provisioned,false);assert.equal(report.dispatch_enabled,false);
+assert.ok(report.cases.every(x=>x.overdue&&x.next_safe_action==='REQUEST_ORIGINAL_EVIDENCE'));
+const reviewed=pending.map(row=>({...row,state:'REVIEWED',observedAt:now-1000,
+ reviewerReceiptId:'np-review-fixture',ownerFollowupAt:now-500}));
+const candidate=assessEvidenceFollowup(reviewed,{now});
+assert.equal(candidate.review_candidate_count,14);
+assert.equal(candidate.original_source_independently_verified,false);
+assert.equal(candidate.read_only_test_authorized,false);
+assert.equal(candidate.decision,'HOLD');
+assert.equal(assessEvidenceFollowup(reviewed,{now:now+2*86400000}).unresolved,14);
+assert.equal(assessEvidenceFollowup(reviewed.map((x,i)=>i===0?{...x,reviewerReceiptId:null}:x),{now}).unresolved,1);
+assert.throws(()=>assessEvidenceFollowup(reviewed.slice(1),{now}),/QL249_482_HOLD_ROW_COUNT/);
+assert.throws(()=>assessEvidenceFollowup([...reviewed.slice(0,13),reviewed[0]],{now}),/QL249_482_HOLD_CATEGORY/);
+assert.throws(()=>assessEvidenceFollowup(reviewed.map((x,i)=>i===0?{...x,observedAt:now+1}:x),{now}),/QL249_482_HOLD_OBSERVED_AT/);
+assert.throws(()=>assessEvidenceFollowup(reviewed.map((x,i)=>i===0?{...x,state:'APPROVED'}:x),{now}),/QL249_482_HOLD_STATE/);
+assert.throws(()=>assessEvidenceFollowup(reviewed,{now,maxAgeMs:8*86400000}),/QL249_482_HOLD_CLOCK/);
+assert.equal(existsSync('docs/integration/ql246-source-proof.json'),false);
+const handoff=readFileSync('docs/integration/ql249-build482-PENDING.txt','utf8');
+for(const marker of ['DISCONNECTED / HOLD','UNVERIFIED','NOT GIVEN','independent','GET /api/integration/v1/health'])
+ assert.ok(handoff.includes(marker),marker);
+const pkg=JSON.parse(readFileSync('package.json','utf8'));
+assert.ok(pkg.scripts['test:rosevear-ql249-evidence-aging-482']);
+assert.ok(readFileSync('.github/workflows/staging-browser-integration.yml','utf8').includes('npm run test:rosevear-ql249-evidence-aging-482'));
+console.log('QL249 Build 482 independent source follow-up and reversible HOLD PASS');

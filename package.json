@@ -416,6 +416,7 @@
     "test:rosevear-ql247-six-app-479": "node scripts/rosevear-ql247-six-app-479-check.mjs",
     "test:rosevear-ql248-proof-commit-480": "node scripts/rosevear-ql248-proof-commit-480-check.mjs",
     "test:rosevear-ql249-origin-schedule-481": "node scripts/rosevear-ql249-origin-schedule-481-check.mjs",
+    "test:rosevear-ql249-evidence-aging-482": "node scripts/rosevear-ql249-evidence-aging-482-check.mjs",
     "test:rosevear-ql245-source-evidence-477": "node scripts/rosevear-ql245-source-evidence-477-check.mjs",
     "test:browser:pms-owner-reviewer-followup-477": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-reviewer-followup-477.spec.mjs"
   },
