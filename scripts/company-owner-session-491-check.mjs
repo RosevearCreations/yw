@@ -30,8 +30,10 @@ const workflow=read('.github/workflows/staging-browser-integration.yml');
 assert.ok(workflow.includes('npm run test:company-owner-session-491'));
 assert.ok(workflow.includes('npm run test:browser:company-owner-session-491'));
 const index=read('index.html');
-for(const path of ['company-service-registry-420.js','company-owner-workspace-490.js','platform-account-audit-490.js'])
- assert.ok(index.includes(path+'?v=20261030b491'),`browser cache version ${path}`);
+for(const path of ['company-service-registry-420.js','company-owner-workspace-490.js','platform-account-audit-490.js']) {
+ const version=path==='company-service-registry-420.js'?'20261030b491':'20261030b493';
+ assert.ok(index.includes(path+'?v='+version),`browser cache version ${path}`);
+}
 const spec=read('tests/browser/company-owner-session-491.spec.mjs');
 const syntax=spawnSync(process.execPath,['--check','tests/browser/company-owner-session-491.spec.mjs'],{encoding:'utf8'});
 assert.equal(syntax.status,0,syntax.stderr||'Browser spec syntax invalid');

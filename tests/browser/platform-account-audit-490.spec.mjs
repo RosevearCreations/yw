@@ -12,7 +12,8 @@ async function setup(page,{deny=false,wrongIdentity=false,extraPlatformAdmin=fal
    {profile_id:'owner',account_name:'Jordan Rosevear',account_email:'jfrosevear@outlook.com',global_role:'employee',curated_platform_admin:false,owned_company_count:1,profile_email_matches_auth:true}
   ];
   window.YWI_SB={auth:{getUser:async()=>({data:{user:{id:wrongIdentity?'different':uid}}})},
-   rpc:async(name)=>{window.__rpcCalls.push(name);return deny?{error:{message:'denied'}}:{data:accounts,error:null};}};
+   rpc:async(name)=>{window.__rpcCalls.push(name);return deny?{error:{message:'denied'}}:
+    {data:name==='ywi_platform_legacy_evidence_list_493'?[]:accounts,error:null};}};
  },{deny,wrongIdentity,extraPlatformAdmin});
  await page.addScriptTag({content:ui});
  await page.locator('#platform490 summary').click();
@@ -22,7 +23,8 @@ test('curated platform admin sees legacy exception and separate company owner',a
  await expect(page.locator('[data-platform490-role]')).toHaveCount(3);
  await expect(page.locator('[data-platform490-role^="LEGACY"]')).toHaveCount(1);
  await expect(page.locator('#platform490Status')).toContainText('1 legacy global admin exception');
- expect(await page.evaluate(()=>window.__rpcCalls)).toEqual(['ywi_platform_account_audit_490']);
+ expect(await page.evaluate(()=>window.__rpcCalls)).toEqual([
+  'ywi_platform_account_audit_490','ywi_platform_legacy_evidence_list_493']);
 });
 test('server denial, identity mismatch and duplicate platform admins fail closed',async({page})=>{
  for(const opts of [{deny:true},{wrongIdentity:true},{extraPlatformAdmin:true}]){
