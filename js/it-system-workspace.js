@@ -355,7 +355,7 @@
       if (event.target.closest('#commsHubLocalCheck')) {
         const report = {
           schema:'rosevear-comms-local-preflight/v1', source:'yw', mode:'LOCAL_INTERFACE_ONLY',
-          checks:[{id:'source-identity',passed:true},{id:'no-production-supabase-reads',passed:true},
+          checks:[{id:'source-identity',passed:true},{id:'no-production-data-reads',passed:true},
             {id:'separate-nonproduction-tenant-not-verified',passed:true},{id:'private-custody-not-inferred',passed:true},
             {id:'owner-test-not-inferred',passed:true}],
           localPass:true, networkRequests:0, authenticatedGatewayGets:0,
@@ -403,7 +403,7 @@
            <h3 id="commsHubConnectionTitle">I.T. Connections · Rosevear Comms Hub</h3>
            <p><strong>DISCONNECTED / HOLD.</strong> This source workspace is an offline connection readiness gate, not a connection to six apps.</p>
            <p>Source: <code>RosevearCreations/yw</code> · Proof: <code>docs/integration/ql246-source-proof.json</code> (original B not verified).</p>
-           <ol><li>Use a separate nonproduction Supabase project and synthetic tenant; never expose Rosevear Landscaping production data.</li>
+           <ol><li>Use a separate nonproduction datastore project and synthetic tenant; never expose Rosevear Landscaping production data.</li>
            <li>Privately authenticate the signer custodian, separate nonce witness and reviewer; independently pin source Ed25519 SPKI.</li>
            <li>Require an independently approved restricted signer host and owner TEST-only authorization before any read-only source GET.</li></ol>
            <button type="button" id="commsHubLocalCheck" class="secondary">Run local interface self-test (no network)</button>
