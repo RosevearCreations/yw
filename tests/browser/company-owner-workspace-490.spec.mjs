@@ -32,7 +32,7 @@ test('non-admin Jordan sees owned company dashboard in Settings and no platform 
 test('owner can reach existing service control without platform admin access',async({page})=>{
  await setup(page);
  await page.locator('#owner490Load').click();
- await page.locator('#owner490List button').click();
+ await page.getByRole('button',{name:'Manage this company’s services'}).click();
  await expect(page.locator('#owner420')).toHaveAttribute('open','');
 });
 test('foreign company, incomplete registry and missing session deny workspace',async({page})=>{
