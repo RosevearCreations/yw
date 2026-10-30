@@ -21,6 +21,7 @@ async function ownerFixture(page,{deferAuth=false}={}){
    from(table){const state={company:null};return {
     select(){return this},order(){return this},eq(_key,value){state.company=value;return this},
     async limit(){return {error:null,data:table==='ywi_companies'?companies:
+     table==='ywi_company_service_module_audit'?[]:
      keys.map(module_key=>({company_id:state.company,module_key,enabled:window.__modulesEnabled&&module_key==='landscape'}))};}
    };}
   };
