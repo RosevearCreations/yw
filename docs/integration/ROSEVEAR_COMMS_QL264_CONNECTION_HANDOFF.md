@@ -26,6 +26,10 @@ This is an owner-requested, source-repository-local implementation guide. Its pu
 - Separate approvals required first: actual private source proof, externally verified nonproduction isolation, exact scoped route and identity, independently reviewed controls, owner **TEST-only** signed/privately authenticated permission, start/stop/rollback procedure and restricted evidence custody.
 - Explicitly prohibited: production/customer/admin reads, writes, calls, SMS, dispatch, provider POSTs, payment/booking changes, real owner approvals, background relay installation or private home-network access.
 
+## Protected release path
+
+This repository's production-promotion CI requires a verified **dev → main** pull request. Merge the QL-264 documentation into `dev` first and then promote that exact `dev` commit to `main` after required source checks; do not retarget a feature branch directly to `main`.
+
 ## Local verification and safe return to Comms Hub
 
 - Run repo smoke/build checks and locally validate deny-by-default tenant/role scenarios; no actual production Supabase SQL or data writes.
