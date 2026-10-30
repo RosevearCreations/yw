@@ -96,6 +96,7 @@ async function adminSetup(page,{ledgerForeign=false}={}){
    }};
  },{ledgerForeign});
  await page.addScriptTag({content:adminUI});
+ await page.locator('#platform490 summary').click();
  await page.locator('#platform490Refresh').click();
 }
 
