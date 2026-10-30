@@ -49,7 +49,16 @@ function install(){
     if(m.error||!Array.isArray(m.data)||m.data.length!==7||new Set(m.data.map(x=>x.module_key)).size!==7||
       m.data.some(x=>x.company_id!==c.id||!serviceKeys.has(x.module_key)||typeof x.enabled!=='boolean'))
       throw Error('Company module registry incomplete or foreign');
-    views.push({company:c,enabled:m.data.filter(x=>x.enabled).length});
+    const audit=await sb.from('ywi_company_service_module_audit')
+     .select('id,company_id,module_key,action,previous_enabled,next_enabled,recorded_at')
+     .eq('company_id',c.id).order('id',{ascending:false}).limit(26);
+    assertCurrent();
+    if(audit.error||!Array.isArray(audit.data)||audit.data.some(a=>
+       a.company_id!==c.id||!serviceKeys.has(a.module_key)||
+       typeof a.previous_enabled!=='boolean'||typeof a.next_enabled!=='boolean'||
+       !a.recorded_at||!Number.isFinite(Date.parse(a.recorded_at))))
+      throw Error('Company switch history unavailable or foreign');
+    views.push({company:c,enabled:m.data.filter(x=>x.enabled).length,audit:audit.data});
    }
    assertCurrent();
    verifiedIds=new Set(views.map(v=>v.company.id));
@@ -59,6 +68,17 @@ function install(){
     item.style.cssText='border:1px solid #64748b;border-radius:10px;padding:12px;min-width:0;overflow-wrap:anywhere';
     item.append(node('h4',c.name),node('p','Company owner — application-wide administrator privileges are not required.'),
       node('p','Enabled services: '+view.enabled+' of 7'));
+    const timeline=node('details');timeline.dataset.owner492Timeline=c.id;
+    timeline.appendChild(node('summary','Service-switch audit timeline (read-only)'));
+    const events=node('ol');
+    for(const entry of view.audit.slice(0,25)){
+      events.appendChild(node('li',new Date(entry.recorded_at).toLocaleString()+' · '+
+       entry.module_key.replaceAll('_',' ')+' · '+entry.action+' · '+
+       (entry.previous_enabled?'ON':'OFF')+' → '+(entry.next_enabled?'ON':'OFF')));
+    }
+    if(!view.audit.length)events.appendChild(node('li','No recorded switch events.'));
+    if(view.audit.length===26)events.appendChild(node('li','Older events remain in the server audit; this timeline is limited.'));
+    timeline.appendChild(events);item.appendChild(timeline);
     const open=node('button','Manage this company’s services');open.type='button';
     open.addEventListener('click',()=>{
       if(!currentIdentity(uid)||!verifiedIds.has(c.id)){
