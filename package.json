@@ -428,6 +428,7 @@
     "test:browser:company-owner-workspace-490": "playwright test --config=playwright.config.mjs tests/browser/company-owner-workspace-490.spec.mjs",
     "test:browser:platform-account-audit-490": "playwright test --config=playwright.config.mjs tests/browser/platform-account-audit-490.spec.mjs",
     "test:company-owner-session-491": "node scripts/company-owner-session-491-check.mjs",
+    "test:build492": "node scripts/build492-check.mjs",
     "test:browser:company-owner-session-491": "playwright test --config=playwright.config.mjs tests/browser/company-owner-session-491.spec.mjs",
     "test:rosevear-ql245-source-evidence-477": "node scripts/rosevear-ql245-source-evidence-477-check.mjs",
     "test:browser:pms-owner-reviewer-followup-477": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-reviewer-followup-477.spec.mjs"

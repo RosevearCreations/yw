@@ -39,6 +39,8 @@ function install(){
    const approved=r.data.filter(x=>x.curated_platform_admin===true);
    if(approved.length!==1)throw Error('Platform administrator registry needs independent review');
    let legacy=0;const view=document.createDocumentFragment();
+   const review=el('p','Build 492 review: legacy global-admin roles require an independent owner decision. This is a read-only inventory, not a revocation or approval control.');
+   view.appendChild(review);
    for(const x of r.data){
     if(!x.profile_id||!x.account_email||!x.account_name||!['admin','employee','worker','staff','supervisor','hse','job_admin','site_leader','onsite_admin'].includes(x.global_role)||
        !Number.isSafeInteger(Number(x.owned_company_count))||x.profile_email_matches_auth!==true)
@@ -49,7 +51,10 @@ function install(){
     const item=el('article');item.dataset.platform490Role=kind;
     item.style.cssText='padding:12px;border:1px solid #64748b;border-radius:10px;overflow-wrap:anywhere';
     item.append(el('h4',x.account_name),el('p',x.account_email),
-      el('p',kind),el('p','Owned companies: '+x.owned_company_count));
+      el('p',kind),el('p','Owned companies: '+x.owned_company_count),
+      el('p','Account state: '+(x.active===true?'active':'inactive')+' · Staff tier: '+(x.staff_tier||'none')));
+    if(kind.startsWith('LEGACY'))item.appendChild(el('p',
+      'REVIEW PENDING — verify the original authority and tenant scope privately before any role change.'));
     view.appendChild(item);
    }
    assertCurrent();
