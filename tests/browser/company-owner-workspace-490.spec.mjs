@@ -13,7 +13,7 @@ async function setup(page,{foreign=false,missingModules=false,notSignedIn=false}
   window.YWI_SB={
    auth:{getUser:async()=>({data:{user:{id:uid}}})},
    from(name){return {select(){return this},order(){return this},eq(){return this},
-    limit:async()=>({data:name==='ywi_companies'?company:missingModules?services.slice(1):services,error:null})};}
+    limit:async()=>({data:name==='ywi_companies'?company:\n     name==='ywi_company_service_module_audit'?[]:missingModules?services.slice(1):services,error:null})};}
   };
  },{foreign,missingModules,notSignedIn});
  await page.addScriptTag({content:ui});
