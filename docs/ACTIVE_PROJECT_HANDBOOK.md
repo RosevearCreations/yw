@@ -478,6 +478,20 @@ In Admin Management, the owner selects a genuine 420 company, 422-linked custome
 
 ## Rosevear Comms Hub source integration (disabled, nonproduction only)
 
+### Owner and administrator session privacy
+
+The Settings **My Company Workspace** and **Company Service Registry** require
+server-authenticated ownership. Their in-flight reads are invalidated immediately
+when the authenticated identity changes; stale results must not repaint a prior
+owner's company list after sign-out or account switching. After the server-scoped
+registry is loaded, a selected company may be focused within the service
+controls, without granting a cross-company write or changing platform roles.
+Verified service-offering changes refresh the owner's company summary.
+The Admin **Platform Account Role Audit** is read-only, gated by the server's
+curated administrator list, and discards results from an earlier login. Legacy
+global-admin findings remain owner-review exceptions, never automatic demotions.
+
+
 Yard Workers is one of six source applications coordinated by the separate Rosevear Comms Hub operator preview, with AI Data Platform proposed as the gateway. The source connection is **DISCONNECTED / HOLD**. This is an operational design note only, not authorization to install integration, use private keys, call a gateway or promote a production communication feature. The source-specific Comms Hub checklists live in the [Comms Hub coordination document](https://github.com/RosevearCreations/rosevear-comms-hub/blob/main/docs/ROSEVEAR_QL264_SIX_REPO_DIRECT_HANDOFF_AND_PRIVATE_GATE.md).
 
 - Require a truly **separate nonproduction Supabase project/database** and synthetic company tenant. The production Rosevear Landscaping tenant is never a substitute. Scoped test authorization must be determined on the server using independently checked ownership and RLS; browser metadata or a generic authenticated role must not grant cross-tenant access.

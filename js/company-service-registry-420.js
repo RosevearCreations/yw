@@ -45,31 +45,42 @@ function panel(){
  const status=el('p','Sign in and refresh to load owner companies.');status.id='owner420Status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');body.appendChild(status);
  const root=el('div');root.id='owner420Results';root.style.cssText='display:grid;gap:12px;min-width:0;max-width:100%;overflow-wrap:anywhere';body.appendChild(root);
  p.appendChild(body);host.appendChild(p);
- let busy=false;let context=null;
+ let busy=false;let context=null;let epoch=0;
  const notice=(msg)=>{status.textContent=msg;};
  async function load(){
-  if(busy)return;busy=true;refresh.disabled=true;create.disabled=true;
+  if(busy)return;const run=++epoch;busy=true;refresh.disabled=true;create.disabled=true;
   root.replaceChildren();notice('Verifying owner identity and reading registry…');context=null;
   try{
    const {sb,uid}=await ownerSession();
+   const assertCurrent=()=>{
+    const s=window.YWI_AUTH?.getState?.();
+    if(run!==epoch||s?.isAuthenticated!==true||s.user?.id!==uid)
+     throw Error('Owner session changed during registry read');
+   };
+   assertCurrent();
    const q=await sb.from('ywi_companies').select('id,name,owner_user_id,created_at').order('created_at',{ascending:true}).limit(101);
+   assertCurrent();
    if(q.error||!Array.isArray(q.data))throw Error('Company registry unavailable');
    if(q.data.length>100)throw Error('More than 100 companies: full listing needed before editing');
    if(q.data.some(c=>c.owner_user_id!==uid||!c.id||!c.name))throw Error('Tenant identity mismatch');
    const models=[];
    for(const c of q.data){
     const m=await sb.from('ywi_company_service_modules').select('company_id,module_key,enabled,created_at,updated_at').eq('company_id',c.id).limit(8);
+    assertCurrent();
     if(m.error)throw Error('Company service registry inaccessible');
     const services=verifyRows(c,m.data);
     const a=await sb.from('ywi_company_service_module_audit').select('id,company_id,module_key,action,previous_enabled,next_enabled,recorded_at').eq('company_id',c.id).order('id',{ascending:false}).limit(26);
+    assertCurrent();
     if(a.error||!Array.isArray(a.data))throw Error('Company audit register unavailable');
     if(a.data.some(row=>row.company_id!==c.id||!keys.includes(row.module_key)))throw Error('Audit tenant mismatch');
     models.push({company:c,services,audit:a.data});
    }
+   assertCurrent();
    context={sb,uid};notice(q.data.length+' owner-owned companies loaded. Server-side RLS enforces company boundaries; changing switches is audited. Historical work is unaffected.');
    if(!models.length)root.appendChild(el('p','No companies registered for this account. You may create your first company above.'));
    for(const m of models){
     const wrap=el('section');wrap.style.cssText='min-width:0;max-width:100%;border:1px solid #64748b;border-radius:10px;padding:12px;box-sizing:border-box';
+    wrap.dataset.owner420Company=m.company.id;
     wrap.appendChild(el('h3',m.company.name));
     wrap.appendChild(el('p','All switches apply only to new company service offerings; existing customer and Finance records retain their own authority.'));
     const grid=el('div');grid.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px';
@@ -89,16 +100,19 @@ function panel(){
       try{
        const current=await ownerSession();
        if(current.uid!==context?.uid)throw Error('Owner session changed');
+       const writeEpoch=epoch;
        const res=await current.sb.from('ywi_company_service_modules').update({enabled:desired})
         .eq('company_id',m.company.id).eq('module_key',service.module_key)
         .eq('enabled',service.enabled).select('company_id,module_key,enabled,created_at,updated_at');
+       if(writeEpoch!==epoch)throw Error('Owner session changed during write');
        if(res.error||res.data?.length!==1||res.data[0].enabled!==desired)throw Error('Change not confirmed; re-read required');
        // A successful server-confirmed toggle invalidates all visible entitlement snapshots.
        document.dispatchEvent(new CustomEvent('ywi:company-service-offering-changed',
         {detail:{company_id:m.company.id,module_key:service.module_key}}));
        busy=false;notice('Saved under owner identity; reloading authoritative registry and audit…');
        await load();
-      }catch(err){busy=false;notice('WITHHELD: '+(err?.message||err)+'. Refresh to reconcile.');toggle.disabled=true;refresh.disabled=false;create.disabled=false;}
+      }catch(err){if(context?.uid!==window.YWI_AUTH?.getState?.()?.user?.id)return;
+       busy=false;notice('WITHHELD: '+(err?.message||err)+'. Refresh to reconcile.');toggle.disabled=true;refresh.disabled=false;create.disabled=false;}
      });
      card.appendChild(toggle);grid.appendChild(card);
     }
@@ -110,8 +124,12 @@ function panel(){
     if(!m.audit.length)log.appendChild(el('li','No audit records found; verify registry migration before toggling.'));
     wrap.appendChild(log);root.appendChild(wrap);
    }
-  }catch(err){root.replaceChildren();notice('WITHHELD: '+(err?.message||err)+'. No service change permitted.');}
-  finally{busy=false;refresh.disabled=false;create.disabled=false;}
+   // The read was authenticated and every rendered company was owner-scoped.
+   // This signal permits local navigation only, never authorizes writes.
+   document.dispatchEvent(new CustomEvent('ywi:company-registry-loaded-491',
+    {detail:{ownerUserId:uid,companyIds:models.map(m=>m.company.id)}}));
+  }catch(err){if(run===epoch){root.replaceChildren();notice('WITHHELD: '+(err?.message||err)+'. No service change permitted.');}}
+  finally{if(run===epoch){busy=false;refresh.disabled=false;create.disabled=false;}}
  }
  refresh.addEventListener('click',load);
  create.addEventListener('click',async()=>{
@@ -121,15 +139,18 @@ function panel(){
   if(!window.confirm('Create company "'+name+'" with all seven service offerings DISABLED?'))return;
   busy=true;create.disabled=true;refresh.disabled=true;
   try{
-   const {sb}=await ownerSession();
+   const {sb,uid}=await ownerSession();const writeEpoch=epoch;
    const r=await sb.from('ywi_companies').insert({name}).select('id,name');
+   if(writeEpoch!==epoch||window.YWI_AUTH?.getState?.()?.user?.id!==uid)throw Error('Owner session changed during company creation');
    if(r.error||r.data?.length!==1)throw Error('Company creation unconfirmed');
    document.dispatchEvent(new CustomEvent('ywi:company-service-offering-changed',
     {detail:{company_id:r.data[0].id}}));
    busy=false;newName.value='';await load();
-  }catch(err){busy=false;notice('WITHHELD: '+(err?.message||err)+'. Refresh and confirm server records.');create.disabled=false;refresh.disabled=false;}
+  }catch(err){if(window.YWI_AUTH?.getState?.()?.isAuthenticated!==true)return;
+   busy=false;notice('WITHHELD: '+(err?.message||err)+'. Refresh and confirm server records.');create.disabled=false;refresh.disabled=false;}
  });
- document.addEventListener('ywi:auth-changed',()=>{context=null;root.replaceChildren();notice('Session changed. Refresh under the current verified owner identity.');});
+ document.addEventListener('ywi:auth-changed',()=>{epoch++;busy=false;context=null;
+  refresh.disabled=false;create.disabled=false;root.replaceChildren();notice('Session changed. Refresh under the current verified owner identity.');});
 }
 window.YWI420=Object.freeze({keys,verifyRows,ownerSession});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',panel,{once:true});else panel();
