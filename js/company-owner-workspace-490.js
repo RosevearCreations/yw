@@ -5,6 +5,17 @@ const $=id=>document.getElementById(id);
 const node=(tag,value)=>{const e=document.createElement(tag);if(value!==undefined)e.textContent=String(value);return e;};
 const serviceKeys=new Set(['landscape','construction','water_parks','snow_removal',
  'snow_plowing','septic','arboriculture']);
+const actions=new Set(['initialized','enabled','disabled']);
+const validAudit=(a,companyId)=>a&&a.company_id===companyId&&
+ serviceKeys.has(a.module_key)&&actions.has(a.action)&&
+ Number.isFinite(Date.parse(a.recorded_at))&&(
+  (a.action==='initialized'&&a.previous_enabled===null&&a.next_enabled===false)||
+  (a.action==='enabled'&&a.previous_enabled===false&&a.next_enabled===true)||
+  (a.action==='disabled'&&a.previous_enabled===true&&a.next_enabled===false));
+const describeAudit=a=>new Date(a.recorded_at).toLocaleString()+' · '+
+ a.module_key.replaceAll('_',' ')+' · '+a.action+' · '+
+ (a.previous_enabled===null?'INITIAL':a.previous_enabled?'ON':'OFF')+
+ ' → '+(a.next_enabled?'ON':'OFF');
 function install(){
  const host=$('settings');if(!host||$('owner490'))return;
  const section=node('section');section.id='owner490';section.className='admin-panel-block';
@@ -53,10 +64,7 @@ function install(){
      .select('id,company_id,module_key,action,previous_enabled,next_enabled,recorded_at')
      .eq('company_id',c.id).order('id',{ascending:false}).limit(26);
     assertCurrent();
-    if(audit.error||!Array.isArray(audit.data)||audit.data.some(a=>
-       a.company_id!==c.id||!serviceKeys.has(a.module_key)||
-       typeof a.previous_enabled!=='boolean'||typeof a.next_enabled!=='boolean'||
-       !a.recorded_at||!Number.isFinite(Date.parse(a.recorded_at))))
+    if(audit.error||!Array.isArray(audit.data)||audit.data.some(a=>!validAudit(a,c.id)))
       throw Error('Company switch history unavailable or foreign');
     views.push({company:c,enabled:m.data.filter(x=>x.enabled).length,audit:audit.data});
    }
@@ -70,15 +78,56 @@ function install(){
       node('p','Enabled services: '+view.enabled+' of 7'));
     const timeline=node('details');timeline.dataset.owner492Timeline=c.id;
     timeline.appendChild(node('summary','Service-switch audit timeline (read-only)'));
+    const filters=node('div');filters.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin:10px 0';
+    const service=node('select');service.setAttribute('aria-label','Filter service audit by service');
+    service.appendChild(new Option('All services',''));
+    for(const key of serviceKeys)service.appendChild(new Option(key.replaceAll('_',' '),key));
+    const action=node('select');action.setAttribute('aria-label','Filter service audit by action');
+    action.appendChild(new Option('All actions',''));
+    for(const key of actions)action.appendChild(new Option(key,key));
+    const since=node('input');since.type='date';since.setAttribute('aria-label','Audit events on or after UTC date');
+    const filter=node('button','Filter audit');filter.type='button';
+    const filterStatus=node('p','Latest 25 events shown. Filters query the server audit directly.');
+    filterStatus.setAttribute('role','status');
+    filters.append(service,action,since,filter);
     const events=node('ol');
-    for(const entry of view.audit.slice(0,25)){
-      events.appendChild(node('li',new Date(entry.recorded_at).toLocaleString()+' · '+
-       entry.module_key.replaceAll('_',' ')+' · '+entry.action+' · '+
-       (entry.previous_enabled?'ON':'OFF')+' → '+(entry.next_enabled?'ON':'OFF')));
-    }
+    for(const entry of view.audit.slice(0,25))events.appendChild(node('li',describeAudit(entry)));
     if(!view.audit.length)events.appendChild(node('li','No recorded switch events.'));
     if(view.audit.length===26)events.appendChild(node('li','Older events remain in the server audit; this timeline is limited.'));
-    timeline.appendChild(events);item.appendChild(timeline);
+    timeline.append(filters,filterStatus,events);item.appendChild(timeline);
+    let filterEpoch=0;
+    filter.addEventListener('click',async()=>{
+      const filterRequest=++filterEpoch;
+      filter.disabled=true;filterStatus.textContent='Querying owned-company audit…';
+      try{
+        assertCurrent();
+        if(!verifiedIds.has(c.id))throw Error('Company ownership was not verified');
+        const key=service.value,kind=action.value,date=since.value;
+        if((key&&!serviceKeys.has(key))||(kind&&!actions.has(kind))||
+           (date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)))throw Error('Invalid filter');
+        let query=sb.from('ywi_company_service_module_audit')
+         .select('id,company_id,module_key,action,previous_enabled,next_enabled,recorded_at')
+         .eq('company_id',c.id);
+        if(key)query=query.eq('module_key',key);
+        if(kind)query=query.eq('action',kind);
+        if(date)query=query.gte('recorded_at',date+'T00:00:00.000Z');
+        const found=await query.order('id',{ascending:false}).limit(101);
+        assertCurrent();
+        if(filterRequest!==filterEpoch||!verifiedIds.has(c.id))return;
+        if(found.error||!Array.isArray(found.data)||found.data.some(a=>
+          !validAudit(a,c.id)||(key&&a.module_key!==key)||(kind&&a.action!==kind)||
+          (date&&a.recorded_at<date+'T00:00:00.000Z')))
+          throw Error('Filtered audit unavailable or foreign');
+        const fragment=document.createDocumentFragment();
+        for(const entry of found.data.slice(0,100))fragment.appendChild(node('li',describeAudit(entry)));
+        if(!found.data.length)fragment.appendChild(node('li','No audit events match these filters.'));
+        events.replaceChildren(fragment);
+        filterStatus.textContent=found.data.length>100?'Showing 100 events; narrow filters for older history.':
+         'Showing '+found.data.length+' matching audited event(s), newest first.';
+      }catch(e){if(epoch===generation&&filterRequest===filterEpoch){
+        events.replaceChildren();filterStatus.textContent='WITHHELD: '+(e?.message||'Audit filter failed');
+      }}finally{if(epoch===generation&&filterRequest===filterEpoch)filter.disabled=false;}
+    });
     const open=node('button','Manage this company’s services');open.type='button';
     open.addEventListener('click',()=>{
       if(!currentIdentity(uid)||!verifiedIds.has(c.id)){
