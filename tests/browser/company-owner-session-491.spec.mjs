@@ -53,7 +53,7 @@ test('second owned company opens its own verified service controls',async({page}
     detail:{ownerUserId:'owner',companyIds:['first','second']}}));
   });
  });
- await page.locator('[data-owner490-company="second"] button').click();
+ await page.locator('[data-owner490-company="second"]').getByRole('button',{name:'Manage this company’s services'}).click();
  await expect(page.locator('#owner420')).toHaveAttribute('open','');
  await expect(page.locator('#owner490Status')).toContainText('Verified service controls opened');
 });
