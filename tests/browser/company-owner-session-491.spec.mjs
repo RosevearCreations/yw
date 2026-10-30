@@ -106,6 +106,7 @@ test('company module registry does not restore stale tenant after sign-out',asyn
    }};}};
  });
  await page.addScriptTag({content:registry});
+ await page.locator('#owner420 summary').click();
  await page.locator('#owner420Refresh').click();
  await page.waitForFunction(()=>typeof window.__resolveCompanies==='function');
  await page.evaluate(()=>{
