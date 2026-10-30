@@ -22,7 +22,7 @@ async function ownerFixture(page,{deferAuth=false}={}){
     select(){return this},order(){return this},eq(_key,value){state.company=value;return this},
     async limit(){return {error:null,data:table==='ywi_companies'?companies:
      keys.map(module_key=>({company_id:state.company,module_key,enabled:window.__modulesEnabled&&module_key==='landscape'}))};}
-   };}}
+   };}
   };
  },{keys,deferAuth});
  await page.addScriptTag({content:owner});
