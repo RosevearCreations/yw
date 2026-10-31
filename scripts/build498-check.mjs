@@ -30,7 +30,8 @@ for(const marker of ['owner498Return','owner498Accept','owner498Acceptance',
  'document.activeElement===section','document.activeElement===input',
  'session-only acknowledgment'])
  assert.ok(management.includes(marker),'Management owner navigation check: '+marker);
-for(const marker of ['yw498-verify-state','yw498-nav-review','data-platform498-note'])
+for(const marker of ['yw498-verify-state','yw498-nav-review',
+ 'data-platform498-note]:not([hidden])','data-platform498-note][hidden]{display:none!important'])
  assert.ok(styles.includes(marker),'Build 498 responsive/focus styling: '+marker);
 for(const path of ['build494-command.css','js/company-owner-workspace-490.js',
  'js/platform-account-audit-490.js'])
