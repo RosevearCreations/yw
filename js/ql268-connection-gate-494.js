@@ -1,5 +1,8 @@
-/* Build 495 / QL-269: review status paused by owner direction. The existing
-   machine-readable connection contract and its deny-by-default gate are intact. */
+/* Build 495 / QL-269: review status paused by owner direction. Under Review
+   is an operator label only; the machine contract continues to return HOLD,
+   deny all capabilities and require original source proof, independent custody,
+   tenant isolation, separate reviewer disposition and explicit owner TEST-only
+   authorization before any authenticated trial. This UI runs no automatic GET. */
 (()=>{'use strict';
 const el=(tag,value)=>{const n=document.createElement(tag);if(value!==undefined)n.textContent=String(value);return n;};
 function install(){

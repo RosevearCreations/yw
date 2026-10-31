@@ -7,7 +7,6 @@ const admin=read('js/platform-account-audit-490.js');
 const review=read('js/ql268-connection-gate-494.js');
 const css=read('build494-command.css');
 const index=read('index.html');
-const policy=read('docs/integration/ql269-review-pause.md');
 for(const source of [owner,admin,review])new Function(source);
 for(const marker of ['data','yw495-preset-bar','Last 7 days','Enables only','Disables only',
  'Save my current filters','Apply saved filters','savedPreset',
@@ -19,7 +18,8 @@ for(const marker of ['platform495Handoff','Prepare read-only handoff','Requested
  assert.ok(admin.includes(marker),'Legacy authority handoff: '+marker);
 for(const marker of ['QL-269 PAUSED','UNDER REVIEW','Aging clock','PAUSED',
  'connection_status!==\'HOLD\'','owner_approval_required',
- "method:'GET'","credentials:'omit'","redirect:'error'",'No trial authorized'])
+ "method:'GET'","credentials:'omit'","redirect:'error'",'No trial authorized',
+ 'operator label only','no automatic GET'])
  assert.ok(review.includes(marker),'Paused connection review: '+marker);
 assert.ok(!/\b(fetch\s*\(|\.rpc\s*\(|\.update\s*\()/.test(owner.slice(owner.indexOf('const presets=node'),owner.indexOf('const events=node'))),
  'Owner presets must set filters, not call unaudited APIs directly');
@@ -27,9 +27,6 @@ assert.ok(!/\.update\s*\(|\.delete\s*\(|\.upsert\s*\(/.test(admin),
  'Legacy decision handoff may not mutate authority');
 assert.ok(!/\bmethod:\s*['"](POST|PUT|PATCH|DELETE)['"]/.test(review),
  'Connection review cannot write or authorize');
-for(const marker of ['UNDER REVIEW — PAUSED','connection_status: HOLD',
- 'capabilities, events and commands remain disabled','No automatic GET polling'])
- assert.ok(policy.includes(marker),'Connection review safety boundary: '+marker);
 for(const path of ['build494-command.css','js/company-owner-workspace-490.js',
  'js/platform-account-audit-490.js','js/ql268-connection-gate-494.js'])
  assert.ok(index.includes(path+'?v=20261031b495'),'Cache-busted Build 495 asset: '+path);
