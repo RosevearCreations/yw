@@ -17,8 +17,9 @@ function install(){
  panel.appendChild(el('summary','490 · Platform & Company Owner Account Audit'));
  const body=el('div');body.className='admin-panel-block';
  const hero=el('div');hero.className='yw494-hero';
- hero.append(el('span','PLATFORM SECURITY  /  BUILD 498'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
-  el('p','Review current authority, reconcile restricted ticket references, and prepare local exception follow-up when evidence is missing or inconsistent. A reference is never approval or a role change.'));
+ // BUILD 498 copy-only exception follow-up remains restricted in BUILD 499 aging review.
+ hero.append(el('span','PLATFORM SECURITY  /  BUILD 499'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
+  el('p','Review current authority, reconcile restricted ticket references, and inspect device-observed exception aging. No ticket, timer or follow-up note is approval or a role change.'));
  const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
  metrics.append(stat('Audited accounts','—'),stat('Legacy exceptions','—','amber'),stat('Unverified references','—','blue'));
  const filterLabel=el('label','Review account group');filterLabel.setAttribute('for','platform494ReviewFilter');
@@ -217,13 +218,33 @@ function install(){
       const followUpStatus=el('p','No reviewer exception follow-up prepared.');
       followUpStatus.className='yw498-verify-state';followUpStatus.dataset.platform498Status='true';
       followUpStatus.setAttribute('aria-live','polite');
+      const refreshAge=el('button','Refresh reviewer exception age');refreshAge.type='button';
+      refreshAge.dataset.platform499RefreshAge='true';refreshAge.disabled=true;
+      const ageStatus=el('p','No unresolved exception observed in this session.');
+      ageStatus.className='yw499-age-state';ageStatus.dataset.platform499Age='true';
+      ageStatus.setAttribute('aria-live','polite');
       let lastException=null;
+      let firstSeen=new Map();
+      const ageLabel=()=>{if(!lastException)return'No unresolved exception observed in this session.';
+        const elapsed=Math.max(0,Date.now()-lastException.observedAt);
+        const hours=Math.floor(elapsed/3600000);
+        const band=hours>=24?'RECHECK PRIORITY':hours>=1?'AGING':'JUST OBSERVED';
+        return band+' · '+hours+' elapsed device hour(s) since this ticket/code was first observed. '+
+          'Device-clock estimate only, not external reviewer evidence or an owner decision.';};
       const clearFollowUp=()=>{lastException=null;followUp.disabled=true;
-        followUpNote.value='';followUpNote.hidden=true;};
-      const markException=(reference,code)=>{clearFollowUp();
-        lastException={reference,code};followUp.disabled=false;
+        refreshAge.disabled=true;followUpNote.value='';followUpNote.hidden=true;};
+      const markException=(reference,code)=>{
+        const id=reference+'|'+code;
+        let observedAt=firstSeen.get(id);
+        if(!Number.isFinite(observedAt)){
+          if(firstSeen.size>=12)firstSeen.clear();
+          observedAt=Date.now();firstSeen.set(id,observedAt);
+        }
+        clearFollowUp();lastException={reference,code,observedAt};
+        followUp.disabled=false;refreshAge.disabled=false;ageStatus.textContent=ageLabel();
         followUpStatus.textContent='UNRESOLVED '+code+' · local follow-up available. No owner decision or role change.';};
       decisionRef.addEventListener('input',()=>{clearFollowUp();
+        ageStatus.textContent='Ticket changed; reconcile again to inspect this device-observed exception age.';
         followUpStatus.textContent='Ticket changed; recheck the restricted ledger before preparing a follow-up.';});
       const reconcile=async(reference,afterSave=false,expectedEntryId=null)=>{
         assertCurrent();
@@ -249,9 +270,18 @@ function install(){
         intakeStatus.textContent='MATCHED 1 UNVERIFIED_REFERENCE · '+reference+' · recorded '+
           new Date(matches[0].recorded_at).toLocaleString()+
           '. Original proof NOT VERIFIED; independent reviewer recommendation not accepted. Owner decision NOT RECEIVED; no role change.';
+        firstSeen=new Map([...firstSeen].filter(([id])=>!id.startsWith(reference+'|')));
         clearFollowUp();followUpStatus.textContent='Reference present but UNVERIFIED. No exception follow-up or owner decision is inferred.';
+        ageStatus.textContent='Reference found but UNVERIFIED; prior local exception age cleared. No owner decision.';
         return true;
       };
+      refreshAge.addEventListener('click',()=>{
+        try{assertCurrent();
+          if(!lastException||decisionRef.value.trim()!==lastException.reference)
+            throw Error('Reconcile the current ticket first');
+          ageStatus.textContent=ageLabel();
+        }catch(e){clearFollowUp();ageStatus.textContent='WITHHELD: '+(e?.message||'Session changed');}
+      });
       followUp.addEventListener('click',()=>{
         try{
           assertCurrent();
@@ -260,6 +290,8 @@ function install(){
           followUpNote.value='QL-269 — UNDER REVIEW · INDEPENDENT REVIEWER EXCEPTION FOLLOW-UP\n'+
            'Legacy account: '+x.profile_id+'\nTicket reference: '+lastException.reference+'\n'+
            'Read-only reconciliation exception: '+lastException.code+'\n'+
+           'First device-observed (not external proof): '+new Date(lastException.observedAt).toISOString()+'\n'+
+           ageLabel()+'\n'+
            'Next: obtain independent original source proof and an authorized owner decision. '+
            'No signer trust, approval, role change, private evidence or external delivery recorded.';
           followUpNote.hidden=false;
@@ -302,7 +334,8 @@ function install(){
         finally{if(epoch===generation)intakeButton.disabled=false;}
       });
       intake.append(intakeHelp,recommendationLabel,refLabel,acknowledgement,
-       intakeButton,reconcileButton,intakeStatus,followUp,followUpNote,followUpStatus);
+       intakeButton,reconcileButton,intakeStatus,followUp,followUpNote,followUpStatus,
+       refreshAge,ageStatus);
       item.appendChild(intake);
     }
     view.appendChild(item);
