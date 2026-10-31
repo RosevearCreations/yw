@@ -17,8 +17,8 @@ function install(){
  panel.appendChild(el('summary','490 · Platform & Company Owner Account Audit'));
  const body=el('div');body.className='admin-panel-block';
  const hero=el('div');hero.className='yw494-hero';
- hero.append(el('span','PLATFORM SECURITY  /  BUILD 497'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
-  el('p','Review current authority, reconcile restricted reviewer ticket references and prepare an independent decision handoff. Matching a reference is not signer proof, approval or a role change.'));
+ hero.append(el('span','PLATFORM SECURITY  /  BUILD 498'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
+  el('p','Review current authority, reconcile restricted ticket references, and prepare local exception follow-up when evidence is missing or inconsistent. A reference is never approval or a role change.'));
  const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
  metrics.append(stat('Audited accounts','—'),stat('Legacy exceptions','—','amber'),stat('Unverified references','—','blue'));
  const filterLabel=el('label','Review account group');filterLabel.setAttribute('for','platform494ReviewFilter');
@@ -209,6 +209,22 @@ function install(){
       const intakeStatus=el('p','Awaiting an external reviewer ticket. No source evidence or role decision is inferred.');
       intakeStatus.setAttribute('role','status');
       const validReference=value=>/^[A-Za-z0-9][A-Za-z0-9._/-]{5,119}$/.test(value);
+      const followUp=el('button','Prepare reviewer exception follow-up');followUp.type='button';
+      followUp.dataset.platform498Followup='true';followUp.disabled=true;
+      const followUpNote=el('textarea');followUpNote.readOnly=true;followUpNote.rows=5;
+      followUpNote.hidden=true;followUpNote.dataset.platform498Note='true';
+      followUpNote.setAttribute('aria-label','Local unverified reviewer exception follow-up note');
+      const followUpStatus=el('p','No reviewer exception follow-up prepared.');
+      followUpStatus.className='yw498-verify-state';followUpStatus.dataset.platform498Status='true';
+      followUpStatus.setAttribute('aria-live','polite');
+      let lastException=null;
+      const clearFollowUp=()=>{lastException=null;followUp.disabled=true;
+        followUpNote.value='';followUpNote.hidden=true;};
+      const markException=(reference,code)=>{clearFollowUp();
+        lastException={reference,code};followUp.disabled=false;
+        followUpStatus.textContent='UNRESOLVED '+code+' · local follow-up available. No owner decision or role change.';};
+      decisionRef.addEventListener('input',()=>{clearFollowUp();
+        followUpStatus.textContent='Ticket changed; recheck the restricted ledger before preparing a follow-up.';});
       const reconcile=async(reference,afterSave=false,expectedEntryId=null)=>{
         assertCurrent();
         const check=await sb.rpc('ywi_platform_legacy_evidence_list_493');
@@ -225,6 +241,7 @@ function install(){
         if(!matches.length){
           intakeStatus.textContent=(afterSave?'RECONCILIATION GAP: Submitted':'NOT FOUND:')+
            ' ticket '+reference+' does not appear in the freshly read restricted ledger. No decision accepted; refresh and investigate.';
+          markException(reference,afterSave?'RECONCILIATION_GAP':'REFERENCE_NOT_FOUND');
           return false;
         }
         if(expectedEntryId!==null&&Number(matches[0].entry_id)!==expectedEntryId)
@@ -232,16 +249,32 @@ function install(){
         intakeStatus.textContent='MATCHED 1 UNVERIFIED_REFERENCE · '+reference+' · recorded '+
           new Date(matches[0].recorded_at).toLocaleString()+
           '. Original proof NOT VERIFIED; independent reviewer recommendation not accepted. Owner decision NOT RECEIVED; no role change.';
+        clearFollowUp();followUpStatus.textContent='Reference present but UNVERIFIED. No exception follow-up or owner decision is inferred.';
         return true;
       };
+      followUp.addEventListener('click',()=>{
+        try{
+          assertCurrent();
+          if(!lastException||decisionRef.value.trim()!==lastException.reference||
+             !validReference(lastException.reference))throw Error('Reconcile the current ticket first');
+          followUpNote.value='QL-269 — UNDER REVIEW · INDEPENDENT REVIEWER EXCEPTION FOLLOW-UP\n'+
+           'Legacy account: '+x.profile_id+'\nTicket reference: '+lastException.reference+'\n'+
+           'Read-only reconciliation exception: '+lastException.code+'\n'+
+           'Next: obtain independent original source proof and an authorized owner decision. '+
+           'No signer trust, approval, role change, private evidence or external delivery recorded.';
+          followUpNote.hidden=false;
+          followUpStatus.textContent='LOCAL FOLLOW-UP READY · copy manually for authorized review. Not sent, saved or approved.';
+        }catch(e){clearFollowUp();followUpStatus.textContent='WITHHELD: '+(e?.message||'Owner review required');}
+      });
       reconcileButton.addEventListener('click',async()=>{
         const reference=decisionRef.value.trim();
         if(!validReference(reference)){
           intakeStatus.textContent='WITHHELD: Enter a 6–120 character reviewer ticket ID, never a URL or private evidence.';return;
         }
-        reconcileButton.disabled=true;intakeStatus.textContent='Rechecking restricted references without writes…';
-        try{await reconcile(reference);}catch(e){if(epoch===generation)
-          intakeStatus.textContent='WITHHELD: '+(e?.message||'Restricted reconciliation unavailable');}
+        clearFollowUp();reconcileButton.disabled=true;intakeStatus.textContent='Rechecking restricted references without writes…';
+        try{await reconcile(reference);}catch(e){if(epoch===generation){
+          intakeStatus.textContent='WITHHELD: '+(e?.message||'Restricted reconciliation unavailable');
+          markException(reference,'RESTRICTED_LEDGER_WITHHELD');}}
         finally{if(epoch===generation)reconcileButton.disabled=false;}
       });
       intakeButton.addEventListener('click',async()=>{
@@ -264,11 +297,12 @@ function install(){
           if(epoch===generation)intakeStatus.textContent+=' Reported '+reported+
            ' remains an unaccepted local note. Refresh the full account audit to update its counts.';
         }catch(e){if(epoch===generation){intakeButton.disabled=false;
-          intakeStatus.textContent='WITHHELD: '+(e?.message||'Independent response intake denied');}}
+          intakeStatus.textContent='WITHHELD: '+(e?.message||'Independent response intake denied');
+          markException(reference,'RECORD_RECHECK_WITHHELD');}}
         finally{if(epoch===generation)intakeButton.disabled=false;}
       });
       intake.append(intakeHelp,recommendationLabel,refLabel,acknowledgement,
-       intakeButton,reconcileButton,intakeStatus);
+       intakeButton,reconcileButton,intakeStatus,followUp,followUpNote,followUpStatus);
       item.appendChild(intake);
     }
     view.appendChild(item);
