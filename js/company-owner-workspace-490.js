@@ -41,8 +41,9 @@ function install(){
  const host=$('settings');if(!host||$('owner490'))return;
  const section=node('section');section.id='owner490';section.className='admin-panel-block yw494-command';
  const hero=node('div');hero.className='yw494-hero';
- hero.append(node('span','OWNER OPERATIONS  /  BUILD 498'),node('h3','My Company Workspace'),
-  node('p','Service-switch decisions, exact audit summaries, verified recovered review views and company controls. Ownership does not grant platform administrator privileges.'));
+ // BUILD 498 verified recovered audit view remains mandatory for BUILD 499 receipt review.
+ hero.append(node('span','OWNER OPERATIONS  /  BUILD 499'),node('h3','My Company Workspace'),
+  node('p','Service-switch decisions, exact audit summaries, session-only recovered view receipts and company controls. Ownership does not grant platform administrator privileges.'));
  const metrics=node('div');metrics.id='owner494Metrics';metrics.className='yw494-kpis';
  metrics.append(metric('Owned companies','—'),metric('Enabled services','—','blue'),metric('Recent events','—','green'));
  const load=node('button','Load my companies');load.type='button';load.id='owner490Load';
@@ -173,6 +174,17 @@ function install(){
     const viewStatus=node('p','Recovered view verification is available after a valid saved-filter recovery.');
     viewStatus.className='yw498-verify-state';viewStatus.dataset.owner498Verification=c.id;
     viewStatus.setAttribute('role','status');viewStatus.setAttribute('aria-live','polite');
+    const receiptButton=node('button','Review recovered audit receipt');receiptButton.type='button';
+    receiptButton.dataset.owner499ReceiptReview=c.id;receiptButton.disabled=true;
+    const receiptStatus=node('p','No verified recovered audit receipt in this session.');
+    receiptStatus.className='yw498-verify-state';receiptStatus.dataset.owner499ReceiptStatus=c.id;
+    receiptStatus.setAttribute('aria-live','polite');
+    const receiptDetails=node('p');receiptDetails.dataset.owner499ReceiptDetails=c.id;
+    receiptDetails.className='yw499-receipt-detail';receiptDetails.hidden=true;
+    let verifiedReceipt=null;
+    const clearReceipt=message=>{verifiedReceipt=null;receiptButton.disabled=true;
+      receiptDetails.hidden=true;receiptDetails.textContent='';
+      receiptStatus.textContent=message||'No verified recovered audit receipt in this session.';};
     const describeSelection=p=>'Service '+(p.service||'all')+' · action '+(p.action||'all')+
       ' · since '+(p.since||'any UTC date');
     const key=presetKey(uid,c.id),backupKey=recoveryKey(uid,c.id);
@@ -221,6 +233,7 @@ function install(){
       savedPreset=candidate;
       recoveredViewPending=null;verifyArmed=false;
       viewStatus.textContent='Saved new filters. No recovered view awaits verification.';
+      clearReceipt('New filters saved; any earlier recovered receipt is no longer current.');
       restorePreset.disabled=false;recoverPreset.disabled=true;
       clearPreset.disabled=false;
       try{
@@ -244,6 +257,7 @@ function install(){
       savedPreset={...recoveryPreset};restorePreset.disabled=false;
       recoverPreset.disabled=true;clearPreset.disabled=false;
       recoveredViewPending={...savedPreset};verifyArmed=false;
+      clearReceipt('Recovered filters are not verified until the owner-scoped server read succeeds.');
       viewStatus.textContent='RECOVERED VIEW READY · '+describeSelection(recoveredViewPending)+
         '. No audit query was made. Choose Apply saved filters to verify against the server.';
       try{localStorage.setItem(key,JSON.stringify(savedPreset));
@@ -257,21 +271,37 @@ function install(){
       savedPreset=null;recoveryPreset=null;damagedPreset=false;
       recoveredViewPending=null;verifyArmed=false;
       viewStatus.textContent='Recovered view verification cleared. No audit records stored.';
+      clearReceipt('Recovered audit receipt cleared from this session. No audit records stored.');
       restorePreset.disabled=true;recoverPreset.disabled=true;clearPreset.disabled=true;
       try{localStorage.removeItem(key);localStorage.removeItem(backupKey);
         presetStatus.textContent='Saved review filters cleared from this device for '+c.name+'.';
       }catch{presetStatus.textContent='Saved session filters cleared. Device storage could not be accessed.';}
     });
     presets.append(savePreset,restorePreset,recoverPreset,clearPreset);
+    receiptButton.addEventListener('click',()=>{
+      if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!verifiedReceipt||
+         verifiedReceipt.ownerId!==uid||verifiedReceipt.companyId!==c.id){
+        clearReceipt('WITHHELD: Verified owner, company and current session receipt required.');return;
+      }
+      const r=verifiedReceipt;
+      receiptDetails.textContent='VERIFIED RECEIPT REVIEW · '+c.name+' · '+
+        describeSelection(r.selection)+' · '+(r.truncated?'More than 100 matches (first 100 shown)':
+          r.count+' returned matching event(s)')+' · device review time '+r.checkedAt+
+        '. Read-only server response at verification time; no audit rows, IDs or credentials stored.';
+      receiptDetails.hidden=false;
+      receiptStatus.textContent='SESSION RECEIPT REVIEWED · advisory readback only; not a live count or owner sign-off.';
+    });
     const events=node('ol');
     for(const entry of view.audit.slice(0,25))events.appendChild(node('li',describeAudit(entry)));
     if(!view.audit.length)events.appendChild(node('li','No recorded switch events.'));
     if(view.audit.length===26)events.appendChild(node('li','Older events remain in the server audit; this timeline is limited.'));
     timeline.className='yw494-review-details';
-    timeline.append(presets,presetStatus,viewStatus,filters,filterStatus,events);item.appendChild(timeline);
+    timeline.append(presets,presetStatus,viewStatus,receiptButton,receiptStatus,receiptDetails,
+      filters,filterStatus,events);item.appendChild(timeline);
     let filterEpoch=0;
     filter.addEventListener('click',async()=>{
       const filterRequest=++filterEpoch;
+      if(verifiedReceipt)clearReceipt('Audit filters queried again; previous receipt withdrawn until a new recovered-view verification.');
       filter.disabled=true;filterStatus.textContent='Querying owned-company audit…';
       try{
         assertCurrent();
@@ -307,6 +337,11 @@ function install(){
              found.data.length+' matching server event(s)')+
             '. Read-only, owner-scoped response; no audit records stored.':
             'NOT VERIFIED: Current filters differ from recovered view. Choose Apply saved filters again.';
+          if(same){verifiedReceipt={ownerId:uid,companyId:c.id,
+            selection:{...recoveredViewPending},count:found.data.length,truncated:found.data.length>100,
+            checkedAt:new Date().toISOString()};
+            receiptButton.disabled=false;
+            receiptStatus.textContent='VERIFIED RECEIPT READY · review the session-only summary before changing filters.';}
           verifyArmed=false;
         }
       }catch(e){if(epoch===generation&&filterRequest===filterEpoch){
