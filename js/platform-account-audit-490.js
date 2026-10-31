@@ -215,7 +215,8 @@ function install(){
       followUpNote.hidden=true;followUpNote.dataset.platform498Note='true';
       followUpNote.setAttribute('aria-label','Local unverified reviewer exception follow-up note');
       const followUpStatus=el('p','No reviewer exception follow-up prepared.');
-      followUpStatus.className='yw498-verify-state';followUpStatus.setAttribute('role','status');
+      followUpStatus.className='yw498-verify-state';followUpStatus.dataset.platform498Status='true';
+      followUpStatus.setAttribute('aria-live','polite');
       let lastException=null;
       const clearFollowUp=()=>{lastException=null;followUp.disabled=true;
         followUpNote.value='';followUpNote.hidden=true;};

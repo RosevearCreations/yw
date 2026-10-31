@@ -14,7 +14,7 @@ for(const marker of ['BUILD 498','owner498Verification','recoveredViewPending',
  'found.data.some','validAudit(a,c.id)','validUtcDate(date)',
  'currentIdentity(uid)','verifiedIds.has(c.id)','No audit records stored'])
  assert.ok(owner.includes(marker),'Owner recovered-view verification: '+marker);
-for(const marker of ['BUILD 498','platform498Followup','platform498Note',
+for(const marker of ['BUILD 498','platform498Followup','platform498Note','platform498Status',
  'Prepare reviewer exception follow-up','markException','REFERENCE_NOT_FOUND',
  'RECONCILIATION_GAP','RESTRICTED_LEDGER_WITHHELD',
  'LOCAL FOLLOW-UP READY','assertCurrent()','Owner decision NOT RECEIVED; no role change',
@@ -22,6 +22,8 @@ for(const marker of ['BUILD 498','platform498Followup','platform498Note',
  assert.ok(reviewer.includes(marker),'Independent reviewer exception follow-up: '+marker);
 assert.ok(!/\.(?:update|delete|upsert)\s*\(/.test(reviewer),
  'Reviewer follow-up must not modify role authority');
+assert.ok(!reviewer.includes("followUpStatus.setAttribute('role','status')"),
+ 'Keep Build 496 reviewer intake status as the single role=status element');
 for(const marker of ['owner498Return','owner498Accept','owner498Acceptance',
  'Return to management search','Mark local navigation check complete',
  'FOCUS VERIFIED','RETURN VERIFIED','LOCAL NAVIGATION CHECK COMPLETE',

@@ -109,7 +109,7 @@ test('unresolved reviewer ticket creates a copy-only exception note; matched tic
  await expect(note).toHaveJSProperty('readOnly',true);
  await expect(note).toHaveValue(/REFERENCE_NOT_FOUND/);
  await expect(note).toHaveValue(/QL-269 — UNDER REVIEW/);
- await expect(intake.locator('[role="status"]').last()).toContainText('Not sent, saved or approved');
+ await expect(intake.locator('[data-platform498-status]')).toContainText('Not sent, saved or approved');
  await ticket.fill('QL-269-REVIEW-001');await expect(follow).toBeDisabled();
  await expect(note).toBeHidden();await reconcile.click();
  await expect(intake.locator('[role="status"]').first()).toContainText('MATCHED 1 UNVERIFIED_REFERENCE');
@@ -130,7 +130,7 @@ test('foreign restricted ledger and session changes fail closed for reviewer exc
  await expect(follow).toBeEnabled();
  await page.evaluate(()=>window.YWI_AUTH.getState=()=>({isAuthenticated:false,user:{id:'primary'}}));
  await follow.click();
- await expect(intake.locator('[role="status"]').last()).toContainText('WITHHELD');
+ await expect(intake.locator('[data-platform498-status]')).toContainText('WITHHELD');
  await expect(intake.locator('[data-platform498-note]')).toBeHidden();
  await expect(follow).toBeDisabled();
 });
