@@ -98,6 +98,12 @@
 .yw496-dashboard-nav [role="status"]{color:#bfd0e2;margin:0;font-size:.9rem;}
 .yw496-dashboard-results{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr));gap:8px;}
 .yw496-dashboard-results button{text-align:left;white-space:normal;}
+.yw496-dashboard-results button:focus-visible{outline:3px solid #6bd1ff;outline-offset:3px;}
+.yw496-dashboard-nav button:disabled{opacity:.5;cursor:not-allowed;}
+.yw496-dashboard-nav [role="status"]{line-height:1.45;}
+@media (prefers-reduced-motion:reduce){
+ .yw496-dashboard-nav,.yw496-dashboard-nav *{scroll-behavior:auto!important;transition:none!important;}
+}
 .yw494-command [data-platform496-intake] label{display:block;margin:12px 0 6px;
   color:#e4efff;font-weight:700;}
 .yw494-command [data-platform496-intake] label:has(input[type="checkbox"]){display:flex;

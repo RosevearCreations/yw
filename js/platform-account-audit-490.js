@@ -17,8 +17,8 @@ function install(){
  panel.appendChild(el('summary','490 · Platform & Company Owner Account Audit'));
  const body=el('div');body.className='admin-panel-block';
  const hero=el('div');hero.className='yw494-hero';
- hero.append(el('span','PLATFORM SECURITY  /  BUILD 496'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
-  el('p','Review current authority, capture restricted reviewer ticket references and prepare an independent decision handoff. An intake claim is not verification or a role change.'));
+ hero.append(el('span','PLATFORM SECURITY  /  BUILD 497'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
+  el('p','Review current authority, reconcile restricted reviewer ticket references and prepare an independent decision handoff. Matching a reference is not signer proof, approval or a role change.'));
  const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
  metrics.append(stat('Audited accounts','—'),stat('Legacy exceptions','—','amber'),stat('Unverified references','—','blue'));
  const filterLabel=el('label','Review account group');filterLabel.setAttribute('for','platform494ReviewFilter');
@@ -187,7 +187,7 @@ function install(){
       const intake=el('details');intake.className='yw494-review-details';
       intake.dataset.platform496Intake=x.profile_id;
       intake.appendChild(el('summary','Independent reviewer response intake (unverified)'));
-      const intakeHelp=el('p','Record only a separate reviewer’s external ticket ID. We cannot verify reviewer independence, original grant, signer custody or owner approval in this screen. No role change follows.');
+      const intakeHelp=el('p','Record or recheck only a separate reviewer’s external ticket ID. The restricted ledger can prove a reference exists, but cannot verify reviewer independence, original grant, signer custody or owner approval. No role change follows.');
       const recommendationLabel=el('label','Reported recommendation (not accepted as a decision)');
       const recommendation=el('select');recommendation.setAttribute('aria-label','Reported independent reviewer recommendation');
       const options=[['More original evidence required','MORE_EVIDENCE'],
@@ -204,12 +204,50 @@ function install(){
       const checkbox=el('input');checkbox.type='checkbox';checkbox.dataset.platform496Unverified='true';
       acknowledgement.append(checkbox,document.createTextNode(' I understand this is an unverified ticket reference, not approval.'));
       const intakeButton=el('button','Record unverified reviewer reference');intakeButton.type='button';
+      const reconcileButton=el('button','Reconcile ticket against restricted ledger');
+      reconcileButton.type='button';reconcileButton.dataset.platform497Reconcile='true';
       const intakeStatus=el('p','Awaiting an external reviewer ticket. No source evidence or role decision is inferred.');
       intakeStatus.setAttribute('role','status');
+      const validReference=value=>/^[A-Za-z0-9][A-Za-z0-9._/-]{5,119}$/.test(value);
+      const reconcile=async(reference,afterSave=false,expectedEntryId=null)=>{
+        assertCurrent();
+        const check=await sb.rpc('ywi_platform_legacy_evidence_list_493');
+        assertCurrent();
+        const rows=check.data;
+        if(check.error||!Array.isArray(rows)||rows.length>200||rows.some(e=>
+          !legacyIds.has(e.profile_id)||!Number.isSafeInteger(Number(e.entry_id))||
+          !validReference(e.evidence_reference)||e.evidence_state!=='UNVERIFIED_REFERENCE'||
+          !Number.isFinite(Date.parse(e.recorded_at)))||
+          new Set(rows.map(e=>String(e.entry_id))).size!==rows.length)
+          throw Error('Restricted ledger incomplete, foreign or inconsistent');
+        const matches=rows.filter(e=>e.profile_id===x.profile_id&&e.evidence_reference===reference);
+        if(matches.length>1)throw Error('Conflicting duplicate reviewer references require independent review');
+        if(!matches.length){
+          intakeStatus.textContent=(afterSave?'RECONCILIATION GAP: Submitted':'NOT FOUND:')+
+           ' ticket '+reference+' does not appear in the freshly read restricted ledger. No decision accepted; refresh and investigate.';
+          return false;
+        }
+        if(expectedEntryId!==null&&Number(matches[0].entry_id)!==expectedEntryId)
+          throw Error('Recorded reference ID conflicts with the restricted ledger');
+        intakeStatus.textContent='MATCHED 1 UNVERIFIED_REFERENCE · '+reference+' · recorded '+
+          new Date(matches[0].recorded_at).toLocaleString()+
+          '. Original proof NOT VERIFIED; independent reviewer recommendation not accepted. Owner decision NOT RECEIVED; no role change.';
+        return true;
+      };
+      reconcileButton.addEventListener('click',async()=>{
+        const reference=decisionRef.value.trim();
+        if(!validReference(reference)){
+          intakeStatus.textContent='WITHHELD: Enter a 6–120 character reviewer ticket ID, never a URL or private evidence.';return;
+        }
+        reconcileButton.disabled=true;intakeStatus.textContent='Rechecking restricted references without writes…';
+        try{await reconcile(reference);}catch(e){if(epoch===generation)
+          intakeStatus.textContent='WITHHELD: '+(e?.message||'Restricted reconciliation unavailable');}
+        finally{if(epoch===generation)reconcileButton.disabled=false;}
+      });
       intakeButton.addEventListener('click',async()=>{
         const reference=decisionRef.value.trim(),reported=recommendation.value;
         if(!options.some(([,value])=>value===reported)||
-           !/^[A-Za-z0-9][A-Za-z0-9._/-]{5,119}$/.test(reference)||!checkbox.checked){
+           !validReference(reference)||!checkbox.checked){
           intakeStatus.textContent='WITHHELD: Select a recommendation, enter a valid 6–120 character ticket ID and acknowledge its unverified status.';return;
         }
         intakeButton.disabled=true;intakeStatus.textContent='Recording a ticket reference only…';
@@ -220,15 +258,17 @@ function install(){
           assertCurrent();
           if(saved.error||!Number.isSafeInteger(Number(saved.data)))
             throw Error('Restricted unverified evidence record unavailable');
-          intakeStatus.textContent='Ticket '+reference+' recorded as UNVERIFIED_REFERENCE. Reported '+reported+
-           ' remains an unaccepted local intake note. Owner decision NOT RECEIVED; no role change.';
-          decisionRef.value='';checkbox.checked=false;
-          /* Re-read the append-only server ledger; never treat this draft as an approval. */
-          refresh.click();
+          checkbox.checked=false;
+          intakeStatus.textContent='Reference submitted. Checking the independent restricted ledger…';
+          await reconcile(reference,true,Number(saved.data));
+          if(epoch===generation)intakeStatus.textContent+=' Reported '+reported+
+           ' remains an unaccepted local note. Refresh the full account audit to update its counts.';
         }catch(e){if(epoch===generation){intakeButton.disabled=false;
           intakeStatus.textContent='WITHHELD: '+(e?.message||'Independent response intake denied');}}
+        finally{if(epoch===generation)intakeButton.disabled=false;}
       });
-      intake.append(intakeHelp,recommendationLabel,refLabel,acknowledgement,intakeButton,intakeStatus);
+      intake.append(intakeHelp,recommendationLabel,refLabel,acknowledgement,
+       intakeButton,reconcileButton,intakeStatus);
       item.appendChild(intake);
     }
     view.appendChild(item);
