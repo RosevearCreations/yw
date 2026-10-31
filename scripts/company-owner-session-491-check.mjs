@@ -31,7 +31,7 @@ assert.ok(workflow.includes('npm run test:company-owner-session-491'));
 assert.ok(workflow.includes('npm run test:browser:company-owner-session-491'));
 const index=read('index.html');
 for(const path of ['company-service-registry-420.js','company-owner-workspace-490.js','platform-account-audit-490.js']) {
- const version=path==='company-service-registry-420.js'?'20261030b491':'20261030b494';
+ const version=path==='company-service-registry-420.js'?'20261030b491':'20261031b495';
  assert.ok(index.includes(path+'?v='+version),`browser cache version ${path}`);
 }
 const spec=read('tests/browser/company-owner-session-491.spec.mjs');
