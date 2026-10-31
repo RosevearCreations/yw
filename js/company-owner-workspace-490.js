@@ -16,16 +16,24 @@ const describeAudit=a=>new Date(a.recorded_at).toLocaleString()+' · '+
  a.module_key.replaceAll('_',' ')+' · '+a.action+' · '+
  (a.previous_enabled===null?'INITIAL':a.previous_enabled?'ON':'OFF')+
  ' → '+(a.next_enabled?'ON':'OFF');
+const metric=(label,value,tone='purple')=>{
+ const card=node('div');card.className='yw494-kpi';card.dataset.tone=tone;
+ const caption=node('span',label);caption.className='yw494-kpi-label';
+ const number=node('strong',value);number.className='yw494-kpi-value';
+ card.append(caption,number);return card;
+};
 function install(){
  const host=$('settings');if(!host||$('owner490'))return;
- const section=node('section');section.id='owner490';section.className='admin-panel-block';
- section.style.cssText='border:1px solid #64748b;border-radius:12px;padding:14px;margin:14px 0;min-width:0;overflow-wrap:anywhere';
- section.appendChild(node('h3','My Company Workspace'));
- section.appendChild(node('p','Company ownership is separate from Yard Workers platform administration. Only our own company records are available here.'));
+ const section=node('section');section.id='owner490';section.className='admin-panel-block yw494-command';
+ const hero=node('div');hero.className='yw494-hero';
+ hero.append(node('span','OWNER OPERATIONS  /  BUILD 494'),node('h3','My Company Workspace'),
+  node('p','Service-switch decisions, exact audit summaries and company controls. Ownership does not grant platform administrator privileges.'));
+ const metrics=node('div');metrics.id='owner494Metrics';metrics.className='yw494-kpis';
+ metrics.append(metric('Owned companies','—'),metric('Enabled services','—','blue'),metric('Recent events','—','green'));
  const load=node('button','Load my companies');load.type='button';load.id='owner490Load';
  const status=node('p','Sign in to verify company ownership.');status.id='owner490Status';status.setAttribute('role','status');
  const list=node('div');list.id='owner490List';list.style.cssText='display:grid;gap:10px;min-width:0';
- section.append(load,status,list);
+ section.append(hero,metrics,load,status,list);
  const heading=host.querySelector('h2');if(heading)heading.after(section);else host.appendChild(section);
  let generation=0,verifiedIds=new Set(),pendingFocus=null;
  const currentIdentity=uid=>{
@@ -66,16 +74,65 @@ function install(){
     assertCurrent();
     if(audit.error||!Array.isArray(audit.data)||audit.data.some(a=>!validAudit(a,c.id)))
       throw Error('Company switch history unavailable or foreign');
-    views.push({company:c,enabled:m.data.filter(x=>x.enabled).length,audit:audit.data});
+    views.push({company:c,enabled:m.data.filter(x=>x.enabled).length,modules:m.data,audit:audit.data});
    }
    assertCurrent();
    verifiedIds=new Set(views.map(v=>v.company.id));
    status.textContent=views.length+' owned company workspace(s) verified by signed-in identity.';
+   metrics.replaceChildren(metric('Owned companies',views.length),
+    metric('Enabled services',views.reduce((sum,v)=>sum+v.enabled,0)+' / '+(views.length*7),'blue'),
+    metric('Recent audit events',views.reduce((sum,v)=>sum+Math.min(25,v.audit.length),0)+' shown','green'));
    for(const view of views){
     const c=view.company,item=node('article');item.dataset.owner490Company=c.id;
-    item.style.cssText='border:1px solid #64748b;border-radius:10px;padding:12px;min-width:0;overflow-wrap:anywhere';
+    item.className='yw494-review-card';
     item.append(node('h4',c.name),node('p','Company owner — application-wide administrator privileges are not required.'),
       node('p','Enabled services: '+view.enabled+' of 7'));
+    const exact=node('details');exact.className='yw494-review-details';exact.dataset.owner494Summary=c.id;
+    exact.appendChild(node('summary','Exact service-switch audit review (server counts)'));
+    const exactButton=node('button','Load exact audit summary');exactButton.type='button';
+    const exactStatus=node('p','Not loaded. Counts are read from the owner-scoped server audit, not the latest-event window.');
+    exactStatus.setAttribute('role','status');
+    const exactGrid=node('div');exactGrid.className='yw494-summary-grid';
+    exact.append(exactButton,exactStatus,exactGrid);item.appendChild(exact);
+    exactButton.addEventListener('click',async()=>{
+      exactButton.disabled=true;exactStatus.textContent='Verifying company ownership and exact server counts…';
+      exactGrid.replaceChildren();
+      try{
+        assertCurrent();
+        if(!verifiedIds.has(c.id)||!sb.rpc)throw Error('Verified owner summary unavailable');
+        const result=await sb.rpc('ywi_company_service_audit_summary_494',{p_company_id:c.id});
+        assertCurrent();
+        const rows=result.data,keys=new Set(),moduleState=new Map(view.modules.map(x=>[x.module_key,x.enabled]));
+        if(result.error||!Array.isArray(rows)||rows.length!==7)throw Error('Incomplete owner service summary');
+        for(const row of rows){
+          if(!serviceKeys.has(row.module_key)||keys.has(row.module_key)||
+             typeof row.enabled!=='boolean'||moduleState.get(row.module_key)!==row.enabled||
+             !['initialized_events','enabled_events','disabled_events'].every(k=>
+              row[k]!==null&&['number','string'].includes(typeof row[k])&&
+              Number.isSafeInteger(Number(row[k]))&&Number(row[k])>=0)||
+             (row.last_action!==null&&!actions.has(row.last_action))||
+             (row.last_event_at!==null&&!Number.isFinite(Date.parse(row.last_event_at))))
+            throw Error('Foreign or invalid exact audit summary');
+          keys.add(row.module_key);
+        }
+        const table=node('table');table.className='yw494-data-table';
+        const caption=node('caption','Exact audit totals by owned service (all recorded events)');
+        const head=node('thead'),headRow=node('tr');
+        for(const label of ['Service','State','Initialized','Enabled','Disabled','Last change'])headRow.appendChild(node('th',label));
+        head.appendChild(headRow);const tbody=node('tbody');
+        for(const row of rows){
+          const tr=node('tr');
+          for(const value of [row.module_key.replaceAll('_',' '),row.enabled?'ON':'OFF',
+            row.initialized_events,row.enabled_events,row.disabled_events,
+            row.last_event_at?new Date(row.last_event_at).toLocaleString():'Never'])tr.appendChild(node('td',value));
+          tbody.appendChild(tr);
+        }
+        table.append(caption,head,tbody);exactGrid.appendChild(table);
+        const total=rows.reduce((sum,r)=>sum+Number(r.initialized_events)+Number(r.enabled_events)+Number(r.disabled_events),0);
+        exactStatus.textContent='VERIFIED OWNER SCOPE · '+total+' total audit events across 7 services. Read-only; no service state changed.';
+      }catch(e){if(epoch===generation){exactGrid.replaceChildren();exactStatus.textContent='WITHHELD: '+(e?.message||'Summary unavailable');}}
+      finally{if(epoch===generation)exactButton.disabled=false;}
+    });
     const timeline=node('details');timeline.dataset.owner492Timeline=c.id;
     timeline.appendChild(node('summary','Service-switch audit timeline (read-only)'));
     const filters=node('div');filters.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin:10px 0';
@@ -94,6 +151,7 @@ function install(){
     for(const entry of view.audit.slice(0,25))events.appendChild(node('li',describeAudit(entry)));
     if(!view.audit.length)events.appendChild(node('li','No recorded switch events.'));
     if(view.audit.length===26)events.appendChild(node('li','Older events remain in the server audit; this timeline is limited.'));
+    timeline.className='yw494-review-details';
     timeline.append(filters,filterStatus,events);item.appendChild(timeline);
     let filterEpoch=0;
     filter.addEventListener('click',async()=>{
@@ -141,7 +199,7 @@ function install(){
     });
     item.appendChild(open);list.appendChild(item);
    }
-  }catch(err){if(epoch===generation){verifiedIds=new Set();list.replaceChildren();status.textContent='WITHHELD: '+(err?.message||'Unverified identity');}}
+  }catch(err){if(epoch===generation){verifiedIds=new Set();list.replaceChildren();metrics.replaceChildren();status.textContent='WITHHELD: '+(err?.message||'Unverified identity');}}
   finally{if(epoch===generation)load.disabled=false;}
  }
  load.addEventListener('click',refresh);
@@ -163,7 +221,7 @@ function install(){
  });
  document.addEventListener('ywi:auth-changed',()=>{
   generation++;verifiedIds=new Set();pendingFocus=null;load.disabled=false;
-  list.replaceChildren();status.textContent='Session changed. Load the company workspace again.';
+  list.replaceChildren();metrics.replaceChildren();status.textContent='Session changed. Load the company workspace again.';
  });
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();

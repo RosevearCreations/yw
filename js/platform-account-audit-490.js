@@ -3,18 +3,42 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const el=(tag,value)=>{const e=document.createElement(tag);if(value!==undefined)e.textContent=String(value);return e;};
+const stat=(label,value,tone='purple')=>{
+ const card=el('div');card.className='yw494-kpi';card.dataset.tone=tone;
+ const caption=el('span',label);caption.className='yw494-kpi-label';
+ const number=el('strong',value);number.className='yw494-kpi-value';
+ card.append(caption,number);return card;
+};
 function install(){
  const host=$('admin');if(!host||$('platform490'))return;
- const panel=el('details');panel.id='platform490';panel.className='admin-hub-detail';
+ const panel=el('details');panel.id='platform490';panel.className='admin-hub-detail yw494-command';
  panel.dataset.adminHubTitle='Platform Account Role Audit';
  panel.dataset.adminHubGroups='people readiness';
  panel.appendChild(el('summary','490 · Platform & Company Owner Account Audit'));
  const body=el('div');body.className='admin-panel-block';
- body.appendChild(el('p','Only the privately curated Primary Administrator can read this audit. Legacy global admins are flagged for owner review, never changed automatically.'));
+ const hero=el('div');hero.className='yw494-hero';
+ hero.append(el('span','PLATFORM SECURITY  /  BUILD 494'),el('h3','Legacy-Role Evidence Reconciliation'),
+  el('p','Compare current role authority with the restricted ticket ledger. References remain unverified; no approval or role transition is possible here.'));
+ const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
+ metrics.append(stat('Audited accounts','—'),stat('Legacy exceptions','—','amber'),stat('Unverified references','—','blue'));
+ const filterLabel=el('label','Review account group');filterLabel.setAttribute('for','platform494ReviewFilter');
+ const reviewFilter=el('select');reviewFilter.id='platform494ReviewFilter';
+ for(const [label,value] of [['All audited accounts','all'],['Legacy roles requiring review','legacy'],
+  ['Legacy roles without reference','missing'],['Legacy roles with references','recorded']])reviewFilter.appendChild(new Option(label,value));
+ const filterBar=el('div');filterBar.className='yw494-filter-bar';filterBar.append(filterLabel,reviewFilter);
  const refresh=el('button','Audit administrator and company owner accounts');refresh.type='button';refresh.id='platform490Refresh';
  const status=el('p','Sign in as the Primary Administrator to review accounts.');status.id='platform490Status';status.setAttribute('role','status');
  const records=el('div');records.id='platform490Records';records.style.cssText='display:grid;gap:10px;min-width:0';
- body.append(refresh,status,records);panel.appendChild(body);host.appendChild(panel);
+ body.append(hero,metrics,refresh,status,filterBar,records);panel.appendChild(body);host.appendChild(panel);
+ const applyFilter=()=>{
+  for(const item of records.querySelectorAll('[data-platform490-role]')){
+   const kind=item.dataset.platform490Role||'',count=Number(item.dataset.platform494ReferenceCount||0);
+   item.hidden=reviewFilter.value==='legacy'&&!kind.startsWith('LEGACY')||
+    reviewFilter.value==='missing'&&(!kind.startsWith('LEGACY')||count!==0)||
+    reviewFilter.value==='recorded'&&(!kind.startsWith('LEGACY')||count===0);
+  }
+ };
+ reviewFilter.addEventListener('change',applyFilter);
  let generation=0;
  refresh.addEventListener('click',async()=>{
   const epoch=++generation;
@@ -49,8 +73,10 @@ function install(){
       !/^[A-Za-z0-9][A-Za-z0-9._/-]{5,119}$/.test(e.evidence_reference)||
       e.evidence_state!=='UNVERIFIED_REFERENCE'||!Number.isFinite(Date.parse(e.recorded_at))))
      throw Error('Foreign or invalid legacy evidence returned');
+   if(new Set(ledger.data.map(e=>String(e.entry_id))).size!==ledger.data.length)
+    throw Error('Duplicate ledger identities require independent review');
    let legacy=0;const view=document.createDocumentFragment();
-   const review=el('p','Build 493 review ledger: ticket references are append-only, unverified observations. No entry proves authority, approves a role or changes access. Independent owner review remains required. Never enter keys, tokens or private proof.');
+   const review=el('p','RECONCILIATION SCOPE: Current role/account audit plus append-only ticket references. A ticket ID is not independent source proof, signer custody or an owner decision. Never enter keys, tokens or private proof.');
    view.appendChild(review);
    for(const x of r.data){
     if(!x.profile_id||!x.account_email||!x.account_name||!['admin','employee','worker','staff','supervisor','hse','job_admin','site_leader','onsite_admin'].includes(x.global_role)||
@@ -60,16 +86,23 @@ function install(){
       x.global_role==='admin'?'LEGACY GLOBAL ADMIN — REVIEW REQUIRED':'COMPANY OWNER';
     if(kind.startsWith('LEGACY'))legacy++;
     const item=el('article');item.dataset.platform490Role=kind;
-    item.style.cssText='padding:12px;border:1px solid #64748b;border-radius:10px;overflow-wrap:anywhere';
+    item.className='yw494-review-card';
+    const references=ledger.data.filter(e=>e.profile_id===x.profile_id);
+    item.dataset.platform494ReferenceCount=references.length;
     item.append(el('h4',x.account_name),el('p',x.account_email),
       el('p',kind),el('p','Owned companies: '+x.owned_company_count),
       el('p','Account state: '+(x.active===true?'active':'inactive')+' · Staff tier: '+(x.staff_tier||'none')));
     if(kind.startsWith('LEGACY')){
       item.appendChild(el('p','REVIEW PENDING — original authority and tenant scope not independently verified.'));
+      const reconciliation=el('p');reconciliation.className='yw494-evidence-state';
+      reconciliation.dataset.state=references.length?'unverified':'missing';
+      reconciliation.textContent=references.length?'UNVERIFIED ONLY · '+references.length+
+       ' reference(s), last recorded '+new Date(references[0].recorded_at).toLocaleString():
+       'NO REFERENCE · Original source and owner decision not evidenced';
+      item.appendChild(reconciliation);
       const evidence=el('details');evidence.dataset.legacy493Ledger=x.profile_id;
       evidence.appendChild(el('summary','Evidence-reference ledger (unverified)'));
       const entries=el('ol');
-      const references=ledger.data.filter(e=>e.profile_id===x.profile_id);
       for(const entry of references)entries.appendChild(el('li',
         entry.evidence_reference+' · UNVERIFIED_REFERENCE · '+
         new Date(entry.recorded_at).toLocaleString()));
@@ -105,15 +138,18 @@ function install(){
    }
    assertCurrent();
    records.replaceChildren(view);
+   metrics.replaceChildren(stat('Audited accounts',r.data.length),stat('Legacy exceptions',legacy,'amber'),
+    stat('Unverified references',ledger.data.length,'blue'));
+   applyFilter();
    status.textContent='Audited '+r.data.length+' accounts. '+legacy+
-    ' legacy global admin exception(s); '+ledger.data.length+
-    ' unverified reference(s). Independent owner decision still required.';
-  }catch(e){if(epoch===generation){records.replaceChildren();status.textContent='WITHHELD: '+(e?.message||'Unverified platform authority');}}
+    ' legacy global admin exception(s); '+ledger.data.length+' unverified reference(s). '+
+    'Reconciled for review only; independent owner decision still required.';
+  }catch(e){if(epoch===generation){records.replaceChildren();metrics.replaceChildren();status.textContent='WITHHELD: '+(e?.message||'Unverified platform authority');}}
   finally{if(epoch===generation)refresh.disabled=false;}
  });
  document.addEventListener('ywi:auth-changed',()=>{
   generation++;refresh.disabled=false;
-  records.replaceChildren();status.textContent='Session changed; platform audit must be reverified.';
+  records.replaceChildren();metrics.replaceChildren();status.textContent='Session changed; platform audit must be reverified.';
  });
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
