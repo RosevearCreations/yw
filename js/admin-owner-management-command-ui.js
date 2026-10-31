@@ -71,8 +71,8 @@
       '</div>',
       '</div>'
     ].join('');
-    // Build 497: keyboard and reduced-motion follow-up to the read-only
-    // dashboard. It only focuses existing cards; it never changes evidence.
+    // Build 498: owner navigation acceptance is a session-only manual check.
+    // Search, focus and return to search never mutate management evidence.
     const nav=document.createElement('nav');nav.id='owner496Navigator';
     nav.className='yw496-dashboard-nav';nav.setAttribute('aria-label','Find management dashboard cards');
     const label=document.createElement('label');label.htmlFor='owner496Search';
@@ -88,6 +88,20 @@
     results.id='owner497NavResults';results.setAttribute('role','group');
     results.setAttribute('aria-label','Matching management cards');
     input.setAttribute('aria-describedby',status.id);input.setAttribute('aria-controls',results.id);
+    const review=document.createElement('div');review.className='yw498-nav-review';
+    const returnButton=document.createElement('button');returnButton.type='button';
+    returnButton.className='secondary';returnButton.dataset.owner498Return='true';
+    returnButton.textContent='Return to management search';returnButton.disabled=true;
+    const acceptButton=document.createElement('button');acceptButton.type='button';
+    acceptButton.className='secondary';acceptButton.dataset.owner498Accept='true';
+    acceptButton.textContent='Mark local navigation check complete';acceptButton.disabled=true;
+    const acceptance=document.createElement('p');acceptance.dataset.owner498Acceptance='true';
+    acceptance.setAttribute('role','status');acceptance.setAttribute('aria-live','polite');
+    acceptance.textContent='Owner device check: find a card, jump to it, return to search, then confirm navigation works. Session only; not formal approval.';
+    review.append(returnButton,acceptButton,acceptance);
+    let focusedCard=null,returnedToSearch=false;
+    const resetAcceptance=()=>{focusedCard=null;returnedToSearch=false;
+      returnButton.disabled=true;acceptButton.disabled=true;};
     const sections=[...el.querySelectorAll('section.admin-panel-block')]
       .map(section=>({section,heading:section.querySelector('h4')?.textContent?.trim()}))
       .filter(entry=>entry.heading);
@@ -102,6 +116,10 @@
           const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
           section.scrollIntoView?.({behavior:reducedMotion?'auto':'smooth',block:'start'});
           section.focus?.({preventScroll:true});
+          if(document.activeElement===section){focusedCard=heading;returnedToSearch=false;
+            returnButton.disabled=false;acceptButton.disabled=true;
+            acceptance.textContent='FOCUS VERIFIED · '+heading+'. Return to search to test keyboard recovery.';
+          }else{resetAcceptance();acceptance.textContent='WITHHELD: Focus was not verified on the selected card.';}
         });results.appendChild(button);
       }
       reset.disabled=!input.value;
@@ -109,15 +127,31 @@
        ' matching management cards. Press Enter for the first result, or Tab to choose a card. Escape clears search.':
        'No matching cards. Try a different word or press Escape to clear.';
     }
-    input.addEventListener('input',updateNavigation);
+    input.addEventListener('input',()=>{resetAcceptance();
+      acceptance.textContent='Navigation selection changed. Jump to a card and return to search before confirming.';
+      updateNavigation();});
     input.addEventListener('keydown',event=>{
-      if(event.key==='Escape'&&input.value){event.preventDefault();input.value='';updateNavigation();}
+      if(event.key==='Escape'&&input.value){event.preventDefault();input.value='';resetAcceptance();updateNavigation();}
       else if(event.key==='Enter'){
         const first=results.querySelector('button');if(first){event.preventDefault();first.click();}
       }
     });
-    reset.addEventListener('click',()=>{input.value='';updateNavigation();input.focus();});
-    nav.append(label,input,reset,status,results);
+    reset.addEventListener('click',()=>{input.value='';resetAcceptance();updateNavigation();input.focus();});
+    returnButton.addEventListener('click',()=>{
+      if(!focusedCard)return;
+      input.focus();returnedToSearch=document.activeElement===input;
+      acceptButton.disabled=!returnedToSearch;
+      acceptance.textContent=returnedToSearch?'RETURN VERIFIED · '+focusedCard+
+        '. If the navigation worked for you, mark the local check complete.':
+        'WITHHELD: Search focus could not be restored.';
+    });
+    acceptButton.addEventListener('click',()=>{
+      if(!focusedCard||!returnedToSearch)return;
+      acceptance.textContent='LOCAL NAVIGATION CHECK COMPLETE · '+focusedCard+
+        '. Manual session-only acknowledgment; not formal owner acceptance, server evidence or a role change.';
+      acceptButton.disabled=true;
+    });
+    nav.append(label,input,reset,status,results,review);
     el.querySelector('#owner350Status').before(nav);updateNavigation();
     admin.appendChild(el);
     if(!$('owner350Style')){const st=document.createElement('style');st.id='owner350Style';st.textContent='.owner350-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.owner350-kpi{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.46)}.owner350-kpi span{display:block;font-size:.76rem;color:#c4d1e2}.owner350-kpi strong{display:block;font-size:1.15rem;margin-top:4px}.owner350-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.owner350-list{display:grid;gap:7px}.owner350-row{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.45)}.owner350-row small{display:block;color:#c4d1e2;margin-top:2px}.owner351-meta{display:block;margin-top:5px;font-size:.72rem;color:#aebed2}.owner351-source{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.36);border:1px solid rgba(148,163,184,.16)}.owner351-source strong{display:block}.owner351-source small{display:block;color:#c4d1e2;margin-top:2px}.owner351-state{font-weight:700;letter-spacing:.02em}.owner351-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-bottom:10px}.owner353-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.owner353-day{padding:10px;border:1px solid rgba(148,163,184,.22);border-radius:10px;background:rgba(15,23,42,.4)}.owner353-day strong,.owner353-day small{display:block}.owner353-day small{color:#c4d1e2;margin-top:3px}.owner353-season{font-size:.72rem;color:#aebed2;margin-top:5px}.owner375-scenarios .owner350-row{min-width:0;overflow-wrap:anywhere;word-break:break-word}.owner375-scenario-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}@media(max-width:700px){.owner350-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.owner350-head button{width:100%;min-height:44px}}';document.head.appendChild(st)}

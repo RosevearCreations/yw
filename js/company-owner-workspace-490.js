@@ -41,8 +41,8 @@ function install(){
  const host=$('settings');if(!host||$('owner490'))return;
  const section=node('section');section.id='owner490';section.className='admin-panel-block yw494-command';
  const hero=node('div');hero.className='yw494-hero';
- hero.append(node('span','OWNER OPERATIONS  /  BUILD 497'),node('h3','My Company Workspace'),
-  node('p','Service-switch decisions, exact audit summaries, recoverable device-local review filters and company controls. Ownership does not grant platform administrator privileges.'));
+ hero.append(node('span','OWNER OPERATIONS  /  BUILD 498'),node('h3','My Company Workspace'),
+  node('p','Service-switch decisions, exact audit summaries, verified recovered review views and company controls. Ownership does not grant platform administrator privileges.'));
  const metrics=node('div');metrics.id='owner494Metrics';metrics.className='yw494-kpis';
  metrics.append(metric('Owned companies','—'),metric('Enabled services','—','blue'),metric('Recent events','—','green'));
  const load=node('button','Load my companies');load.type='button';load.id='owner490Load';
@@ -169,6 +169,12 @@ function install(){
     const presetOptions=[['All activity','all'],['Enables only','enabled'],
      ['Disables only','disabled'],['Last 7 days','week']];
     let savedPreset=null,recoveryPreset=null,damagedPreset=false;
+    let recoveredViewPending=null,verifyArmed=false;
+    const viewStatus=node('p','Recovered view verification is available after a valid saved-filter recovery.');
+    viewStatus.className='yw498-verify-state';viewStatus.dataset.owner498Verification=c.id;
+    viewStatus.setAttribute('role','status');viewStatus.setAttribute('aria-live','polite');
+    const describeSelection=p=>'Service '+(p.service||'all')+' · action '+(p.action||'all')+
+      ' · since '+(p.since||'any UTC date');
     const key=presetKey(uid,c.id),backupKey=recoveryKey(uid,c.id);
     try{
       const raw=localStorage.getItem(key),backup=localStorage.getItem(backupKey);
@@ -213,6 +219,8 @@ function install(){
         presetStatus.textContent='WITHHELD: Invalid review filter selection.';return;
       }
       savedPreset=candidate;
+      recoveredViewPending=null;verifyArmed=false;
+      viewStatus.textContent='Saved new filters. No recovered view awaits verification.';
       restorePreset.disabled=false;recoverPreset.disabled=true;
       clearPreset.disabled=false;
       try{
@@ -224,7 +232,10 @@ function install(){
       }catch{presetStatus.textContent='Device storage unavailable. Filters saved in this session only.';}
     });
     restorePreset.addEventListener('click',()=>{
-      if(savedPreset)applyPreset(savedPreset,'Saved filters');
+      if(savedPreset){verifyArmed=!!recoveredViewPending;
+        if(verifyArmed)viewStatus.textContent='VERIFYING RECOVERED VIEW · '+describeSelection(recoveredViewPending)+
+          ' · awaiting the verified owner-scoped server audit.';
+        applyPreset(savedPreset,'Saved filters');}
     });
     recoverPreset.addEventListener('click',()=>{
       if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!validPreset(recoveryPreset)){
@@ -232,6 +243,9 @@ function install(){
       }
       savedPreset={...recoveryPreset};restorePreset.disabled=false;
       recoverPreset.disabled=true;clearPreset.disabled=false;
+      recoveredViewPending={...savedPreset};verifyArmed=false;
+      viewStatus.textContent='RECOVERED VIEW READY · '+describeSelection(recoveredViewPending)+
+        '. No audit query was made. Choose Apply saved filters to verify against the server.';
       try{localStorage.setItem(key,JSON.stringify(savedPreset));
         presetStatus.textContent='Recovered earlier filters for '+c.name+'. They were not applied automatically; choose Apply saved filters.';
       }catch{presetStatus.textContent='Recovered filters for this session only; device storage unavailable.';}
@@ -241,6 +255,8 @@ function install(){
         presetStatus.textContent='WITHHELD: Owner session changed; reload to clear filters.';return;
       }
       savedPreset=null;recoveryPreset=null;damagedPreset=false;
+      recoveredViewPending=null;verifyArmed=false;
+      viewStatus.textContent='Recovered view verification cleared. No audit records stored.';
       restorePreset.disabled=true;recoverPreset.disabled=true;clearPreset.disabled=true;
       try{localStorage.removeItem(key);localStorage.removeItem(backupKey);
         presetStatus.textContent='Saved review filters cleared from this device for '+c.name+'.';
@@ -252,7 +268,7 @@ function install(){
     if(!view.audit.length)events.appendChild(node('li','No recorded switch events.'));
     if(view.audit.length===26)events.appendChild(node('li','Older events remain in the server audit; this timeline is limited.'));
     timeline.className='yw494-review-details';
-    timeline.append(presets,presetStatus,filters,filterStatus,events);item.appendChild(timeline);
+    timeline.append(presets,presetStatus,viewStatus,filters,filterStatus,events);item.appendChild(timeline);
     let filterEpoch=0;
     filter.addEventListener('click',async()=>{
       const filterRequest=++filterEpoch;
@@ -262,7 +278,7 @@ function install(){
         if(!verifiedIds.has(c.id))throw Error('Company ownership was not verified');
         const key=service.value,kind=action.value,date=since.value;
         if((key&&!serviceKeys.has(key))||(kind&&!actions.has(kind))||
-           (date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)))throw Error('Invalid filter');
+           (date&&!validUtcDate(date)))throw Error('Invalid filter');
         let query=sb.from('ywi_company_service_module_audit')
          .select('id,company_id,module_key,action,previous_enabled,next_enabled,recorded_at')
          .eq('company_id',c.id);
@@ -282,8 +298,21 @@ function install(){
         events.replaceChildren(fragment);
         filterStatus.textContent=found.data.length>100?'Showing 100 events; narrow filters for older history.':
          'Showing '+found.data.length+' matching audited event(s), newest first.';
+        if(verifyArmed&&recoveredViewPending){
+          const same=key===recoveredViewPending.service&&kind===recoveredViewPending.action&&
+            date===recoveredViewPending.since;
+          viewStatus.textContent=same?'VERIFIED RECOVERED VIEW · '+c.name+' · '+
+            describeSelection(recoveredViewPending)+' · '+(found.data.length>100?
+             'first 100 of more than 100 matching server events':
+             found.data.length+' matching server event(s)')+
+            '. Read-only, owner-scoped response; no audit records stored.':
+            'NOT VERIFIED: Current filters differ from recovered view. Choose Apply saved filters again.';
+          verifyArmed=false;
+        }
       }catch(e){if(epoch===generation&&filterRequest===filterEpoch){
         events.replaceChildren();filterStatus.textContent='WITHHELD: '+(e?.message||'Audit filter failed');
+        if(verifyArmed){viewStatus.textContent='WITHHELD: Recovered view not verified by the server; retry Apply saved filters.';
+          verifyArmed=false;}
       }}finally{if(epoch===generation&&filterRequest===filterEpoch)filter.disabled=false;}
     });
     const open=node('button','Manage this company’s services');open.type='button';
