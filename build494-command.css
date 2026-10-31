@@ -101,6 +101,14 @@
 .yw496-dashboard-results button:focus-visible{outline:3px solid #6bd1ff;outline-offset:3px;}
 .yw496-dashboard-nav button:disabled{opacity:.5;cursor:not-allowed;}
 .yw496-dashboard-nav [role="status"]{line-height:1.45;}
+.yw498-verify-state{padding:10px 12px;border:1px solid #416486;border-radius:10px;
+  background:#102b3d;color:#d8edfc;line-height:1.5;overflow-wrap:anywhere;}
+.yw498-nav-review{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));
+  align-items:start;gap:9px;min-width:0;border-top:1px solid #47637a;padding-top:12px;}
+.yw498-nav-review p{grid-column:1/-1;margin:0;line-height:1.5;color:#cde5f5;}
+.yw494-command [data-platform498-note]:not([hidden]){display:block;width:100%;max-width:100%;
+  min-height:145px;resize:vertical;padding:11px;border:1px solid #6688a4;border-radius:9px;
+  background:#071d2d;color:#e8f5ff;overflow-wrap:anywhere;}
 @media (prefers-reduced-motion:reduce){
  .yw496-dashboard-nav,.yw496-dashboard-nav *{scroll-behavior:auto!important;transition:none!important;}
 }
