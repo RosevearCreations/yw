@@ -113,6 +113,16 @@
 .yw499-receipt-detail,.yw499-age-state{padding:10px 12px;border:1px solid #52748e;
   border-radius:10px;background:#0d283a;color:#deeffe;line-height:1.5;overflow-wrap:anywhere;}
 .yw494-command [data-owner499-receipt-details][hidden]{display:none!important;}
+.yw500-compare-state,.yw500-compare-detail,.yw500-priority-state,.yw500-nav-summary{
+  padding:10px 12px;border:1px solid #66879e;border-radius:10px;background:#102e3d;
+  color:#e5f4ff;line-height:1.55;overflow-wrap:anywhere;min-width:0;}
+.yw494-command [data-owner500-compare-details][hidden],
+.yw494-command [data-platform500-priority-note][hidden],
+.yw498-nav-review [data-owner500-retest-evidence][hidden]{display:none!important;}
+.yw494-command [data-platform500-priority-note]:not([hidden]){
+  display:block;width:100%;max-width:100%;min-height:160px;resize:vertical;
+  padding:11px;border:1px solid #6688a4;border-radius:9px;background:#071d2d;
+  color:#e8f5ff;overflow-wrap:anywhere;}
 @media (prefers-reduced-motion:reduce){
  .yw496-dashboard-nav,.yw496-dashboard-nav *{scroll-behavior:auto!important;transition:none!important;}
 }

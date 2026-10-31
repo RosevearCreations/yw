@@ -42,8 +42,8 @@ function install(){
  const section=node('section');section.id='owner490';section.className='admin-panel-block yw494-command';
  const hero=node('div');hero.className='yw494-hero';
  // BUILD 498 verified recovered audit view remains mandatory for BUILD 499 receipt review.
- hero.append(node('span','OWNER OPERATIONS  /  BUILD 499'),node('h3','My Company Workspace'),
-  node('p','Service-switch decisions, exact audit summaries, session-only recovered view receipts and company controls. Ownership does not grant platform administrator privileges.'));
+ hero.append(node('span','OWNER OPERATIONS  /  BUILD 500'),node('h3','My Company Workspace'),
+  node('p','Service-switch decisions, exact audit summaries, verified receipt change review and company controls. Receipt counts are advisory, not event-level proof or authorization.'));
  const metrics=node('div');metrics.id='owner494Metrics';metrics.className='yw494-kpis';
  metrics.append(metric('Owned companies','—'),metric('Enabled services','—','blue'),metric('Recent events','—','green'));
  const load=node('button','Load my companies');load.type='button';load.id='owner490Load';
@@ -181,9 +181,18 @@ function install(){
     receiptStatus.setAttribute('aria-live','polite');
     const receiptDetails=node('p');receiptDetails.dataset.owner499ReceiptDetails=c.id;
     receiptDetails.className='yw499-receipt-detail';receiptDetails.hidden=true;
-    let verifiedReceipt=null;
+    const compareButton=node('button','Compare reviewed audit receipts');compareButton.type='button';
+    compareButton.dataset.owner500ReceiptCompare=c.id;compareButton.disabled=true;
+    const compareStatus=node('p','Review two separately verified receipts to inspect a count change.');
+    compareStatus.className='yw500-compare-state';compareStatus.dataset.owner500CompareStatus=c.id;
+    compareStatus.setAttribute('aria-live','polite');
+    const compareDetails=node('p');compareDetails.className='yw500-compare-detail';
+    compareDetails.dataset.owner500CompareDetails=c.id;compareDetails.hidden=true;
+    let verifiedReceipt=null,lastReviewedReceipt=null,comparisonBaseline=null,receiptSequence=0;
     const clearReceipt=message=>{verifiedReceipt=null;receiptButton.disabled=true;
       receiptDetails.hidden=true;receiptDetails.textContent='';
+      comparisonBaseline=null;compareButton.disabled=true;compareDetails.hidden=true;
+      compareDetails.textContent='';compareStatus.textContent='Previous review retained only in this session. Verify and review a new receipt to compare.';
       receiptStatus.textContent=message||'No verified recovered audit receipt in this session.';};
     const describeSelection=p=>'Service '+(p.service||'all')+' · action '+(p.action||'all')+
       ' · since '+(p.since||'any UTC date');
@@ -272,6 +281,8 @@ function install(){
       recoveredViewPending=null;verifyArmed=false;
       viewStatus.textContent='Recovered view verification cleared. No audit records stored.';
       clearReceipt('Recovered audit receipt cleared from this session. No audit records stored.');
+      lastReviewedReceipt=null;comparisonBaseline=null;
+      compareStatus.textContent='All session-only receipt comparisons cleared.';
       restorePreset.disabled=true;recoverPreset.disabled=true;clearPreset.disabled=true;
       try{localStorage.removeItem(key);localStorage.removeItem(backupKey);
         presetStatus.textContent='Saved review filters cleared from this device for '+c.name+'.';
@@ -290,6 +301,33 @@ function install(){
         '. Read-only server response at verification time; no audit rows, IDs or credentials stored.';
       receiptDetails.hidden=false;
       receiptStatus.textContent='SESSION RECEIPT REVIEWED · advisory readback only; not a live count or owner sign-off.';
+      if(lastReviewedReceipt&&lastReviewedReceipt.token!==r.token){
+        comparisonBaseline=lastReviewedReceipt;compareButton.disabled=false;
+        compareStatus.textContent='TWO REVIEWED RECEIPTS READY · compare counts and filter scope; no audit rows retained.';
+      }
+      lastReviewedReceipt=r;
+    });
+    compareButton.addEventListener('click',()=>{
+      const prior=comparisonBaseline,current=verifiedReceipt;
+      if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!prior||!current||
+         lastReviewedReceipt?.token!==current.token||prior.token===current.token||
+         prior.ownerId!==uid||current.ownerId!==uid||
+         prior.companyId!==c.id||current.companyId!==c.id){
+        clearReceipt('WITHHELD: Two reviewed, current owner-scoped receipts are required.');return;
+      }
+      const identical=prior.selection.service===current.selection.service&&
+        prior.selection.action===current.selection.action&&prior.selection.since===current.selection.since;
+      const delta=current.count-prior.count;
+      compareDetails.textContent=identical?
+        'RECEIPT COUNT CHANGE REVIEW · '+(prior.truncated||current.truncated?
+          'COUNT INDETERMINATE: At least one read exceeded 100 server events.':
+          (delta===0?'COUNT UNCHANGED':delta>0?'COUNT INCREASE +'+delta:'COUNT DECREASE '+delta)+
+          ' · prior '+prior.count+' · current '+current.count)+
+          ' · '+describeSelection(current.selection)+'. Counts alone cannot establish event identity or owner acceptance.':
+        'NOT COMPARABLE: Reviewed receipt filters differ. Previous '+describeSelection(prior.selection)+
+          ' versus current '+describeSelection(current.selection)+'. No count delta inferred.';
+      compareDetails.hidden=false;
+      compareStatus.textContent='LOCAL COMPARISON REVIEWED · read-only session evidence, never approval or a persisted audit record.';
     });
     const events=node('ol');
     for(const entry of view.audit.slice(0,25))events.appendChild(node('li',describeAudit(entry)));
@@ -297,6 +335,7 @@ function install(){
     if(view.audit.length===26)events.appendChild(node('li','Older events remain in the server audit; this timeline is limited.'));
     timeline.className='yw494-review-details';
     timeline.append(presets,presetStatus,viewStatus,receiptButton,receiptStatus,receiptDetails,
+      compareButton,compareStatus,compareDetails,
       filters,filterStatus,events);item.appendChild(timeline);
     let filterEpoch=0;
     filter.addEventListener('click',async()=>{
@@ -337,7 +376,7 @@ function install(){
              found.data.length+' matching server event(s)')+
             '. Read-only, owner-scoped response; no audit records stored.':
             'NOT VERIFIED: Current filters differ from recovered view. Choose Apply saved filters again.';
-          if(same){verifiedReceipt={ownerId:uid,companyId:c.id,
+          if(same){verifiedReceipt={ownerId:uid,companyId:c.id,token:++receiptSequence,
             selection:{...recoveredViewPending},count:found.data.length,truncated:found.data.length>100,
             checkedAt:new Date().toISOString()};
             receiptButton.disabled=false;

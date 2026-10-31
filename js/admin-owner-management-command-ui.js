@@ -72,6 +72,7 @@
       '</div>'
     ].join('');
     // Build 499: owner navigation accessibility retest is session-only.
+    // Build 500: summarize repeated manual retests, without server evidence or approval.
     // Search, focus, return and retest never mutate management evidence.
     const nav=document.createElement('nav');nav.id='owner496Navigator';
     nav.className='yw496-dashboard-nav';nav.setAttribute('aria-label','Find management dashboard cards');
@@ -101,10 +102,18 @@
     const acceptance=document.createElement('p');acceptance.dataset.owner498Acceptance='true';
     acceptance.setAttribute('role','status');acceptance.setAttribute('aria-live','polite');
     acceptance.textContent='Owner device check: find a card, jump to it, return to search, then confirm navigation works. Session only; not formal approval.';
-    review.append(returnButton,acceptButton,retestButton,acceptance);
+    const summaryButton=document.createElement('button');summaryButton.type='button';
+    summaryButton.className='secondary';summaryButton.dataset.owner500RetestSummary='true';
+    summaryButton.textContent='Review navigation retest summary';summaryButton.disabled=true;
+    const summary=document.createElement('p');summary.className='yw500-nav-summary';
+    summary.dataset.owner500RetestEvidence='true';summary.hidden=true;
+    summary.setAttribute('aria-live','polite');
+    review.append(returnButton,acceptButton,retestButton,summaryButton,acceptance,summary);
     let focusedCard=null,returnedToSearch=false,retestAttempt=1;
+    const checkedAttempts=[];
     const resetAcceptance=()=>{focusedCard=null;returnedToSearch=false;
-      returnButton.disabled=true;acceptButton.disabled=true;retestButton.disabled=true;};
+      returnButton.disabled=true;acceptButton.disabled=true;retestButton.disabled=true;
+      summaryButton.disabled=true;summary.hidden=true;summary.textContent='';};
     const sections=[...el.querySelectorAll('section.admin-panel-block')]
       .map(section=>({section,heading:section.querySelector('h4')?.textContent?.trim()}))
       .filter(entry=>entry.heading);
@@ -150,9 +159,26 @@
     });
     acceptButton.addEventListener('click',()=>{
       if(!focusedCard||!returnedToSearch)return;
+      if(!checkedAttempts.some(entry=>entry.attempt===retestAttempt)){
+        if(checkedAttempts.length>=8)checkedAttempts.shift();
+        checkedAttempts.push({attempt:retestAttempt,card:focusedCard,checkedAt:new Date().toISOString()});
+      }
       acceptance.textContent='LOCAL NAVIGATION CHECK COMPLETE · '+focusedCard+
         ' · attempt '+retestAttempt+'. Manual session-only acknowledgment; not formal owner acceptance, server evidence or a role change.';
       acceptButton.disabled=true;retestButton.disabled=false;
+      summaryButton.disabled=!(retestAttempt>=2&&checkedAttempts.length>=2);
+      summary.hidden=true;
+    });
+    summaryButton.addEventListener('click',()=>{
+      if(summaryButton.disabled||!focusedCard||!returnedToSearch||retestAttempt<2)return;
+      const latest=checkedAttempts.at(-1),prior=checkedAttempts.at(-2);
+      if(!latest||!prior||latest.attempt!==retestAttempt)return;
+      summary.textContent='NAVIGATION RETEST EVIDENCE SUMMARY · '+checkedAttempts.length+
+        ' manually completed local checks · attempts '+prior.attempt+' and '+latest.attempt+
+        ' · latest card '+latest.card+' · device time '+latest.checkedAt+
+        '. Keyboard focus and return were checked in this session. No formal owner acceptance, '+
+        'external accessibility certification, server evidence or role change.';
+      summary.hidden=false;
     });
     retestButton.addEventListener('click',()=>{
       if(!focusedCard||!returnedToSearch)return;
