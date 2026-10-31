@@ -17,8 +17,8 @@ function install(){
  panel.appendChild(el('summary','490 · Platform & Company Owner Account Audit'));
  const body=el('div');body.className='admin-panel-block';
  const hero=el('div');hero.className='yw494-hero';
- hero.append(el('span','PLATFORM SECURITY  /  BUILD 494'),el('h3','Legacy-Role Evidence Reconciliation'),
-  el('p','Compare current role authority with the restricted ticket ledger. References remain unverified; no approval or role transition is possible here.'));
+ hero.append(el('span','PLATFORM SECURITY  /  BUILD 495'),el('h3','Legacy-Role Evidence & Decision Handoff'),
+  el('p','Review current authority, reconcile restricted ticket references and prepare an independent decision handoff. No approval or role transition is possible here.'));
  const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
  metrics.append(stat('Audited accounts','—'),stat('Legacy exceptions','—','amber'),stat('Unverified references','—','blue'));
  const filterLabel=el('label','Review account group');filterLabel.setAttribute('for','platform494ReviewFilter');
@@ -133,6 +133,57 @@ function install(){
           recordStatus.textContent='WITHHELD: '+(e?.message||'Unverified reference rejected');}}
       });
       evidence.append(input,record,recordStatus);item.appendChild(evidence);
+      const handoff=el('details');handoff.className='yw494-review-details';
+      handoff.dataset.platform495Handoff=x.profile_id;
+      handoff.appendChild(el('summary','Prepare independent authority decision handoff'));
+      const trackLabel=el('label','Review question');
+      const track=el('select');track.setAttribute('aria-label','Legacy authority review question');
+      const questions=[['Verify original grant and scope','VERIFY_ORIGINAL'],
+       ['Review restriction to company authority','RESTRICT_SCOPE'],
+       ['Review removal of legacy global authority','REMOVE_LEGACY']];
+      for(const [label,value] of questions)track.appendChild(new Option(label,value));
+      const prepare=el('button','Prepare read-only handoff');prepare.type='button';
+      const packet=el('textarea');packet.readOnly=true;packet.rows=10;
+      packet.setAttribute('aria-label','Read-only legacy authority decision handoff');
+      packet.placeholder='Prepare a handoff after validating the signed-in platform administrator.';
+      const copy=el('button','Copy prepared handoff');copy.type='button';copy.disabled=true;
+      const outcome=el('p','A draft is not an approval. Independent reviewer and owner decisions must be recorded in the authorized workflow.');
+      outcome.setAttribute('role','status');
+      prepare.addEventListener('click',()=>{
+        try{
+          assertCurrent();
+          if(!questions.some(([,value])=>value===track.value))throw Error('Invalid review question');
+          const tickets=references.map(entry=>entry.evidence_reference+' (UNVERIFIED_REFERENCE)');
+          packet.value=['Yard Workers / Build 495 — INDEPENDENT AUTHORITY REVIEW HANDOFF',
+           'Draft only — no authority granted, restricted or revoked.',
+           'Created (UTC): '+new Date().toISOString(),
+           'Profile ID: '+x.profile_id,
+           'Account: '+x.account_name+' / '+x.account_email,
+           'Current account role: '+x.global_role+' (legacy global administrator)',
+           'Company ownership count: '+x.owned_company_count,
+           'Requested review question: '+track.value,
+           'Original source proof: NOT VERIFIED',
+           'Independent signer custody: NOT VERIFIED',
+           'Ticket references: '+(tickets.length?tickets.join(', '):'NONE RECORDED'),
+           'Owner decision: NOT RECEIVED',
+           'Reviewer action: Validate original authority, tenant scope and custody outside this read-only handoff; record a signed disposition in the authorized governance workflow.',
+           'No privileged role changes or gateway releases are authorized by this packet.'].join('\n');
+          copy.disabled=false;
+          outcome.textContent='Prepared a reference-only draft. Share through our approved private review channel; do not put secrets into this packet.';
+        }catch(e){packet.value='';copy.disabled=true;
+          outcome.textContent='WITHHELD: '+(e?.message||'Platform session changed');}
+      });
+      copy.addEventListener('click',async()=>{
+        try{
+          assertCurrent();if(!packet.value||!navigator.clipboard?.writeText)
+            throw Error('Copy is unavailable; select the read-only text manually');
+          await navigator.clipboard.writeText(packet.value);assertCurrent();
+          outcome.textContent='Handoff copied locally. No external destination was contacted.';
+        }catch(e){outcome.textContent='WITHHELD: '+(e?.message||'Copy unavailable');}
+      });
+      trackLabel.appendChild(track);
+      handoff.append(trackLabel,prepare,packet,copy,outcome);
+      item.appendChild(handoff);
     }
     view.appendChild(item);
    }

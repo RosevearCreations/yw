@@ -36,7 +36,8 @@
 .yw494-command button:hover:not(:disabled){background:#6025a8;}
 .yw494-command button:disabled{opacity:.56;cursor:not-allowed;}
 .yw494-command button:focus-visible,.yw494-command select:focus-visible,
-.yw494-command input:focus-visible,.yw494-command summary:focus-visible{
+.yw494-command input:focus-visible,.yw494-command textarea:focus-visible,
+.yw494-command summary:focus-visible{
   outline:3px solid #61c6ff;outline-offset:3px;}
 .yw494-command [role="status"] {background:#0b2a3f;border-left:3px solid #32b5ff;
   border-radius:5px;padding:10px 12px;color:#deeffd;margin:12px 0;line-height:1.45;}
@@ -55,6 +56,9 @@
 .yw494-review-details li {margin-bottom:7px;}
 .yw494-command input,.yw494-command select {max-width:100%;min-height:42px;border-radius:8px;
   color:#f4f9ff;background:#0b2b42;border:1px solid #42637e;padding:8px 10px;}
+.yw494-command textarea {display:block;width:100%;min-width:0;max-width:100%;
+  resize:vertical;line-height:1.5;color:#dcefff;background:#071c2c;
+  border:1px solid #42637e;border-radius:9px;padding:12px;font:inherit;}
 .yw494-command input::placeholder{color:#b6cad9;}
 .yw494-command option {color:#edf6ff;background:#0a263a;}
 .yw494-summary-grid {overflow-x:auto;max-width:100%;margin-top:12px;}
@@ -74,6 +78,12 @@
 .yw494-gate-card p {color:#bdccdc;margin:0;line-height:1.45;}
 .yw494-gate-badge {display:inline-block;padding:5px 9px;border-radius:999px;
   color:#ffc5cf;background:#4c2434;border:1px solid #ad516c;font-size:.73rem;font-weight:800;letter-spacing:.03em;}
+.yw494-gate-card[data-gate-state="review"] .yw494-gate-badge {
+  color:#e0c1ff;background:#3e2559;border-color:#9863cc;}
+.yw495-preset-bar {display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0;
+  padding:11px;background:#061b2c;border:1px solid #31506a;border-radius:11px;}
+.yw494-command .yw495-preset-bar button {font-size:.87rem;min-height:42px;padding:8px 11px;}
+.yw495-help {color:#c0d4e3;font-size:.87rem;line-height:1.5;margin:8px 0;}
 .yw494-note {color:#c3d2dd;border-top:1px solid #2d506a;padding-top:12px;font-size:.9rem;}
 @media (max-width:700px) {
  .yw494-kpis{grid-template-columns:1fr;}
