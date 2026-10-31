@@ -71,7 +71,7 @@
       '</div>',
       '</div>'
     ].join('');
-    // Build 496: compact keyboard-accessible navigation for a dense read-only
+    // Build 497: keyboard and reduced-motion follow-up to the read-only
     // dashboard. It only focuses existing cards; it never changes evidence.
     const nav=document.createElement('nav');nav.id='owner496Navigator';
     nav.className='yw496-dashboard-nav';nav.setAttribute('aria-label','Find management dashboard cards');
@@ -81,8 +81,13 @@
     input.placeholder='Try Safety, forecast, receivables…';
     const reset=document.createElement('button');reset.type='button';reset.className='secondary';
     reset.textContent='Clear search';
-    const status=document.createElement('p');status.setAttribute('role','status');
+    const status=document.createElement('p');status.id='owner497NavStatus';
+    status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+    status.setAttribute('aria-atomic','true');
     const results=document.createElement('div');results.className='yw496-dashboard-results';
+    results.id='owner497NavResults';results.setAttribute('role','group');
+    results.setAttribute('aria-label','Matching management cards');
+    input.setAttribute('aria-describedby',status.id);input.setAttribute('aria-controls',results.id);
     const sections=[...el.querySelectorAll('section.admin-panel-block')]
       .map(section=>({section,heading:section.querySelector('h4')?.textContent?.trim()}))
       .filter(entry=>entry.heading);
@@ -94,15 +99,23 @@
         const button=document.createElement('button');button.type='button';button.className='secondary';
         button.textContent=heading;button.addEventListener('click',()=>{
           el.open=true;section.setAttribute('tabindex','-1');
-          section.scrollIntoView?.({behavior:'smooth',block:'start'});
+          const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
+          section.scrollIntoView?.({behavior:reducedMotion?'auto':'smooth',block:'start'});
           section.focus?.({preventScroll:true});
         });results.appendChild(button);
       }
+      reset.disabled=!input.value;
       status.textContent=matches.length?'Showing '+Math.min(matches.length,12)+' of '+matches.length+
-       ' matching management cards. Select a card to jump to its existing evidence.':
-       'No matching cards. Try a different word.';
+       ' matching management cards. Press Enter for the first result, or Tab to choose a card. Escape clears search.':
+       'No matching cards. Try a different word or press Escape to clear.';
     }
     input.addEventListener('input',updateNavigation);
+    input.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&input.value){event.preventDefault();input.value='';updateNavigation();}
+      else if(event.key==='Enter'){
+        const first=results.querySelector('button');if(first){event.preventDefault();first.click();}
+      }
+    });
     reset.addEventListener('click',()=>{input.value='';updateNavigation();input.focus();});
     nav.append(label,input,reset,status,results);
     el.querySelector('#owner350Status').before(nav);updateNavigation();
