@@ -38,7 +38,7 @@ test('owner can recover a valid previous saved filter without auto-applying audi
  await ownerPage(page);
  await expect(page.locator('[data-owner495-preset="restore"]')).toBeDisabled();
  await expect(page.locator('[data-owner497-preset="recover"]')).toBeEnabled();
- await expect(page.locator('[data-owner492-timeline] [role="status"]').last()).toContainText('RECOVERY AVAILABLE');
+ await expect(page.locator('[data-owner492-timeline] .yw495-help[role="status"]')).toContainText('RECOVERY AVAILABLE');
  const count=await page.evaluate(()=>window.__queries.length);
  await page.locator('[data-owner497-preset="recover"]').click();
  expect(await page.evaluate(()=>window.__queries.length)).toBe(count);
