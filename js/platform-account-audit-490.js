@@ -18,8 +18,8 @@ function install(){
  const body=el('div');body.className='admin-panel-block';
  const hero=el('div');hero.className='yw494-hero';
  // BUILD 498 copy-only exception follow-up remains restricted in BUILD 499 aging review.
- hero.append(el('span','PLATFORM SECURITY  /  BUILD 499'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
-  el('p','Review current authority, reconcile restricted ticket references, and inspect device-observed exception aging. No ticket, timer or follow-up note is approval or a role change.'));
+ hero.append(el('span','PLATFORM SECURITY  /  BUILD 500'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
+  el('p','Review restricted references, estimate local exception priority, and prepare copy-only independent follow-up. No timer, reference or note grants approval or changes roles.'));
  const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
  metrics.append(stat('Audited accounts','—'),stat('Legacy exceptions','—','amber'),stat('Unverified references','—','blue'));
  const filterLabel=el('label','Review account group');filterLabel.setAttribute('for','platform494ReviewFilter');
@@ -223,8 +223,19 @@ function install(){
       const ageStatus=el('p','No unresolved exception observed in this session.');
       ageStatus.className='yw499-age-state';ageStatus.dataset.platform499Age='true';
       ageStatus.setAttribute('aria-live','polite');
+      const priorityButton=el('button','Prepare priority reviewer follow-up');priorityButton.type='button';
+      priorityButton.dataset.platform500Priority='true';priorityButton.disabled=true;
+      const priorityNote=el('textarea');priorityNote.readOnly=true;priorityNote.hidden=true;
+      priorityNote.rows=5;priorityNote.dataset.platform500PriorityNote='true';
+      priorityNote.setAttribute('aria-label','Local copy-only reviewer exception priority follow-up');
+      const priorityStatus=el('p','No independently reconciled unresolved exception priority.');
+      priorityStatus.className='yw500-priority-state';priorityStatus.dataset.platform500PriorityStatus='true';
+      priorityStatus.setAttribute('aria-live','polite');
       let lastException=null;
       let firstSeen=new Map();
+      const priorityBand=()=>{if(!lastException)return'NONE';
+        const hours=Math.floor(Math.max(0,Date.now()-lastException.observedAt)/3600000);
+        return hours>=24?'HIGH RECHECK':hours>=1?'RECHECK DUE':'ROUTINE RECHECK';};
       const ageLabel=()=>{if(!lastException)return'No unresolved exception observed in this session.';
         const elapsed=Math.max(0,Date.now()-lastException.observedAt);
         const hours=Math.floor(elapsed/3600000);
@@ -232,7 +243,9 @@ function install(){
         return band+' · '+hours+' elapsed device hour(s) since this ticket/code was first observed. '+
           'Device-clock estimate only, not external reviewer evidence or an owner decision.';};
       const clearFollowUp=()=>{lastException=null;followUp.disabled=true;
-        refreshAge.disabled=true;followUpNote.value='';followUpNote.hidden=true;};
+        refreshAge.disabled=true;priorityButton.disabled=true;
+        followUpNote.value='';followUpNote.hidden=true;
+        priorityNote.value='';priorityNote.hidden=true;};
       const markException=(reference,code)=>{
         const id=reference+'|'+code;
         let observedAt=firstSeen.get(id);
@@ -241,10 +254,14 @@ function install(){
           observedAt=Date.now();firstSeen.set(id,observedAt);
         }
         clearFollowUp();lastException={reference,code,observedAt};
-        followUp.disabled=false;refreshAge.disabled=false;ageStatus.textContent=ageLabel();
+        followUp.disabled=false;refreshAge.disabled=false;priorityButton.disabled=false;
+        ageStatus.textContent=ageLabel();
+        priorityStatus.textContent='LOCAL PRIORITY '+priorityBand()+
+          ' · requires independent source proof and authorized owner decision.';
         followUpStatus.textContent='UNRESOLVED '+code+' · local follow-up available. No owner decision or role change.';};
       decisionRef.addEventListener('input',()=>{clearFollowUp();
         ageStatus.textContent='Ticket changed; reconcile again to inspect this device-observed exception age.';
+        priorityStatus.textContent='Ticket changed; priority follow-up withdrawn until fresh restricted reconciliation.';
         followUpStatus.textContent='Ticket changed; recheck the restricted ledger before preparing a follow-up.';});
       const reconcile=async(reference,afterSave=false,expectedEntryId=null)=>{
         assertCurrent();
@@ -273,6 +290,7 @@ function install(){
         firstSeen=new Map([...firstSeen].filter(([id])=>!id.startsWith(reference+'|')));
         clearFollowUp();followUpStatus.textContent='Reference present but UNVERIFIED. No exception follow-up or owner decision is inferred.';
         ageStatus.textContent='Reference found but UNVERIFIED; prior local exception age cleared. No owner decision.';
+        priorityStatus.textContent='REFERENCE PRESENT · priority follow-up cleared; still no authorized role decision.';
         return true;
       };
       refreshAge.addEventListener('click',()=>{
@@ -280,7 +298,28 @@ function install(){
           if(!lastException||decisionRef.value.trim()!==lastException.reference)
             throw Error('Reconcile the current ticket first');
           ageStatus.textContent=ageLabel();
-        }catch(e){clearFollowUp();ageStatus.textContent='WITHHELD: '+(e?.message||'Session changed');}
+          priorityNote.value='';priorityNote.hidden=true;
+          priorityStatus.textContent='REFRESHED LOCAL PRIORITY '+priorityBand()+
+            ' · device-clock advisory only; regenerate a follow-up before using.';
+        }catch(e){clearFollowUp();ageStatus.textContent='WITHHELD: '+(e?.message||'Session changed');
+          priorityStatus.textContent='WITHHELD: Priority follow-up cleared on session/reconciliation failure.';}
+      });
+      priorityButton.addEventListener('click',()=>{
+        try{assertCurrent();
+          if(!lastException||decisionRef.value.trim()!==lastException.reference||
+             !validReference(lastException.reference))throw Error('Reconcile the current ticket first');
+          const band=priorityBand();
+          priorityNote.value='QL-269 — UNDER REVIEW · INDEPENDENT REVIEWER PRIORITY FOLLOW-UP\n'+
+            'Legacy account: '+x.profile_id+'\nTicket: '+lastException.reference+'\n'+
+            'Restricted reconciliation exception: '+lastException.code+'\n'+
+            'LOCAL RECHECK PRIORITY: '+band+' (device-clock advisory only)\n'+
+            ageLabel()+'\n'+
+            'Next: request original independent source proof, independently reconcile the reference, '+
+            'and obtain an authorized owner decision. No signer trust, approval, role change, '+
+            'private evidence, server write or external delivery recorded.';
+          priorityNote.hidden=false;
+          priorityStatus.textContent='COPY-ONLY '+band+' FOLLOW-UP READY · not sent, saved or approved.';
+        }catch(e){clearFollowUp();priorityStatus.textContent='WITHHELD: '+(e?.message||'Reconciliation unavailable');}
       });
       followUp.addEventListener('click',()=>{
         try{
@@ -335,7 +374,7 @@ function install(){
       });
       intake.append(intakeHelp,recommendationLabel,refLabel,acknowledgement,
        intakeButton,reconcileButton,intakeStatus,followUp,followUpNote,followUpStatus,
-       refreshAge,ageStatus);
+       refreshAge,ageStatus,priorityButton,priorityNote,priorityStatus);
       item.appendChild(intake);
     }
     view.appendChild(item);
