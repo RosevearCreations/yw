@@ -106,18 +106,18 @@ async function gateSetup(page,{enabled=false}={}){
  await page.locator('#ql268Read494').click();
 }
 
-test('QL-268 readback uses only anonymous public GETs and leaves all four proof gates HELD',async({page})=>{
+test('QL-268 technical readback uses only anonymous public GETs and leaves all four proof gates under review',async({page})=>{
  await gateSetup(page);
- await expect(page.locator('#ql268Status494')).toContainText('DISCONNECTED / HOLD');
- await expect(page.locator('#ql268Gates494 [data-gate-state="held"]')).toHaveCount(4);
+ await expect(page.locator('#ql268Status494')).toContainText('UNDER REVIEW');
+ await expect(page.locator('#ql268Gates494 [data-gate-state="review"]')).toHaveCount(4);
  const calls=await page.evaluate(()=>window.__calls);
  expect(calls.map(x=>x.path)).toEqual(['/api/integration/v1/health','/api/integration/v1/capabilities']);
  expect(calls.every(x=>x.opts.method==='GET'&&x.opts.credentials==='omit'&&x.opts.redirect==='error')).toBe(true);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 });
 
-test('any enabled gateway capability forces WITHHELD / HOLD',async({page})=>{
+test('any enabled gateway capability forces a review exception and no authorization',async({page})=>{
  await gateSetup(page,{enabled:true});
- await expect(page.locator('#ql268Status494')).toContainText('WITHHELD / HOLD');
+ await expect(page.locator('#ql268Status494')).toContainText('REVIEW EXCEPTION');
  await expect(page.locator('#ql268Status494')).toContainText('No trial authorized');
 });

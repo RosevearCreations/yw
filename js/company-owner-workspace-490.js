@@ -26,8 +26,8 @@ function install(){
  const host=$('settings');if(!host||$('owner490'))return;
  const section=node('section');section.id='owner490';section.className='admin-panel-block yw494-command';
  const hero=node('div');hero.className='yw494-hero';
- hero.append(node('span','OWNER OPERATIONS  /  BUILD 494'),node('h3','My Company Workspace'),
-  node('p','Service-switch decisions, exact audit summaries and company controls. Ownership does not grant platform administrator privileges.'));
+ hero.append(node('span','OWNER OPERATIONS  /  BUILD 495'),node('h3','My Company Workspace'),
+  node('p','Service-switch decisions, exact audit summaries, reusable review presets and company controls. Ownership does not grant platform administrator privileges.'));
  const metrics=node('div');metrics.id='owner494Metrics';metrics.className='yw494-kpis';
  metrics.append(metric('Owned companies','—'),metric('Enabled services','—','blue'),metric('Recent events','—','green'));
  const load=node('button','Load my companies');load.type='button';load.id='owner490Load';
@@ -147,12 +147,58 @@ function install(){
     const filterStatus=node('p','Latest 25 events shown. Filters query the server audit directly.');
     filterStatus.setAttribute('role','status');
     filters.append(service,action,since,filter);
+    const presets=node('div');presets.className='yw495-preset-bar';
+    presets.setAttribute('role','group');presets.setAttribute('aria-label','Owner audit review presets');
+    const presetStatus=node('p','Presets change only this company’s review filters. They do not change service switches.');
+    presetStatus.className='yw495-help';presetStatus.setAttribute('role','status');
+    const presetOptions=[['All activity','all'],['Enables only','enabled'],
+     ['Disables only','disabled'],['Last 7 days','week']];
+    let savedPreset=null;
+    const applyPreset=(selection,label)=>{
+      if(!currentIdentity(uid)||!verifiedIds.has(c.id)){
+        presetStatus.textContent='WITHHELD: Owner session changed; reload the company workspace.';return;
+      }
+      service.value=selection.service;action.value=selection.action;since.value=selection.since;
+      presetStatus.textContent=label+' selected for '+c.name+'. The server audit will enforce company ownership.';
+      filter.click();
+    };
+    for(const [label,kind] of presetOptions){
+      const button=node('button',label);button.type='button';button.dataset.owner495Preset=kind;
+      button.addEventListener('click',()=>{
+        let from='';if(kind==='week'){
+          const d=new Date();d.setUTCDate(d.getUTCDate()-7);from=d.toISOString().slice(0,10);
+        }
+        applyPreset({service:'',action:kind==='enabled'||kind==='disabled'?kind:'',since:from},label);
+      });
+      presets.appendChild(button);
+    }
+    const savePreset=node('button','Save my current filters');savePreset.type='button';
+    savePreset.dataset.owner495Preset='save';
+    const restorePreset=node('button','Apply saved filters');restorePreset.type='button';
+    restorePreset.dataset.owner495Preset='restore';restorePreset.disabled=true;
+    savePreset.addEventListener('click',()=>{
+      if(!currentIdentity(uid)||!verifiedIds.has(c.id)){
+        presetStatus.textContent='WITHHELD: Owner session changed; reload to save filters.';return;
+      }
+      if((service.value&&!serviceKeys.has(service.value))||
+         (action.value&&!actions.has(action.value))||
+         (since.value&&!/^\d{4}-\d{2}-\d{2}$/.test(since.value))){
+        presetStatus.textContent='WITHHELD: Invalid review filter selection.';return;
+      }
+      savedPreset={service:service.value,action:action.value,since:since.value};
+      restorePreset.disabled=false;
+      presetStatus.textContent='Custom filters saved for this company in this session only. No audit data was stored.';
+    });
+    restorePreset.addEventListener('click',()=>{
+      if(savedPreset)applyPreset(savedPreset,'Saved filters');
+    });
+    presets.append(savePreset,restorePreset);
     const events=node('ol');
     for(const entry of view.audit.slice(0,25))events.appendChild(node('li',describeAudit(entry)));
     if(!view.audit.length)events.appendChild(node('li','No recorded switch events.'));
     if(view.audit.length===26)events.appendChild(node('li','Older events remain in the server audit; this timeline is limited.'));
     timeline.className='yw494-review-details';
-    timeline.append(filters,filterStatus,events);item.appendChild(timeline);
+    timeline.append(presets,presetStatus,filters,filterStatus,events);item.appendChild(timeline);
     let filterEpoch=0;
     filter.addEventListener('click',async()=>{
       const filterRequest=++filterEpoch;
