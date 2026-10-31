@@ -6,6 +6,14 @@ const node=(tag,value)=>{const e=document.createElement(tag);if(value!==undefine
 const serviceKeys=new Set(['landscape','construction','water_parks','snow_removal',
  'snow_plowing','septic','arboriculture']);
 const actions=new Set(['initialized','enabled','disabled']);
+/* Only view controls are persisted on this device. The authenticated owner and
+   RLS-backed company reads remain the authority on every visit. */
+const presetKey=(uid,companyId)=>'yw:owner-audit-filters:v496:'+encodeURIComponent(uid)+':'+encodeURIComponent(companyId);
+const validPreset=p=>p&&typeof p==='object'&&
+ ['service','action','since'].every(k=>typeof p[k]==='string')&&
+ (!p.service||serviceKeys.has(p.service))&&(!p.action||actions.has(p.action))&&
+ (!p.since||(/^\d{4}-\d{2}-\d{2}$/.test(p.since)&&
+  !Number.isNaN(Date.parse(p.since+'T00:00:00.000Z'))));
 const validAudit=(a,companyId)=>a&&a.company_id===companyId&&
  serviceKeys.has(a.module_key)&&actions.has(a.action)&&
  Number.isFinite(Date.parse(a.recorded_at))&&(
@@ -26,8 +34,8 @@ function install(){
  const host=$('settings');if(!host||$('owner490'))return;
  const section=node('section');section.id='owner490';section.className='admin-panel-block yw494-command';
  const hero=node('div');hero.className='yw494-hero';
- hero.append(node('span','OWNER OPERATIONS  /  BUILD 495'),node('h3','My Company Workspace'),
-  node('p','Service-switch decisions, exact audit summaries, reusable review presets and company controls. Ownership does not grant platform administrator privileges.'));
+ hero.append(node('span','OWNER OPERATIONS  /  BUILD 496'),node('h3','My Company Workspace'),
+  node('p','Service-switch decisions, exact audit summaries, device-local saved review filters and company controls. Ownership does not grant platform administrator privileges.'));
  const metrics=node('div');metrics.id='owner494Metrics';metrics.className='yw494-kpis';
  metrics.append(metric('Owned companies','—'),metric('Enabled services','—','blue'),metric('Recent events','—','green'));
  const load=node('button','Load my companies');load.type='button';load.id='owner490Load';
@@ -149,11 +157,19 @@ function install(){
     filters.append(service,action,since,filter);
     const presets=node('div');presets.className='yw495-preset-bar';
     presets.setAttribute('role','group');presets.setAttribute('aria-label','Owner audit review presets');
-    const presetStatus=node('p','Presets change only this company’s review filters. They do not change service switches.');
+    const presetStatus=node('p','Saved filters stay on this device and are isolated by signed-in owner and company. No audit records or credentials are saved.');
     presetStatus.className='yw495-help';presetStatus.setAttribute('role','status');
     const presetOptions=[['All activity','all'],['Enables only','enabled'],
      ['Disables only','disabled'],['Last 7 days','week']];
     let savedPreset=null;
+    const key=presetKey(uid,c.id);
+    try{
+      const raw=localStorage.getItem(key);
+      if(raw){const parsed=JSON.parse(raw);
+        if(validPreset(parsed)){savedPreset={service:parsed.service,action:parsed.action,since:parsed.since};}
+        else localStorage.removeItem(key);
+      }
+    }catch{ /* Private browsing or disabled storage remains session-only. */ }
     const applyPreset=(selection,label)=>{
       if(!currentIdentity(uid)||!verifiedIds.has(c.id)){
         presetStatus.textContent='WITHHELD: Owner session changed; reload the company workspace.';return;
@@ -175,24 +191,38 @@ function install(){
     const savePreset=node('button','Save my current filters');savePreset.type='button';
     savePreset.dataset.owner495Preset='save';
     const restorePreset=node('button','Apply saved filters');restorePreset.type='button';
-    restorePreset.dataset.owner495Preset='restore';restorePreset.disabled=true;
+    restorePreset.dataset.owner495Preset='restore';restorePreset.disabled=!savedPreset;
+    const clearPreset=node('button','Clear saved filters');clearPreset.type='button';
+    clearPreset.dataset.owner496Preset='clear';clearPreset.disabled=!savedPreset;
+    if(savedPreset)presetStatus.textContent='Saved review filters available on this device for '+c.name+'. Apply them when ready.';
     savePreset.addEventListener('click',()=>{
       if(!currentIdentity(uid)||!verifiedIds.has(c.id)){
         presetStatus.textContent='WITHHELD: Owner session changed; reload to save filters.';return;
       }
-      if((service.value&&!serviceKeys.has(service.value))||
-         (action.value&&!actions.has(action.value))||
-         (since.value&&!/^\d{4}-\d{2}-\d{2}$/.test(since.value))){
+      const candidate={service:service.value,action:action.value,since:since.value};
+      if(!validPreset(candidate)){
         presetStatus.textContent='WITHHELD: Invalid review filter selection.';return;
       }
-      savedPreset={service:service.value,action:action.value,since:since.value};
+      savedPreset=candidate;
       restorePreset.disabled=false;
-      presetStatus.textContent='Custom filters saved for this company in this session only. No audit data was stored.';
+      clearPreset.disabled=false;
+      try{localStorage.setItem(key,JSON.stringify(candidate));
+        presetStatus.textContent='Filters saved on this device for this owner and company. No audit records stored.';
+      }catch{presetStatus.textContent='Device storage unavailable. Filters saved in this session only.';}
     });
     restorePreset.addEventListener('click',()=>{
       if(savedPreset)applyPreset(savedPreset,'Saved filters');
     });
-    presets.append(savePreset,restorePreset);
+    clearPreset.addEventListener('click',()=>{
+      if(!currentIdentity(uid)||!verifiedIds.has(c.id)){
+        presetStatus.textContent='WITHHELD: Owner session changed; reload to clear filters.';return;
+      }
+      savedPreset=null;restorePreset.disabled=true;clearPreset.disabled=true;
+      try{localStorage.removeItem(key);
+        presetStatus.textContent='Saved review filters cleared from this device for '+c.name+'.';
+      }catch{presetStatus.textContent='Saved session filters cleared. Device storage could not be accessed.';}
+    });
+    presets.append(savePreset,restorePreset,clearPreset);
     const events=node('ol');
     for(const entry of view.audit.slice(0,25))events.appendChild(node('li',describeAudit(entry)));
     if(!view.audit.length)events.appendChild(node('li','No recorded switch events.'));

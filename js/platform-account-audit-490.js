@@ -17,8 +17,8 @@ function install(){
  panel.appendChild(el('summary','490 · Platform & Company Owner Account Audit'));
  const body=el('div');body.className='admin-panel-block';
  const hero=el('div');hero.className='yw494-hero';
- hero.append(el('span','PLATFORM SECURITY  /  BUILD 495'),el('h3','Legacy-Role Evidence & Decision Handoff'),
-  el('p','Review current authority, reconcile restricted ticket references and prepare an independent decision handoff. No approval or role transition is possible here.'));
+ hero.append(el('span','PLATFORM SECURITY  /  BUILD 496'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
+  el('p','Review current authority, capture restricted reviewer ticket references and prepare an independent decision handoff. An intake claim is not verification or a role change.'));
  const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
  metrics.append(stat('Audited accounts','—'),stat('Legacy exceptions','—','amber'),stat('Unverified references','—','blue'));
  const filterLabel=el('label','Review account group');filterLabel.setAttribute('for','platform494ReviewFilter');
@@ -184,6 +184,52 @@ function install(){
       trackLabel.appendChild(track);
       handoff.append(trackLabel,prepare,packet,copy,outcome);
       item.appendChild(handoff);
+      const intake=el('details');intake.className='yw494-review-details';
+      intake.dataset.platform496Intake=x.profile_id;
+      intake.appendChild(el('summary','Independent reviewer response intake (unverified)'));
+      const intakeHelp=el('p','Record only a separate reviewer’s external ticket ID. We cannot verify reviewer independence, original grant, signer custody or owner approval in this screen. No role change follows.');
+      const recommendationLabel=el('label','Reported recommendation (not accepted as a decision)');
+      const recommendation=el('select');recommendation.setAttribute('aria-label','Reported independent reviewer recommendation');
+      const options=[['More original evidence required','MORE_EVIDENCE'],
+       ['Review restriction to company scope','REVIEW_RESTRICTION'],
+       ['Review removal of legacy role','REVIEW_REMOVAL'],
+       ['Review retaining the existing role','REVIEW_RETENTION']];
+      for(const [label,value] of options)recommendation.appendChild(new Option(label,value));
+      recommendationLabel.appendChild(recommendation);
+      const refLabel=el('label','External reviewer ticket ID (no URLs or secrets)');
+      const decisionRef=el('input');decisionRef.type='text';decisionRef.maxLength=120;
+      decisionRef.setAttribute('aria-label','Independent reviewer external ticket reference');
+      decisionRef.placeholder='e.g. QL-269-REVIEW-002';refLabel.appendChild(decisionRef);
+      const acknowledgement=el('label');
+      const checkbox=el('input');checkbox.type='checkbox';checkbox.dataset.platform496Unverified='true';
+      acknowledgement.append(checkbox,document.createTextNode(' I understand this is an unverified ticket reference, not approval.'));
+      const intakeButton=el('button','Record unverified reviewer reference');intakeButton.type='button';
+      const intakeStatus=el('p','Awaiting an external reviewer ticket. No source evidence or role decision is inferred.');
+      intakeStatus.setAttribute('role','status');
+      intakeButton.addEventListener('click',async()=>{
+        const reference=decisionRef.value.trim(),reported=recommendation.value;
+        if(!options.some(([,value])=>value===reported)||
+           !/^[A-Za-z0-9][A-Za-z0-9._/-]{5,119}$/.test(reference)||!checkbox.checked){
+          intakeStatus.textContent='WITHHELD: Select a recommendation, enter a valid 6–120 character ticket ID and acknowledge its unverified status.';return;
+        }
+        intakeButton.disabled=true;intakeStatus.textContent='Recording a ticket reference only…';
+        try{
+          assertCurrent();
+          const saved=await sb.rpc('ywi_platform_legacy_evidence_record_493',{
+            p_profile_id:x.profile_id,p_reference:reference});
+          assertCurrent();
+          if(saved.error||!Number.isSafeInteger(Number(saved.data)))
+            throw Error('Restricted unverified evidence record unavailable');
+          intakeStatus.textContent='Ticket '+reference+' recorded as UNVERIFIED_REFERENCE. Reported '+reported+
+           ' remains an unaccepted local intake note. Owner decision NOT RECEIVED; no role change.';
+          decisionRef.value='';checkbox.checked=false;
+          /* Re-read the append-only server ledger; never treat this draft as an approval. */
+          refresh.click();
+        }catch(e){if(epoch===generation){intakeButton.disabled=false;
+          intakeStatus.textContent='WITHHELD: '+(e?.message||'Independent response intake denied');}}
+      });
+      intake.append(intakeHelp,recommendationLabel,refLabel,acknowledgement,intakeButton,intakeStatus);
+      item.appendChild(intake);
     }
     view.appendChild(item);
    }

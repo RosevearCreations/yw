@@ -71,6 +71,41 @@
       '</div>',
       '</div>'
     ].join('');
+    // Build 496: compact keyboard-accessible navigation for a dense read-only
+    // dashboard. It only focuses existing cards; it never changes evidence.
+    const nav=document.createElement('nav');nav.id='owner496Navigator';
+    nav.className='yw496-dashboard-nav';nav.setAttribute('aria-label','Find management dashboard cards');
+    const label=document.createElement('label');label.htmlFor='owner496Search';
+    label.textContent='Find a management card';
+    const input=document.createElement('input');input.type='search';input.id='owner496Search';
+    input.placeholder='Try Safety, forecast, receivables…';
+    const reset=document.createElement('button');reset.type='button';reset.className='secondary';
+    reset.textContent='Clear search';
+    const status=document.createElement('p');status.setAttribute('role','status');
+    const results=document.createElement('div');results.className='yw496-dashboard-results';
+    const sections=[...el.querySelectorAll('section.admin-panel-block')]
+      .map(section=>({section,heading:section.querySelector('h4')?.textContent?.trim()}))
+      .filter(entry=>entry.heading);
+    function updateNavigation(){
+      const term=input.value.trim().toLocaleLowerCase();
+      const matches=sections.filter(entry=>entry.heading.toLocaleLowerCase().includes(term));
+      results.replaceChildren();
+      for(const {section,heading} of matches.slice(0,12)){
+        const button=document.createElement('button');button.type='button';button.className='secondary';
+        button.textContent=heading;button.addEventListener('click',()=>{
+          el.open=true;section.setAttribute('tabindex','-1');
+          section.scrollIntoView?.({behavior:'smooth',block:'start'});
+          section.focus?.({preventScroll:true});
+        });results.appendChild(button);
+      }
+      status.textContent=matches.length?'Showing '+Math.min(matches.length,12)+' of '+matches.length+
+       ' matching management cards. Select a card to jump to its existing evidence.':
+       'No matching cards. Try a different word.';
+    }
+    input.addEventListener('input',updateNavigation);
+    reset.addEventListener('click',()=>{input.value='';updateNavigation();input.focus();});
+    nav.append(label,input,reset,status,results);
+    el.querySelector('#owner350Status').before(nav);updateNavigation();
     admin.appendChild(el);
     if(!$('owner350Style')){const st=document.createElement('style');st.id='owner350Style';st.textContent='.owner350-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.owner350-kpi{padding:12px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.46)}.owner350-kpi span{display:block;font-size:.76rem;color:#c4d1e2}.owner350-kpi strong{display:block;font-size:1.15rem;margin-top:4px}.owner350-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.owner350-list{display:grid;gap:7px}.owner350-row{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.45)}.owner350-row small{display:block;color:#c4d1e2;margin-top:2px}.owner351-meta{display:block;margin-top:5px;font-size:.72rem;color:#aebed2}.owner351-source{padding:8px 10px;border-radius:9px;background:rgba(15,23,42,.36);border:1px solid rgba(148,163,184,.16)}.owner351-source strong{display:block}.owner351-source small{display:block;color:#c4d1e2;margin-top:2px}.owner351-state{font-weight:700;letter-spacing:.02em}.owner351-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-bottom:10px}.owner353-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.owner353-day{padding:10px;border:1px solid rgba(148,163,184,.22);border-radius:10px;background:rgba(15,23,42,.4)}.owner353-day strong,.owner353-day small{display:block}.owner353-day small{color:#c4d1e2;margin-top:3px}.owner353-season{font-size:.72rem;color:#aebed2;margin-top:5px}.owner375-scenarios .owner350-row{min-width:0;overflow-wrap:anywhere;word-break:break-word}.owner375-scenario-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}@media(max-width:700px){.owner350-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.owner350-head button{width:100%;min-height:44px}}';document.head.appendChild(st)}
     return el;
