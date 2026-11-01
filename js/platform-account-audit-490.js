@@ -18,8 +18,9 @@ function install(){
  const body=el('div');body.className='admin-panel-block';
  const hero=el('div');hero.className='yw494-hero';
  // BUILD 498 copy-only exception follow-up remains restricted in BUILD 499 aging review.
- hero.append(el('span','PLATFORM SECURITY  /  BUILD 500'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
-  el('p','Review restricted references, estimate local exception priority, and prepare copy-only independent follow-up. No timer, reference or note grants approval or changes roles.'));
+ // BUILD 500 copy-only reviewer priority follow-up remains available in BUILD 501.
+ hero.append(el('span','PLATFORM SECURITY  /  BUILD 501'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
+  el('p','Review restricted references, inspect a bounded session-only priority queue, and prepare copy-only independent follow-up. No timer, reference or note grants approval or changes roles.'));
  const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
  metrics.append(stat('Audited accounts','—'),stat('Legacy exceptions','—','amber'),stat('Unverified references','—','blue'));
  const filterLabel=el('label','Review account group');filterLabel.setAttribute('for','platform494ReviewFilter');
@@ -231,8 +232,20 @@ function install(){
       const priorityStatus=el('p','No independently reconciled unresolved exception priority.');
       priorityStatus.className='yw500-priority-state';priorityStatus.dataset.platform500PriorityStatus='true';
       priorityStatus.setAttribute('aria-live','polite');
+      const queueButton=el('button','Review local reviewer priority queue');queueButton.type='button';
+      queueButton.dataset.platform501PriorityQueue='true';queueButton.disabled=true;
+      const queueStatus=el('p','No unresolved reviewer exceptions queued in this device session.');
+      queueStatus.className='yw501-queue-state';queueStatus.dataset.platform501QueueStatus='true';
+      queueStatus.setAttribute('aria-live','polite');
+      const queueList=el('ol');queueList.className='yw501-priority-list';
+      queueList.dataset.platform501QueueList='true';queueList.hidden=true;
       let lastException=null;
       let firstSeen=new Map();
+      let priorityQueue=new Map();
+      const queueBand=observedAt=>{
+        const hours=Math.floor(Math.max(0,Date.now()-observedAt)/3600000);
+        return hours>=24?{rank:0,label:'HIGH RECHECK',hours}:
+          hours>=1?{rank:1,label:'RECHECK DUE',hours}:{rank:2,label:'ROUTINE RECHECK',hours};};
       const priorityBand=()=>{if(!lastException)return'NONE';
         const hours=Math.floor(Math.max(0,Date.now()-lastException.observedAt)/3600000);
         return hours>=24?'HIGH RECHECK':hours>=1?'RECHECK DUE':'ROUTINE RECHECK';};
@@ -253,6 +266,12 @@ function install(){
           if(firstSeen.size>=12)firstSeen.clear();
           observedAt=Date.now();firstSeen.set(id,observedAt);
         }
+        if(!priorityQueue.has(id)&&priorityQueue.size>=6)
+          priorityQueue=new Map([...priorityQueue].slice(-5));
+        priorityQueue.set(id,{reference,code,observedAt});
+        queueButton.disabled=false;queueList.hidden=true;
+        queueStatus.textContent='SESSION PRIORITY QUEUE READY · '+priorityQueue.size+
+          ' unresolved local ticket/code observation(s), bounded to 6; review to sort by device age.';
         clearFollowUp();lastException={reference,code,observedAt};
         followUp.disabled=false;refreshAge.disabled=false;priorityButton.disabled=false;
         ageStatus.textContent=ageLabel();
@@ -288,6 +307,11 @@ function install(){
           new Date(matches[0].recorded_at).toLocaleString()+
           '. Original proof NOT VERIFIED; independent reviewer recommendation not accepted. Owner decision NOT RECEIVED; no role change.';
         firstSeen=new Map([...firstSeen].filter(([id])=>!id.startsWith(reference+'|')));
+        priorityQueue=new Map([...priorityQueue].filter(([id])=>!id.startsWith(reference+'|')));
+        queueButton.disabled=!priorityQueue.size;queueList.hidden=true;
+        queueStatus.textContent=priorityQueue.size?priorityQueue.size+
+          ' other unresolved local observation(s) remain. Review the queue again.':
+          'Matching reference removed from local priority queue; no unresolved observations remain.';
         clearFollowUp();followUpStatus.textContent='Reference present but UNVERIFIED. No exception follow-up or owner decision is inferred.';
         ageStatus.textContent='Reference found but UNVERIFIED; prior local exception age cleared. No owner decision.';
         priorityStatus.textContent='REFERENCE PRESENT · priority follow-up cleared; still no authorized role decision.';
@@ -320,6 +344,22 @@ function install(){
           priorityNote.hidden=false;
           priorityStatus.textContent='COPY-ONLY '+band+' FOLLOW-UP READY · not sent, saved or approved.';
         }catch(e){clearFollowUp();priorityStatus.textContent='WITHHELD: '+(e?.message||'Reconciliation unavailable');}
+      });
+      queueButton.addEventListener('click',()=>{
+        try{assertCurrent();
+          if(!legacyIds.has(x.profile_id)||!priorityQueue.size)throw Error('Current legacy account and unresolved observations required');
+          const ranked=[...priorityQueue.values()].map(entry=>({...entry,...queueBand(entry.observedAt)}))
+            .sort((a,b)=>a.rank-b.rank||a.observedAt-b.observedAt||a.reference.localeCompare(b.reference));
+          queueList.replaceChildren();
+          for(const row of ranked){
+            queueList.appendChild(el('li',row.label+' · '+row.hours+' elapsed device hour(s) · ticket '+
+              row.reference+' · '+row.code+'. Independent proof and owner decision still required.'));
+          }
+          queueList.hidden=false;
+          queueStatus.textContent='LOCAL REVIEWER PRIORITY QUEUE · '+ranked.length+
+            ' observation(s), oldest/highest recheck priority first. Device-clock estimates only; not an external queue, source proof or authorization.';
+        }catch(e){priorityQueue.clear();queueList.replaceChildren();queueList.hidden=true;
+          queueButton.disabled=true;queueStatus.textContent='WITHHELD: '+(e?.message||'Session changed');}
       });
       followUp.addEventListener('click',()=>{
         try{
@@ -374,7 +414,8 @@ function install(){
       });
       intake.append(intakeHelp,recommendationLabel,refLabel,acknowledgement,
        intakeButton,reconcileButton,intakeStatus,followUp,followUpNote,followUpStatus,
-       refreshAge,ageStatus,priorityButton,priorityNote,priorityStatus);
+       refreshAge,ageStatus,priorityButton,priorityNote,priorityStatus,
+       queueButton,queueStatus,queueList);
       item.appendChild(intake);
     }
     view.appendChild(item);

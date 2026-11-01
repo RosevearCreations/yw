@@ -123,6 +123,16 @@
   display:block;width:100%;max-width:100%;min-height:160px;resize:vertical;
   padding:11px;border:1px solid #6688a4;border-radius:9px;background:#071d2d;
   color:#e8f5ff;overflow-wrap:anywhere;}
+.yw501-history-state,.yw501-queue-state,.yw501-multicard-summary{
+  padding:10px 12px;border:1px solid #628ca0;border-radius:10px;
+  background:#102c3f;color:#e7f6ff;line-height:1.5;overflow-wrap:anywhere;min-width:0;}
+.yw501-history-list,.yw501-priority-list{padding:12px 12px 12px 34px;
+  background:#0c2739;border:1px solid #416985;border-radius:10px;
+  color:#e6f3ff;overflow-wrap:anywhere;max-width:100%;}
+.yw501-history-list li,.yw501-priority-list li{margin:7px 0;line-height:1.45;}
+.yw494-command [data-owner501-history-list][hidden],
+.yw494-command [data-platform501-queue-list][hidden],
+.yw498-nav-review [data-owner501-multi-card-evidence][hidden]{display:none!important;}
 @media (prefers-reduced-motion:reduce){
  .yw496-dashboard-nav,.yw496-dashboard-nav *{scroll-behavior:auto!important;transition:none!important;}
 }
