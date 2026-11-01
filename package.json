@@ -449,6 +449,8 @@
     "test:browser:build501": "playwright test --config=playwright.config.mjs tests/browser/build501.spec.mjs",
     "test:build502": "node scripts/build502-check.mjs",
     "test:browser:build502": "playwright test --config=playwright.config.mjs tests/browser/build502.spec.mjs",
+    "test:build503": "node scripts/build503-check.mjs",
+    "test:browser:build503": "playwright test --config=playwright.config.mjs tests/browser/build503.spec.mjs",
     "test:browser:company-owner-session-491": "playwright test --config=playwright.config.mjs tests/browser/company-owner-session-491.spec.mjs",
     "test:rosevear-ql245-source-evidence-477": "node scripts/rosevear-ql245-source-evidence-477-check.mjs",
     "test:browser:pms-owner-reviewer-followup-477": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-reviewer-followup-477.spec.mjs"

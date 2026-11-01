@@ -43,9 +43,10 @@ function install(){
  const hero=node('div');hero.className='yw494-hero';
  // BUILD 498 verified recovered audit view remains mandatory for BUILD 499 receipt review.
  // BUILD 500 session-only comparison remains prerequisite for BUILD 501 scope history.
- // BUILD 502 adds recovery and selection to bounded, session-only comparison summaries.
- hero.append(node('span','OWNER OPERATIONS  /  BUILD 502'),node('h3','My Company Workspace'),
-  node('p','Service-switch decisions, filtered receipt comparison history and recoverable owner-scope rechecks. Counts are advisory, not event-level proof or authorization.'));
+ // BUILD 502 recovery/filter selection remains available; BUILD 503 adds a
+ // keyboard-accessible drill-down of bounded comparison summaries.
+ hero.append(node('span','OWNER OPERATIONS  /  BUILD 503'),node('h3','My Company Workspace'),
+  node('p','Service-switch decisions, filtered receipt comparison drill-downs and recoverable owner-scope rechecks. Counts are advisory, not event-level proof or authorization.'));
  const metrics=node('div');metrics.id='owner494Metrics';metrics.className='yw494-kpis';
  metrics.append(metric('Owned companies','—'),metric('Enabled services','—','blue'),metric('Recent events','—','green'));
  const load=node('button','Load my companies');load.type='button';load.id='owner490Load';
@@ -207,8 +208,12 @@ function install(){
     historyStatus.setAttribute('aria-live','polite');
     const historyList=node('ol');historyList.className='yw501-history-list';
     historyList.dataset.owner501HistoryList=c.id;historyList.hidden=true;
+    const drillDetail=node('div');drillDetail.className='yw503-drill-detail';
+    drillDetail.dataset.owner503DrillDetail=c.id;drillDetail.hidden=true;
+    drillDetail.setAttribute('aria-live','polite');
     let verifiedReceipt=null,lastReviewedReceipt=null,comparisonBaseline=null,receiptSequence=0;
     const comparisonHistory=[];
+    let selectedHistoryToken=null;
     const clearReceipt=message=>{verifiedReceipt=null;receiptButton.disabled=true;
       receiptDetails.hidden=true;receiptDetails.textContent='';
       comparisonBaseline=null;compareButton.disabled=true;compareDetails.hidden=true;
@@ -304,7 +309,8 @@ function install(){
       clearReceipt('Recovered audit receipt cleared from this session. No audit records stored.');
       lastReviewedReceipt=null;comparisonBaseline=null;
       compareStatus.textContent='All session-only receipt comparisons cleared.';
-      comparisonHistory.length=0;historyList.hidden=true;historyList.replaceChildren();
+      comparisonHistory.length=0;selectedHistoryToken=null;historyList.hidden=true;
+      historyList.replaceChildren();drillDetail.hidden=true;drillDetail.replaceChildren();
       historyButton.disabled=true;scopeButton.disabled=true;retryScope.disabled=true;historyFilter.value='all';
       historyStatus.textContent='All local comparison history and scope rechecks cleared.';
       restorePreset.disabled=true;recoverPreset.disabled=true;clearPreset.disabled=true;
@@ -358,16 +364,45 @@ function install(){
         if(comparisonHistory.length>=5)comparisonHistory.shift();
         comparisonHistory.push({token:current.token,checkedAt:new Date().toISOString(),
           description:compareDetails.textContent,kind:comparisonKind,
+          previousCount:prior.count,currentCount:current.count,
+          previousTruncated:prior.truncated,currentTruncated:current.truncated,
+          previousSelection:{...prior.selection},currentSelection:{...current.selection},
           scopeState:null,scopeCount:null,scopeCheckedAt:null});
       }
-      historyList.hidden=true;retryScope.disabled=true;
+      historyList.hidden=true;retryScope.disabled=true;drillDetail.hidden=true;
       historyButton.disabled=false;scopeButton.disabled=false;
       historyStatus.textContent='LOCAL COMPARISON HISTORY READY · '+comparisonHistory.length+
         ' of 5 bounded session summaries. Recheck owner scope for a fresh count.';
     });
+    const showDrill=h=>{
+      if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!comparisonHistory.includes(h)){
+        drillDetail.hidden=true;drillDetail.replaceChildren();return;
+      }
+      selectedHistoryToken=h.token;
+      const rows=[
+        'LOCAL COMPARISON DRILL-DOWN · '+new Date(h.checkedAt).toLocaleString(),
+        'Previous reviewed receipt: '+(h.previousTruncated?'more than 100':h.previousCount)+
+          ' event(s) · '+describeSelection(h.previousSelection),
+        'Current reviewed receipt: '+(h.currentTruncated?'more than 100':h.currentCount)+
+          ' event(s) · '+describeSelection(h.currentSelection),
+        h.kind==='different'?'DIFFERENT FILTERS · no valid count delta':
+          h.kind==='indeterminate'?'COUNT INDETERMINATE · bounded read':
+          'RECEIPT DELTA '+(h.currentCount-h.previousCount>=0?'+':'')+
+            (h.currentCount-h.previousCount)+' event(s)',
+        h.scopeCheckedAt?'Owner-scope server recheck at '+new Date(h.scopeCheckedAt).toLocaleString()+
+          ' · '+h.scopeCount+' matching event(s) · '+String(h.scopeState).toUpperCase():
+          'SCOPE RECHECK PENDING · no matching server count verified for this comparison.'
+      ];
+      drillDetail.replaceChildren(node('strong','Selected comparison '+h.token),
+        ...rows.map(row=>node('p',row)),
+        node('small','Session-only count summaries. Historical checks are not live proof; '+
+          'no event IDs, audit rows, owner approval or service changes are stored.'));
+      drillDetail.hidden=false;
+    };
     const renderHistory=()=>{
       if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!comparisonHistory.length){
-        historyList.hidden=true;historyStatus.textContent='WITHHELD: Current owner and local comparison history required.';return;
+        historyList.hidden=true;drillDetail.hidden=true;
+        historyStatus.textContent='WITHHELD: Current owner and local comparison history required.';return;
       }
       const selected=historyFilter.value;
       const rows=comparisonHistory.filter(h=>selected==='all'||
@@ -378,15 +413,23 @@ function install(){
         (selected==='indeterminate'&&h.scopeState==='indeterminate'));
       historyList.replaceChildren();
       for(const h of rows){
-        historyList.appendChild(node('li',h.checkedAt+' · '+h.description+
+        const item=node('li',h.checkedAt+' · '+h.description+
           (h.scopeCheckedAt?' · SCOPE RECHECK '+h.scopeCheckedAt+' · '+h.scopeCount+
-          ' matching server event(s).':' · Scope not rechecked.')));
+          ' matching server event(s).':' · Scope not rechecked.'));
+        const inspect=node('button','Inspect comparison '+h.token);inspect.type='button';
+        inspect.dataset.owner503Drilldown=String(h.token);
+        inspect.addEventListener('click',()=>showDrill(h));item.appendChild(inspect);
+        historyList.appendChild(item);
       }
       if(!rows.length)historyList.appendChild(node('li','No session comparison matches this history filter.'));
       historyList.hidden=false;
       historyStatus.textContent='FILTERED SESSION COMPARISON HISTORY · '+rows.length+' of '+comparisonHistory.length+
         ' local summaries match '+historyFilter.selectedOptions[0].textContent+
         '. No audit rows saved, event identity evidence or owner approval.';
+      if(selectedHistoryToken!==null){
+        const chosen=rows.find(h=>h.token===selectedHistoryToken);
+        if(chosen)showDrill(chosen);else{selectedHistoryToken=null;drillDetail.hidden=true;}
+      }
     };
     historyButton.addEventListener('click',renderHistory);
     historyFilter.addEventListener('change',()=>{if(!historyList.hidden)renderHistory();});
@@ -435,6 +478,7 @@ function install(){
           (found.data.length>100||receipt.truncated?' · COUNT INDETERMINATE':
             found.data.length===receipt.count?' · COUNT STABLE':' · COUNT MOVED')+
           '. Fresh server read only; no event rows stored or owner approval inferred.';
+        if(selectedHistoryToken===h.token)showDrill(h);
       }catch(e){if(epoch===generation){
         historyStatus.textContent='WITHHELD: '+(e?.message||'Scope recheck failed')+
           '. Retry the same reviewed receipt after the owner-scoped read is available.';
@@ -450,7 +494,7 @@ function install(){
     timeline.className='yw494-review-details';
     timeline.append(presets,presetStatus,viewStatus,receiptButton,receiptStatus,receiptDetails,
       compareButton,compareStatus,compareDetails,historyButton,scopeButton,retryScope,
-      historyStatus,historyList,
+      historyStatus,historyList,drillDetail,
       filters,historyFilter,filterStatus,events);item.appendChild(timeline);
     let filterEpoch=0;
     filter.addEventListener('click',async()=>{
