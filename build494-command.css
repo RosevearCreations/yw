@@ -202,6 +202,29 @@
 .yw505-gaps summary{cursor:pointer;color:#fff;font-weight:700;}
 .yw505-gaps li{margin-top:8px;color:#fbe6cb;}
 @media(max-width:850px){.yw505-evidence-grid{grid-template-columns:minmax(0,1fr);}}
+.owner506-review{min-width:0;overflow-wrap:anywhere;}
+.owner506-review .owner350-head label{display:flex;align-items:center;gap:8px;font-weight:750;}
+.owner506-review select{max-width:100%;min-height:44px;border:2px solid #98b8d5;
+  border-radius:9px;padding:8px 10px;background:#102c43;color:#f5faff;}
+.owner506-review select:focus-visible,.owner506-review a:focus-visible{
+  outline:3px solid #f5d95c;outline-offset:3px;}
+.yw506-review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0;}
+.yw506-review-lane{min-width:0;overflow-wrap:anywhere;background:linear-gradient(145deg,#102b43,#101e35);
+  border:1px solid #6c9dbb;border-radius:13px;padding:14px;color:#e9f4ff;}
+.yw506-review-lane h5{font-size:1rem;color:#f9faff;margin:0 0 10px;}
+.yw506-review-lane > strong{display:block;color:#b5e5fc;font-size:.83rem;letter-spacing:.03em;}
+.yw506-review-lane p{line-height:1.55;color:#e9f5ff;}
+.yw506-review-lane a{color:#c9eeff;text-decoration:underline;}
+.yw506-cohorts{display:grid;gap:8px;margin-top:10px;}
+.yw506-cohorts p{background:#08253a;padding:10px;border-radius:9px;margin:0;}
+.yw506-note{border-left:3px solid #f8c869;padding-left:10px;}
+.yw506-exceptions{padding-left:23px;max-height:390px;overflow:auto;}
+.yw506-exceptions li{padding:8px 0;border-bottom:1px solid #34536c;}
+.yw506-exceptions strong,.yw506-exceptions small{display:block;line-height:1.4;}
+.yw506-exceptions small{color:#bcd9e9;overflow-wrap:anywhere;}
+.yw506-review-lane details{border:1px solid #728fa8;padding:10px;border-radius:8px;}
+.yw506-review-lane summary{cursor:pointer;font-weight:750;color:#fff;}
+@media(max-width:850px){.yw506-review-grid{grid-template-columns:minmax(0,1fr);}}
 @media (prefers-reduced-motion:reduce){
  .yw496-dashboard-nav,.yw496-dashboard-nav *{scroll-behavior:auto!important;transition:none!important;}
 }
