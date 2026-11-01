@@ -91,12 +91,12 @@ test('selected exception resolution remains not-ready, then fails closed on miss
  await select.selectOption({index:1});await check.click();
  await expect(status).toContainText('RESOLUTION NOT READY');
  await expect(status).toContainText('REFERENCE ABSENT');
- await expect(note).toContainText('QL-269 UNDER REVIEW');
+ await expect(note).toHaveValue(/QL-269 UNDER REVIEW/);
  await page.evaluate(()=>window.__ledger.push({entry_id:1,profile_id:'legacy-a',
   evidence_reference:'QL-269-REVIEW-009',evidence_state:'UNVERIFIED_REFERENCE',
   recorded_at:'2026-10-31T12:00:00Z'}));
  await check.click();await expect(status).toContainText('REFERENCE PRESENT AS UNVERIFIED');
- await expect(note).toContainText('PENDING: obtain a separately authorized owner decision');
+ await expect(note).toHaveValue(/PENDING: obtain a separately authorized owner decision/);
  await page.evaluate(()=>window.__ledgerFail=true);
  await check.click();await expect(status).toContainText('WITHHELD');await expect(note).toBeHidden();
  await page.evaluate(()=>window.YWI_AUTH.getState=()=>({isAuthenticated:false,user:{id:'primary'}}));
