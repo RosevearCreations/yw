@@ -172,6 +172,17 @@
 .yw503-high-contrast button:disabled{opacity:.65!important;border-style:dashed!important;}
 .yw503-high-contrast input:focus-visible,.yw503-high-contrast button:focus-visible{
   outline:4px solid #ffff00!important;outline-offset:3px;}
+.yw504-resolution-matrix{padding:12px 12px 12px 32px;line-height:1.55;
+  color:#f3faff;background:#102c3f;border:2px solid #94bbd0;border-radius:10px;}
+.yw504-resolution-matrix li{padding:6px 0;border-bottom:1px solid #44687e;overflow-wrap:anywhere;}
+.yw504-resolution-matrix li:last-child{border-bottom:none;}
+.yw504-contrast-preference{padding:9px 11px;border:1px solid #94bbd0;
+  border-radius:10px;color:#f2f9ff;background:#102c3f;line-height:1.5;}
+.yw494-command [data-owner504-handoff-note]:not([hidden]){display:block;
+  min-height:195px;max-width:100%;width:100%;background:#061c2c;color:#f4faff;
+  border:2px solid #94bbd0;}
+.yw494-command [data-owner504-handoff-note][hidden],
+.yw494-command [data-platform504-resolution-matrix][hidden]{display:none!important;}
 @media (prefers-reduced-motion:reduce){
  .yw496-dashboard-nav,.yw496-dashboard-nav *{scroll-behavior:auto!important;transition:none!important;}
 }

@@ -76,6 +76,7 @@
     // Build 501: require two distinct focused cards for multi-card accessibility review.
     // Build 502: check measurable navigation control contrast after manual multi-card review.
     // Build 503: provide a session-only high-contrast keyboard follow-up, without acceptance claims.
+    // Build 504: persist only the display contrast flag on this device and allow keyboard toggle.
     // Search, focus, return and retest never mutate management evidence.
     const nav=document.createElement('nav');nav.id='owner496Navigator';
     nav.className='yw496-dashboard-nav';nav.setAttribute('aria-label','Find management dashboard cards');
@@ -128,6 +129,11 @@
     highContrastButton.className='secondary';highContrastButton.dataset.owner503HighContrast='true';
     highContrastButton.textContent='Enable high-contrast navigation';
     highContrastButton.setAttribute('aria-pressed','false');
+    const contrastPreferenceStatus=document.createElement('p');
+    contrastPreferenceStatus.dataset.owner504ContrastPreference='true';
+    contrastPreferenceStatus.className='yw504-contrast-preference';
+    contrastPreferenceStatus.setAttribute('aria-live','polite');
+    contrastPreferenceStatus.textContent='High contrast is off. Alt+Shift+H toggles it while using this card finder.';
     const highContrastCheck=document.createElement('button');highContrastCheck.type='button';
     highContrastCheck.className='secondary';highContrastCheck.dataset.owner503KeyboardCheck='true';
     highContrastCheck.textContent='Check high-contrast keyboard follow-up';highContrastCheck.disabled=true;
@@ -135,7 +141,15 @@
     highContrastSummary.dataset.owner503KeyboardEvidence='true';highContrastSummary.hidden=true;
     highContrastSummary.setAttribute('aria-live','polite');
     review.append(returnButton,acceptButton,retestButton,summaryButton,multiButton,contrastButton,
-      highContrastButton,highContrastCheck,acceptance,summary,multiSummary,contrastSummary,highContrastSummary);
+      highContrastButton,highContrastCheck,contrastPreferenceStatus,
+      acceptance,summary,multiSummary,contrastSummary,highContrastSummary);
+    const contrastPreferenceKey='yw:management-high-contrast:v504';
+    try{if(window.localStorage.getItem(contrastPreferenceKey)==='on'){
+      nav.classList.add('yw503-high-contrast');
+      highContrastButton.textContent='Disable high-contrast navigation';
+      highContrastButton.setAttribute('aria-pressed','true');
+      contrastPreferenceStatus.textContent='HIGH CONTRAST RESTORED from this device. Alt+Shift+H toggles the setting; manual accessibility approval remains separate.';
+    }}catch{contrastPreferenceStatus.textContent='Device preference storage unavailable; high contrast remains usable for this session.';}
     let focusedCard=null,returnedToSearch=false,retestAttempt=1;
     const checkedAttempts=[];
     const resetAcceptance=()=>{focusedCard=null;returnedToSearch=false;
@@ -269,9 +283,18 @@
       highContrastButton.setAttribute('aria-pressed',String(active));
       highContrastCheck.disabled=!active||multiSummary.hidden;
       highContrastSummary.hidden=true;
+      try{window.localStorage.setItem(contrastPreferenceKey,active?'on':'off');
+        contrastPreferenceStatus.textContent=(active?'HIGH CONTRAST ON':'HIGH CONTRAST OFF')+
+          ' · display preference saved on this device. Alt+Shift+H toggles it in this card finder.';
+      }catch{contrastPreferenceStatus.textContent='Display preference could not be saved; mode remains available for this session.';}
       acceptance.textContent=active?'HIGH-CONTRAST MODE ON · use Tab, Enter and Escape to review navigation. '+
-        'Then run the sampled follow-up check; this setting lasts only for this page session.':
+        'Then run the sampled follow-up check; mode is not formal owner approval.':
         'High-contrast mode off. Previous follow-up evidence withdrawn; manual checks remain local.';
+    });
+    nav.addEventListener('keydown',event=>{
+      if(event.altKey&&event.shiftKey&&event.key.toLowerCase()==='h'){
+        event.preventDefault();highContrastButton.click();
+      }
     });
     highContrastCheck.addEventListener('click',()=>{
       if(highContrastCheck.disabled||multiSummary.hidden||
