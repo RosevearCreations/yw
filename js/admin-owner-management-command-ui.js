@@ -75,6 +75,7 @@
     // Build 500: summarize repeated manual retests, without server evidence or approval.
     // Build 501: require two distinct focused cards for multi-card accessibility review.
     // Build 502: check measurable navigation control contrast after manual multi-card review.
+    // Build 503: provide a session-only high-contrast keyboard follow-up, without acceptance claims.
     // Search, focus, return and retest never mutate management evidence.
     const nav=document.createElement('nav');nav.id='owner496Navigator';
     nav.className='yw496-dashboard-nav';nav.setAttribute('aria-label','Find management dashboard cards');
@@ -123,15 +124,26 @@
     contrastSummary.dataset.owner502ContrastEvidence='true';contrastSummary.hidden=true;
     contrastSummary.setAttribute('role','status');
     contrastSummary.setAttribute('aria-live','polite');
+    const highContrastButton=document.createElement('button');highContrastButton.type='button';
+    highContrastButton.className='secondary';highContrastButton.dataset.owner503HighContrast='true';
+    highContrastButton.textContent='Enable high-contrast navigation';
+    highContrastButton.setAttribute('aria-pressed','false');
+    const highContrastCheck=document.createElement('button');highContrastCheck.type='button';
+    highContrastCheck.className='secondary';highContrastCheck.dataset.owner503KeyboardCheck='true';
+    highContrastCheck.textContent='Check high-contrast keyboard follow-up';highContrastCheck.disabled=true;
+    const highContrastSummary=document.createElement('p');highContrastSummary.className='yw503-keyboard-summary';
+    highContrastSummary.dataset.owner503KeyboardEvidence='true';highContrastSummary.hidden=true;
+    highContrastSummary.setAttribute('role','status');highContrastSummary.setAttribute('aria-live','polite');
     review.append(returnButton,acceptButton,retestButton,summaryButton,multiButton,contrastButton,
-      acceptance,summary,multiSummary,contrastSummary);
+      highContrastButton,highContrastCheck,acceptance,summary,multiSummary,contrastSummary,highContrastSummary);
     let focusedCard=null,returnedToSearch=false,retestAttempt=1;
     const checkedAttempts=[];
     const resetAcceptance=()=>{focusedCard=null;returnedToSearch=false;
       returnButton.disabled=true;acceptButton.disabled=true;retestButton.disabled=true;
       summaryButton.disabled=true;summary.hidden=true;summary.textContent='';
       multiButton.disabled=true;multiSummary.hidden=true;multiSummary.textContent='';
-      contrastButton.disabled=true;contrastSummary.hidden=true;contrastSummary.textContent='';};
+      contrastButton.disabled=true;contrastSummary.hidden=true;contrastSummary.textContent='';
+      highContrastCheck.disabled=true;highContrastSummary.hidden=true;highContrastSummary.textContent='';};
     const sections=[...el.querySelectorAll('section.admin-panel-block')]
       .map(section=>({section,heading:section.querySelector('h4')?.textContent?.trim()}))
       .filter(entry=>entry.heading);
@@ -211,29 +223,30 @@
         'server evidence or role change.';
       multiSummary.hidden=false;
       contrastButton.disabled=false;
+      highContrastCheck.disabled=!nav.classList.contains('yw503-high-contrast');
     });
+    const rgb=value=>{
+      const raw=String(value||'').trim();
+      const hex=/^#([0-9a-f]{6})$/i.exec(raw);
+      if(hex)return [0,2,4].map(offset=>parseInt(hex[1].slice(offset,offset+2),16));
+      const match=/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)$/.exec(raw);
+      if(!match||match[4]!==undefined&&Number(match[4])!==1)return null;
+      return match.slice(1,4).map(Number);
+    };
+    const luminance=color=>color.map(v=>{const c=v/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;})
+      .reduce((total,v,i)=>total+v*[.2126,.7152,.0722][i],0);
+    const ratio=(fg,bg)=>{const a=rgb(fg),b=rgb(bg);if(!a||!b)return null;
+      const bright=Math.max(luminance(a),luminance(b)),dark=Math.min(luminance(a),luminance(b));
+      return (bright+.05)/(dark+.05);};
+    const sample=(name,element)=>{
+      if(!element)return {name,value:null};
+      const css=window.getComputedStyle(element);
+      return {name,value:ratio(css.color,css.backgroundColor)};
+    };
     contrastButton.addEventListener('click',()=>{
       if(contrastButton.disabled||multiSummary.hidden||
          new Set(checkedAttempts.map(entry=>entry.card)).size<2)return;
       // Computed samples only: a passing ratio is not a full-card accessibility certification.
-      const rgb=value=>{
-        const raw=String(value||'').trim();
-        const hex=/^#([0-9a-f]{6})$/i.exec(raw);
-        if(hex)return [0,2,4].map(offset=>parseInt(hex[1].slice(offset,offset+2),16));
-        const match=/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)$/.exec(raw);
-        if(!match||match[4]!==undefined&&Number(match[4])!==1)return null;
-        return match.slice(1,4).map(Number);
-      };
-      const luminance=color=>color.map(v=>{const c=v/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;})
-        .reduce((total,v,i)=>total+v*[.2126,.7152,.0722][i],0);
-      const ratio=(fg,bg)=>{const a=rgb(fg),b=rgb(bg);if(!a||!b)return null;
-        const bright=Math.max(luminance(a),luminance(b)),dark=Math.min(luminance(a),luminance(b));
-        return (bright+.05)/(dark+.05);};
-      const sample=(name,element)=>{
-        if(!element)return {name,value:null};
-        const css=window.getComputedStyle(element);
-        return {name,value:ratio(css.color,css.backgroundColor)};
-      };
       const checks=[sample('Search text',input),sample('Result button text',results.querySelector('button')),
         sample('Status text',status)];
       const focusColor=window.getComputedStyle(nav).getPropertyValue('--yw502-focus-color');
@@ -249,6 +262,37 @@
         ' manually checked card destinations; backgrounds, content, zoom and high-contrast modes require owner review. '+
         'Not formal accessibility certification or owner approval.';
       contrastSummary.hidden=false;
+    });
+    highContrastButton.addEventListener('click',()=>{
+      const active=nav.classList.toggle('yw503-high-contrast');
+      highContrastButton.textContent=active?'Disable high-contrast navigation':'Enable high-contrast navigation';
+      highContrastButton.setAttribute('aria-pressed',String(active));
+      highContrastCheck.disabled=!active||multiSummary.hidden;
+      highContrastSummary.hidden=true;
+      acceptance.textContent=active?'HIGH-CONTRAST MODE ON · use Tab, Enter and Escape to review navigation. '+
+        'Then run the sampled follow-up check; this setting lasts only for this page session.':
+        'High-contrast mode off. Previous follow-up evidence withdrawn; manual checks remain local.';
+    });
+    highContrastCheck.addEventListener('click',()=>{
+      if(highContrastCheck.disabled||multiSummary.hidden||
+         !nav.classList.contains('yw503-high-contrast')||
+         new Set(checkedAttempts.map(entry=>entry.card)).size<2)return;
+      input.focus();
+      const focusReturned=document.activeElement===input;
+      const checks=[sample('Search',input),sample('Result',results.querySelector('button')),
+        sample('Status',status)];
+      const focus=ratio(window.getComputedStyle(nav).getPropertyValue('--yw502-focus-color'),
+        window.getComputedStyle(input).backgroundColor);
+      const passed=focusReturned&&checks.every(c=>c.value!==null&&c.value>=7)&&focus!==null&&focus>=3;
+      highContrastSummary.textContent=(passed?'HIGH-CONTRAST KEYBOARD FOLLOW-UP PASS':
+        'HIGH-CONTRAST FOLLOW-UP REQUIRES REVIEW')+' · search focus '+
+        (focusReturned?'returned':'not verified')+' · '+checks.map(c=>c.name+' '+
+          (c.value===null?'unmeasurable':c.value.toFixed(2)+':1')).join(' · ')+
+        ' · focus outline '+(focus===null?'unmeasurable':focus.toFixed(2)+':1')+
+        '. Target sampled text 7:1 and focus 3:1. '+checkedAttempts.length+
+        ' local card checks recorded; personally retest Tab, Enter, Escape, zoom and screen-reader flow. '+
+        'No formal certification or owner approval.';
+      highContrastSummary.hidden=false;
     });
     retestButton.addEventListener('click',()=>{
       if(!focusedCard||!returnedToSearch)return;

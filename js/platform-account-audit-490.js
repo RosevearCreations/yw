@@ -19,9 +19,10 @@ function install(){
  const hero=el('div');hero.className='yw494-hero';
  // BUILD 498 copy-only exception follow-up remains restricted in BUILD 499 aging review.
  // BUILD 500 copy-only priority follow-up remains available in BUILD 501.
- // BUILD 502 requires a fresh restricted ledger read before queue-wide follow-up readiness.
+ // BUILD 502 queue readiness remains available; BUILD 503 adds a focused,
+ // fail-closed resolution-readiness check per exception.
  hero.append(el('span','PLATFORM SECURITY  /  BUILD 502'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
-  el('p','Review restricted references, recheck local priority queue readiness against the ledger, and prepare copy-only independent follow-up. No timer, reference or note grants approval or changes roles.'));
+  el('p','Review restricted references, recheck local priority and individual exception readiness against the ledger, and prepare copy-only independent follow-up. No timer, reference or note grants approval or changes roles.'));
  const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
  metrics.append(stat('Audited accounts','—'),stat('Legacy exceptions','—','amber'),stat('Unverified references','—','blue'));
  const filterLabel=el('label','Review account group');filterLabel.setAttribute('for','platform494ReviewFilter');
@@ -248,10 +249,38 @@ function install(){
       const readinessPacket=el('textarea');readinessPacket.readOnly=true;readinessPacket.rows=7;
       readinessPacket.dataset.platform502ReadinessPacket='true';readinessPacket.hidden=true;
       readinessPacket.setAttribute('aria-label','Copy-only reviewer priority queue readiness handoff');
+      const resolutionSelect=el('select');resolutionSelect.dataset.platform503ResolutionSelect='true';
+      resolutionSelect.setAttribute('aria-label','Choose unresolved reviewer exception for resolution readiness');
+      resolutionSelect.disabled=true;
+      const resolutionButton=el('button','Inspect selected exception resolution readiness');
+      resolutionButton.type='button';resolutionButton.dataset.platform503Resolution='true';
+      resolutionButton.disabled=true;
+      const resolutionStatus=el('p','Choose an unresolved local exception for an independent resolution-readiness check.');
+      resolutionStatus.className='yw503-resolution-state';resolutionStatus.dataset.platform503ResolutionStatus='true';
+      resolutionStatus.setAttribute('role','status');resolutionStatus.setAttribute('aria-live','polite');
+      const resolutionNote=el('textarea');resolutionNote.rows=5;resolutionNote.readOnly=true;
+      resolutionNote.dataset.platform503ResolutionNote='true';resolutionNote.hidden=true;
+      resolutionNote.setAttribute('aria-label','Copy-only individual reviewer exception resolution checklist');
       let lastException=null;
       let firstSeen=new Map();
       let priorityQueue=new Map();
       let queueRevision=0;
+      const refreshResolution=()=>{
+        resolutionNote.hidden=true;resolutionNote.value='';
+        const prior=resolutionSelect.value;
+        resolutionSelect.replaceChildren();
+        resolutionSelect.appendChild(new Option('Select unresolved local ticket',''));
+        for(const [key,row] of priorityQueue)
+          resolutionSelect.appendChild(new Option(row.reference+' · '+row.code,key));
+        resolutionSelect.value=priorityQueue.has(prior)?prior:'';
+        resolutionSelect.disabled=!priorityQueue.size;
+        resolutionButton.disabled=!resolutionSelect.value;
+        resolutionStatus.textContent='RECHECK REQUIRED · individual resolution requires a fresh restricted ledger read and independent owner decision.';
+      };
+      resolutionSelect.addEventListener('change',()=>{
+        resolutionButton.disabled=!resolutionSelect.value;resolutionNote.hidden=true;
+        resolutionStatus.textContent='RECHECK REQUIRED · selected ticket not yet verified by a fresh ledger read.';
+      });
       const queueBand=observedAt=>{
         const hours=Math.floor(Math.max(0,Date.now()-observedAt)/3600000);
         return hours>=24?{rank:0,label:'HIGH RECHECK',hours}:
@@ -280,6 +309,7 @@ function install(){
           priorityQueue=new Map([...priorityQueue].slice(-5));
         priorityQueue.set(id,{reference,code,observedAt});
         queueRevision++;readinessButton.disabled=false;
+        refreshResolution();
         readinessPacket.value='';readinessPacket.hidden=true;
         readinessStatus.textContent='RECHECK REQUIRED · queue changed; fresh restricted ledger read required before follow-up.';
         queueButton.disabled=false;queueList.hidden=true;
@@ -322,6 +352,7 @@ function install(){
         firstSeen=new Map([...firstSeen].filter(([id])=>!id.startsWith(reference+'|')));
         priorityQueue=new Map([...priorityQueue].filter(([id])=>!id.startsWith(reference+'|')));
         queueRevision++;readinessButton.disabled=!priorityQueue.size;
+        refreshResolution();
         readinessPacket.value='';readinessPacket.hidden=true;
         readinessStatus.textContent='REFERENCE MATCHED · queue readiness must be checked again for remaining observations.';
         queueButton.disabled=!priorityQueue.size;queueList.hidden=true;
@@ -376,6 +407,7 @@ function install(){
             ' observation(s), oldest/highest recheck priority first. Device-clock estimates only; not an external queue, source proof or authorization.';
         }catch(e){priorityQueue.clear();queueList.replaceChildren();queueList.hidden=true;
           queueRevision++;queueButton.disabled=true;readinessButton.disabled=true;
+          refreshResolution();
           readinessPacket.value='';readinessPacket.hidden=true;
           queueStatus.textContent='WITHHELD: '+(e?.message||'Session changed');}
       });
@@ -414,6 +446,7 @@ function install(){
           }
           queueRevision++;queueList.hidden=true;
           queueButton.disabled=!priorityQueue.size;
+          refreshResolution();
           readinessStatus.textContent='FRESH LEDGER CHECK · '+stillMissing.length+
             ' local observation(s) still missing, '+nowPresent.length+
             ' ticket(s) now present as UNVERIFIED_REFERENCE. Missing references require independent proof; presence is not a decision.';
@@ -431,6 +464,46 @@ function install(){
           (e?.message||'Readiness unavailable')+'. Retry the restricted read; no handoff prepared.';}}
         finally{try{assertCurrent();readinessButton.disabled=!priorityQueue.size;}
           catch{readinessButton.disabled=true;}}
+      });
+      resolutionButton.addEventListener('click',async()=>{
+        const id=resolutionSelect.value,entry=priorityQueue.get(id),revision=queueRevision;
+        resolutionButton.disabled=true;resolutionNote.hidden=true;
+        resolutionStatus.textContent='Checking selected local exception against the restricted ledger…';
+        try{
+          assertCurrent();
+          if(!legacyIds.has(x.profile_id)||!entry||!validReference(entry.reference))
+            throw Error('Current legacy account and selected unresolved exception required');
+          const result=await sb.rpc('ywi_platform_legacy_evidence_list_493');
+          assertCurrent();
+          if(queueRevision!==revision||priorityQueue.get(id)!==entry||resolutionSelect.value!==id)
+            throw Error('Local queue or selected exception changed during recheck');
+          const rows=result.data;
+          if(result.error||!Array.isArray(rows)||rows.length>200||rows.some(e=>
+            !legacyIds.has(e.profile_id)||!Number.isSafeInteger(Number(e.entry_id))||
+            !validReference(e.evidence_reference)||e.evidence_state!=='UNVERIFIED_REFERENCE'||
+            !Number.isFinite(Date.parse(e.recorded_at)))||
+            new Set(rows.map(e=>String(e.entry_id))).size!==rows.length)
+            throw Error('Restricted ledger incomplete, foreign or inconsistent');
+          const matches=rows.filter(e=>e.profile_id===x.profile_id&&e.evidence_reference===entry.reference);
+          if(matches.length>1)throw Error('Conflicting duplicate reviewer references');
+          const presence=matches.length?'REFERENCE PRESENT AS UNVERIFIED':'REFERENCE ABSENT';
+          resolutionStatus.textContent='RESOLUTION NOT READY · '+presence+
+            ' · original independent proof and authorized owner decision are still required.';
+          resolutionNote.value=['YW Build 503 · COPY-ONLY EXCEPTION RESOLUTION CHECKLIST',
+            'QL-269 UNDER REVIEW · no integration or role activation.',
+            'Legacy profile: '+x.profile_id,'Ticket: '+entry.reference,
+            'Local exception: '+entry.code,'Fresh restricted ledger read (UTC): '+new Date().toISOString(),
+            'Restricted reference state: '+presence,
+            'PENDING: independently verify original source evidence and signer provenance.',
+            'PENDING: reconcile the independent reviewer decision against owner scope.',
+            'PENDING: obtain a separately authorized owner decision before any role or gate change.',
+            'Not sent, approved or saved to server. Local device age is not evidence of resolution.'].join('\n');
+          resolutionNote.hidden=false;
+        }catch(e){if(epoch===generation){resolutionNote.value='';resolutionNote.hidden=true;
+          resolutionStatus.textContent='WITHHELD: '+(e?.message||'Resolution readiness unavailable')+
+            '. No resolution or authority inferred.';}}
+        finally{try{assertCurrent();resolutionButton.disabled=!resolutionSelect.value;}
+          catch{resolutionButton.disabled=true;}}
       });
       followUp.addEventListener('click',()=>{
         try{
@@ -486,7 +559,8 @@ function install(){
       intake.append(intakeHelp,recommendationLabel,refLabel,acknowledgement,
        intakeButton,reconcileButton,intakeStatus,followUp,followUpNote,followUpStatus,
        refreshAge,ageStatus,priorityButton,priorityNote,priorityStatus,
-       queueButton,queueStatus,queueList,readinessButton,readinessStatus,readinessPacket);
+       queueButton,queueStatus,queueList,readinessButton,readinessStatus,readinessPacket,
+       resolutionSelect,resolutionButton,resolutionStatus,resolutionNote);
       item.appendChild(intake);
     }
     view.appendChild(item);
