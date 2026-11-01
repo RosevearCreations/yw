@@ -73,6 +73,7 @@
     ].join('');
     // Build 499: owner navigation accessibility retest is session-only.
     // Build 500: summarize repeated manual retests, without server evidence or approval.
+    // Build 501: require two distinct focused cards for multi-card accessibility review.
     // Search, focus, return and retest never mutate management evidence.
     const nav=document.createElement('nav');nav.id='owner496Navigator';
     nav.className='yw496-dashboard-nav';nav.setAttribute('aria-label','Find management dashboard cards');
@@ -108,12 +109,20 @@
     const summary=document.createElement('p');summary.className='yw500-nav-summary';
     summary.dataset.owner500RetestEvidence='true';summary.hidden=true;
     summary.setAttribute('aria-live','polite');
-    review.append(returnButton,acceptButton,retestButton,summaryButton,acceptance,summary);
+    const multiButton=document.createElement('button');multiButton.type='button';
+    multiButton.className='secondary';multiButton.dataset.owner501MultiCardReview='true';
+    multiButton.textContent='Review multi-card keyboard accessibility';multiButton.disabled=true;
+    const multiSummary=document.createElement('p');multiSummary.className='yw501-multicard-summary';
+    multiSummary.dataset.owner501MultiCardEvidence='true';multiSummary.hidden=true;
+    multiSummary.setAttribute('aria-live','polite');
+    review.append(returnButton,acceptButton,retestButton,summaryButton,multiButton,
+      acceptance,summary,multiSummary);
     let focusedCard=null,returnedToSearch=false,retestAttempt=1;
     const checkedAttempts=[];
     const resetAcceptance=()=>{focusedCard=null;returnedToSearch=false;
       returnButton.disabled=true;acceptButton.disabled=true;retestButton.disabled=true;
-      summaryButton.disabled=true;summary.hidden=true;summary.textContent='';};
+      summaryButton.disabled=true;summary.hidden=true;summary.textContent='';
+      multiButton.disabled=true;multiSummary.hidden=true;multiSummary.textContent='';};
     const sections=[...el.querySelectorAll('section.admin-panel-block')]
       .map(section=>({section,heading:section.querySelector('h4')?.textContent?.trim()}))
       .filter(entry=>entry.heading);
@@ -167,7 +176,8 @@
         ' · attempt '+retestAttempt+'. Manual session-only acknowledgment; not formal owner acceptance, server evidence or a role change.';
       acceptButton.disabled=true;retestButton.disabled=false;
       summaryButton.disabled=!(retestAttempt>=2&&checkedAttempts.length>=2);
-      summary.hidden=true;
+      multiButton.disabled=!(retestAttempt>=2&&new Set(checkedAttempts.map(entry=>entry.card)).size>=2);
+      summary.hidden=true;multiSummary.hidden=true;
     });
     summaryButton.addEventListener('click',()=>{
       if(summaryButton.disabled||!focusedCard||!returnedToSearch||retestAttempt<2)return;
@@ -179,6 +189,18 @@
         '. Keyboard focus and return were checked in this session. No formal owner acceptance, '+
         'external accessibility certification, server evidence or role change.';
       summary.hidden=false;
+    });
+    multiButton.addEventListener('click',()=>{
+      if(multiButton.disabled||!focusedCard||!returnedToSearch||retestAttempt<2)return;
+      const latest=checkedAttempts.at(-1);
+      const cards=[...new Set(checkedAttempts.map(entry=>entry.card))];
+      if(latest?.attempt!==retestAttempt||cards.length<2)return;
+      multiSummary.textContent='MULTI-CARD ACCESSIBILITY REVIEW · '+cards.length+
+        ' distinct management cards checked by keyboard in this session: '+cards.join(' · ')+
+        '. Each required focus, return to search and explicit local acknowledgment. '+
+        'Manual device readback only; no formal owner acceptance, external accessibility certification, '+
+        'server evidence or role change.';
+      multiSummary.hidden=false;
     });
     retestButton.addEventListener('click',()=>{
       if(!focusedCard||!returnedToSearch)return;
