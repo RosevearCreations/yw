@@ -244,7 +244,7 @@ function install(){
       readinessButton.dataset.platform502Readiness='true';readinessButton.disabled=true;
       const readinessStatus=el('p','Readiness withheld until unresolved tickets are freshly checked against the restricted ledger.');
       readinessStatus.className='yw502-readiness-state';readinessStatus.dataset.platform502ReadinessStatus='true';
-      readinessStatus.setAttribute('role','status');
+      readinessStatus.setAttribute('aria-live','polite');
       const readinessPacket=el('textarea');readinessPacket.readOnly=true;readinessPacket.rows=7;
       readinessPacket.dataset.platform502ReadinessPacket='true';readinessPacket.hidden=true;
       readinessPacket.setAttribute('aria-label','Copy-only reviewer priority queue readiness handoff');
