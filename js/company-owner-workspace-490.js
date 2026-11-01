@@ -210,7 +210,7 @@ function install(){
     historyList.dataset.owner501HistoryList=c.id;historyList.hidden=true;
     const drillDetail=node('div');drillDetail.className='yw503-drill-detail';
     drillDetail.dataset.owner503DrillDetail=c.id;drillDetail.hidden=true;
-    drillDetail.setAttribute('role','status');drillDetail.setAttribute('aria-live','polite');
+    drillDetail.setAttribute('aria-live','polite');
     let verifiedReceipt=null,lastReviewedReceipt=null,comparisonBaseline=null,receiptSequence=0;
     const comparisonHistory=[];
     let selectedHistoryToken=null;

@@ -257,7 +257,7 @@ function install(){
       resolutionButton.disabled=true;
       const resolutionStatus=el('p','Choose an unresolved local exception for an independent resolution-readiness check.');
       resolutionStatus.className='yw503-resolution-state';resolutionStatus.dataset.platform503ResolutionStatus='true';
-      resolutionStatus.setAttribute('role','status');resolutionStatus.setAttribute('aria-live','polite');
+      resolutionStatus.setAttribute('aria-live','polite');
       const resolutionNote=el('textarea');resolutionNote.rows=5;resolutionNote.readOnly=true;
       resolutionNote.dataset.platform503ResolutionNote='true';resolutionNote.hidden=true;
       resolutionNote.setAttribute('aria-label','Copy-only individual reviewer exception resolution checklist');

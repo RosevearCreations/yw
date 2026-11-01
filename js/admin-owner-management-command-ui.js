@@ -133,7 +133,7 @@
     highContrastCheck.textContent='Check high-contrast keyboard follow-up';highContrastCheck.disabled=true;
     const highContrastSummary=document.createElement('p');highContrastSummary.className='yw503-keyboard-summary';
     highContrastSummary.dataset.owner503KeyboardEvidence='true';highContrastSummary.hidden=true;
-    highContrastSummary.setAttribute('role','status');highContrastSummary.setAttribute('aria-live','polite');
+    highContrastSummary.setAttribute('aria-live','polite');
     review.append(returnButton,acceptButton,retestButton,summaryButton,multiButton,contrastButton,
       highContrastButton,highContrastCheck,acceptance,summary,multiSummary,contrastSummary,highContrastSummary);
     let focusedCard=null,returnedToSearch=false,retestAttempt=1;
