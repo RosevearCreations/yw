@@ -497,6 +497,7 @@ jobs:
       - run: npm run test:build502
       - run: npm run test:build503
       - run: npm run test:build504
+      - run: npm run test:build505
       - run: npm run test:browser:build495
       - run: npm run test:browser:build496
       - run: npm run test:browser:build497
@@ -507,6 +508,7 @@ jobs:
       - run: npm run test:browser:build502
       - run: npm run test:browser:build503
       - run: npm run test:browser:build504
+      - run: npm run test:browser:build505
       - run: npm run test:browser:company-owner-session-491
       - run: npm run test:rosevear-ql245-source-evidence-477
       - run: npm run test:browser:pms-owner-renewal-reviewer-followup-476
