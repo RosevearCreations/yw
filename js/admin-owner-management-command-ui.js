@@ -34,6 +34,7 @@
       '<section class="admin-panel-block owner353-forecast" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity &amp; workability forecast</h4><p class="section-subtitle">Build 353 · 7- and 14-day advisory readiness from existing schedules, recurring visits, crews, equipment, stored workability evidence and seasonal operations.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>No external weather provider:</strong> this forecast uses YW workability observations/rules and operational evidence already stored in the application. It does not auto-dispatch or change source records.</div><div id="owner353Forecast"></div></section>',
       '<section class="admin-panel-block owner375-scenarios" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season capacity mix &amp; profitability scenario evidence</h4><p class="section-subtitle">Build 375 · recorded 14-day seasonal workload mix, shared crew-day evidence, configured route-capacity history, workability recovery, material readiness and permission-scoped profitability.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Evidence scenarios only — no automatic commitments:</strong> missing assumptions stay visible. This view cannot auto-price, dispatch, hire, schedule, purchase, contact suppliers/customers or commit customer/vendor work.</div><div id="owner375Scenarios"></div></section>',
       '<section class="admin-panel-block owner505-continuity" data-build="505" style="margin-top:12px;"><div class="owner350-head"><div><span class="module-kicker">Build 505 · Management</span><h4>Service economics, seasonal capacity &amp; reliability continuity</h4><p class="section-subtitle">Source-linked review of the recorded 14-day seasonal mix and separately dated 30/60-day plan-completion evidence. These are not interchangeable trend windows.</p></div><label for="owner505Season">Season <select id="owner505Season" aria-label="Review service economics and reliability by season"><option value="all">All seasons</option><option value="spring_summer">Spring / summer</option><option value="fall">Fall cleanup</option><option value="winter">Winter snow / storm</option><option value="four_season">Four-season</option></select></label></div><div class="notice">Read-only advisory review. No invented growth, profit trend, spare crew capacity, forecast accuracy or improved service reliability. No pricing, dispatch, employment, Safety, Finance or integration authority is granted. QL-269 remains UNDER REVIEW.</div><div id="owner505Continuity" aria-live="polite"></div></section>',
+      '<section class="admin-panel-block owner506-review" data-build="506" style="margin-top:12px;"><div class="owner350-head"><div><span class="module-kicker">Build 506 · Management</span><h4>Historical economics, capacity confidence &amp; reliability exceptions</h4><p class="section-subtitle">Dated, non-overlapping completed-job cohorts and source-backed seasonal gaps. Use the season selector above for capacity and exception context.</p></div><label for="owner506ExceptionFilter">Exceptions <select id="owner506ExceptionFilter" aria-label="Filter recorded reliability exceptions"><option value="attention">Needs attention</option><option value="all">All outcomes</option><option value="unresolved">Unresolved</option><option value="pending">Reschedule pending</option><option value="partial">Partial / return</option><option value="completed">Recorded completion</option></select></label></div><div class="notice">Historical job economics are current lifetime rollup snapshots grouped by a dated single completed session, <strong>not</strong> earned revenue in a month, historical financial restatements, causal growth or an accounting period. Comparison remains withheld without complete authorized sources and five eligible jobs in each cohort. No source writes, decisions or QL-269 activation.</div><div id="owner506Review" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner389-crew-day" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season crew-day mix constraint &amp; scenario backtesting</h4><p class="section-subtitle">Item 389 · live 14-day shared crew assignment/mixed-season constraints and dated 90-day retrospective plan-versus-completion evidence.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice"><strong>Read-only planning review:</strong> a mixed crew-day is not an automatic collision or proof that capacity exists. This is not historical forecast accuracy.</div><div id="owner389CrewDayBacktest"></div></section>',
       '<section class="admin-panel-block owner364-recovery" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability-to-schedule recovery outcomes</h4><p class="section-subtitle">Build 364 · 90-day comparison of recorded Workability constraints with later Dispatch and Production evidence, including same-day recovery, rescheduled completion, partial/return visits and unresolved work.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome learning only:</strong> missing schedule or production evidence remains unresolved. This view cannot change a Workability decision, move a schedule item, dispatch crews, complete work or send a customer message.</div><div id="owner364Recovery"></div></section>',
       '<section class="admin-panel-block owner378-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability forecast vs recovery calibration</h4><p class="section-subtitle">Build 378 · read-only 90-day proposed-reschedule vs recorded-completion alignment, by season. Current 7/14-day forecast is context, not historical prediction evidence.</p></div><a class="secondary" href="/help.html#workability-forecast-recovery-calibration" aria-label="Info: forecast recovery calibration help" title="Calibration Help">ⓘ Help</a></div><div id="owner378Calibration" aria-live="polite"></div></section>',
@@ -650,6 +651,92 @@
         '</div>'+
         (gaps.length?'<details class="yw505-gaps"><summary>Missing assumptions for this season ('+gaps.length+')</summary><ul>'+gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>':'')+
         '<p class="muted">Source boundaries: <a href="#owner375Scenarios">recorded seasonal mix and Finance</a> · <a href="#owner389CrewDayBacktest">retrospective plan-day comparisons</a> · <a href="#owner364Recovery">workability recovery</a>. No records are changed or stored by this view.</p>';
+    }
+
+    function renderHistoricalCapacityExceptions506(){
+      const host=$('owner506Review');if(!host)return;
+      const d=state.data,visibility=d?.source_visibility||{},season=$('owner505Season')?.value||'all';
+      const w=d?.four_season_capacity_profitability_scenario_evidence;
+      const crew=d?.four_season_crew_day_mix_constraint_backtesting;
+      const recovery=d?.workability_schedule_recovery_outcomes;
+      if(visibility.jobs!==true){host.innerHTML='<p class="notice" data-owner506-state="permission_hidden">WITHHELD · Jobs view permission is required. No economic cohorts, capacity or exception details returned.</p>';return;}
+      const recentTime=v=>{const t=Date.parse(String(v||''));return Number.isFinite(t)&&t<=Date.now()+300000&&Date.now()-t<=1800000;};
+      const sourceGood=k=>{const m=sourceMeta(k);return m?.freshness_state==='current'&&m.coverage_state==='within_query_limit'&&
+        m.coverage_gap!==true&&Number.isInteger(Number(m.row_count))&&Number(m.row_count)>0&&
+        Number(m.query_limit)>Number(m.row_count)&&recentTime(m.retrieved_at);};
+      const box=(name,stateText,body,source)=>'<article class="yw506-review-lane" data-owner506-lane="'+name+'"><h5>'+name+'</h5><strong>'+esc(stateText)+'</strong><div>'+body+'</div><a href="'+source+'">Inspect canonical source card</a></article>';
+
+      let economics='WITHHELD',economicsBody='Finance view permission and an uncapped, fresh Jobs source are required. No revenue or margin is inferred.';
+      if(visibility.finance===true&&sourceGood('jobs')){
+        const rows=arr(d,'owner_jobs');
+        const now=Date.now(),start=now-90*86400000,cut=now-30*86400000;
+        const seen=new Set(),cohorts=[[],[]];let excluded=0;
+        for(const row of rows){
+          if(!/^(complete|completed|closed)$/.test(String(row?.status||'').toLowerCase()))continue;
+          const id=String(row.id||'');const t=Date.parse(String(row.last_session_ended_at||''));
+          const valid=id&&!seen.has(id)&&row.session_count===1&&Number.isFinite(t)&&t>start&&t<=now&&
+            row.actual_charge_rollup_total!==null&&row.actual_charge_rollup_total!==undefined&&
+            row.actual_cost_rollup_total!==null&&row.actual_cost_rollup_total!==undefined&&
+            Number.isFinite(Number(row.actual_charge_rollup_total))&&Number(row.actual_charge_rollup_total)>0&&
+            Number.isFinite(Number(row.actual_cost_rollup_total))&&Number(row.actual_cost_rollup_total)>=0;
+          if(id)seen.add(id);
+          if(!valid){excluded++;continue;}
+          cohorts[t>cut?0:1].push(row);
+        }
+        if(cohorts.every(x=>x.length>=5)){
+          const summarize=rows=>{const revenue=rows.reduce((n,r)=>n+Number(r.actual_charge_rollup_total),0);
+            const cost=rows.reduce((n,r)=>n+Number(r.actual_cost_rollup_total),0);
+            return {count:rows.length,revenue,cost,margin:revenue>0?(revenue-cost)/revenue*100:null};};
+          const a=summarize(cohorts[0]),b=summarize(cohorts[1]);
+          economics='BOUNDED COHORT COMPARISON';
+          economicsBody='<p class="yw506-note">Single-session completed jobs; current lifetime rollups grouped by last completed session date. Not period revenue recognition, margin improvement or restated historical financials.</p>'+
+            '<div class="yw506-cohorts"><p data-owner506-cohort="recent"><strong>Latest 30 days</strong> · '+esc(a.count)+' jobs · revenue '+esc(money(a.revenue))+' · cost '+esc(money(a.cost))+' · snapshot margin '+esc(pct(a.margin))+'</p>'+
+            '<p data-owner506-cohort="prior"><strong>Preceding 60 days</strong> · '+esc(b.count)+' jobs · revenue '+esc(money(b.revenue))+' · cost '+esc(money(b.cost))+' · snapshot margin '+esc(pct(b.margin))+'</p></div>'+
+            '<p>'+esc(excluded)+' outside-window, duplicate, multi-session or insufficiently evidenced completed jobs excluded from this narrow cohort. Unequal windows and current lifetime totals cannot establish business growth.</p>';
+        }else economicsBody='COHORT COMPARISON WITHHELD · '+cohorts[0].length+' eligible single-session jobs in latest 30 days and '+cohorts[1].length+
+          ' in preceding 60 days; at least five in each are required. '+excluded+' outside-window or insufficiently evidenced completed jobs excluded. No historical accounting trend inferred.';
+      }
+
+      let capacity='RECHECK REQUIRED',capacityBody='Seasonal coverage is not verified. Refresh the canonical source before judging capacity.';
+      if(w?.source_queries_ok===true&&w.coverage_complete===true&&w.jobs_visible===true&&recentTime(w.generated_at)&&Array.isArray(w.scenarios)){
+        const rows=season==='all'?w.scenarios:w.scenarios.filter(r=>r.scenario_key===season);
+        if(rows.length){const gaps=rows.flatMap(r=>Array.isArray(r.missing_assumptions)?r.missing_assumptions:[]);
+          const routeMissing=rows.filter(r=>r.configured_route_capacity_headroom_minutes==null).length;
+          const unknown=rows.filter(r=>r.recorded_demand_minutes==null||r.planned_item_count==null).length;
+          const shared=crew?.state==='current'&&Array.isArray(crew.source_health)&&crew.source_health.length>0&&
+            crew.source_health.every(s=>s.freshness_state==='current'&&s.coverage_gap!==true);
+          capacity=unknown?'PARTIAL COVERAGE':gaps.length||routeMissing||!shared?'RECORDED WITH GAPS':'SOURCE-CHECKED CONTEXT';
+          capacityBody='<p>'+esc(rows.length)+' recorded season(s) reviewed · '+esc(gaps.length)+' documented gap(s) · '+esc(routeMissing)+' season(s) without configured route headroom.</p>'+
+            '<p>Shared crew-day confidence: '+esc(shared?'CURRENT RECORDED SOURCE':'NOT VERIFIED')+'. Shared dates do not prove free crew capacity.</p>'+
+            (gaps.length?'<details><summary>Source gaps ('+gaps.length+')</summary><ul>'+gaps.slice(0,8).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>':'<p>Source gap list returned no entries. This is not a readiness approval.</p>');
+        }else capacityBody='NOT MEASURED · selected season is absent from the canonical response.';
+      }
+
+      let reliability='RECHECK REQUIRED',reliabilityBody='<p>Recorded Workability/Dispatch/Production exception evidence is unavailable. No zero-exception claim.</p>';
+      if(recovery?.source_queries_ok===true&&recovery.jobs_visible===true&&Array.isArray(recovery.outcomes)&&
+        ['workability','dispatch','production'].every(sourceGood)){
+        const group=state=>state==='blocked_unresolved'?'unresolved':
+          ['rescheduled_pending','proposed_reschedule_pending'].includes(state)?'pending':
+          state==='partial_or_return_visit'?'partial':
+          ['same_day_completed','completed_after_recovery'].includes(state)?'completed':'other';
+        const filter=$('owner506ExceptionFilter')?.value||'attention';
+        const rows=recovery.outcomes.filter(r=>(season==='all'||r.season_context===season)&&
+          (filter==='all'||(filter==='attention'&&['unresolved','pending','partial'].includes(group(r.outcome_state)))||group(r.outcome_state)===filter));
+        reliability='RECORDED EXCEPTION READBACK';
+        reliabilityBody='<p>Showing '+esc(Math.min(rows.length,8))+' of '+esc(rows.length)+' matching returned episodes'+
+          (recovery.outcomes.length>=150?' (server result capped at 150; totals incomplete)':'')+
+          '. No automatic dispatch, recovery or closure.</p>'+
+          (rows.length?'<ol class="yw506-exceptions">'+rows.slice(0,8).map(r=>
+            '<li data-owner506-exception="'+esc(group(r.outcome_state))+'"><strong>'+esc(r.service_date||'date unknown')+' · '+esc(String(r.outcome_state||'unknown').replaceAll('_',' '))+'</strong>'+
+            '<small>'+esc(r.season_context||'four_season')+' · '+esc(r.work_order_number||r.source_key||'recorded episode')+' · '+
+              (Number.isFinite(Number(r.recovery_days))&&r.recovery_days!==null?num(r.recovery_days)+' recorded day(s) to outcome':'recovery date not recorded')+'</small></li>').join('')+'</ol>':
+            '<p>No matching episodes in the returned bounded source; this does not prove absence elsewhere.</p>');
+      }
+      host.innerHTML='<div class="yw506-review-grid">'+
+        box('Historical economics',economics,economicsBody,'#owner375Scenarios')+
+        box('Capacity confidence',capacity,capacityBody,'#owner389CrewDayBacktest')+
+        box('Reliability exceptions',reliability,reliabilityBody,'#owner364Recovery')+
+        '</div><p class="muted">QL-269 UNDER REVIEW · source rights and operational authority unchanged. No customer or employee scoring; no writes or stored comparison history.</p>';
     }
 
     function renderWorkabilityRecovery(){
@@ -1782,6 +1869,7 @@
       renderCapacityForecast();
       renderFourSeasonCapacityProfitabilityScenarios();
       renderServiceCapacityReliability505();
+      renderHistoricalCapacityExceptions506();
       renderFourSeasonCrewDayMixBacktest();
       renderWorkabilityRecovery();
       renderWorkabilityForecastRecoveryCalibration();
@@ -1872,7 +1960,8 @@
     }
     el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open],[data-owner359-open],[data-owner360-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open')||b.getAttribute('data-owner359-open')||b.getAttribute('data-owner360-open'))});
     $('owner350Refresh').onclick=load;load();
-    $('owner505Season').addEventListener('change',renderServiceCapacityReliability505);
+    $('owner505Season').addEventListener('change',()=>{renderServiceCapacityReliability505();renderHistoricalCapacityExceptions506();});
+    $('owner506ExceptionFilter').addEventListener('change',renderHistoricalCapacityExceptions506);
   }
   window.YWIOwnerManagementCommandUI={mount};
 })();
