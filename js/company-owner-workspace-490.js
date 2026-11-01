@@ -42,9 +42,10 @@ function install(){
  const section=node('section');section.id='owner490';section.className='admin-panel-block yw494-command';
  const hero=node('div');hero.className='yw494-hero';
  // BUILD 498 verified recovered audit view remains mandatory for BUILD 499 receipt review.
- // BUILD 500 session-only count comparison remains the prerequisite for BUILD 501 scope history.
- hero.append(node('span','OWNER OPERATIONS  /  BUILD 501'),node('h3','My Company Workspace'),
-  node('p','Service-switch decisions, read-only comparison history, live owner-scope rechecks and company controls. Receipt counts are advisory, not event-level proof or authorization.'));
+ // BUILD 500 session-only comparison remains prerequisite for BUILD 501 scope history.
+ // BUILD 502 adds recovery and selection to bounded, session-only comparison summaries.
+ hero.append(node('span','OWNER OPERATIONS  /  BUILD 502'),node('h3','My Company Workspace'),
+  node('p','Service-switch decisions, filtered receipt comparison history and recoverable owner-scope rechecks. Counts are advisory, not event-level proof or authorization.'));
  const metrics=node('div');metrics.id='owner494Metrics';metrics.className='yw494-kpis';
  metrics.append(metric('Owned companies','—'),metric('Enabled services','—','blue'),metric('Recent events','—','green'));
  const load=node('button','Load my companies');load.type='button';load.id='owner490Load';
@@ -193,6 +194,14 @@ function install(){
     historyButton.dataset.owner501History=c.id;historyButton.disabled=true;
     const scopeButton=node('button','Recheck comparison against owner scope');scopeButton.type='button';
     scopeButton.dataset.owner501ScopeRecheck=c.id;scopeButton.disabled=true;
+    const retryScope=node('button','Retry failed owner-scope recheck');retryScope.type='button';retryScope.disabled=true;
+    retryScope.dataset.owner502ScopeRecovery=c.id;
+    const historyFilter=node('select');historyFilter.dataset.owner502HistoryFilter=c.id;
+    historyFilter.setAttribute('aria-label','Filter local receipt comparison history');
+    for(const [label,value] of [['All local comparisons','all'],['Awaiting scope recheck','pending'],
+      ['Scope count stable','stable'],['Scope count moved','moved'],
+      ['Indeterminate scope count','indeterminate'],['Different receipt filters','different']])
+      historyFilter.appendChild(new Option(label,value));
     const historyStatus=node('p','No receipt comparisons reviewed in this session.');
     historyStatus.className='yw501-history-state';historyStatus.dataset.owner501HistoryStatus=c.id;
     historyStatus.setAttribute('aria-live','polite');
@@ -203,7 +212,7 @@ function install(){
     const clearReceipt=message=>{verifiedReceipt=null;receiptButton.disabled=true;
       receiptDetails.hidden=true;receiptDetails.textContent='';
       comparisonBaseline=null;compareButton.disabled=true;compareDetails.hidden=true;
-      scopeButton.disabled=true;
+      scopeButton.disabled=true;retryScope.disabled=true;
       compareDetails.textContent='';compareStatus.textContent='Previous review retained only in this session. Verify and review a new receipt to compare.';
       receiptStatus.textContent=message||'No verified recovered audit receipt in this session.';};
     const describeSelection=p=>'Service '+(p.service||'all')+' · action '+(p.action||'all')+
@@ -296,7 +305,7 @@ function install(){
       lastReviewedReceipt=null;comparisonBaseline=null;
       compareStatus.textContent='All session-only receipt comparisons cleared.';
       comparisonHistory.length=0;historyList.hidden=true;historyList.replaceChildren();
-      historyButton.disabled=true;scopeButton.disabled=true;
+      historyButton.disabled=true;scopeButton.disabled=true;retryScope.disabled=true;historyFilter.value='all';
       historyStatus.textContent='All local comparison history and scope rechecks cleared.';
       restorePreset.disabled=true;recoverPreset.disabled=true;clearPreset.disabled=true;
       try{localStorage.removeItem(key);localStorage.removeItem(backupKey);
@@ -333,6 +342,8 @@ function install(){
       const identical=prior.selection.service===current.selection.service&&
         prior.selection.action===current.selection.action&&prior.selection.since===current.selection.since;
       const delta=current.count-prior.count;
+      const comparisonKind=!identical?'different':prior.truncated||current.truncated?
+        'indeterminate':delta===0?'stable':'moved';
       compareDetails.textContent=identical?
         'RECEIPT COUNT CHANGE REVIEW · '+(prior.truncated||current.truncated?
           'COUNT INDETERMINATE: At least one read exceeded 100 server events.':
@@ -346,29 +357,50 @@ function install(){
       if(!comparisonHistory.some(h=>h.token===current.token)){
         if(comparisonHistory.length>=5)comparisonHistory.shift();
         comparisonHistory.push({token:current.token,checkedAt:new Date().toISOString(),
-          description:compareDetails.textContent,scopeCount:null,scopeCheckedAt:null});
+          description:compareDetails.textContent,kind:comparisonKind,
+          scopeState:null,scopeCount:null,scopeCheckedAt:null});
       }
+      historyList.hidden=true;retryScope.disabled=true;
       historyButton.disabled=false;scopeButton.disabled=false;
       historyStatus.textContent='LOCAL COMPARISON HISTORY READY · '+comparisonHistory.length+
         ' of 5 bounded session summaries. Recheck owner scope for a fresh count.';
     });
-    historyButton.addEventListener('click',()=>{
+    const renderHistory=()=>{
       if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!comparisonHistory.length){
         historyList.hidden=true;historyStatus.textContent='WITHHELD: Current owner and local comparison history required.';return;
       }
+      const selected=historyFilter.value;
+      const rows=comparisonHistory.filter(h=>selected==='all'||
+        (selected==='pending'&&!h.scopeCheckedAt)||
+        (selected==='different'&&h.kind==='different')||
+        (selected==='stable'&&h.scopeState==='stable')||
+        (selected==='moved'&&h.scopeState==='moved')||
+        (selected==='indeterminate'&&h.scopeState==='indeterminate'));
       historyList.replaceChildren();
-      for(const h of comparisonHistory){
+      for(const h of rows){
         historyList.appendChild(node('li',h.checkedAt+' · '+h.description+
           (h.scopeCheckedAt?' · SCOPE RECHECK '+h.scopeCheckedAt+' · '+h.scopeCount+
           ' matching server event(s).':' · Scope not rechecked.')));
       }
+      if(!rows.length)historyList.appendChild(node('li','No session comparison matches this history filter.'));
       historyList.hidden=false;
-      historyStatus.textContent='SESSION COMPARISON HISTORY · '+comparisonHistory.length+
-        ' local count readbacks only; not saved, event identity evidence or owner approval.';
+      historyStatus.textContent='FILTERED SESSION COMPARISON HISTORY · '+rows.length+' of '+comparisonHistory.length+
+        ' local summaries match '+historyFilter.selectedOptions[0].textContent+
+        '. No audit rows saved, event identity evidence or owner approval.';
+    };
+    historyButton.addEventListener('click',renderHistory);
+    historyFilter.addEventListener('change',()=>{if(!historyList.hidden)renderHistory();});
+    retryScope.addEventListener('click',()=>{
+      if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!verifiedReceipt||
+         lastReviewedReceipt?.token!==verifiedReceipt.token||scopeButton.disabled){
+        retryScope.disabled=true;historyStatus.textContent='WITHHELD: Current owner comparison required for recovery.';return;
+      }
+      retryScope.disabled=true;scopeButton.click();
     });
     scopeButton.addEventListener('click',async()=>{
       const receipt=verifiedReceipt;
-      scopeButton.disabled=true;historyStatus.textContent='Rechecking exact owner and filter scope against server audit…';
+      scopeButton.disabled=true;retryScope.disabled=true;
+      historyStatus.textContent='Rechecking exact owner and filter scope against server audit…';
       try{
         assertCurrent();
         if(!receipt||!currentIdentity(uid)||!verifiedIds.has(c.id)||
@@ -394,13 +426,21 @@ function install(){
         const h=comparisonHistory.find(entry=>entry.token===receipt.token);
         if(!h)throw Error('Comparison history changed');
         h.scopeCheckedAt=new Date().toISOString();h.scopeCount=found.data.length>100?'more than 100':found.data.length;
+        h.scopeState=found.data.length>100||receipt.truncated?'indeterminate':
+          found.data.length===receipt.count?'stable':'moved';
+        historyList.hidden=true;
         historyStatus.textContent='VERIFIED OWNER SCOPE RECHECK · '+c.name+' · '+
           describeSelection(p)+' · '+(found.data.length>100?'more than 100 matching events':
             found.data.length+' matching server event(s)')+
           (found.data.length>100||receipt.truncated?' · COUNT INDETERMINATE':
             found.data.length===receipt.count?' · COUNT STABLE':' · COUNT MOVED')+
           '. Fresh server read only; no event rows stored or owner approval inferred.';
-      }catch(e){historyStatus.textContent='WITHHELD: '+(e?.message||'Scope recheck failed');}
+      }catch(e){if(epoch===generation){
+        historyStatus.textContent='WITHHELD: '+(e?.message||'Scope recheck failed')+
+          '. Retry the same reviewed receipt after the owner-scoped read is available.';
+        retryScope.disabled=!verifiedReceipt||verifiedReceipt.token!==receipt?.token||
+          !comparisonHistory.some(h=>h.token===receipt.token);
+      }}
       finally{scopeButton.disabled=!verifiedReceipt||!comparisonHistory.some(h=>h.token===verifiedReceipt.token);}
     });
     const events=node('ol');
@@ -409,7 +449,8 @@ function install(){
     if(view.audit.length===26)events.appendChild(node('li','Older events remain in the server audit; this timeline is limited.'));
     timeline.className='yw494-review-details';
     timeline.append(presets,presetStatus,viewStatus,receiptButton,receiptStatus,receiptDetails,
-      compareButton,compareStatus,compareDetails,historyButton,scopeButton,historyStatus,historyList,
+      compareButton,compareStatus,compareDetails,historyButton,scopeButton,retryScope,historyFilter,
+      historyStatus,historyList,
       filters,filterStatus,events);item.appendChild(timeline);
     let filterEpoch=0;
     filter.addEventListener('click',async()=>{
