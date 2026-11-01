@@ -62,7 +62,7 @@ test('hidden Finance never leaks monetary values; no false reliability claim for
  await expect(host.locator('[data-owner505-lane="economics"]')).toContainText('PERMISSION WITHHELD');
  await expect(host).not.toContainText('$2,400');
  await expect(host).toContainText('Seasonal recovery not measured');
- await expect(host).toContainText('TREND');
+ await expect(host.locator('[data-owner505-lane="reliability"]')).toContainText('RECORDED PLAN-DAY PROXY');
 });
 test('missing or stale source, restricted jobs and small cohort samples fail closed through refresh',async({page})=>{
  await boot(page);
