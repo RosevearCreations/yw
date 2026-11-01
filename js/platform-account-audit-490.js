@@ -19,8 +19,8 @@ function install(){
  const hero=el('div');hero.className='yw494-hero';
  // BUILD 498 copy-only exception follow-up remains restricted in BUILD 499 aging review.
  // BUILD 500 copy-only priority follow-up remains available in BUILD 501.
- // BUILD 502 queue readiness remains available; BUILD 503 adds a focused,
- // fail-closed resolution-readiness check per exception.
+ // BUILD 502 queue readiness and BUILD 503 individual checks remain.
+ // BUILD 504 exposes a visible decision-gate matrix without granting authority.
  hero.append(el('span','PLATFORM SECURITY  /  BUILD 502'),el('h3','Legacy-Role Evidence & Independent Review Intake'),
   el('p','Review restricted references, recheck local priority and individual exception readiness against the ledger, and prepare copy-only independent follow-up. No timer, reference or note grants approval or changes roles.'));
  const metrics=el('div');metrics.className='yw494-kpis';metrics.id='platform494Metrics';
@@ -261,12 +261,16 @@ function install(){
       const resolutionNote=el('textarea');resolutionNote.rows=5;resolutionNote.readOnly=true;
       resolutionNote.dataset.platform503ResolutionNote='true';resolutionNote.hidden=true;
       resolutionNote.setAttribute('aria-label','Copy-only individual reviewer exception resolution checklist');
+      const resolutionMatrix=el('ul');resolutionMatrix.className='yw504-resolution-matrix';
+      resolutionMatrix.dataset.platform504ResolutionMatrix='true';resolutionMatrix.hidden=true;
+      resolutionMatrix.setAttribute('aria-label','Read-only independent exception decision gates');
       let lastException=null;
       let firstSeen=new Map();
       let priorityQueue=new Map();
       let queueRevision=0;
       const refreshResolution=()=>{
         resolutionNote.hidden=true;resolutionNote.value='';
+        resolutionMatrix.hidden=true;resolutionMatrix.replaceChildren();
         const prior=resolutionSelect.value;
         resolutionSelect.replaceChildren();
         resolutionSelect.appendChild(new Option('Select unresolved local ticket',''));
@@ -279,6 +283,7 @@ function install(){
       };
       resolutionSelect.addEventListener('change',()=>{
         resolutionButton.disabled=!resolutionSelect.value;resolutionNote.hidden=true;
+        resolutionMatrix.hidden=true;resolutionMatrix.replaceChildren();
         resolutionStatus.textContent='RECHECK REQUIRED · selected ticket not yet verified by a fresh ledger read.';
       });
       const queueBand=observedAt=>{
@@ -468,6 +473,7 @@ function install(){
       resolutionButton.addEventListener('click',async()=>{
         const id=resolutionSelect.value,entry=priorityQueue.get(id),revision=queueRevision;
         resolutionButton.disabled=true;resolutionNote.hidden=true;
+        resolutionMatrix.hidden=true;resolutionMatrix.replaceChildren();
         resolutionStatus.textContent='Checking selected local exception against the restricted ledger…';
         try{
           assertCurrent();
@@ -489,6 +495,16 @@ function install(){
           const presence=matches.length?'REFERENCE PRESENT AS UNVERIFIED':'REFERENCE ABSENT';
           resolutionStatus.textContent='RESOLUTION NOT READY · '+presence+
             ' · original independent proof and authorized owner decision are still required.';
+          const gateRows=[
+            ['Restricted reference',matches.length?'FOUND — UNVERIFIED':'MISSING — EVIDENCE REQUIRED'],
+            ['Original signer/source proof','PENDING INDEPENDENT VERIFICATION'],
+            ['Independent reviewer decision','PENDING RECONCILIATION'],
+            ['Owner authority decision','NOT RECEIVED'],
+            ['Role and integration activation','DISABLED — QL-269 UNDER REVIEW']
+          ];
+          for(const [label,result] of gateRows)
+            resolutionMatrix.appendChild(el('li',label+' · '+result));
+          resolutionMatrix.hidden=false;
           resolutionNote.value=['YW Build 503 · COPY-ONLY EXCEPTION RESOLUTION CHECKLIST',
             'QL-269 UNDER REVIEW · no integration or role activation.',
             'Legacy profile: '+x.profile_id,'Ticket: '+entry.reference,
@@ -500,6 +516,7 @@ function install(){
             'Not sent, approved or saved to server. Local device age is not evidence of resolution.'].join('\n');
           resolutionNote.hidden=false;
         }catch(e){if(epoch===generation){resolutionNote.value='';resolutionNote.hidden=true;
+          resolutionMatrix.hidden=true;resolutionMatrix.replaceChildren();
           resolutionStatus.textContent='WITHHELD: '+(e?.message||'Resolution readiness unavailable')+
             '. No resolution or authority inferred.';}}
         finally{try{assertCurrent();resolutionButton.disabled=!resolutionSelect.value;}
@@ -560,7 +577,7 @@ function install(){
        intakeButton,reconcileButton,intakeStatus,followUp,followUpNote,followUpStatus,
        refreshAge,ageStatus,priorityButton,priorityNote,priorityStatus,
        queueButton,queueStatus,queueList,readinessButton,readinessStatus,readinessPacket,
-       resolutionSelect,resolutionButton,resolutionStatus,resolutionNote);
+       resolutionSelect,resolutionButton,resolutionStatus,resolutionMatrix,resolutionNote);
       item.appendChild(intake);
     }
     view.appendChild(item);

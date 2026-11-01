@@ -43,10 +43,10 @@ function install(){
  const hero=node('div');hero.className='yw494-hero';
  // BUILD 498 verified recovered audit view remains mandatory for BUILD 499 receipt review.
  // BUILD 500 session-only comparison remains prerequisite for BUILD 501 scope history.
- // BUILD 502 recovery/filter selection remains available; BUILD 503 adds a
- // keyboard-accessible drill-down of bounded comparison summaries.
- hero.append(node('span','OWNER OPERATIONS  /  BUILD 503'),node('h3','My Company Workspace'),
-  node('p','Service-switch decisions, filtered receipt comparison drill-downs and recoverable owner-scope rechecks. Counts are advisory, not event-level proof or authorization.'));
+ // BUILD 502 recovery and BUILD 503 drill-down remain available.
+ // BUILD 504 adds a copy-only packet for one selected bounded comparison.
+ hero.append(node('span','OWNER OPERATIONS  /  BUILD 504'),node('h3','My Company Workspace'),
+  node('p','Service-switch decisions, comparison drill-downs and optional copy-only review packets. All counts are advisory, not event-level proof or authorization.'));
  const metrics=node('div');metrics.id='owner494Metrics';metrics.className='yw494-kpis';
  metrics.append(metric('Owned companies','—'),metric('Enabled services','—','blue'),metric('Recent events','—','green'));
  const load=node('button','Load my companies');load.type='button';load.id='owner490Load';
@@ -211,6 +211,12 @@ function install(){
     const drillDetail=node('div');drillDetail.className='yw503-drill-detail';
     drillDetail.dataset.owner503DrillDetail=c.id;drillDetail.hidden=true;
     drillDetail.setAttribute('aria-live','polite');
+    const handoffButton=node('button','Prepare copy-only comparison review packet');
+    handoffButton.type='button';handoffButton.dataset.owner504Handoff=c.id;
+    handoffButton.disabled=true;
+    const handoffNote=node('textarea');handoffNote.dataset.owner504HandoffNote=c.id;
+    handoffNote.readOnly=true;handoffNote.hidden=true;handoffNote.rows=8;
+    handoffNote.setAttribute('aria-label','Copy-only owner audit comparison review packet');
     let verifiedReceipt=null,lastReviewedReceipt=null,comparisonBaseline=null,receiptSequence=0;
     const comparisonHistory=[];
     let selectedHistoryToken=null;
@@ -311,6 +317,7 @@ function install(){
       compareStatus.textContent='All session-only receipt comparisons cleared.';
       comparisonHistory.length=0;selectedHistoryToken=null;historyList.hidden=true;
       historyList.replaceChildren();drillDetail.hidden=true;drillDetail.replaceChildren();
+      handoffButton.disabled=true;handoffNote.hidden=true;handoffNote.value='';
       historyButton.disabled=true;scopeButton.disabled=true;retryScope.disabled=true;historyFilter.value='all';
       historyStatus.textContent='All local comparison history and scope rechecks cleared.';
       restorePreset.disabled=true;recoverPreset.disabled=true;clearPreset.disabled=true;
@@ -370,15 +377,18 @@ function install(){
           scopeState:null,scopeCount:null,scopeCheckedAt:null});
       }
       historyList.hidden=true;retryScope.disabled=true;drillDetail.hidden=true;
+      handoffButton.disabled=true;handoffNote.hidden=true;handoffNote.value='';
       historyButton.disabled=false;scopeButton.disabled=false;
       historyStatus.textContent='LOCAL COMPARISON HISTORY READY · '+comparisonHistory.length+
         ' of 5 bounded session summaries. Recheck owner scope for a fresh count.';
     });
     const showDrill=h=>{
       if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!comparisonHistory.includes(h)){
-        drillDetail.hidden=true;drillDetail.replaceChildren();return;
+        drillDetail.hidden=true;drillDetail.replaceChildren();handoffButton.disabled=true;
+        handoffNote.hidden=true;handoffNote.value='';return;
       }
       selectedHistoryToken=h.token;
+      handoffButton.disabled=false;handoffNote.hidden=true;handoffNote.value='';
       const rows=[
         'LOCAL COMPARISON DRILL-DOWN · '+new Date(h.checkedAt).toLocaleString(),
         'Previous reviewed receipt: '+(h.previousTruncated?'more than 100':h.previousCount)+
@@ -399,9 +409,33 @@ function install(){
           'no event IDs, audit rows, owner approval or service changes are stored.'));
       drillDetail.hidden=false;
     };
+    handoffButton.addEventListener('click',()=>{
+      const h=comparisonHistory.find(entry=>entry.token===selectedHistoryToken);
+      if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!h||drillDetail.hidden){
+        handoffButton.disabled=true;handoffNote.hidden=true;handoffNote.value='';return;
+      }
+      const bounded=h.previousTruncated||h.currentTruncated||h.scopeState==='indeterminate';
+      const comparable=h.kind!=='different'&&!bounded;
+      handoffNote.value=['YW BUILD 504 · COPY-ONLY OWNER AUDIT COMPARISON REVIEW',
+        'Owner: '+uid,'Company: '+c.name+' ('+c.id+')',
+        'Comparison recorded (UTC): '+h.checkedAt,
+        'Previous reviewed count: '+(h.previousTruncated?'>100':h.previousCount),
+        'Previous filter: '+describeSelection(h.previousSelection),
+        'Current reviewed count: '+(h.currentTruncated?'>100':h.currentCount),
+        'Current filter: '+describeSelection(h.currentSelection),
+        'Comparison: '+(comparable?'DELTA '+(h.currentCount-h.previousCount):
+          h.kind==='different'?'DIFFERENT FILTERS — NOT COMPARABLE':'INDETERMINATE — BOUNDED COUNT'),
+        h.scopeCheckedAt?'Last owner-scope read (UTC): '+h.scopeCheckedAt+
+          ' · '+h.scopeCount+' matching event(s) · '+String(h.scopeState).toUpperCase():
+          'Owner-scope read: PENDING — NOT RECHECKED',
+        'Advisory session-only summary, not event-level identity proof, owner acceptance or service authorization.',
+        'Not saved, sent, approved or written to the server. Original audit remains under company RLS.'].join('\n');
+      handoffNote.hidden=false;
+    });
     const renderHistory=()=>{
       if(!currentIdentity(uid)||!verifiedIds.has(c.id)||!comparisonHistory.length){
-        historyList.hidden=true;drillDetail.hidden=true;
+        historyList.hidden=true;drillDetail.hidden=true;handoffButton.disabled=true;
+        handoffNote.hidden=true;handoffNote.value='';
         historyStatus.textContent='WITHHELD: Current owner and local comparison history required.';return;
       }
       const selected=historyFilter.value;
@@ -428,7 +462,8 @@ function install(){
         '. No audit rows saved, event identity evidence or owner approval.';
       if(selectedHistoryToken!==null){
         const chosen=rows.find(h=>h.token===selectedHistoryToken);
-        if(chosen)showDrill(chosen);else{selectedHistoryToken=null;drillDetail.hidden=true;}
+        if(chosen)showDrill(chosen);else{selectedHistoryToken=null;drillDetail.hidden=true;
+          handoffButton.disabled=true;handoffNote.hidden=true;handoffNote.value='';}
       }
     };
     historyButton.addEventListener('click',renderHistory);
@@ -480,6 +515,7 @@ function install(){
           '. Fresh server read only; no event rows stored or owner approval inferred.';
         if(selectedHistoryToken===h.token)showDrill(h);
       }catch(e){if(epoch===generation){
+        handoffNote.hidden=true;handoffNote.value='';
         historyStatus.textContent='WITHHELD: '+(e?.message||'Scope recheck failed')+
           '. Retry the same reviewed receipt after the owner-scoped read is available.';
         retryScope.disabled=!verifiedReceipt||verifiedReceipt.token!==receipt?.token||
@@ -494,7 +530,7 @@ function install(){
     timeline.className='yw494-review-details';
     timeline.append(presets,presetStatus,viewStatus,receiptButton,receiptStatus,receiptDetails,
       compareButton,compareStatus,compareDetails,historyButton,scopeButton,retryScope,
-      historyStatus,historyList,drillDetail,
+      historyStatus,historyList,drillDetail,handoffButton,handoffNote,
       filters,historyFilter,filterStatus,events);item.appendChild(timeline);
     let filterEpoch=0;
     filter.addEventListener('click',async()=>{
