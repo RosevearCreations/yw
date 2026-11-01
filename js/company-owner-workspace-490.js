@@ -449,9 +449,9 @@ function install(){
     if(view.audit.length===26)events.appendChild(node('li','Older events remain in the server audit; this timeline is limited.'));
     timeline.className='yw494-review-details';
     timeline.append(presets,presetStatus,viewStatus,receiptButton,receiptStatus,receiptDetails,
-      compareButton,compareStatus,compareDetails,historyButton,scopeButton,retryScope,historyFilter,
+      compareButton,compareStatus,compareDetails,historyButton,scopeButton,retryScope,
       historyStatus,historyList,
-      filters,filterStatus,events);item.appendChild(timeline);
+      filters,historyFilter,filterStatus,events);item.appendChild(timeline);
     let filterEpoch=0;
     filter.addEventListener('click',async()=>{
       const filterRequest=++filterEpoch;
