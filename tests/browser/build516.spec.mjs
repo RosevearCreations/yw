@@ -38,9 +38,9 @@ async function boot(page,initial=fixture()){
 async function refresh(page,data){await page.evaluate(next=>window.__data=next,data);await page.locator('#owner508Refresh').click();}
 
 test('missing economic lineage is withheld from disposition and safely escaped',async({page})=>{
-  await boot(page);const lane=page.locator('[data-owner516-lane="economics"]');
+  const initial=fixture();await boot(page,initial);const lane=page.locator('[data-owner516-lane="economics"]');
   await expect(lane).toContainText('BASELINE ONLY');
-  const next=fixture(minutes(1));next.owner_jobs[0].id='J-<script>unsafe</script>';
+  const next=fixture(minutes(1));next.owner_jobs=initial.owner_jobs.map(j=>({...j}));next.owner_jobs[0].id='J-<script>unsafe</script>';
   await refresh(page,next);
   await expect(lane).toContainText('SOURCE DISPOSITION TRACE CONTINUITY · UNDECIDED');
   await expect(lane.locator('[data-owner516-economic="lineage"]')).toHaveCount(2);
@@ -54,7 +54,7 @@ test('missing economic lineage is withheld from disposition and safely escaped',
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 });
 test('completion date shifted inside the same cohort is detected but not approved',async({page})=>{
-  await boot(page);const next=fixture(minutes(1));next.owner_jobs[0].last_session_ended_at=ago(3);
+  const initial=fixture();await boot(page,initial);const next=fixture(minutes(1));next.owner_jobs=initial.owner_jobs.map(j=>({...j}));next.owner_jobs[0].last_session_ended_at=ago(3);
   await refresh(page,next);const lane=page.locator('[data-owner516-lane="economics"]');
   await expect(lane.locator('[data-owner516-economic="date_shift"]')).toHaveCount(1);
   await expect(lane).toContainText('DATE TRACE SHIFT · NOT DISPOSITION');
@@ -62,7 +62,7 @@ test('completion date shifted inside the same cohort is detected but not approve
   await expect(lane).not.toContainText('$');
 });
 test('cohort movement also remains a dated trace, not historical period revenue',async({page})=>{
-  await boot(page);const next=fixture(minutes(1));next.owner_jobs[0].last_session_ended_at=ago(40);
+  const initial=fixture();await boot(page,initial);const next=fixture(minutes(1));next.owner_jobs=initial.owner_jobs.map(j=>({...j}));next.owner_jobs[0].last_session_ended_at=ago(40);
   await refresh(page,next);const lane=page.locator('[data-owner516-lane="economics"]');
   await expect(lane.locator('[data-owner516-economic="date_shift"]')).toHaveCount(1);
   await expect(lane).toContainText('0 lineage gap(s)');
