@@ -40,6 +40,7 @@
       '<section class="admin-panel-block owner509-trace" data-build="509" style="margin-top:12px;"><div class="owner350-head"><div><span class="module-kicker">Build 509 · Management</span><h4>Economic cohort drift, seasonal gap source trace &amp; reliability reconciliation</h4><p class="section-subtitle">Interpret only recorded differences between the last two fresh management reads. Use Recheck evidence above to obtain a second read; the season selector scopes gap and reliability evidence.</p></div><label for="owner509StateFilter">Reconcile <select id="owner509StateFilter" aria-label="Filter reliability reconciliation findings"><option value="all">All findings</option><option value="validated">Recorded completion</option><option value="attention">Still needs review</option><option value="missing">No longer returned</option><option value="conflict">Evidence conflict</option></select></label></div><div class="notice">Source-trace categories are explanations of returned data, not proven business causes, historical accounting entries, closed gaps or customer service approvals. A missing episode or gap is never automatically resolved. QL-269 remains <strong>UNDER REVIEW</strong> and disconnected; no data changes or new authority.</div><div id="owner509Trace" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner510-readiness" data-build="510" style="margin-top:12px;"><div class="owner350-head"><div><span class="module-kicker">Build 510 · Management</span><h4>Economic drift confidence, capacity source exceptions &amp; reliability owner readiness</h4><p class="section-subtitle">Compare two fresh, distinct source reads; use the season selector for source exceptions and owner follow-ups.</p></div><div class="yw510-filters"><label for="owner510GapFilter">Gap evidence <select id="owner510GapFilter" aria-label="Filter seasonal source gap exception queue"><option value="all">All exceptions</option><option value="current">Currently listed</option><option value="not_listed">No longer listed</option></select></label><label for="owner510FollowFilter">Owner follow-up <select id="owner510FollowFilter" aria-label="Filter reliability owner follow-up readiness"><option value="all">All readiness states</option><option value="review">Review-ready evidence</option><option value="attention">Needs source follow-up</option><option value="reconcile">Reconcile first</option></select></label></div></div><div class="notice">Confidence concerns source traceability, not economic causation. Gap priority concerns evidence completeness, not operational urgency. Recorded recovery is not owner signoff. QL-269 remains <strong>UNDER REVIEW</strong> and disconnected; no source writes, assignments or closures.</div><div id="owner510Readiness" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner511-continuity" data-build="511" style="margin-top:12px;"><div class="owner350-head"><div><span class="module-kicker">Build 511 · Management</span><h4>Economic confidence exception review, seasonal source gap owner handoff &amp; reliability decision continuity</h4><p class="section-subtitle">Source-backed, session-only review packets from two independently timestamped reads. Use Recheck evidence above and the common season selector; filters never create or assign tasks.</p></div><div class="yw511-filters"><label for="owner511ConfidenceFilter">Drift review <select id="owner511ConfidenceFilter" aria-label="Filter economic confidence review exceptions"><option value="all">All source changes</option><option value="exception">Confidence exceptions</option><option value="traceable">Field-traceable</option></select></label><label for="owner511HandoffFilter">Gap handoff <select id="owner511HandoffFilter" aria-label="Filter seasonal source gap owner handoff"><option value="all">All handoff cases</option><option value="current">Currently listed</option><option value="not_listed">No longer listed</option></select></label><label for="owner511DecisionFilter">Decision evidence <select id="owner511DecisionFilter" aria-label="Filter reliability decision evidence continuity"><option value="all">All episode evidence</option><option value="review">Review-ready</option><option value="attention">Still needs attention</option><option value="reconcile">Reconcile first</option></select></label></div></div><div class="notice">Owner handoff means a <strong>read-only review packet</strong>, never a sent message, assigned work order, accepted capacity closure or signed decision. Historical rollups are not period accounts. No customer signoff, Dispatch, Finance, Safety or QL-269 integration authorization. QL-269 remains <strong>UNDER REVIEW</strong>.</div><div id="owner511Continuity" aria-live="polite"></div></section>',
+      '<section class="admin-panel-block owner512-disposition" data-build="512" style="margin-top:12px;"><div class="owner350-head"><div><span class="module-kicker">Build 512 · Management</span><h4>Economic exception disposition, seasonal handoff recheck &amp; reliability receipt readiness</h4><p class="section-subtitle">Source-only disposition reasons, before/after gap fields and evidence needed for a separate owner decision receipt. Recheck above for a distinct source read; season selection scopes gap and reliability context.</p></div><div class="yw512-filters"><label for="owner512DispositionFilter">Exception <select id="owner512DispositionFilter" aria-label="Filter economic source exception disposition"><option value="all">All source findings</option><option value="recheck">Recheck required</option><option value="traceable">Field trace available</option></select></label><label for="owner512GapFilter">Handoff <select id="owner512GapFilter" aria-label="Filter seasonal gap source handoff recheck"><option value="all">All recheck cases</option><option value="current">Still listed</option><option value="not_listed">No longer listed</option></select></label><label for="owner512ReceiptFilter">Receipt <select id="owner512ReceiptFilter" aria-label="Filter reliability decision receipt readiness"><option value="all">All evidence states</option><option value="ready">Source-ready</option><option value="attention">Still needs attention</option><option value="blocked">Source blocked</option></select></label></div></div><div class="notice">Disposition is a <strong>proposed source recheck category</strong>, never an adjudicated economic fact. A missing gap does not mean resolution. Source-ready recovery is not an owner-signed decision receipt; no messages, assignments, writes, closeouts or QL-269 approval. QL-269 stays <strong>UNDER REVIEW</strong>.</div><div id="owner512Disposition" aria-live="polite"></div></section>',
       '<section class="admin-panel-block owner389-crew-day" style="margin-top:12px;"><div class="owner350-head"><div><h4>Four-season crew-day mix constraint &amp; scenario backtesting</h4><p class="section-subtitle">Item 389 · live 14-day shared crew assignment/mixed-season constraints and dated 90-day retrospective plan-versus-completion evidence.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice"><strong>Read-only planning review:</strong> a mixed crew-day is not an automatic collision or proof that capacity exists. This is not historical forecast accuracy.</div><div id="owner389CrewDayBacktest"></div></section>',
       '<section class="admin-panel-block owner364-recovery" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability-to-schedule recovery outcomes</h4><p class="section-subtitle">Build 364 · 90-day comparison of recorded Workability constraints with later Dispatch and Production evidence, including same-day recovery, rescheduled completion, partial/return visits and unresolved work.</p></div><button class="secondary" data-owner350-open="jobs">Open Jobs</button></div><div class="notice" style="margin:8px 0;"><strong>Outcome learning only:</strong> missing schedule or production evidence remains unresolved. This view cannot change a Workability decision, move a schedule item, dispatch crews, complete work or send a customer message.</div><div id="owner364Recovery"></div></section>',
       '<section class="admin-panel-block owner378-calibration" style="margin-top:12px;"><div class="owner350-head"><div><h4>Workability forecast vs recovery calibration</h4><p class="section-subtitle">Build 378 · read-only 90-day proposed-reschedule vs recorded-completion alignment, by season. Current 7/14-day forecast is context, not historical prediction evidence.</p></div><a class="secondary" href="/help.html#workability-forecast-recovery-calibration" aria-label="Info: forecast recovery calibration help" title="Calibration Help">ⓘ Help</a></div><div id="owner378Calibration" aria-live="polite"></div></section>',
@@ -1360,6 +1361,125 @@
         '</div><p class="muted">Two bounded in-memory source readbacks only. No persisted owner handoff, decision receipt, source writes or QL-269 activation. UNDER REVIEW.</p>';
     }
 
+    // Build 512: in-memory source disposition candidates and receipt preconditions; never record a decision.
+    function renderEvidenceDisposition512(){
+      const host=$('owner512Disposition');if(!host)return;
+      const visibility=state.data?.source_visibility||{};
+      if(visibility.jobs!==true){host.innerHTML='<p class="notice" data-owner512-state="permission_hidden">WITHHELD · Jobs permission required. Source exception identities, gap handoff and decision receipt readiness unavailable.</p>';return;}
+      const prior=state.prior508||{},current=state.latest508||{},season=$('owner505Season')?.value||'all';
+      const advanced=(a,b)=>Boolean(a&&b&&Date.parse(a)>Date.parse(b));
+      const card=(key,title,status,body,link)=>'<article class="yw512-evidence" data-owner512-lane="'+key+'"><h5>'+title+'</h5><strong>'+esc(status)+'</strong>'+body+'<a href="'+link+'">Review original source</a></article>';
+      const items=(rows,key)=>'<ol class="yw512-queue">'+rows.slice(0,12).map(r=>
+        '<li data-owner512-'+key+'="'+esc(r.kind)+'"><strong>'+esc(r.label)+'</strong><span>'+esc(r.detail)+'</span>'+
+        (r.context?'<small>'+esc(r.context)+'</small>':'')+'</li>').join('')+'</ol><p>Showing '+Math.min(rows.length,12)+' / '+rows.length+' matching source findings.</p>';
+
+      let economics='SOURCE RECHECK REQUIRED',econBody='<p>Two fresh, Finance-authorized and uncapped Jobs reads with five eligible single-session jobs per dated cohort are required.</p>';
+      if(visibility.finance!==true){economics='PERMISSION WITHHELD';econBody='<p>Finance permission is required. Source identifiers and exception reasons are hidden.</p>';}
+      else if(current.economics&&!prior.economics){economics='BASELINE ONLY';econBody='<p>Refresh again for a later distinct Jobs retrieval before proposing source disposition.</p>';}
+      else if(current.economics&&prior.economics){
+        if(!advanced(current.economics.at,prior.economics.at)){
+          economics='DISTINCT READ REQUIRED';econBody='<p>Jobs source timestamps must advance; repeated reads cannot substantiate source disposition.</p>';
+        }else if(!Array.isArray(current.economics.members)||!Array.isArray(prior.economics.members)){
+          economics='LINEAGE UNAVAILABLE';econBody='<p>Both source membership lists are required.</p>';
+        }else{
+          const before=new Map(prior.economics.members.map(r=>[r.id,r])),after=new Map(current.economics.members.map(r=>[r.id,r]));
+          const cases=[];
+          for(let i=0;i<2;i++){
+            const old=new Set(prior.economics.cohorts[i]),now=new Set(current.economics.cohorts[i]);
+            for(const id of new Set([...old,...now])){
+              if(old.has(id)===now.has(id))continue;
+              const p=before.get(id),n=after.get(id),both=Boolean(p&&n);
+              const dated=both&&Number.isFinite(Date.parse(p.completionDate||''))&&Number.isFinite(Date.parse(n.completionDate||''));
+              const kind=both&&dated?'traceable':'recheck';
+              const reason=!p?'New in current returned Jobs slice; independently verify prior inclusion and query coverage':
+                !n?'Not returned now; cannot infer economic loss or deletion':
+                !dated?'Incomplete dated completion evidence; verify canonical job/session date':
+                'Dated membership transition trace available; independently validate rolling window versus edited source field';
+              cases.push({kind,label:id+' · '+(old.has(id)?'left':'entered')+' '+(i?'preceding 60 days':'latest 30 days'),
+                detail:reason,context:'Source disposition: '+(kind==='recheck'?'unresolved — original evidence required':'field trace available — not approved')});
+            }
+          }
+          const count=k=>cases.filter(r=>r.kind===k).length,filter=$('owner512DispositionFilter')?.value||'all';
+          const shown=cases.filter(r=>filter==='all'||r.kind===filter);
+          economics='PROPOSED SOURCE DISPOSITION · NOT ADJUDICATED';
+          econBody='<p>'+esc(when(prior.economics.at))+' → '+esc(when(current.economics.at))+' · '+esc(count('recheck'))+
+            ' unresolved source exception(s) · '+esc(count('traceable'))+' field trace(s) needing independent interpretation.</p>'+
+            (shown.length?items(shown,'economic'):'<p>No matching source movement in the returned cohort; no zero-growth conclusion.</p>')+
+            '<p class="yw512-boundary">Source disposition only, not financial approval, causal economic attribution, true historical-period earnings or a signed owner decision.</p>';
+        }
+      }
+
+      let capacity='SOURCE RECHECK REQUIRED',capBody='<p>Two complete, advancing Jobs/scenario source reads with current crew-day coverage are required for handoff recheck.</p>';
+      if(current.capacity&&!prior.capacity){capacity='BASELINE ONLY';capBody='<p>A second distinct seasonal scenario and Jobs retrieval is required.</p>';}
+      else if(current.capacity&&prior.capacity){
+        if(!advanced(current.capacity.at,prior.capacity.at)||!advanced(current.capacity.jobsAt,prior.capacity.jobsAt)){
+          capacity='DISTINCT READ REQUIRED';capBody='<p>Both scenario and Jobs timestamps must advance for source handoff comparison.</p>';
+        }else if(!Array.isArray(current.capacity.scenarios)||!Array.isArray(prior.capacity.scenarios)){
+          capacity='SOURCE FIELD TRACE REQUIRED';capBody='<p>Both scenario field readbacks are required for gap recheck.</p>';
+        }else{
+          const scoped=a=>a.filter(r=>season==='all'||r.season===season),old=scoped(prior.capacity.gaps),now=scoped(current.capacity.gaps);
+          const priorKeys=new Set(old.map(r=>r.key)),nowKeys=new Set(now.map(r=>r.key));
+          const before=new Map(prior.capacity.scenarios.map(r=>[r.key,r])),after=new Map(current.capacity.scenarios.map(r=>[r.key,r]));
+          const sourceContext=g=>{const kind=g.key.split('|')[1],p=before.get(g.season),n=after.get(g.season);
+            const value=(s,k)=>s?.[k]==null?'not recorded':String(s[k]);
+            if(kind==='headroom')return 'Configured route headroom before / after: '+value(p,'headroom')+' / '+value(n,'headroom')+' minutes';
+            if(kind==='demand')return 'Planned count before / after: '+value(p,'planned')+' / '+value(n,'planned')+'; demand minutes '+value(p,'demand')+' / '+value(n,'demand');
+            return 'Missing-assumption source text; no independent signoff or closure receipt supplied';};
+          const cases=[...now.map(g=>({kind:'current',rank:g.key.includes('|headroom|')||g.key.includes('|demand|')?0:1,
+            label:(priorKeys.has(g.key)?'STILL LISTED':'NEW LISTED GAP')+' · '+g.season.replaceAll('_',' '),
+            detail:g.description+' · source exception remains; owner handoff has no assigned decision.',context:sourceContext(g)})),
+            ...old.filter(g=>!nowKeys.has(g.key)).map(g=>({kind:'not_listed',rank:2,
+              label:'NO LONGER LISTED · '+g.season.replaceAll('_',' '),
+              detail:g.description+' · recheck original scenario/crew/route source; disappearance is not approved resolution.',context:sourceContext(g)}))];
+          cases.sort((a,b)=>a.rank-b.rank||a.label.localeCompare(b.label)||a.detail.localeCompare(b.detail));
+          const filter=$('owner512GapFilter')?.value||'all',shown=cases.filter(r=>filter==='all'||r.kind===filter);
+          capacity='HANDOFF SOURCE RECHECK · NO CLOSURE';
+          capBody='<p>Scenario '+esc(when(prior.capacity.at))+' → '+esc(when(current.capacity.at))+' · '+esc(now.length)+
+            ' current gap(s) and '+esc(cases.filter(r=>r.kind==='not_listed').length)+' no-longer-listed handoff recheck(s).</p>'+
+            (shown.length?items(shown,'gap'):'<p>No matching source gap case; this does not establish resolved capacity.</p>')+
+            '<p class="yw512-boundary">Handoff is on-screen evidence only. No sent message, approved gap closure, staff assignment, spare crew assumption or dispatch commitment.</p>';
+        }
+      }
+
+      let reliability='SOURCE RECHECK REQUIRED',relBody='<p>Distinct complete Workability, Dispatch and Production source reads with unique episode IDs are required.</p>';
+      if(current.reliability&&!prior.reliability){reliability='BASELINE ONLY';relBody='<p>Refresh for a second complete three-source retrieval.</p>';}
+      else if(current.reliability&&prior.reliability){
+        const keys=['workability','dispatch','production'];
+        if(!keys.every(k=>advanced(current.reliability.sources[k],prior.reliability.sources[k]))){
+          reliability='DISTINCT READ REQUIRED';relBody='<p>All three source timestamps must advance before preparing an owner decision receipt.</p>';
+        }else{
+          const attention=s=>['blocked_unresolved','rescheduled_pending','proposed_reschedule_pending','partial_or_return_visit'].includes(s);
+          const after=new Map(current.reliability.rows.map(r=>[r.id,r])),cases=[];
+          for(const p of prior.reliability.rows){
+            if(!attention(p.status)||(season!=='all'&&p.season!==season))continue;
+            const n=after.get(p.id);let kind='attention',detail='Continuing attention in recorded source; outcome and owner decision still unverified.';
+            if(!n){kind='blocked';detail='Previously returned episode absent now; do not manufacture a closure receipt.';}
+            else if(n.service_date!==p.service_date||n.season!==p.season){kind='blocked';detail='Episode identity conflict across source dates/seasons; reconcile before receipt.';}
+            else if(['same_day_completed','completed_after_recovery'].includes(n.status)){
+              const end=Date.parse(n.outcome_date+'T12:00:00Z'),start=Date.parse(p.service_date+'T12:00:00Z');
+              if(Number.isFinite(end)&&Number.isFinite(start)&&end>=start&&Number.isInteger(Number(n.recovery_days))&&
+                Number(n.recovery_days)>=0&&Boolean(n.dispatchId||n.workOrderId)){
+                kind='ready';detail='Dated linked Production completion is source-ready for separate owner review; owner decision receipt NOT SUPPLIED.';
+              }else{kind='blocked';detail='Completion lacks consistent date, recovery duration or canonical Dispatch / Work Order linkage.';}
+            }else if(!attention(n.status)){kind='blocked';detail='Unrecognized outcome state; do not claim decision evidence.';}
+            cases.push({kind,label:p.id+' · '+p.status.replaceAll('_',' ')+' → '+(n?.status||'not returned').replaceAll('_',' '),
+              detail,context:'Canonical source: '+(n?.workOrderId||n?.dispatchId||p.workOrderId||p.dispatchId||'not recorded')});
+          }
+          const count=k=>cases.filter(r=>r.kind===k).length,filter=$('owner512ReceiptFilter')?.value||'all',shown=cases.filter(r=>filter==='all'||r.kind===filter);
+          reliability='DECISION RECEIPT READINESS · NOT SIGNED';
+          relBody='<p>'+esc(count('ready'))+' source-ready completion(s) for independent owner review · '+esc(count('attention'))+
+            ' still-attention item(s) · '+esc(count('blocked'))+' blocked source receipt(s).</p>'+
+            (shown.length?items(shown,'receipt'):'<p>No matching returned decision readiness item; no owner signoff inferred.</p>')+
+            '<p class="yw512-boundary">No owner decision receipt is returned by these source readbacks. Review readiness never means signed approval, customer acceptance, resolved service or task creation.</p>';
+        }
+      }
+      host.innerHTML='<div class="yw512-grid">'+
+        card('economics','Economic confidence exception disposition',economics,econBody,'#owner511Continuity')+
+        card('capacity','Seasonal gap owner handoff source recheck',capacity,capBody,'#owner375Scenarios')+
+        card('reliability','Reliability decision receipt readiness',reliability,relBody,'#owner364Recovery')+
+        '</div><p class="muted">Last two bounded in-memory reads · no persist, outbound handoff, signed receipt, source mutation or QL-269 activation. UNDER REVIEW.</p>';
+    }
+
     function renderWorkabilityRecovery(){
       const host=$('owner364Recovery');if(!host)return;
       const r=state.data?.workability_schedule_recovery_outcomes;
@@ -2496,6 +2616,7 @@
       renderDriftSourceTrace509();
       renderSourceReadiness510();
       renderOwnerContinuity511();
+      renderEvidenceDisposition512();
       renderFourSeasonCrewDayMixBacktest();
       renderWorkabilityRecovery();
       renderWorkabilityForecastRecoveryCalibration();
@@ -2587,7 +2708,7 @@
     }
     el.addEventListener('click',e=>{const b=e.target.closest('[data-owner350-open],[data-owner356-open],[data-owner357-open],[data-owner358-open],[data-owner359-open],[data-owner360-open]');if(b)openSource(b.getAttribute('data-owner350-open')||b.getAttribute('data-owner356-open')||b.getAttribute('data-owner357-open')||b.getAttribute('data-owner358-open')||b.getAttribute('data-owner359-open')||b.getAttribute('data-owner360-open'))});
     $('owner350Refresh').onclick=load;$('owner508Refresh').onclick=load;load();
-    $('owner505Season').addEventListener('change',()=>{renderServiceCapacityReliability505();renderHistoricalCapacityExceptions506();renderEconomicCapacityFollowup507();renderEvidenceRecheck508();renderDriftSourceTrace509();renderSourceReadiness510();renderOwnerContinuity511();});
+    $('owner505Season').addEventListener('change',()=>{renderServiceCapacityReliability505();renderHistoricalCapacityExceptions506();renderEconomicCapacityFollowup507();renderEvidenceRecheck508();renderDriftSourceTrace509();renderSourceReadiness510();renderOwnerContinuity511();renderEvidenceDisposition512();});
     $('owner506ExceptionFilter').addEventListener('change',renderHistoricalCapacityExceptions506);
     $('owner507QueueFilter').addEventListener('change',renderEconomicCapacityFollowup507);
     $('owner509StateFilter').addEventListener('change',renderDriftSourceTrace509);
@@ -2596,6 +2717,9 @@
     $('owner511ConfidenceFilter').addEventListener('change',renderOwnerContinuity511);
     $('owner511HandoffFilter').addEventListener('change',renderOwnerContinuity511);
     $('owner511DecisionFilter').addEventListener('change',renderOwnerContinuity511);
+    $('owner512DispositionFilter').addEventListener('change',renderEvidenceDisposition512);
+    $('owner512GapFilter').addEventListener('change',renderEvidenceDisposition512);
+    $('owner512ReceiptFilter').addEventListener('change',renderEvidenceDisposition512);
   }
   window.YWIOwnerManagementCommandUI={mount};
 })();
