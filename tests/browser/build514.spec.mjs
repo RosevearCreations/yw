@@ -73,7 +73,7 @@ test('seasonal gap recheck distinguishes listed, recovered unsigned and missing 
   await page.locator('#owner514CapacityFilter').selectOption('candidate');
   await expect(lane.locator('[data-owner514-capacity]')).toHaveCount(2);
   await expect(lane).toContainText('FIELD RETURNED / CLOSURE UNSIGNED');
-  await expect(lane).toContainText('independent closure review');
+  await expect(lane).toContainText('explicit owner closure evidence');
   const absent=fixture(minutes(.5));absent.four_season_capacity_profitability_scenario_evidence.scenarios=[scenario('spring_summer')];
   await refresh(page,absent);await page.locator('#owner514CapacityFilter').selectOption('missing');
   await expect(lane.locator('[data-owner514-capacity="missing"]')).toHaveCount(1);
