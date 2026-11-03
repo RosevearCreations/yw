@@ -50,7 +50,7 @@ test('source-based economic identity exceptions appear only after distinct Jobs 
  const lane=page.locator('[data-owner519-lane="economic"]');
  await expect(lane).toHaveAttribute('data-owner519-state','source_compared');
  await expect(lane.locator('[data-owner519-kind="lineage"]')).toHaveCount(2);
- await expect(lane).toContainText('Original Jobs');
+ await expect(lane).toContainText('Verify original Jobs');
  await page.locator('#owner519ReviewFilter').selectOption('signature');
  await expect(lane.locator('[data-owner519-kind]')).toHaveCount(0);
  await page.locator('#owner519ReviewFilter').selectOption('source');
