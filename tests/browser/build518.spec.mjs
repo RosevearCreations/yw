@@ -68,7 +68,7 @@ test('seasonal owner closure continuity never treats a disappeared flag as signe
   await expect(lane.locator('[data-owner518-kind="unsigned"]')).toHaveCount(2);
   await page.locator('#owner518SeasonalFilter').selectOption('unsigned');
   await expect(lane.locator('[data-owner518-kind]')).toHaveCount(2);
-  await expect(lane).toContainText('no closure');
+  await expect(lane).toContainText('independently signed owner closure remain required');
 });
 test('completed Workability episode remains unsigned, with original-source link and age information',async({page})=>{
   const initial=fixture();await boot(page,initial);
