@@ -548,6 +548,71 @@
  .owner518-readiness .yw518-grid{padding:10px 13px;}
  .owner518-readiness .yw518-note,.owner518-readiness .yw518-boundary{margin-left:13px;margin-right:13px;}}
 
+
+/* Build 519: Yard Workers operations review design, scoped to authenticated Management. */
+.owner519-command,.owner519-command *{box-sizing:border-box;}
+.owner519-command{--yw519-green:#173e33;--yw519-gold:#f5d795;--yw519-cream:#eaf8ea;
+ min-width:0;overflow-wrap:anywhere;background:linear-gradient(150deg,#0e2825,#184336 72%,#17382f);
+ border:1px solid #95bba0;border-radius:18px;box-shadow:0 12px 30px #0a211e4d;color:#f1f9ed;}
+.owner519-command .yw519-heading{padding:20px 22px 16px;border-bottom:1px solid #8db49b70;
+ display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;}
+.owner519-command .yw519-eyebrow{color:var(--yw519-gold);font-size:.75rem;font-weight:850;text-transform:uppercase;letter-spacing:.07em;}
+.owner519-command .yw519-heading h4{font-size:clamp(1.22rem,2.1vw,1.65rem);margin:7px 0;color:#fff;}
+.owner519-command .yw519-heading p{max-width:68ch;color:#e3f3e6;margin:0;line-height:1.5;}
+.owner519-command .yw519-heading nav{display:flex;flex-wrap:wrap;gap:8px;}
+.owner519-command .yw519-heading a{display:inline-flex;align-items:center;min-height:44px;
+ border-radius:100px;background:#295d47;color:#fff;border:1px solid #afceb2;padding:9px 12px;text-decoration:none;}
+.owner519-command .yw519-controls{padding:15px 22px 8px;display:flex;flex-wrap:wrap;align-items:end;gap:15px;}
+.owner519-command .yw519-controls label{flex:1 1 220px;max-width:365px;display:flex;flex-direction:column;
+ gap:7px;color:#fff;font-weight:760;}
+.owner519-command .yw519-controls select{width:100%;min-height:44px;color:#fff;
+ background:#0b2822;border:2px solid #9cc7a7;border-radius:10px;padding:9px 11px;}
+.owner519-command .yw519-explanation{color:#d9edde;flex:2 1 250px;font-size:.87rem;line-height:1.5;margin:0 0 6px;}
+.owner519-command :is(a,select,summary):focus-visible{outline:3px solid #ffe290;outline-offset:3px;}
+.owner519-command .yw519-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px 22px 18px;}
+.owner519-command .yw519-card{min-width:0;display:flex;flex-direction:column;gap:10px;padding:16px;
+ background:linear-gradient(165deg,#173c33,#0e302c);border:1px solid #8ab89b;border-radius:13px;}
+.owner519-command .yw519-card-header{display:flex;align-items:center;gap:11px;}
+.owner519-command .yw519-card-header span{min-width:41px;height:41px;display:grid;place-items:center;
+ background:#50482a;color:#ffe1a0;border:1px solid #eac98a;border-radius:10px;font-weight:900;}
+.owner519-command .yw519-card h5{font-size:1.04rem;color:#fff;margin:0;}
+.owner519-command .yw519-badge{border-left:4px solid #f4cf87;background:#3e412a;color:#ffe7aa;
+ padding:9px 11px;font-weight:800;font-size:.8rem;}
+.owner519-command .yw519-dates{border-left:3px solid #ddc48d;background:#2a4b3b;
+ padding:9px 11px;line-height:1.45;margin:0;}
+.owner519-command .yw519-metrics{display:flex;flex-wrap:wrap;gap:6px;}
+.owner519-command .yw519-metric{background:#27523e;color:#f3fbf0;border:1px solid #9cc4a6;
+ border-radius:8px;padding:6px 8px;font-size:.73rem;line-height:1.4;}
+.owner519-command .yw519-metric strong{color:#ffe0a1;font-size:.93rem;}
+.owner519-command .yw519-queue{max-height:455px;overflow-y:auto;list-style:none;padding:0;margin:0;}
+.owner519-command .yw519-queue li+li{border-top:1px solid #87b1977a;}
+.owner519-command .yw519-queue summary{cursor:pointer;min-height:44px;color:#fff;font-weight:750;
+ line-height:1.4;padding:11px 4px;overflow-wrap:anywhere;}
+.owner519-command .yw519-queue small{display:block;color:#d7f0d7;margin-top:5px;}
+.owner519-command .yw519-queue details p{color:#f3fff1;margin:8px 0 8px 9px;border-left:3px solid #f0cd8a;padding-left:10px;line-height:1.5;}
+.owner519-command .yw519-none,.owner519-command .yw519-withheld{background:#47412b;
+ border-left:4px solid #f4d387;padding:12px;color:#fff0c4;line-height:1.48;}
+.owner519-command .yw519-note,.owner519-command .yw519-summary{color:#d9f1da;font-size:.86rem;line-height:1.48;}
+.owner519-command .yw519-result{font-size:.79rem;color:#d9f1da;}
+.owner519-command .yw519-card>a{align-self:flex-start;margin-top:auto;color:#ffe2a1;
+ padding:8px 0;font-weight:750;text-decoration:underline;}
+.owner519-command .yw519-summary,.owner519-command .yw519-guard{margin:0 22px 14px;}
+.owner519-command .yw519-guard{border-top:1px solid #a3c4a3;padding-top:12px;
+ color:#ffe5a9;font-size:.85rem;line-height:1.5;}
+/* Shared Management cards: make headings, navigation and form targets consistent. */
+.yw494-command .yw494-hero,.yw494-command .yw494-review-card,.yw494-command .yw494-kpi{border-radius:14px;}
+.yw494-command .yw494-data-table th{background:#245a46;color:#ffe2a7;}
+.yw494-command .yw494-data-table tr:nth-child(even) td{background:#244a3b55;}
+.yw494-command .yw494-review-details>summary{color:#ffe0a2;}
+.yw494-command :is(input,textarea,select){background:#143c32;color:#fff;border-color:#9bb4a0;}
+@media(max-width:1100px){.owner519-command .yw519-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:780px){.owner519-command .yw519-grid{grid-template-columns:minmax(0,1fr);}
+ .owner519-command .yw519-heading{flex-direction:column;}}
+@media(max-width:480px){.owner519-command .yw519-grid{padding:10px 13px;}
+ .owner519-command .yw519-heading,.owner519-command .yw519-controls{padding:14px 13px;}
+ .owner519-command .yw519-summary,.owner519-command .yw519-guard{margin-left:13px;margin-right:13px;}}
+@media(prefers-reduced-motion:reduce){.owner519-command,.owner519-command *{scroll-behavior:auto!important;transition:none!important;}}
+
 @media (prefers-reduced-motion:reduce){
  .yw496-dashboard-nav,.yw496-dashboard-nav *{scroll-behavior:auto!important;transition:none!important;}
 }
