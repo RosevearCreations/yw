@@ -14,6 +14,7 @@ const files = [
   'style.css',
   'build494-command.css',
   'build521-workspace.css',
+  'build522-portability.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',
