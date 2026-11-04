@@ -1,0 +1,27 @@
+/* Build 524: versioned local recovery and provisional accessibility workbench. */
+.yw524-history,.yw524-history *{box-sizing:border-box;}
+.yw524-history{margin:12px 0 18px;padding:20px;border:1px solid #aac8b1;border-radius:17px;
+ background:linear-gradient(140deg,#103234,#204a41 66%,#5a4b34);color:#f3ffea;min-width:0;}
+.yw524-kicker{font-size:.72rem;text-transform:uppercase;letter-spacing:.11em;color:#ffe6a0;font-weight:850;}
+.yw524-history h4{color:white;margin:7px 0;font-size:clamp(1.22rem,2.5vw,1.7rem);}
+.yw524-history header p,.yw524-acceptance p{line-height:1.55;color:#e8f8e9;max-width:77ch;}
+.yw524-actions,.yw524-restore{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:15px 0;}
+.yw524-history button{min-height:44px;padding:10px 13px;border-radius:10px;border:1px solid #efd08d;
+ background:#fce1a7;color:#17352f;font-weight:800;cursor:pointer;}
+.yw524-history button:hover:not(:disabled){background:#fff1c9;}
+.yw524-history button:disabled{opacity:.55;cursor:not-allowed;}
+.yw524-history label{color:#fff0c6;font-weight:750;line-height:1.4;}
+.yw524-actions>label,.yw524-restore>label{display:grid;gap:7px;flex:1 1 230px;min-width:0;}
+.yw524-history :is(select,input[type="file"]){width:100%;min-height:44px;border:1px solid #abc7b3;
+ border-radius:9px;color:#fff;background:#0b2b2c;padding:8px;max-width:100%;}
+.yw524-history :is(button,select,input):focus-visible{outline:3px solid #ffefac;outline-offset:3px;}
+.yw524-history [role="status"]{background:#1e453a;color:#fff;border-left:4px solid #f7d781;
+ padding:12px;border-radius:9px;line-height:1.55;overflow-wrap:anywhere;}
+.yw524-acceptance{margin-top:15px;padding:16px;border:1px solid #97c5a2;border-radius:12px;background:#112f2f;}
+.yw524-acceptance h5{font-size:1.1rem;color:#ffedb9;margin:0 0 7px;}
+.yw524-acceptance label{display:flex;gap:10px;align-items:flex-start;margin:13px 0;color:white;}
+.yw524-acceptance input[type="checkbox"]{flex:0 0 20px;width:20px;height:20px;accent-color:#ffdc94;}
+.yw524-boundary{font-size:.86rem;line-height:1.5;color:#e9f9e4;margin:12px 0 0;}
+@media(max-width:600px){.yw524-history{padding:13px;}.yw524-actions>button,.yw524-restore>button{width:100%;}
+ .yw524-actions>label,.yw524-restore>label{flex-basis:100%;}}
+@media(prefers-reduced-motion:reduce){.yw524-history,.yw524-history *{transition:none!important;scroll-behavior:auto!important;}}
