@@ -1,0 +1,31 @@
+/* Build 521: Management evidence workspace visual preferences and focus return. */
+.yw521-workspace,.yw521-workspace *{box-sizing:border-box;}
+.yw521-workspace{background:linear-gradient(120deg,#0d2c29,#163e32 67%,#334127);
+  border:1px solid #8fae81;border-radius:16px;padding:18px;margin:12px 0;
+  color:#f3fff0;box-shadow:0 10px 24px #071a1538;min-width:0;}
+.yw521-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+.yw521-kicker{color:#ffe3a5;font-size:.73rem;font-weight:850;letter-spacing:.1em;text-transform:uppercase;}
+.yw521-heading h4{color:#fff;margin:7px 0;font-size:clamp(1.2rem,2.2vw,1.7rem);}
+.yw521-heading p{margin:0;color:#e5f5e6;line-height:1.5;max-width:74ch;}
+.yw521-badge{display:inline-flex;border:1px solid #e6c879;color:#ffeab3;
+  background:#3b3820;padding:7px 11px;border-radius:999px;font-weight:750;font-size:.78rem;}
+.yw521-controls{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin-top:16px;}
+.yw521-controls label{display:grid;gap:5px;flex:1 1 180px;color:#ffe4ab;font-weight:750;}
+.yw521-workspace select{min-height:44px;padding:8px 11px;border-radius:9px;
+  border:1px solid #a6c2ac;background:#0a2928;color:#fff;max-width:100%;}
+.yw521-workspace button{min-height:44px;padding:9px 13px;border-radius:9px;
+  background:#ffe2a0;color:#173025;font-weight:800;border:1px solid #e5b96b;cursor:pointer;}
+.yw521-workspace button:hover:not(:disabled){background:#fff0c8;}
+.yw521-workspace button:disabled{opacity:.55;cursor:not-allowed;}
+.yw521-workspace :is(button,select):focus-visible{outline:3px solid #fff6c7;outline-offset:3px;}
+.yw521-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+.yw521-actions button{background:#224d3e;color:#fff4cc;border-color:#a1c39f;}
+.yw521-workspace [role="status"]{border-left:4px solid #e7c576;background:#18392f;
+  color:#f7ffe8;border-radius:7px;padding:10px 12px;margin:13px 0;line-height:1.5;}
+.yw521-boundary{color:#e7f5df;line-height:1.5;font-size:.86rem;margin:10px 0 0;}
+.owner520-navigation.yw521-compact .yw520-grid{gap:9px;}
+.owner520-navigation.yw521-compact .yw520-card{padding:11px;}
+.owner520-navigation.yw521-compact .yw520-path{gap:4px;}
+@media(max-width:600px){.yw521-workspace{padding:13px;}.yw521-controls>*{flex:1 1 100%;}
+ .yw521-actions button{flex:1 1 100%;}}
+@media(prefers-reduced-motion:reduce){.yw521-workspace,.yw521-workspace *{transition:none!important;scroll-behavior:auto!important;}}
