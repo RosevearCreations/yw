@@ -13,6 +13,7 @@ const files = [
   'app.js',
   'style.css',
   'build494-command.css',
+  'build521-workspace.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',
