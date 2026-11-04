@@ -1,0 +1,29 @@
+/* Build 522: bounded portability and manual navigation acceptance. */
+.yw522-portability,.yw522-portability *{box-sizing:border-box;}
+.yw522-portability{color:#f3ffe9;background:linear-gradient(145deg,#0b2728,#143b34 70%,#344229);
+ border:1px solid #9eba98;border-radius:16px;padding:18px;min-width:0;margin:12px 0;}
+.yw522-kicker{font-size:.73rem;letter-spacing:.1em;text-transform:uppercase;
+ color:#ffe3a2;font-weight:850;}
+.yw522-portability h4{color:#fff;margin:7px 0;font-size:clamp(1.2rem,2.3vw,1.65rem);}
+.yw522-portability header p,.yw522-check p{color:#e1f2df;max-width:76ch;line-height:1.5;margin:0;}
+.yw522-tools{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:16px 0;}
+.yw522-portability button{min-height:44px;padding:9px 12px;border-radius:9px;
+ border:1px solid #e0c378;background:#ffe2a6;color:#1e3427;font-weight:800;cursor:pointer;}
+.yw522-portability button:disabled{opacity:.55;cursor:not-allowed;}
+.yw522-portability button:hover:not(:disabled){background:#fff0cc;}
+.yw522-tools label{display:grid;gap:5px;min-width:190px;flex:1 1 210px;
+ color:#ffe3aa;font-weight:750;}
+.yw522-portability input[type="file"]{min-height:44px;width:100%;max-width:100%;
+ border:1px solid #9aba9e;border-radius:9px;background:#0a2a29;color:#fff;padding:8px;}
+.yw522-portability :is(button,input):focus-visible{outline:3px solid #ffefad;outline-offset:3px;}
+.yw522-portability [role="status"]{padding:11px 12px;background:#1b3c31;border-left:4px solid #edcd81;
+ border-radius:8px;color:#f8ffe9;line-height:1.5;overflow-wrap:anywhere;}
+.yw522-check{border:1px solid #89ab8f;border-radius:12px;padding:13px;
+ background:#102e2c;display:flex;gap:9px;flex-wrap:wrap;align-items:center;}
+.yw522-check h5,.yw522-check p{flex:1 1 100%;margin:0;}
+.yw522-check h5{color:#fff6d8;font-size:1.05rem;}
+.yw522-check [role="status"]{flex:1 1 100%;margin:0;}
+.yw522-boundary{font-size:.86rem;color:#e0f5db;line-height:1.5;margin:12px 0 0;}
+@media(max-width:600px){.yw522-portability{padding:13px;}.yw522-tools>*{flex:1 1 100%;}
+ .yw522-check button{flex:1 1 100%;}}
+@media(prefers-reduced-motion:reduce){.yw522-portability,.yw522-portability *{transition:none!important;scroll-behavior:auto!important;}}
