@@ -1,0 +1,28 @@
+/* Build 523: explicit compare/keep/replace, recovery and local accessibility notes. */
+.yw523-conflicts,.yw523-conflicts *{box-sizing:border-box;}
+.yw523-conflicts{margin:12px 0 18px;padding:20px;border-radius:16px;border:1px solid #b5d3a0;
+ color:#f5ffea;background:linear-gradient(135deg,#12322f,#264b3d 66%,#54452a);min-width:0;}
+.yw523-kicker{color:#fbe7a9;font-size:.73rem;text-transform:uppercase;letter-spacing:.1em;font-weight:850;}
+.yw523-conflicts h4{color:white;font-size:clamp(1.2rem,2.3vw,1.6rem);margin:8px 0;}
+.yw523-conflicts header p,.yw523-accessibility p{line-height:1.55;color:#edfae6;max-width:76ch;}
+.yw523-comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0;}
+.yw523-comparison>div{background:#112c2b;border:1px solid #aacba6;border-radius:12px;padding:14px;min-width:0;}
+.yw523-comparison h5{color:#ffe7a4;font-size:.9rem;margin:0 0 8px;}
+.yw523-comparison p{margin:0;line-height:1.5;color:#fff;overflow-wrap:anywhere;}
+.yw523-actions{display:flex;flex-wrap:wrap;gap:10px;margin:13px 0 18px;}
+.yw523-conflicts button{border:1px solid #f9db9a;background:#fbe2aa;color:#15382e;border-radius:10px;
+ padding:10px 13px;min-height:44px;font-weight:800;cursor:pointer;}
+.yw523-conflicts button:hover:not(:disabled){background:#fff0cf;}
+.yw523-conflicts button:disabled{cursor:not-allowed;opacity:.55;}
+.yw523-conflicts :is(button,input):focus-visible{outline:3px solid #fff3aa;outline-offset:3px;}
+.yw523-conflicts [role="status"]{color:white;border-radius:9px;background:#214737;
+ border-left:4px solid #f5d27f;padding:12px;line-height:1.55;overflow-wrap:anywhere;}
+.yw523-accessibility{border:1px solid #a3c299;border-radius:12px;background:#102d2c;padding:16px;}
+.yw523-accessibility h5{color:#ffe7a4;font-size:1.1rem;margin:0 0 7px;}
+.yw523-accessibility label{display:flex;align-items:flex-start;gap:10px;margin:12px 0;line-height:1.45;color:white;}
+.yw523-accessibility input[type="checkbox"]{width:20px;height:20px;flex:0 0 20px;accent-color:#f2d17d;}
+.yw523-accessibility [role="status"]{margin-bottom:0;}
+.yw523-boundary{font-size:.86rem;line-height:1.5;color:#ecf8e2;margin-bottom:0;}
+@media(max-width:600px){.yw523-conflicts{padding:13px;}.yw523-comparison{grid-template-columns:1fr;}
+ .yw523-actions>button{width:100%;}}
+@media(prefers-reduced-motion:reduce){.yw523-conflicts,.yw523-conflicts *{transition:none!important;scroll-behavior:auto!important;}}
