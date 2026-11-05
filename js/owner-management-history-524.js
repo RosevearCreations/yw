@@ -157,6 +157,21 @@
         '; zoom/motion '+(zoom?'self-reported':'not checked')+
         '. Manual owner acceptance still required; no certification, source approval or audit receipt created.';
     });
+    // Build 525's conflict workbench may request a validated, display-only history
+    // replacement. Keep the v2 in-memory model and device store in agreement.
+    const publicApi=window.YWIOwnerManagementHistory524;
+    publicApi.getSnapshots=()=>invalid?null:snapshots.map(item=>({...item}));
+    publicApi.replaceSnapshots=(items,reason)=>{
+      if(invalid||!valid(packet(items)))return false;
+      snapshots=items.map(item=>({...item}));
+      pending=null;importSequence++;$('owner524File').value='';clearArmed=false;
+      persist(reason||'Validated display-only history restored.');return true;
+    };
+    publicApi.discardPending=()=>{
+      pending=null;importSequence++;$('owner524File').value='';clearArmed=false;
+      status.textContent='Inspected import discarded. Local recovery history is unchanged.';
+      render();
+    };
     render();
   }
   const owner=window.YWIOwnerManagementCommandUI;

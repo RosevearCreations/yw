@@ -17,6 +17,7 @@ const files = [
   'build522-portability.css',
   'build523-conflicts.css',
   'build524-history.css',
+  'build525-retest.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',
