@@ -39,6 +39,16 @@
     const status=$('owner525ConflictStatus');
     let pending=null,conflict=false,approved=false,undo=null,sequence=0,draft=null;
     const safeLocal=()=>api.getSnapshots();
+    // Build 526 may inspect only validated display choices and the current
+    // reviewed finding. Never expose source evidence or unreviewed notes.
+    window.YWIOwnerManagementRetest525.getComparison=()=>({
+      local:safeLocal(),inspected:pending?pending.map(item=>({...item})):null,
+      differing:conflict
+    });
+    window.YWIOwnerManagementRetest525.getReviewedFinding=()=>draft?{
+      category:draft.category,outcome:draft.outcome,
+      observations:{...draft.observations}
+    }:null;
     function render(){
       const local=safeLocal();conflict=Boolean(pending&&local&&local.length&&
         (local.length!==pending.length||local.some((item,i)=>!same(item,pending[i]))));
