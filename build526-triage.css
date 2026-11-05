@@ -1,0 +1,33 @@
+/* Build 526: owner retest triage and recovery comparison history. */
+.yw526-triage,.yw526-triage *{box-sizing:border-box;}
+.yw526-triage{min-width:0;margin:14px 0 18px;padding:20px;border-radius:18px;
+ border:1px solid #b9d6bd;background:linear-gradient(135deg,#153837,#275a4a 65%,#72613d);
+ color:#f7fff6;box-shadow:0 10px 26px #0e292625;}
+.yw526-kicker{color:#ffe6ab;font-size:.74rem;font-weight:850;letter-spacing:.09em;text-transform:uppercase;}
+.yw526-triage h4{color:#fff;margin:7px 0;font-size:clamp(1.25rem,2.5vw,1.75rem);}
+.yw526-triage header>p,.yw526-triage .yw526-panel>p{max-width:78ch;line-height:1.55;color:#e9f9e8;}
+.yw526-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch;margin:16px 0;}
+.yw526-panel{min-width:0;background:#12332f;border:1px solid #9bbca6;border-radius:14px;padding:16px;}
+.yw526-panel h5{font-size:1.07rem;color:#ffebb3;margin:0 0 9px;}
+.yw526-panel :is(label,select){display:block;}
+.yw526-panel label{font-weight:750;color:#fff0ca;line-height:1.4;}
+.yw526-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0;}
+.yw526-panel select{min-width:0;width:100%;min-height:44px;margin-top:8px;border:1px solid #bdd4be;
+ border-radius:9px;padding:10px 9px;color:#fff;background:#0a292b;font:inherit;}
+.yw526-triage button{min-height:44px;padding:10px 13px;border:1px solid #ffe3a3;border-radius:10px;
+ color:#11372d;background:#ffdf9d;cursor:pointer;font:inherit;font-weight:800;}
+.yw526-triage button:hover:not(:disabled){background:#fff0c8;}
+.yw526-triage button:disabled{cursor:not-allowed;opacity:.55;}
+.yw526-triage :is(button,select):focus-visible{outline:3px solid #fff2b9;outline-offset:3px;}
+.yw526-triage ol{padding-left:1.5rem;line-height:1.55;margin:14px 0;}
+.yw526-triage li{border-top:1px solid #527c6d;padding:10px 0;color:#f7fff4;overflow-wrap:anywhere;}
+.yw526-triage li button{margin:5px 0 0;display:inline-block;}
+.yw526-heading{display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap;}
+.yw526-heading label{min-width:min(230px,100%);}
+.yw526-actions{display:flex;flex-wrap:wrap;gap:10px;margin:15px 0;}
+.yw526-triage [role="status"]{border-left:4px solid #f9d47f;background:#235142;
+ border-radius:9px;color:#fff;line-height:1.6;padding:12px;overflow-wrap:anywhere;}
+.yw526-boundary{line-height:1.55;color:#e9f8de;font-size:.87rem;margin:14px 0 0;}
+@media(max-width:760px){.yw526-triage{padding:14px;}.yw526-grid,.yw526-fields{grid-template-columns:1fr;}
+ .yw526-actions>button{flex:1 1 230px;}}
+@media(prefers-reduced-motion:reduce){.yw526-triage,.yw526-triage *{transition:none!important;scroll-behavior:auto!important;}}

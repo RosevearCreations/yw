@@ -18,6 +18,7 @@ const files = [
   'build523-conflicts.css',
   'build524-history.css',
   'build525-retest.css',
+  'build526-triage.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',
