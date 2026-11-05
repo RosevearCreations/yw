@@ -31,6 +31,13 @@ on:
         type: choice
         options: ['false','true']
 
+# Build 527: a newer commit supersedes PR verification for the same PR only.
+# Main and manually authorized staging/evidence runs are never cancelled here.
+# Keep all existing required job names and fail-closed release dependencies.
+concurrency:
+  group: ywi-source-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   source-checks:
     runs-on: ubuntu-latest
