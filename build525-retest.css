@@ -1,0 +1,31 @@
+/* Build 525: explicit history conflict decisions and provisional finding drafts. */
+.yw525-retest,.yw525-retest *{box-sizing:border-box;}
+.yw525-retest{margin:12px 0 18px;padding:20px;border-radius:17px;
+ border:1px solid #b7cb9f;background:linear-gradient(140deg,#102f31,#244b3d 68%,#624f36);
+ color:#f6ffef;min-width:0;}
+.yw525-kicker{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#ffe6a9;font-weight:850;}
+.yw525-retest h4{color:#fff;margin:7px 0;font-size:clamp(1.24rem,2.5vw,1.72rem);}
+.yw525-retest header p,.yw525-findings p{max-width:77ch;line-height:1.55;color:#ebfae7;}
+.yw525-compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0;}
+.yw525-compare>div{padding:15px;border-radius:12px;border:1px solid #9fc39f;background:#0e2d2a;min-width:0;}
+.yw525-compare h5{margin:0 0 8px;color:#ffe4a2;font-size:.94rem;}
+.yw525-compare p{margin:0;color:#fff;overflow-wrap:anywhere;line-height:1.5;}
+.yw525-actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;}
+.yw525-retest button{min-height:44px;border:1px solid #eed08d;border-radius:10px;
+ padding:10px 13px;background:#ffe2a7;color:#153a30;font-weight:800;cursor:pointer;}
+.yw525-retest button:hover:not(:disabled){background:#fff0ca;}
+.yw525-retest button:disabled{opacity:.55;cursor:not-allowed;}
+.yw525-retest [role="status"]{color:#fff;background:#1e453a;border-left:4px solid #f5d37e;
+ border-radius:9px;padding:12px;line-height:1.55;overflow-wrap:anywhere;}
+.yw525-findings{background:#112e2d;border:1px solid #a7c39f;border-radius:13px;padding:16px;margin-top:18px;}
+.yw525-findings h5{font-size:1.1rem;margin:0 0 8px;color:#ffebb0;}
+.yw525-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.yw525-findings label{display:grid;gap:7px;margin:12px 0;color:#fff0c7;font-weight:750;}
+.yw525-findings :is(select,textarea){display:block;width:100%;min-height:44px;background:#0a2c2d;
+ color:#fff;border:1px solid #a7c5ad;border-radius:9px;padding:9px;font:inherit;max-width:100%;}
+.yw525-findings textarea{min-height:88px;resize:vertical;line-height:1.5;}
+.yw525-retest :is(button,select,textarea):focus-visible{outline:3px solid #ffefac;outline-offset:3px;}
+.yw525-boundary{font-size:.86rem;line-height:1.55;color:#eaf9e2;margin:12px 0 0;}
+@media(max-width:600px){.yw525-retest{padding:13px;}.yw525-compare,.yw525-fields{grid-template-columns:1fr;}
+ .yw525-actions>button{width:100%;}}
+@media(prefers-reduced-motion:reduce){.yw525-retest,.yw525-retest *{transition:none!important;scroll-behavior:auto!important;}}
