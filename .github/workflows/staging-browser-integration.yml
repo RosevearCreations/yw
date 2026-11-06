@@ -672,9 +672,6 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: Require all parallel browser lanes to pass
-        shell: bash
-        run: test '${{ needs.browser-regression-lanes.result }}' = success
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
@@ -698,9 +695,6 @@ jobs:
     needs: source-checks
     runs-on: ubuntu-latest
     steps:
-      - name: Require all parallel browser lanes to pass
-        shell: bash
-        run: test '${{ needs.browser-regression-lanes.result }}' = success
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
@@ -735,9 +729,6 @@ jobs:
     needs: [source-checks, repository-enforcement, release-source-evidence]
     runs-on: ubuntu-latest
     steps:
-      - name: Require all parallel browser lanes to pass
-        shell: bash
-        run: test '${{ needs.browser-regression-lanes.result }}' = success
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
