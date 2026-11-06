@@ -281,6 +281,7 @@ jobs:
       - run: npm run test:repository-protection-preflight
       - run: node scripts/github-actions-runtime-contract-check.mjs
       - run: node scripts/release-job-separation-check.mjs
+      - run: node scripts/build530-ci-runtime-audit-check.mjs
       - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify
