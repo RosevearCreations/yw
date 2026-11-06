@@ -22,7 +22,8 @@ const between=(text,start,end)=>{
 const lanes=between(workflow,'  browser-regression-lanes:\n','\n  source-checks:\n');
 const source=between(workflow,'  source-checks:\n','\n  repository-enforcement:\n');
 const repository=between(workflow,'  repository-enforcement:\n','\n  release-source-evidence:\n');
-const releaseEvidence=between(workflow,'  release-source-evidence:\n','\n  staging-proof:\n');
+const releaseEvidence=between(workflow,'  release-source-evidence:\n','\n  release-truth-summary:\n');
+const releaseSummary=between(workflow,'  release-truth-summary:\n','\n  staging-proof:\n');
 
 add('source-checks-job-exists',Boolean(source),'Canonical application source/rendered job must exist.');
 add('repository-enforcement-job-exists',Boolean(repository),'Exact-main repository policy must have its own job.');
@@ -65,6 +66,13 @@ add('build529-browser-command-equivalence',
   (lanes.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 155
   && (source.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 55,
   'All 210 browser commands remain accounted for across the lanes and guarded source tail.');
+
+add('build529-isolated-release-jobs-have-no-lane-guard',
+  !repository.includes('Require all parallel browser lanes to pass')
+  && !releaseEvidence.includes('Require all parallel browser lanes to pass')
+  && !releaseSummary.includes('Require all parallel browser lanes to pass')
+  && source.includes('Require all parallel browser lanes to pass'),
+  'Only source-checks may consume the browser-lanes dependency; independent main evidence jobs must not inherit it.');
 
 add('repository-enforcement-is-exact-main-only',
   repository.includes("if: github.event_name == 'push' && github.ref == 'refs/heads/main'")
