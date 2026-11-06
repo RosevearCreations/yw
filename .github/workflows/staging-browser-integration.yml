@@ -317,161 +317,225 @@ jobs:
             echo "Chromium install did not complete after 3 bounded attempts."
             exit 1
           fi
-      - run: npm run test:browser
-      - run: npm run test:browser:three-surface
-      - run: npm run test:browser:field-ux
-      - run: npm run test:browser:notifications
-      - run: npm run test:browser:public-route-publication
-      - run: npx playwright test --config=playwright.config.mjs tests/browser/customer-portal-responsive-privacy.spec.mjs
-      - run: npx playwright test --config=playwright.config.mjs tests/browser/private-evidence-security-policy.spec.mjs
-      - run: npx playwright test --config=playwright.config.mjs tests/browser/release-readiness-evidence.spec.mjs
-      - run: npm run test:browser:job-lifecycle
-      - run: npm run test:browser:modules
-      - run: npm run test:browser:bank-import-workbench-v2
-      - run: npm run test:browser:smart-reconciliation-workbench
-      - run: npm run test:browser:payment-application-ar-completion
-      - run: npm run test:browser:account-mapping-posting-preview
-      - run: npm run test:browser:reconciliation-exception-resolution
-      - run: npm run test:browser:month-end-close-cockpit
-      - run: npm run test:browser:accountant-export-package-v2
-      - run: npm run test:browser:job-cost-profitability-closeout
-      - run: npm run test:browser:landscaping-finance-dashboard
-      - run: npm run test:browser:operations-needs-attention
-      - run: npm run test:browser:crew-scheduling-dispatch
-      - run: npm run test:browser:recurring-lawn-yard-maintenance
-      - run: npm run test:browser:property-site-intelligence
-      - run: npm run test:browser:estimate-job-invoice-workflow
-      - run: npm run test:browser:landscape-production-tracking
-      - run: npm run test:browser:mobile-crew-app-v2
-      - run: npm run test:browser:mobile-production-transition
-      - run: npm run test:browser:safety-compliance-command-centre
-      - run: npm run test:browser:job-hazard-site-safety-plans
-      - run: npm run test:browser:incident-near-miss-investigation
-      - run: npm run test:browser:training-certification-matrix
-      - run: npm run test:browser:equipment-registry-qr-v2
-      - run: npm run test:browser:daily-equipment-inspection-lockout
-      - run: npm run test:browser:fleet-trailer-vehicle-operations
-      - run: npm run test:browser:preventive-maintenance-engine
-      - run: npm run test:browser:fuel-consumables-materials-control
-      - run: npm run test:browser:employee-crew-management
-      - run: npm run test:browser:timekeeping-attendance-payroll-evidence
-      - run: npm run test:browser:performance-development
-      - run: npm run test:browser:hiring-onboarding-workflow
-      - run: npm run test:browser:customer-property-crm
-      - run: npm run test:browser:route-optimization-territory
-      - run: npm run test:browser:weather-workability
-      - run: npm run test:browser:workability-safe-schedule-recheck
-      - run: npm run test:browser:landscape-material-estimator
-      - run: npm run test:browser:change-orders-extras
-      - run: npm run test:browser:quality-control-customer-signoff
-      - run: npm run test:browser:seasonal-operations-centre
-      - run: npm run test:browser:universal-activity-audit-timeline
-      - run: npm run test:browser:offline-conflict-recovery
-      - run: npm run test:browser:saved-views-search-command
-      - run: npm run test:browser:owner-management-command
-      - run: npm run test:browser:management-metric-freshness-confidence
-      - run: npm run test:browser:autonomous-exception-triage-next-safe-action
-      - run: npm run test:browser:four-season-capacity-workability-forecast
-      - run: npm run test:browser:route-crew-efficiency-evidence
-      - run: npm run test:browser:route-plan-actual-stop-sequence-learning
-      - run: npm run test:browser:route-stop-sequence-friction-hotspots
-      - run: npm run test:browser:recurring-retention-cohort-renewal-lag
-      - run: npm run test:browser:recurring-service-renewal-retention
-      - run: npm run test:browser:recurring-renewal-conversion-churn-outcomes
-      - run: npm run test:browser:estimate-to-cash-leakage-margin-recovery
-      - run: npm run test:browser:estimate-accuracy-change-order-margin-calibration
-      - run: npm run test:browser:completed-invoiced-cycle-time-cash-conversion
-      - run: npm run test:browser:labour-equipment-fleet-utilization-decision-support
-      - run: npm run test:browser:labour-capture-payroll-exception-reduction
-      - run: npm run test:browser:equipment-downtime-cost-replacement-readiness
-      - run: npm run test:browser:material-usage-variance-reorder-calibration
-      - run: npm run test:browser:materials-consumables-seasonal-stock-readiness
-      - run: npm run test:browser:customer-communication-readiness-queue-quality
-      - run: npm run test:browser:customer-communication-outcome-followup-effectiveness
-      - run: npm run test:browser:data-quality-duplicate-orphan-reconciliation
-      - run: npm run test:browser:data-quality-remediation-outcome-recurrence
-      - run: npm run test:browser:data-quality-fix-recurrence-source-freshness
-      - run: npm run test:browser:mobile-offline-read-budget-reliability
-      - run: npm run test:browser:mobile-offline-reliability-trend-outcomes
-      - run: npm run test:browser:offline-conflict-device-safe-cohorts
-      - run: npm run test:browser:four-season-capacity-profitability-scenario-evidence
-      - run: npm run test:browser:four-season-crew-day-mix-backtesting
-      - run: npm run test:browser:production-learning-roadmap-renewal
-      - run: npm run test:browser:production-learning-roadmap-renewal-ii
-      - run: npm run test:browser:production-learning-roadmap-renewal-iii
-      - run: npm run test:browser:production-learning-roadmap-renewal-iv
-      - run: npm run test:browser:first-use-readiness-verified-intake
-      - run: npm run test:browser:operational-cohort-404
-      - run: npm run test:browser:guided-customer-property-creation
-      - run: npm run test:browser:first-customer-intake-receipt-406
-      - run: npm run test:browser:property-four-season-coverage-407
-      - run: npm run test:browser:estimate-first-work-order-trace-408
-      - run: npm run test:browser:first-dispatch-schedule-receipt-409
-      - run: npm run test:browser:production-start-return-visit-proof-410
-      - run: npm run test:browser:material-equipment-first-job-trace-411
-      - run: npm run test:browser:quality-control-closeout-evidence-412
-      - run: npm run test:browser:invoice-candidate-provenance-413
-      - run: npm run test:browser:first-invoice-receivable-confidence-414
-      - run: npm run test:browser:seasonal-first-use-cohort-coverage-415
-      - run: npm run test:browser:owner-first-use-trial-acceptance-416
-      - run: npm run test:browser:first-live-trial-418
-      - run: npm run test:browser:company-service-inventory-419
-      - run: npm run test:browser:company-service-registry-420
-      - run: npm run test:browser:new-work-company-gate-421
-      - run: npm run test:browser:cross-service-continuity-422
-      - run: npm run test:browser:shared-allocation-proof-423
-      - run: npm run test:browser:landscape-field-evidence-424
-      - run: npm run test:browser:construction-phase-permit-425
-      - run: npm run test:browser:water-park-inspection-426
-      - run: npm run test:browser:snow-service-events-427
-      - run: npm run test:browser:septic-disposal-428
-      - run: npm run test:browser:production-learning-roadmap-renewal-v
-      - run: npm run test:browser:cross-service-production-learning-429
-      - run: npm run test:browser:six-service-owner-trial-430
-      - run: npm run test:browser:service-site-intake-431
-      - run: npm run test:browser:cross-service-estimate-job-handoff-432
-      - run: npm run test:browser:mobile-field-evidence-433
-      - run: npm run test:browser:service-dispatch-safety-preflight-434
-      - run: npm run test:browser:shared-capacity-conflict-review-435
-      - run: npm run test:browser:service-native-production-review-436
-      - run: npm run test:browser:quality-customer-handoff-437
-      - run: npm run test:browser:six-service-job-cost-provenance-438
-      - run: npm run test:browser:owner-invoice-receivable-439
-      - run: npm run test:browser:seasonal-contract-continuity-440
-      - run: npm run test:browser:live-field-trial-integrity-441
-      - run: npm run test:browser:cross-service-learning-442
-      - run: npm run test:browser:pms-module-navigation-443
-      - run: npm run test:browser:pms-client-property-360-444
-      - run: npm run test:browser:pms-hr-garbage-445
-      - run: npm run test:browser:pms-payroll-446
-      - run: npm run test:browser:pms-accounting-447
-      - run: npm run test:browser:pms-double-entry-gl-448
-      - run: npm run test:browser:pms-lawn-grounds-449
-      - run: npm run test:browser:pms-winter-snow-plowing-450
-      - run: npm run test:browser:pms-septic-arboriculture-451
-      - run: npm run test:browser:pms-construction-specialists-452
-      - run: npm run test:browser:pms-company-job-cost-453
-      - run: npm run test:browser:pms-modular-acceptance-454
-      - run: npm run test:browser:pms-owner-first-use-455
-      - run: npm run test:browser:pms-first-service-reconciliation-456
-      - run: npm run test:browser:pms-first-service-independent-457
-      - run: npm run test:browser:pms-independent-owner-followup-458
-      - run: npm run test:browser:pms-independent-retest-459
-      - run: npm run test:browser:pms-retest-discrepancy-460
-      - run: npm run test:browser:pms-reassessment-followup-461
-      - run: npm run test:browser:pms-evidence-outcomes-462
-      - run: npm run test:browser:pms-independent-recheck-463
-      - run: npm run test:browser:pms-recheck-discrepancy-464
-      - run: npm run test:browser:pms-independent-handoff-465
-      - run: npm run test:browser:pms-comparison-followup-467
-      - run: npm run test:browser:pms-followup-renewal-468
-      - run: npm run test:browser:pms-renewal-reassessment-469
-      - run: npm run test:browser:pms-reassessment-continuity-470
-      - run: npm run test:browser:pms-continuity-exception-471
-      - run: npm run test:browser:pms-owner-renewal-recheck-472
-      - run: npm run test:browser:pms-recheck-outcome-clarification-473
-      - run: npm run test:browser:pms-owner-clarification-continuity-474
-      - run: npm run test:browser:pms-continuity-finding-owner-renewal-475
+      - name: Browser regression batch 01 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser
+          npm run test:browser:three-surface
+          npm run test:browser:field-ux
+          npm run test:browser:notifications
+          npm run test:browser:public-route-publication
+          npx playwright test --config=playwright.config.mjs tests/browser/customer-portal-responsive-privacy.spec.mjs
+          npx playwright test --config=playwright.config.mjs tests/browser/private-evidence-security-policy.spec.mjs
+          npx playwright test --config=playwright.config.mjs tests/browser/release-readiness-evidence.spec.mjs
+          npm run test:browser:job-lifecycle
+          npm run test:browser:modules
+      - name: Browser regression batch 02 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:bank-import-workbench-v2
+          npm run test:browser:smart-reconciliation-workbench
+          npm run test:browser:payment-application-ar-completion
+          npm run test:browser:account-mapping-posting-preview
+          npm run test:browser:reconciliation-exception-resolution
+          npm run test:browser:month-end-close-cockpit
+          npm run test:browser:accountant-export-package-v2
+          npm run test:browser:job-cost-profitability-closeout
+          npm run test:browser:landscaping-finance-dashboard
+          npm run test:browser:operations-needs-attention
+      - name: Browser regression batch 03 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:crew-scheduling-dispatch
+          npm run test:browser:recurring-lawn-yard-maintenance
+          npm run test:browser:property-site-intelligence
+          npm run test:browser:estimate-job-invoice-workflow
+          npm run test:browser:landscape-production-tracking
+          npm run test:browser:mobile-crew-app-v2
+          npm run test:browser:mobile-production-transition
+          npm run test:browser:safety-compliance-command-centre
+          npm run test:browser:job-hazard-site-safety-plans
+          npm run test:browser:incident-near-miss-investigation
+      - name: Browser regression batch 04 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:training-certification-matrix
+          npm run test:browser:equipment-registry-qr-v2
+          npm run test:browser:daily-equipment-inspection-lockout
+          npm run test:browser:fleet-trailer-vehicle-operations
+          npm run test:browser:preventive-maintenance-engine
+          npm run test:browser:fuel-consumables-materials-control
+          npm run test:browser:employee-crew-management
+          npm run test:browser:timekeeping-attendance-payroll-evidence
+          npm run test:browser:performance-development
+          npm run test:browser:hiring-onboarding-workflow
+      - name: Browser regression batch 05 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:customer-property-crm
+          npm run test:browser:route-optimization-territory
+          npm run test:browser:weather-workability
+          npm run test:browser:workability-safe-schedule-recheck
+          npm run test:browser:landscape-material-estimator
+          npm run test:browser:change-orders-extras
+          npm run test:browser:quality-control-customer-signoff
+          npm run test:browser:seasonal-operations-centre
+          npm run test:browser:universal-activity-audit-timeline
+          npm run test:browser:offline-conflict-recovery
+      - name: Browser regression batch 06 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:saved-views-search-command
+          npm run test:browser:owner-management-command
+          npm run test:browser:management-metric-freshness-confidence
+          npm run test:browser:autonomous-exception-triage-next-safe-action
+          npm run test:browser:four-season-capacity-workability-forecast
+          npm run test:browser:route-crew-efficiency-evidence
+          npm run test:browser:route-plan-actual-stop-sequence-learning
+          npm run test:browser:route-stop-sequence-friction-hotspots
+          npm run test:browser:recurring-retention-cohort-renewal-lag
+          npm run test:browser:recurring-service-renewal-retention
+      - name: Browser regression batch 07 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:recurring-renewal-conversion-churn-outcomes
+          npm run test:browser:estimate-to-cash-leakage-margin-recovery
+          npm run test:browser:estimate-accuracy-change-order-margin-calibration
+          npm run test:browser:completed-invoiced-cycle-time-cash-conversion
+          npm run test:browser:labour-equipment-fleet-utilization-decision-support
+          npm run test:browser:labour-capture-payroll-exception-reduction
+          npm run test:browser:equipment-downtime-cost-replacement-readiness
+          npm run test:browser:material-usage-variance-reorder-calibration
+          npm run test:browser:materials-consumables-seasonal-stock-readiness
+          npm run test:browser:customer-communication-readiness-queue-quality
+      - name: Browser regression batch 08 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:customer-communication-outcome-followup-effectiveness
+          npm run test:browser:data-quality-duplicate-orphan-reconciliation
+          npm run test:browser:data-quality-remediation-outcome-recurrence
+          npm run test:browser:data-quality-fix-recurrence-source-freshness
+          npm run test:browser:mobile-offline-read-budget-reliability
+          npm run test:browser:mobile-offline-reliability-trend-outcomes
+          npm run test:browser:offline-conflict-device-safe-cohorts
+          npm run test:browser:four-season-capacity-profitability-scenario-evidence
+          npm run test:browser:four-season-crew-day-mix-backtesting
+          npm run test:browser:production-learning-roadmap-renewal
+      - name: Browser regression batch 09 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:production-learning-roadmap-renewal-ii
+          npm run test:browser:production-learning-roadmap-renewal-iii
+          npm run test:browser:production-learning-roadmap-renewal-iv
+          npm run test:browser:first-use-readiness-verified-intake
+          npm run test:browser:operational-cohort-404
+          npm run test:browser:guided-customer-property-creation
+          npm run test:browser:first-customer-intake-receipt-406
+          npm run test:browser:property-four-season-coverage-407
+          npm run test:browser:estimate-first-work-order-trace-408
+          npm run test:browser:first-dispatch-schedule-receipt-409
+      - name: Browser regression batch 10 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:production-start-return-visit-proof-410
+          npm run test:browser:material-equipment-first-job-trace-411
+          npm run test:browser:quality-control-closeout-evidence-412
+          npm run test:browser:invoice-candidate-provenance-413
+          npm run test:browser:first-invoice-receivable-confidence-414
+          npm run test:browser:seasonal-first-use-cohort-coverage-415
+          npm run test:browser:owner-first-use-trial-acceptance-416
+          npm run test:browser:first-live-trial-418
+          npm run test:browser:company-service-inventory-419
+          npm run test:browser:company-service-registry-420
+      - name: Browser regression batch 11 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:new-work-company-gate-421
+          npm run test:browser:cross-service-continuity-422
+          npm run test:browser:shared-allocation-proof-423
+          npm run test:browser:landscape-field-evidence-424
+          npm run test:browser:construction-phase-permit-425
+          npm run test:browser:water-park-inspection-426
+          npm run test:browser:snow-service-events-427
+          npm run test:browser:septic-disposal-428
+          npm run test:browser:production-learning-roadmap-renewal-v
+          npm run test:browser:cross-service-production-learning-429
+      - name: Browser regression batch 12 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:six-service-owner-trial-430
+          npm run test:browser:service-site-intake-431
+          npm run test:browser:cross-service-estimate-job-handoff-432
+          npm run test:browser:mobile-field-evidence-433
+          npm run test:browser:service-dispatch-safety-preflight-434
+          npm run test:browser:shared-capacity-conflict-review-435
+          npm run test:browser:service-native-production-review-436
+          npm run test:browser:quality-customer-handoff-437
+          npm run test:browser:six-service-job-cost-provenance-438
+          npm run test:browser:owner-invoice-receivable-439
+      - name: Browser regression batch 13 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:seasonal-contract-continuity-440
+          npm run test:browser:live-field-trial-integrity-441
+          npm run test:browser:cross-service-learning-442
+          npm run test:browser:pms-module-navigation-443
+          npm run test:browser:pms-client-property-360-444
+          npm run test:browser:pms-hr-garbage-445
+          npm run test:browser:pms-payroll-446
+          npm run test:browser:pms-accounting-447
+          npm run test:browser:pms-double-entry-gl-448
+          npm run test:browser:pms-lawn-grounds-449
+      - name: Browser regression batch 14 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:pms-winter-snow-plowing-450
+          npm run test:browser:pms-septic-arboriculture-451
+          npm run test:browser:pms-construction-specialists-452
+          npm run test:browser:pms-company-job-cost-453
+          npm run test:browser:pms-modular-acceptance-454
+          npm run test:browser:pms-owner-first-use-455
+          npm run test:browser:pms-first-service-reconciliation-456
+          npm run test:browser:pms-first-service-independent-457
+          npm run test:browser:pms-independent-owner-followup-458
+          npm run test:browser:pms-independent-retest-459
+      - name: Browser regression batch 15 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:pms-retest-discrepancy-460
+          npm run test:browser:pms-reassessment-followup-461
+          npm run test:browser:pms-evidence-outcomes-462
+          npm run test:browser:pms-independent-recheck-463
+          npm run test:browser:pms-recheck-discrepancy-464
+          npm run test:browser:pms-independent-handoff-465
+          npm run test:browser:pms-comparison-followup-467
+          npm run test:browser:pms-followup-renewal-468
+          npm run test:browser:pms-renewal-reassessment-469
+          npm run test:browser:pms-reassessment-continuity-470
+      - name: Browser regression batch 16 (5 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:pms-continuity-exception-471
+          npm run test:browser:pms-owner-renewal-recheck-472
+          npm run test:browser:pms-recheck-outcome-clarification-473
+          npm run test:browser:pms-owner-clarification-continuity-474
+          npm run test:browser:pms-continuity-finding-owner-renewal-475
       - run: npm run test:pms-owner-reviewer-followup-477
       - run: npm run test:rosevear-ql246-source-proof-478
       - run: npm run test:rosevear-ql247-six-app-479
@@ -526,58 +590,82 @@ jobs:
       - run: npm run test:build524
       - run: npm run test:build525
       - run: npm run test:build526
-      - run: npm run test:browser:build495
-      - run: npm run test:browser:build496
-      - run: npm run test:browser:build497
-      - run: npm run test:browser:build498
-      - run: npm run test:browser:build499
-      - run: npm run test:browser:build500
-      - run: npm run test:browser:build501
-      - run: npm run test:browser:build502
-      - run: npm run test:browser:build503
-      - run: npm run test:browser:build504
-      - run: npm run test:browser:build505
-      - run: npm run test:browser:build506
-      - run: npm run test:browser:build507
-      - run: npm run test:browser:build508
-      - run: npm run test:browser:build509
-      - run: npm run test:browser:build510
-      - run: npm run test:browser:build511
-      - run: npm run test:browser:build512
-      - run: npm run test:browser:build513
-      - run: npm run test:browser:build514
-      - run: npm run test:browser:build515
-      - run: npm run test:browser:build516
-      - run: npm run test:browser:build517
-      - run: npm run test:browser:build518
-      - run: npm run test:browser:build519
-      - run: npm run test:browser:build520
-      - run: npm run test:browser:build521
-      - run: npm run test:browser:build522
-      - run: npm run test:browser:build523
-      - run: npm run test:browser:build524
-      - run: npm run test:browser:build525
-      - run: npm run test:browser:build526
-      - run: npm run test:browser:company-owner-session-491
+      - name: Browser regression batch 17 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:build495
+          npm run test:browser:build496
+          npm run test:browser:build497
+          npm run test:browser:build498
+          npm run test:browser:build499
+          npm run test:browser:build500
+          npm run test:browser:build501
+          npm run test:browser:build502
+          npm run test:browser:build503
+          npm run test:browser:build504
+      - name: Browser regression batch 18 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:build505
+          npm run test:browser:build506
+          npm run test:browser:build507
+          npm run test:browser:build508
+          npm run test:browser:build509
+          npm run test:browser:build510
+          npm run test:browser:build511
+          npm run test:browser:build512
+          npm run test:browser:build513
+          npm run test:browser:build514
+      - name: Browser regression batch 19 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:build515
+          npm run test:browser:build516
+          npm run test:browser:build517
+          npm run test:browser:build518
+          npm run test:browser:build519
+          npm run test:browser:build520
+          npm run test:browser:build521
+          npm run test:browser:build522
+          npm run test:browser:build523
+          npm run test:browser:build524
+      - name: Browser regression batch 20 (3 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:build525
+          npm run test:browser:build526
+          npm run test:browser:company-owner-session-491
       - run: npm run test:rosevear-ql245-source-evidence-477
-      - run: npm run test:browser:pms-owner-renewal-reviewer-followup-476
-      - run: npm run test:browser:pms-owner-reviewer-followup-477
-      - run: npm run test:browser:management-outcome-confidence-cohort-trend
-      - run: npm run test:browser:workability-forecast-recovery-calibration
-      - run: npm run test:browser:contextual-help
-      - run: npm run test:browser:management-decision-outcome-journal
-      - run: npm run test:browser:workability-schedule-recovery-outcomes
-      - run: npm run test:browser:profile-reference-lifecycle
-      - run: npm run test:browser:workspace-organization
-      - run: npm run test:browser:performance-budgets
-      - run: npm run test:browser:finance
-      - run: npm run test:browser:finance-mapping
-      - run: npm run test:browser:it
-      - run: npm run test:browser:equipment-scan
-      - run: npm run test:browser:staging-acceptance
-      - run: npx playwright test --config=playwright.config.mjs tests/browser/staging-infrastructure-readiness.spec.mjs
-      - run: npm run test:browser:admin-account-security
-      - run: npm run test:browser:help-seo
+      - name: Browser regression batch 21 (10 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:pms-owner-renewal-reviewer-followup-476
+          npm run test:browser:pms-owner-reviewer-followup-477
+          npm run test:browser:management-outcome-confidence-cohort-trend
+          npm run test:browser:workability-forecast-recovery-calibration
+          npm run test:browser:contextual-help
+          npm run test:browser:management-decision-outcome-journal
+          npm run test:browser:workability-schedule-recovery-outcomes
+          npm run test:browser:profile-reference-lifecycle
+          npm run test:browser:workspace-organization
+          npm run test:browser:performance-budgets
+      - name: Browser regression batch 22 (8 retained commands)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test:browser:finance
+          npm run test:browser:finance-mapping
+          npm run test:browser:it
+          npm run test:browser:equipment-scan
+          npm run test:browser:staging-acceptance
+          npx playwright test --config=playwright.config.mjs tests/browser/staging-infrastructure-readiness.spec.mjs
+          npm run test:browser:admin-account-security
+          npm run test:browser:help-seo
 
   repository-enforcement:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
