@@ -1,4 +1,4 @@
-# Yard Workers Build 531 — CI SLA exceptions and recovery review
+# Yard Workers Build 531 — CI SLA exceptions and recovery review (reference text)
 
 The production deployment is **not** approved by this report. The required GitHub
 checks, exact `main` SHA, repository protection and Vercel readiness are separate
