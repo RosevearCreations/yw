@@ -19,6 +19,7 @@ const between=(text,start,end)=>{
   return text.slice(from,to<0?text.length:to);
 };
 
+const lanes=between(workflow,'  browser-regression-lanes:\n','\n  source-checks:\n');
 const source=between(workflow,'  source-checks:\n','\n  repository-enforcement:\n');
 const repository=between(workflow,'  repository-enforcement:\n','\n  release-source-evidence:\n');
 const releaseEvidence=between(workflow,'  release-source-evidence:\n','\n  staging-proof:\n');
@@ -46,6 +47,24 @@ add('source-checks-retains-rendered-tail',
   && source.includes('npm run test:browser:help-seo')
   && source.includes('tests/browser/staging-infrastructure-readiness.spec.mjs'),
   'The exact-main application job still reaches the rendered/browser tail when application checks are healthy.');
+
+add('build529-three-isolated-browser-lanes',
+  lanes.includes('matrix:') && lanes.includes('lane: [a, b, c]')
+  && lanes.includes('fail-fast: false')
+  && lanes.includes('Install pinned Chromium for isolated lane')
+  && lanes.includes('set -euo pipefail'),
+  'Three isolated CI runners must exercise the parallel browser groups without skipping failures.');
+
+add('build529-required-source-gate-waits-and-fails-closed',
+  source.includes('needs: browser-regression-lanes')
+  && source.includes('if: always()')
+  && source.includes("run: test '\u0024{{ needs.browser-regression-lanes.result }}' = success"),
+  'The existing required source-checks status must fail if any browser lane fails.');
+
+add('build529-browser-command-equivalence',
+  (lanes.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 155
+  && (source.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 55,
+  'All 210 browser commands remain accounted for across the lanes and guarded source tail.');
 
 add('repository-enforcement-is-exact-main-only',
   repository.includes("if: github.event_name == 'push' && github.ref == 'refs/heads/main'")
