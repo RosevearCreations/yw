@@ -88,7 +88,7 @@ test('duplicate current seasonal scenario IDs withhold exception matching',async
   await refresh(page,next);await expect(page.locator('[data-owner516-lane="capacity"]')).toContainText('SCENARIO IDENTITY CONFLICT');
 });
 test('receipt age is rechecked at source timestamps, with unsigned completion and conflicting references',async({page})=>{
-  await boot(page);const next=fixture(minutes(1));next.workability_schedule_recovery_outcomes.outcomes=[
+  const initial=fixture();await boot(page,initial);const next=fixture(minutes(1));next.workability_schedule_recovery_outcomes.outcomes=[
     episode('R-1',4,'winter','completed_after_recovery',{work_order_id:'WO-1',outcome_date:ago(1).slice(0,10),recovery_days:3}),
     episode('R-3',8,'spring_summer','partial_or_return_visit'),
     episode('R-4',10,'winter','completed_after_recovery',{dispatch_schedule_item_id:'DS-5',outcome_date:ago(1).slice(0,10),recovery_days:9})];
@@ -100,7 +100,12 @@ test('receipt age is rechecked at source timestamps, with unsigned completion an
   await page.locator('#owner516ReceiptFilter').selectOption('unsigned');
   await page.locator('#owner516AgeFilter').selectOption('recent');
   await expect(lane.locator('[data-owner516-receipt]')).toHaveCount(1);
-  await expect(lane).toContainText('Δ 0 day(s)');
+  // Source reads can straddle UTC midnight even when only one minute apart.
+  // The production UI intentionally uses calendar-day age, not elapsed minutes.
+  const sourceUtcDay=iso=>Date.parse(iso.slice(0,10)+'T00:00:00Z');
+  const ageDelta=(sourceUtcDay(next.source_freshness.production.retrieved_at)-
+    sourceUtcDay(initial.source_freshness.production.retrieved_at))/86400000;
+  await expect(lane).toContainText(`Δ ${ageDelta} day(s)`);
   await expect(lane).toContainText('not time since a receipt request');
   await expect(lane).not.toContainText('PRIVATE');
 });
