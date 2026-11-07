@@ -286,17 +286,26 @@ jobs:
       - run: npm run test:repository-protection-preflight
       - run: node scripts/github-actions-runtime-contract-check.mjs
       - run: node scripts/release-job-separation-check.mjs
-      - run: node scripts/build530-ci-runtime-audit-check.mjs
-      - run: node scripts/build531-ci-exceptions-check.mjs
-      - run: node scripts/build532-ci-critical-path-check.mjs
-      - run: node scripts/build533-browser-hotspots-check.mjs
-      - run: node scripts/build533-runner-variance-check.mjs
-      - run: node scripts/build534-browser-tail-check.mjs
-      - run: node scripts/build534-throughput-check.mjs
-      - run: node scripts/build535-lane-c-check.mjs
-      - run: node scripts/build535-lane-c-timing-check.mjs
-      - run: node scripts/build536-warm-batches-check.mjs
-      - run: node scripts/build536-source-variance-check.mjs
+      - name: Source non-browser CI contract lane (11 retained checks, 3 workers)
+        shell: bash
+        # Original source-owned checks are immutable execution inputs; the runner
+        # verifies every mapping and fails if any concurrent check fails.
+        env:
+          YWI_SOURCE_CONTRACT_COMMAND_MANIFEST: |
+            node scripts/build530-ci-runtime-audit-check.mjs
+            node scripts/build531-ci-exceptions-check.mjs
+            node scripts/build532-ci-critical-path-check.mjs
+            node scripts/build533-browser-hotspots-check.mjs
+            node scripts/build533-runner-variance-check.mjs
+            node scripts/build534-browser-tail-check.mjs
+            node scripts/build534-throughput-check.mjs
+            node scripts/build535-lane-c-check.mjs
+            node scripts/build535-lane-c-timing-check.mjs
+            node scripts/build536-warm-batches-check.mjs
+            node scripts/build536-source-variance-check.mjs
+        run: node scripts/build537-source-contract-lane.mjs
+      - run: node scripts/build537-source-contract-lane-check.mjs
+      - run: node scripts/build537-nonbrowser-p95-check.mjs
       - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify

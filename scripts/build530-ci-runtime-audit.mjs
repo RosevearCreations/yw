@@ -8,6 +8,7 @@ import { reviewBuild533 } from './build533-runner-variance-core.mjs';
 import { verifyCrossReleaseThroughput } from './build534-throughput-core.mjs';
 import { reviewLaneCRelease } from './build535-lane-c-timing-core.mjs';
 import { reviewSourceWarmVariance } from './build536-source-variance-core.mjs';
+import { reviewNonBrowserP95 } from './build537-nonbrowser-p95-core.mjs';
 
 const repository = 'RosevearCreations/yw';
 const sourceRunId = String(process.env.YWI_SOURCE_RUN_ID ?? '');
@@ -72,6 +73,7 @@ const report = {
   build534: verifyCrossReleaseThroughput(current, detailedHistory),
   build535: reviewLaneCRelease(current, detailedHistory),
   build536: reviewSourceWarmVariance(current, detailedHistory),
+  build537: reviewNonBrowserP95(current, detailedHistory, { exactCurrentMain }),
   history: history.map(({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates }) =>
     ({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates })),
   ownerAction: exactCurrentMain && current.status === 'VERIFIED_GREEN'
@@ -143,6 +145,15 @@ const summary = [
   `- Source / warm batches / release median and p95: ${report.build536.trend.sourceMedianSeconds ?? 'unknown'}/${report.build536.trend.sourceP95Seconds ?? 'unknown'}s; ${report.build536.trend.warmBatchMedianSeconds ?? 'unknown'}/${report.build536.trend.warmBatchP95Seconds ?? 'unknown'}s; ${report.build536.trend.releaseMedianSeconds ?? 'unknown'}/${report.build536.trend.releaseP95Seconds ?? 'unknown'}s`,
   `- End-to-end SLA: ${report.build536.sla.state}; source budget ${report.build536.sla.sourceBudgetSeconds}s, warm-batch budget ${report.build536.sla.warmBatchesBudgetSeconds}s, total release budget ${report.build536.sla.releaseBudgetSeconds}s`,
   '- Warm context is source-step order evidence, not a measured cache hit. No retries, gate waiver, causal speedup claim or production mutation.',
+  '### Build 537 — Non-browser source residual and six-release P95 certification',
+  `- Exact-main non-browser evidence: ${report.build537.state}; contract checks: ${report.build537.originalSourceContractChecks} retained across ${report.build537.boundedContractWorkers} workers`,
+  `- Original verified releases: ${report.build537.verifiedSamples}; SLA certification: ${report.build537.certification}; current budget: ${report.build537.currentBudgetState}`,
+  `- Source / warm batches / standalone browser / Chromium / non-browser residual (current): ${report.build537.current?.sourceSeconds ?? 'unknown'}s / ${report.build537.current?.batchSeconds ?? 'unknown'}s / ${report.build537.current?.standaloneSeconds ?? 'unknown'}s / ${report.build537.current?.installSeconds ?? 'unknown'}s / ${report.build537.current?.nonBrowserResidualSeconds ?? 'unknown'}s`,
+  `- Observed non-browser contract bundle: ${report.build537.current?.contractGroupSeconds ?? 'unknown'}s; 11 original independent checks are still mandatory`,
+  `- Compared verified run: ${report.build537.comparison?.priorRunId ?? 'none'}; residual / source / whole-release differences: ${report.build537.comparison?.nonBrowserResidualDifferenceSeconds ?? 'unknown'}s / ${report.build537.comparison?.sourceDifferenceSeconds ?? 'unknown'}s / ${report.build537.comparison?.releaseDifferenceSeconds ?? 'unknown'}s`,
+  `- Historical P95 source / warm batches / non-browser residual / release: ${report.build537.trend.sourceP95Seconds ?? 'unknown'}s / ${report.build537.trend.warmBatchP95Seconds ?? 'unknown'}s / ${report.build537.trend.nonBrowserResidualP95Seconds ?? 'unknown'}s / ${report.build537.trend.releaseP95Seconds ?? 'unknown'}s`,
+  `- P95 exceptions (diagnostic HOLD only): ${report.build537.p95Breaches.map((item) => `${item.name}: +${item.overBudgetSeconds}s`).join('; ') || 'none'}`,
+  '- Six-release historical P95 HOLD never overrides independently passing protected release gates. Runner overhead and observed changes are not causal proof.',
 ].join('\n');
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 console.log(summary);

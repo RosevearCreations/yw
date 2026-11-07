@@ -1,0 +1,42 @@
+Yard Workers Build 537 — Non-browser source critical path and historical P95 SLA
+
+Scope
+  - Eleven original source-owned read-only CI contract tests run through one
+    bounded, three-worker Node.js lane instead of eleven separate Actions steps.
+  - The workflow manifest contains every original executable command once.
+    The runner checks exact order, command text, safe script mapping, file
+    existence and cardinality. Missing or duplicated checks fail closed.
+  - Each test still runs as its own Node subprocess. If any fails, the lane
+    fails after currently running tests finish; it never claims a pass for a
+    skipped or incomplete test. Other source checks, the 210 browser suites,
+    three browser lanes and all seven protected release gates remain mandatory.
+
+Local acceptance
+  node scripts/build537-source-contract-lane-check.mjs
+  node scripts/build537-nonbrowser-p95-check.mjs
+  node scripts/release-job-separation-check.mjs
+  npm run test:repo
+  npm run test:vercel-static-output
+
+Post-promotion audit
+  - Read-only workflow_run audit reads the original six latest completed
+    main-push releases and their original GitHub Actions per-step timestamps.
+  - Require seven successful protected gates, exact source-run identity,
+    original Chromium installation, the six retained browser batches and
+    four standalone source browser steps for each qualifying observation.
+  - Non-browser residual = source job elapsed minus batches 17–22, four
+    standalone browser steps and pinned Chromium installation. This residual
+    includes runner setup, step gaps and other non-browser work; it is not a
+    direct measurement of individual contract CPU utilization.
+  - Compare current release with the nearest different-SHA verified run and
+    publish historical P95 for source, batches, non-browser residual and the
+    full release. Budget limits: 240s, 160s, 100s and 900s respectively.
+  - Certification requires six complete verified release observations and no
+    P95 breach. An older over-budget run results in HISTORICAL P95 HOLD until
+    replaced by genuine GREEN release evidence. Do not fabricate six runs.
+  - Historical certification is separately diagnostic: it never bypasses a
+    release gate, initiates a retry or grants production approval.
+
+No external writes, automatic recovery, customer/device actions or security
+gate weakening. Parallelization is a safe implementation choice, not proof of
+causal speedup: compare actual exact-main timing evidence after promotion.
