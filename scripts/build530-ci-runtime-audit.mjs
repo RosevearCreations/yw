@@ -3,6 +3,7 @@
 import { writeFile, appendFile } from 'node:fs/promises';
 import { summarizeRun, summarizeTrend } from './build530-ci-runtime-audit-core.mjs';
 import { reviewCiEvidence } from './build531-ci-exceptions-core.mjs';
+import { reviewBuild532 } from './build532-ci-critical-path-core.mjs';
 
 const repository = 'RosevearCreations/yw';
 const sourceRunId = String(process.env.YWI_SOURCE_RUN_ID ?? '');
@@ -42,7 +43,8 @@ const run = await github(`actions/runs/${sourceRunId}`);
 const main = await github('branches/main');
 const currentMainSha = main.commit?.sha ?? null;
 const exactCurrentMain = currentMainSha === sourceSha;
-const current = summarizeRun(run, await jobsFor(sourceRunId), { expectedSha: sourceSha });
+const currentRawJobs = await jobsFor(sourceRunId);
+const current = summarizeRun(run, currentRawJobs, { expectedSha: sourceSha });
 const recent = await github('actions/workflows/staging-browser-integration.yml/runs?branch=main&event=push&status=completed&per_page=6');
 const history = [];
 for (const entry of (recent.workflow_runs ?? []).slice(0, 6)) {
@@ -58,6 +60,7 @@ const report = {
   current,
   trend: summarizeTrend(history),
   build531: reviewCiEvidence(current, history, { exactCurrentMain }),
+  build532: reviewBuild532(current, currentRawJobs, history),
   history: history.map(({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates }) =>
     ({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates })),
   ownerAction: exactCurrentMain && current.status === 'VERIFIED_GREEN'
@@ -83,6 +86,15 @@ const summary = [
   `- Parallel regression lane budgets: ${report.build531.laneBudgets.map((lane) => `${lane.name} ${lane.executionSeconds ?? 'unknown'}s/${lane.budgetSeconds}s`).join('; ')}`,
   `- Exceptions: ${report.build531.exceptions.map((item) => item.code).join(', ') || 'none'}`,
   '- Recovery is evidence review only: no retries, waived gates or production changes.',
+  '### Build 532 — Critical path, historical gate triage and measured SLA comparison',
+  `- Dependency timing state: ${report.build532.criticalPath.state}`,
+  `- Controlling browser lane: ${report.build532.criticalPath.controllingLane ?? 'unknown'}`,
+  `- Parallel browser window / source suite: ${report.build532.criticalPath.parallelWindowSeconds ?? 'unknown'}s / ${report.build532.criticalPath.sourceSuiteSeconds ?? 'unknown'}s`,
+  `- Largest measured stage: ${report.build532.criticalPath.largestMeasuredStage?.name ?? 'unknown'}`,
+  `- Slowest source steps: ${report.build532.criticalPath.sourceStepDetails.slice(0, 5).map((step) => `${step.name}: ${step.elapsedSeconds}s`).join('; ') || 'unavailable'}`,
+  `- Historical held runs: ${report.build532.historicalGateExceptions.length} (review original run/job evidence)`,
+  `- Comparable verified run: ${report.build532.slaComparison.previousVerifiedRunId ?? 'none'}; measured runtime difference: ${report.build532.slaComparison.secondsDifference ?? 'unknown'}s`,
+  '- A measured comparison is not independent proof of causal savings. No gate waiver, retry or deployment changes.',
 ].join('\n');
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 console.log(summary);
