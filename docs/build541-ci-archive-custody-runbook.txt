@@ -50,3 +50,15 @@ What remains unverified
   evidence and truth summary remain required; no automatic gate waiver,
   privileged CI token, third-party message, customer operation or device
   action is created by the dashboard.
+
+Protected release history and custody continuity
+-----------------------------------------------
+* Promote dev to main with GitHub's merge-commit option, not squash or rebase.
+  The non-force post-promotion reconciliation requires the dev commit to be
+  an ancestor of main before it can fast-forward dev to the exact GREEN SHA.
+* If an earlier production squash/rebase leaves identical source trees on
+  divergent branches, recover with a separate protected PR that merges the
+  original main history back into dev, followed by a protected merge-commit
+  production PR. Never force-push dev/main or skip required checks.
+* Archive the reconciled source run and new checkpoint. A Vercel READY state
+  alone does not certify source checks, artifact retention, or dev/main sync.
