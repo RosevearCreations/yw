@@ -58,6 +58,7 @@ assert.ok(sparse.exceptions.some((item) => item.code === 'TREND_HISTORY_INSUFFIC
 const historicalHold = reviewCiEvidence(sample(), [...history.slice(0, 3), sample(baseRun, baseJobs.slice(1))], { exactCurrentMain: true });
 assert.ok(historicalHold.exceptions.some((item) => item.code === 'HISTORICAL_REQUIRED_GATE_HOLD'));
 assert.equal(historicalHold.releaseEvidenceState, 'VERIFIED_GREEN_EVIDENCE_ONLY', 'past failed run is reported but does not invalidate a newer verified main');
+assert.equal(historicalHold.recoveryDecision, 'REVIEW_HISTORICAL_GATE_HOLDS_NO_GATE_WAIVER', 'past gate holds must not be mislabeled as CI performance regressions');
 assert.throws(() => reviewCiEvidence(null, history), /complete audited/);
 
 const source = readFileSync('.github/workflows/staging-browser-integration.yml', 'utf8');

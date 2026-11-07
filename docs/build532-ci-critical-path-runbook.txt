@@ -1,0 +1,43 @@
+Yard Workers Build 532 — Critical-path timing and historical gate triage
+
+Purpose: evidence-led CI runtime analysis, not deployment authority.
+
+Evidence source:
+  GitHub Actions > YWI post-promotion dev reconciliation
+  > Build 530–532 read-only CI critical-path and recovery evidence
+  > Artifact ywi-ci-runtime-audit-<main-source-run-id>-<attempt>
+  > ci-runtime-audit.json > build532
+
+1. Match sourceRunId, exactCurrentMain, the full main SHA and all seven
+   independently passing required gates to the original main-push run.
+2. Under build532.criticalPath, inspect the last-finishing parallel lane,
+   the source-checks suite, and release-evidence / release-truth jobs. Use
+   sourceStepDetails for the ten slowest measured successful steps.
+3. Compare parallelWindowSeconds with sourceSuiteSeconds. The larger
+   measured stage is the first optimization candidate, not proof of why
+   a future run will be faster.
+4. Inspect handoffs to identify observed queue gaps between dependent jobs.
+   Missing/duplicate/non-green jobs or nonmonotonic timestamps withhold
+   precise critical-path claims.
+5. Under historicalGateExceptions, review each original run ID and its job
+   logs. An observed failed gate, cancelled gate and skipped dependent job
+   are distinct evidence classes. A skipped dependent job is not itself
+   proof of the underlying failure cause.
+6. Under slaComparison, DESCRIPTIVE_SAME_GATE_COMPARISON compares two
+   verified, different-SHA, same-required-gate main runs. The observed
+   secondsDifference is current minus previous (negative means faster).
+   NO_COMPARABLE_VERIFIED_BASELINE means no timing conclusion is available.
+
+Important boundaries:
+  - independentlyProvenCausalSavings remains false. Do not claim savings
+    caused by CI consolidation without a comparable pre-change control.
+  - Current main gate verification remains separate from historical holds.
+  - Build 531 historical gate holds are reported as
+    REVIEW_HISTORICAL_GATE_HOLDS_NO_GATE_WAIVER, not performance failures.
+  - No automatic rerun, workflow dispatch, approval, gate bypass, release
+    authority, branch mutation, database writes or production deployment.
+  - Required security, independent policy/evidence and browser gates remain.
+
+References:
+  https://docs.github.com/en/rest/actions/workflow-jobs
+  https://docs.github.com/en/actions/using-workflows/about-workflows
