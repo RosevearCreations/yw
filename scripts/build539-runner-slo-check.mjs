@@ -97,6 +97,6 @@ const audit = readFileSync('scripts/build530-ci-runtime-audit.mjs', 'utf8');
 const post = readFileSync('.github/workflows/post-promotion-dev-reconciliation.yml', 'utf8');
 assert.equal((sourceWorkflow.match(/run: node scripts\/build539-runner-slo-check\.mjs/g) ?? []).length, 1);
 assert.ok(audit.includes('reviewBuild539(current, detailedHistory, { exactCurrentMain })'));
-assert.ok(post.includes('Build 530–539 read-only CI throughput and recovery evidence'));
+assert.ok(post.includes('Build 530–540 read-only CI throughput and recovery evidence'));
 assert.ok(!sourceWorkflow.includes('  build539:'));
 console.log('Build 539: exact-main runner handoff SLO, step-gap drift, distinct-six-release throughput trend and non-blocking alerts verified.');
