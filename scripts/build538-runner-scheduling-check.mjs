@@ -61,6 +61,6 @@ const audit = readFileSync('scripts/build530-ci-runtime-audit.mjs', 'utf8');
 const post = readFileSync('.github/workflows/post-promotion-dev-reconciliation.yml', 'utf8');
 assert.ok(workflow.includes('node scripts/build538-runner-scheduling-check.mjs'));
 assert.ok(audit.includes('reviewBuild538(current, detailedHistory, { exactCurrentMain })'));
-assert.ok(post.includes('Build 530–540 read-only CI throughput and recovery evidence'));
+assert.ok(post.includes('Build 530–541 read-only CI throughput and recovery evidence'));
 assert.ok(!workflow.includes('  build538:'));
 console.log('Build 538: exact-main runner handoff, setup, step-gap attribution, tail P95 and fail-closed cross-release guardrails verified.');

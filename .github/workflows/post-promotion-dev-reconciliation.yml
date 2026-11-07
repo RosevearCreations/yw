@@ -91,7 +91,7 @@ jobs:
           exit 1
 
   ci-runtime-audit:
-    name: Build 530–540 read-only CI throughput and recovery evidence
+    name: Build 530–541 read-only CI throughput and recovery evidence
     if: >-
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main' &&
@@ -119,6 +119,8 @@ jobs:
         run: node scripts/build530-ci-runtime-audit.mjs
       - name: Produce SHA-256 owner archive and bounded retention receipt
         run: node scripts/build540-ci-slo-retention.mjs
+      - name: Cross-check original CI archive bytes and produce owner custody checkpoint
+        run: node scripts/build541-ci-custody-checkpoint.mjs
       - name: Preserve read-only CI, browser coverage and throughput diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -128,5 +130,6 @@ jobs:
             ci-runtime-audit.json
             ci-slo-archive.json
             ci-slo-retention-receipt.json
+            ci-slo-custody-checkpoint.json
           if-no-files-found: warn
           retention-days: 30

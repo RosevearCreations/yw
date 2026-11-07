@@ -309,6 +309,7 @@ jobs:
       - run: node scripts/build538-runner-scheduling-check.mjs
       - run: node scripts/build539-runner-slo-check.mjs
       - run: node scripts/build540-ci-slo-check.mjs
+      - run: node scripts/build541-ci-custody-check.mjs
       - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify
