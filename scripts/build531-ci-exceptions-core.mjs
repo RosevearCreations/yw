@@ -84,13 +84,18 @@ export function reviewCiEvidence(current, history, { exactCurrentMain = false } 
   }
 
   const hold = exceptions.some((item) => item.severity === 'HOLD');
+  const currentPerformanceException = exceptions.some((item) =>
+    ['LANE_RUNTIME_OVER_BUDGET', 'QUEUE_SLA_EXCEEDED', 'RUN_SLA_EXCEEDED', 'SLA_TIMING_UNAVAILABLE'].includes(item.code));
+  const historicalGateException = exceptions.some((item) => item.code === 'HISTORICAL_REQUIRED_GATE_HOLD');
   return {
     schema: 'ywi.build531.ci-sla-recovery-review.v1',
     currentRunId: id,
     exactCurrentMain,
     releaseEvidenceState: hold ? 'HOLD_NOT_VERIFIED' : 'VERIFIED_GREEN_EVIDENCE_ONLY',
     recoveryDecision: hold ? 'STOP_AND_INDEPENDENTLY_REVIEW_NO_AUTO_RETRY' :
-      exceptions.length ? 'REVIEW_PERFORMANCE_EXCEPTIONS_NO_GATE_WAIVER' : 'OBSERVE_ONLY_NO_RELEASE_AUTHORITY',
+      currentPerformanceException ? 'REVIEW_PERFORMANCE_EXCEPTIONS_NO_GATE_WAIVER' :
+        historicalGateException ? 'REVIEW_HISTORICAL_GATE_HOLDS_NO_GATE_WAIVER' :
+          exceptions.length ? 'REVIEW_INCOMPLETE_TREND_EVIDENCE_NO_GATE_WAIVER' : 'OBSERVE_ONLY_NO_RELEASE_AUTHORITY',
     laneBudgets: lanes,
     trend,
     exceptions,
