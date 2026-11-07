@@ -12,6 +12,7 @@ import { planHotspotBatch } from './build533-browser-hotspots.mjs';
 import { planTailBatch } from './build534-browser-tail.mjs';
 import { manifestFromWorkflow, planLaneC } from './build535-lane-c.mjs';
 import { manifestFromWorkflow as warmBatch20Manifest, planWarmBatch20 } from './build536-batch20.mjs';
+import { contractManifestFromWorkflow, planSourceContracts } from './build537-source-contract-lane.mjs';
 
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 const checks=[];
@@ -128,6 +129,23 @@ add('build536-warm-source-browser-batch-equivalence',
   warmBatch20Suites === 3 && retainedHotspotSuites === 30 && retainedTailSuites === 18
   && 4 + warmBatch20Suites + retainedHotspotSuites + retainedTailSuites === 55,
   'Source browser coverage remains exactly 55 suites: four isolated calls, three exact mapped batch-20 specs, and 48 source bundles.');
+
+let retainedSourceContracts = -1;
+try {
+  const plan = planSourceContracts(contractManifestFromWorkflow(workflow));
+  if ((source.match(/run: node scripts\/build537-source-contract-lane\.mjs/g) ?? []).length !== 1 ||
+    !source.includes('Source non-browser CI contract lane (11 retained checks, 3 workers)')) {
+    throw new Error('Required CI contract lane runner is absent or duplicated.');
+  }
+  retainedSourceContracts = plan.retainedChecks;
+} catch (error) {
+  console.error(`Build 537 non-browser source contract verification failed: ${error.message}`);
+}
+add('build537-nonbrowser-source-contract-execution-equivalence',
+  retainedSourceContracts === 11 && source.includes('node scripts/build537-source-contract-lane-check.mjs')
+  && source.includes('node scripts/build537-nonbrowser-p95-check.mjs')
+  && source.includes('node scripts/exact-main-release-truth-summary-check.mjs'),
+  'Eleven original CI contract verifiers run through the bounded fail-closed lane, with exact-main truth still independent.');
 
 add('build529-isolated-release-jobs-have-no-lane-guard',
   !repository.includes('Require all parallel browser lanes to pass')
