@@ -19,7 +19,7 @@ const elapsed = (a, b) => {
   return x !== null && y !== null && y >= x ? Math.round((y - x) / 1000) : null;
 };
 
-function observeScheduling(entry) {
+export function verifiedSchedulingObservation(entry) {
   if (entry?.sample?.status !== 'VERIFIED_GREEN' || !Array.isArray(entry?.jobs) ||
       !REQUIRED_GATES.every((name) => unique(entry.jobs, name)?.conclusion === 'success')) return null;
   const source = unique(entry.jobs, 'source-checks');
@@ -62,7 +62,7 @@ export function reviewBuild538(current, detailedHistory, { exactCurrentMain = fa
   if (!current || !Array.isArray(detailedHistory)) throw new Error('Original exact-main Actions history required.');
   const sourceReport = reviewNonBrowserP95(current, detailedHistory, { exactCurrentMain });
   const warmReport = reviewSourceWarmVariance(current, detailedHistory);
-  const observations = detailedHistory.slice(0, 6).map(observeScheduling).filter(Boolean);
+  const observations = detailedHistory.slice(0, 6).map(verifiedSchedulingObservation).filter(Boolean);
   const now = sourceReport.current && exactCurrentMain ? observations.find((entry) =>
     entry.runId === current.runId && entry.sha === current.headSha) ?? null : null;
   const prior = now ? observations.find((entry) => entry.sha !== current.headSha) ?? null : null;
