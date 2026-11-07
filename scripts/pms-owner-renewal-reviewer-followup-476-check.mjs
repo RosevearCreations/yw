@@ -63,5 +63,10 @@ assert.ok(read('help.html').includes('id="pms-owner-renewal-reviewer-followup-47
 assert.ok(read('style.css').includes('.pms476-controls'));
 const scripts=JSON.parse(read('package.json')).scripts,ci=read('.github/workflows/staging-browser-integration.yml');
 for(const name of ['test:pms-owner-renewal-reviewer-followup-476','test:browser:pms-owner-renewal-reviewer-followup-476']){
- assert.ok(scripts[name]);assert.ok(ci.includes('npm run '+name));}
+ assert.ok(scripts[name]);
+ if(name.startsWith('test:browser:')){
+  const {planTailBatch}=await import('./build534-browser-tail.mjs');
+  assert.ok(ci.includes('run: node scripts/build534-browser-tail.mjs 21'));
+  assert.ok(planTailBatch('21',{scripts}).suites.includes('tests/browser/pms-owner-renewal-reviewer-followup-476.spec.mjs'));
+ }else assert.ok(ci.includes('npm run '+name));}
 console.log('YW 476: owner renewal aging, original independent reviewer follow-up and HOLD: PASS');

@@ -40,7 +40,12 @@ for(const term of ['enable row level security','revoke all on public.ywi_owner_r
 const html=read('index.html'),pkg=JSON.parse(read('package.json')),ci=read('.github/workflows/staging-browser-integration.yml');
 assert.ok(html.includes('js/pms-owner-reviewer-followup-477.js'));
 for(const k of ['test:pms-owner-reviewer-followup-477','test:browser:pms-owner-reviewer-followup-477']){
- assert.ok(pkg.scripts[k]);assert.ok(ci.includes('npm run '+k));}
+ assert.ok(pkg.scripts[k]);
+ if(k.startsWith('test:browser:')){
+  const {planTailBatch}=await import('./build534-browser-tail.mjs');
+  assert.ok(ci.includes('run: node scripts/build534-browser-tail.mjs 21'));
+  assert.ok(planTailBatch('21',pkg).suites.includes('tests/browser/pms-owner-reviewer-followup-477.spec.mjs'));
+ }else assert.ok(ci.includes('npm run '+k));}
 const doc=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 for(const word of ['UNVERIFIED','NOT PROVISIONED','DISCONNECTED / HOLD','NOT GIVEN','seven'])assert.ok(doc.includes(word),word);
 console.log('YW 477 source, receipt aging, original owner response and QL-245 truthful HOLD: PASS');
