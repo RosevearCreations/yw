@@ -2,7 +2,7 @@
 // Build 246 validates release-classification policy only; runner/browser setup remains canonical workflow evidence.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {buildReleaseChangePolicy, evaluateCurrentReleaseChangePolicy, GATE_PROFILES, POLICY_AUTHORITY, verifyPolicyGateCoverage} from './release-change-policy.mjs';
+import {buildReleaseChangePolicy, evaluateCurrentReleaseChangePolicy, GATE_PROFILES, POLICY_AUTHORITY, WORKFLOW_PATH, verifyPolicyGateCoverage} from './release-change-policy.mjs';
 
 const checks=[];
 const check=(name,fn)=>{try{fn();checks.push({name,ok:true});}catch(error){checks.push({name,ok:false,error:error?.message||String(error)});}};
@@ -102,6 +102,32 @@ check('missing-required-workflow-step-fails-coverage',()=>{
   const coverage=verifyPolicyGateCoverage(policy,{packageJson,workflowSource:workflow});
   assert.equal(coverage.ok,false);
   assert.deepEqual(coverage.missing_workflow_steps,['test:finance-posting-safety']);
+});
+
+check('build534-consolidated-browser-gates-retain-policy-coverage',()=>{
+  const policy=buildReleaseChangePolicy(['scripts/finance-payment-provider-preflight.mjs','.github/workflows/staging-browser-integration.yml','help.html']);
+  const packageJson=JSON.parse(fs.readFileSync('package.json','utf8'));
+  const workflowSource=fs.readFileSync(WORKFLOW_PATH,'utf8');
+  const coverage=verifyPolicyGateCoverage(policy,{packageJson,workflowSource});
+  assert.equal(coverage.ok,true,JSON.stringify(coverage));
+  for(const script of ['test:browser:finance','test:browser:performance-budgets','test:browser:staging-acceptance','test:browser:help-seo']){
+    assert.ok(policy.required_gate_scripts.includes(script));
+    assert.ok(!coverage.missing_workflow_steps.includes(script));
+  }
+});
+
+check('build534-missing-or-drifted-browser-bundle-is-not-gate-coverage',()=>{
+  const policy=buildReleaseChangePolicy(['scripts/finance-payment-provider-preflight.mjs','.github/workflows/staging-browser-integration.yml','help.html']);
+  const packageJson=JSON.parse(fs.readFileSync('package.json','utf8'));
+  const workflowSource=fs.readFileSync(WORKFLOW_PATH,'utf8');
+  const missing=verifyPolicyGateCoverage(policy,{packageJson,workflowSource:workflowSource.replace('run: node scripts/build534-browser-tail.mjs 22','run: node scripts/absent.mjs 22')});
+  for(const script of ['test:browser:finance','test:browser:staging-acceptance','test:browser:help-seo']){
+    assert.ok(missing.missing_workflow_steps.includes(script));
+  }
+  const driftPkg={...packageJson,scripts:{...packageJson.scripts,'test:browser:finance':'node untrusted.mjs'}};
+  const drift=verifyPolicyGateCoverage(policy,{packageJson:driftPkg,workflowSource});
+  assert.ok(drift.missing_workflow_steps.includes('test:browser:finance'));
+  assert.equal(drift.ok,false);
 });
 
 check('dynamic-candidate-evaluation-fails-closed-without-change-evidence',()=>{
