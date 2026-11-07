@@ -127,7 +127,7 @@ check('original source job retains all protected release checks',()=>{
   assert.ok(!source.includes('  build540:'));
 });
 check('post-promotion original audit, checksum archive and 30-day receipt',()=>{
-  assert.ok(post.includes('Build 530–540 read-only CI throughput and recovery evidence'));
+  assert.ok(post.includes('Build 530–541 read-only CI throughput and recovery evidence'));
   assert.ok(post.includes('node scripts/build530-ci-runtime-audit.mjs'));
   assert.ok(post.includes('run: node scripts/build540-ci-slo-retention.mjs'));
   assert.ok(post.includes('ci-runtime-audit.json'));
