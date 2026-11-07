@@ -70,6 +70,6 @@ const audit = readFileSync('scripts/build530-ci-runtime-audit.mjs', 'utf8');
 const post = readFileSync('.github/workflows/post-promotion-dev-reconciliation.yml', 'utf8');
 assert.ok(workflow.includes('node scripts/build537-nonbrowser-p95-check.mjs'));
 assert.ok(audit.includes('reviewNonBrowserP95(current, detailedHistory, { exactCurrentMain })'));
-assert.ok(post.includes('Build 530–538 read-only CI throughput and recovery evidence'));
+assert.ok(post.includes('Build 530–539 read-only CI throughput and recovery evidence'));
 assert.ok(!workflow.includes('  build537:'));
 console.log('Build 537: exact-main non-browser residual, bounded six-release P95 certification, historical HOLD and immutable protected gates verified.');

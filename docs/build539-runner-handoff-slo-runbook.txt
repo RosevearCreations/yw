@@ -1,0 +1,40 @@
+Yard Workers Build 539 — Original runner handoff SLO and release stability
+
+Scope
+  - Extend Build 538's exact-main original Actions observations with runner
+    handoff, npm setup and successful source-step gap SLO checks.
+  - Compare six distinct verified original-main release SHAs; newest three
+    versus preceding three report bounded source, warm batch and whole
+    release P95 drift. Include per-run and historical P95 observations.
+  - Emit non-blocking GitHub Actions warnings for observed SLO/drift exceptions.
+    This is diagnostics only; all protected required gates remain unchanged.
+
+Observational thresholds (seconds; strict greater-than alerts)
+  Current source runner handoff 15, historical six-release P95 handoff 20.
+  Historical npm setup P95 30.
+  Current source-step gap 12, historical P95 gap 15.
+  Source-step gap increase compared with prior original release 5.
+  Historical source-checks P95 240; historical release P95 900.
+  Newest-three versus older-three P95 growth: source 30, warm batches 20,
+    full release 60.
+
+Evidence and caution
+  - Exact GitHub Actions main SHA and seven independently passed gates are
+    mandatory. Missing run identity, invalid original steps or fewer than six
+    distinct verified release SHAs produces HOLD rather than guessed success.
+  - GitHub timestamps have second granularity. Step gaps, runner handoff,
+    source residuals and total runtime overlap; do not infer network, CPU,
+    cache-hit or scheduling causation from this comparison.
+  - Alerts are review requests, not gate failures, deployment authorizations,
+    retry triggers or exception waivers. No browser test is removed.
+
+Acceptance
+  node scripts/build539-runner-slo-check.mjs
+  node scripts/build538-runner-scheduling-check.mjs
+  node scripts/release-job-separation-check.mjs
+  npm run test:repo
+  npm run test:vercel-static-output
+
+Read the post-promotion GitHub Actions Build 530–539 audit step summary and
+artifact for the original observed metrics. Require all seven protected main
+push gates and the exact Vercel production commit to report release GREEN.
