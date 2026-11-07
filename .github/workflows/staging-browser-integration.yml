@@ -82,6 +82,65 @@ jobs:
         shell: bash
         env:
           YWI_LANE: ${{ matrix.lane }}
+          # These are source-controlled execution inputs, not inert comments.
+          # The Build 535 runner validates their immutable list and maps
+          # every original npm command to the same Playwright spec.
+          YWI_LANE_C_COMMAND_MANIFEST: |
+            npm run test:browser:new-work-company-gate-421
+            npm run test:browser:cross-service-continuity-422
+            npm run test:browser:shared-allocation-proof-423
+            npm run test:browser:landscape-field-evidence-424
+            npm run test:browser:construction-phase-permit-425
+            npm run test:browser:water-park-inspection-426
+            npm run test:browser:snow-service-events-427
+            npm run test:browser:septic-disposal-428
+            npm run test:browser:production-learning-roadmap-renewal-v
+            npm run test:browser:cross-service-production-learning-429
+            npm run test:browser:six-service-owner-trial-430
+            npm run test:browser:service-site-intake-431
+            npm run test:browser:cross-service-estimate-job-handoff-432
+            npm run test:browser:mobile-field-evidence-433
+            npm run test:browser:service-dispatch-safety-preflight-434
+            npm run test:browser:shared-capacity-conflict-review-435
+            npm run test:browser:service-native-production-review-436
+            npm run test:browser:quality-customer-handoff-437
+            npm run test:browser:six-service-job-cost-provenance-438
+            npm run test:browser:owner-invoice-receivable-439
+            npm run test:browser:seasonal-contract-continuity-440
+            npm run test:browser:live-field-trial-integrity-441
+            npm run test:browser:cross-service-learning-442
+            npm run test:browser:pms-module-navigation-443
+            npm run test:browser:pms-client-property-360-444
+            npm run test:browser:pms-hr-garbage-445
+            npm run test:browser:pms-payroll-446
+            npm run test:browser:pms-accounting-447
+            npm run test:browser:pms-double-entry-gl-448
+            npm run test:browser:pms-lawn-grounds-449
+            npm run test:browser:pms-winter-snow-plowing-450
+            npm run test:browser:pms-septic-arboriculture-451
+            npm run test:browser:pms-construction-specialists-452
+            npm run test:browser:pms-company-job-cost-453
+            npm run test:browser:pms-modular-acceptance-454
+            npm run test:browser:pms-owner-first-use-455
+            npm run test:browser:pms-first-service-reconciliation-456
+            npm run test:browser:pms-first-service-independent-457
+            npm run test:browser:pms-independent-owner-followup-458
+            npm run test:browser:pms-independent-retest-459
+            npm run test:browser:pms-retest-discrepancy-460
+            npm run test:browser:pms-reassessment-followup-461
+            npm run test:browser:pms-evidence-outcomes-462
+            npm run test:browser:pms-independent-recheck-463
+            npm run test:browser:pms-recheck-discrepancy-464
+            npm run test:browser:pms-independent-handoff-465
+            npm run test:browser:pms-comparison-followup-467
+            npm run test:browser:pms-followup-renewal-468
+            npm run test:browser:pms-renewal-reassessment-469
+            npm run test:browser:pms-reassessment-continuity-470
+            npm run test:browser:pms-continuity-exception-471
+            npm run test:browser:pms-owner-renewal-recheck-472
+            npm run test:browser:pms-recheck-outcome-clarification-473
+            npm run test:browser:pms-owner-clarification-continuity-474
+            npm run test:browser:pms-continuity-finding-owner-renewal-475
         run: |
           set -euo pipefail
           started_at="$(date +%s)"
@@ -192,61 +251,7 @@ jobs:
               npm run test:browser:company-service-registry-420
               ;;
             c)
-              npm run test:browser:new-work-company-gate-421
-              npm run test:browser:cross-service-continuity-422
-              npm run test:browser:shared-allocation-proof-423
-              npm run test:browser:landscape-field-evidence-424
-              npm run test:browser:construction-phase-permit-425
-              npm run test:browser:water-park-inspection-426
-              npm run test:browser:snow-service-events-427
-              npm run test:browser:septic-disposal-428
-              npm run test:browser:production-learning-roadmap-renewal-v
-              npm run test:browser:cross-service-production-learning-429
-              npm run test:browser:six-service-owner-trial-430
-              npm run test:browser:service-site-intake-431
-              npm run test:browser:cross-service-estimate-job-handoff-432
-              npm run test:browser:mobile-field-evidence-433
-              npm run test:browser:service-dispatch-safety-preflight-434
-              npm run test:browser:shared-capacity-conflict-review-435
-              npm run test:browser:service-native-production-review-436
-              npm run test:browser:quality-customer-handoff-437
-              npm run test:browser:six-service-job-cost-provenance-438
-              npm run test:browser:owner-invoice-receivable-439
-              npm run test:browser:seasonal-contract-continuity-440
-              npm run test:browser:live-field-trial-integrity-441
-              npm run test:browser:cross-service-learning-442
-              npm run test:browser:pms-module-navigation-443
-              npm run test:browser:pms-client-property-360-444
-              npm run test:browser:pms-hr-garbage-445
-              npm run test:browser:pms-payroll-446
-              npm run test:browser:pms-accounting-447
-              npm run test:browser:pms-double-entry-gl-448
-              npm run test:browser:pms-lawn-grounds-449
-              npm run test:browser:pms-winter-snow-plowing-450
-              npm run test:browser:pms-septic-arboriculture-451
-              npm run test:browser:pms-construction-specialists-452
-              npm run test:browser:pms-company-job-cost-453
-              npm run test:browser:pms-modular-acceptance-454
-              npm run test:browser:pms-owner-first-use-455
-              npm run test:browser:pms-first-service-reconciliation-456
-              npm run test:browser:pms-first-service-independent-457
-              npm run test:browser:pms-independent-owner-followup-458
-              npm run test:browser:pms-independent-retest-459
-              npm run test:browser:pms-retest-discrepancy-460
-              npm run test:browser:pms-reassessment-followup-461
-              npm run test:browser:pms-evidence-outcomes-462
-              npm run test:browser:pms-independent-recheck-463
-              npm run test:browser:pms-recheck-discrepancy-464
-              npm run test:browser:pms-independent-handoff-465
-              npm run test:browser:pms-comparison-followup-467
-              npm run test:browser:pms-followup-renewal-468
-              npm run test:browser:pms-renewal-reassessment-469
-              npm run test:browser:pms-reassessment-continuity-470
-              npm run test:browser:pms-continuity-exception-471
-              npm run test:browser:pms-owner-renewal-recheck-472
-              npm run test:browser:pms-recheck-outcome-clarification-473
-              npm run test:browser:pms-owner-clarification-continuity-474
-              npm run test:browser:pms-continuity-finding-owner-renewal-475
+              node scripts/build535-lane-c.mjs
               ;;
             *)
               echo 'Unknown browser regression lane' >&2
@@ -288,6 +293,8 @@ jobs:
       - run: node scripts/build533-runner-variance-check.mjs
       - run: node scripts/build534-browser-tail-check.mjs
       - run: node scripts/build534-throughput-check.mjs
+      - run: node scripts/build535-lane-c-check.mjs
+      - run: node scripts/build535-lane-c-timing-check.mjs
       - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify

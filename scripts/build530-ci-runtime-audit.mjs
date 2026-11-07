@@ -6,6 +6,7 @@ import { reviewCiEvidence } from './build531-ci-exceptions-core.mjs';
 import { reviewBuild532 } from './build532-ci-critical-path-core.mjs';
 import { reviewBuild533 } from './build533-runner-variance-core.mjs';
 import { verifyCrossReleaseThroughput } from './build534-throughput-core.mjs';
+import { reviewLaneCRelease } from './build535-lane-c-timing-core.mjs';
 
 const repository = 'RosevearCreations/yw';
 const sourceRunId = String(process.env.YWI_SOURCE_RUN_ID ?? '');
@@ -68,6 +69,7 @@ const report = {
   build532: reviewBuild532(current, currentRawJobs, history),
   build533: reviewBuild533(current, detailedHistory),
   build534: verifyCrossReleaseThroughput(current, detailedHistory),
+  build535: reviewLaneCRelease(current, detailedHistory),
   history: history.map(({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates }) =>
     ({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates })),
   ownerAction: exactCurrentMain && current.status === 'VERIFIED_GREEN'
@@ -118,6 +120,16 @@ const summary = [
   `- Whole release current/prior/difference: ${report.build534.releaseSeconds ?? 'unknown'}s / ${report.build534.priorReleaseSeconds ?? 'unknown'}s / ${report.build534.releaseDifferenceSeconds ?? 'unknown'}s`,
   `- Median/p95 verified release runtime: ${report.build534.releaseMedianSeconds ?? 'unknown'}s / ${report.build534.releaseP95Seconds ?? 'unknown'}s`,
   '- Cross-release timing is observational only; no cause, waiver, retry, release approval or production mutation inferred.',
+  '### Build 535 — Lane C consolidation, runner startup and multi-release SLA',
+  `- Exact-main Lane-C evidence: ${report.build535.state}; comparative state: ${report.build535.comparisonState}`,
+  `- Suite retention: ${report.build535.suiteCount}; prior/current Playwright launches: ${report.build535.plannedOldLaunches}/${report.build535.plannedNewLaunches}`,
+  `- Source release current/prior: ${report.build535.currentRunId}/${report.build535.priorVerifiedRunId ?? 'none'}; verified trend samples: ${report.build535.verifiedSampleCount}`,
+  `- Lane C execution current/prior/change: ${report.build535.current?.executionSeconds ?? 'unknown'}s / ${report.build535.prior?.executionSeconds ?? 'unknown'}s / ${report.build535.observedExecutionDifferenceSeconds ?? 'unknown'}s`,
+  `- Runner preparation current/prior/change: ${report.build535.current?.preparationSeconds ?? 'unknown'}s / ${report.build535.prior?.preparationSeconds ?? 'unknown'}s / ${report.build535.observedPreparationDifferenceSeconds ?? 'unknown'}s`,
+  `- Queue and whole-release seconds: ${report.build535.current?.queueSeconds ?? 'unknown'} / ${report.build535.current?.releaseSeconds ?? 'unknown'}`,
+  `- Lane execution median/p95 and prep median/p95: ${report.build535.trends.laneExecutionMedianSeconds ?? 'unknown'}s/${report.build535.trends.laneExecutionP95Seconds ?? 'unknown'}s; ${report.build535.trends.runnerPreparationMedianSeconds ?? 'unknown'}s/${report.build535.trends.runnerPreparationP95Seconds ?? 'unknown'}s`,
+  `- Budget acceptance: ${report.build535.sla.result}; history: ${report.build535.multiReleaseTrend}`,
+  '- Runner, suite and queue variation are observational only. No gate waiver, automatic retry, causal speedup claim or release authorization.',
 ].join('\n');
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 console.log(summary);

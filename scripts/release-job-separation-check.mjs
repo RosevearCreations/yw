@@ -10,6 +10,7 @@
 import fs from 'node:fs';
 import { planHotspotBatch } from './build533-browser-hotspots.mjs';
 import { planTailBatch } from './build534-browser-tail.mjs';
+import { manifestFromWorkflow, planLaneC } from './build535-lane-c.mjs';
 
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 const checks=[];
@@ -22,6 +23,7 @@ const between=(text,start,end)=>{
 };
 
 const lanes=between(workflow,'  browser-regression-lanes:\n','\n  source-checks:\n');
+const laneC=between(lanes,'            c)\n','              ;;\n');
 const source=between(workflow,'  source-checks:\n','\n  repository-enforcement:\n');
 const repository=between(workflow,'  repository-enforcement:\n','\n  release-source-evidence:\n');
 const releaseEvidence=between(workflow,'  release-source-evidence:\n','\n  release-truth-summary:\n');
@@ -88,11 +90,25 @@ try {
   console.error(`Tail batch coverage cannot be authenticated: ${error.message}`);
   retainedTailSuites = -1;
 }
-add('build529-534-browser-suite-equivalence',
+let laneCSuiteCount = -1;
+try {
+  const plan = planLaneC(manifestFromWorkflow(workflow));
+  laneCSuiteCount = plan.suites.length;
+} catch (error) {
+  console.error(`Lane-C consolidated coverage cannot be authenticated: ${error.message}`);
+}
+add('build535-lane-c-original-execution-contract',
+  laneCSuiteCount === 55
+  && (lanes.match(/node scripts\/build535-lane-c\.mjs/g) || []).length === 1
+  && laneC.includes('node scripts/build535-lane-c.mjs')
+  && !laneC.includes('npm run test:browser:'),
+  'One runner must consume the exact 55-command manifest; no missing or duplicate source commands.');
+add('build529-535-browser-suite-equivalence',
   (lanes.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 155
   && (source.match(/(?:npm run test:browser|npx playwright test)/g) || []).length + retainedHotspotSuites + retainedTailSuites === 55
+  && 100 + laneCSuiteCount + 7 + retainedHotspotSuites + retainedTailSuites === 210
   && retainedHotspotSuites === 30 && retainedTailSuites === 18,
-  'All 210 original browser suites remain accounted for: 155 isolated lane calls, 7 source calls, and 48 verified bundled specs.');
+  'All 210 browser suites remain accounted for: 100 direct lane calls, 55 verified lane-C specs, 7 source calls, 48 verified bundled source specs.');
 
 add('build529-isolated-release-jobs-have-no-lane-guard',
   !repository.includes('Require all parallel browser lanes to pass')
