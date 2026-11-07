@@ -10,6 +10,7 @@ import { reviewLaneCRelease } from './build535-lane-c-timing-core.mjs';
 import { reviewSourceWarmVariance } from './build536-source-variance-core.mjs';
 import { reviewNonBrowserP95 } from './build537-nonbrowser-p95-core.mjs';
 import { reviewBuild538 } from './build538-runner-scheduling-core.mjs';
+import { reviewBuild539 } from './build539-runner-slo-core.mjs';
 
 const repository = 'RosevearCreations/yw';
 const sourceRunId = String(process.env.YWI_SOURCE_RUN_ID ?? '');
@@ -76,6 +77,7 @@ const report = {
   build536: reviewSourceWarmVariance(current, detailedHistory),
   build537: reviewNonBrowserP95(current, detailedHistory, { exactCurrentMain }),
   build538: reviewBuild538(current, detailedHistory, { exactCurrentMain }),
+  build539: reviewBuild539(current, detailedHistory, { exactCurrentMain }),
   history: history.map(({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates }) =>
     ({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates })),
   ownerAction: exactCurrentMain && current.status === 'VERIFIED_GREEN'
@@ -166,9 +168,20 @@ const summary = [
   `- Historical source/warm/non-browser/release P95: ${report.build538.p95.sourceSeconds ?? 'unknown'}/${report.build538.p95.warmBatchesSeconds ?? 'unknown'}/${report.build538.p95.nonBrowserResidualSeconds ?? 'unknown'}/${report.build538.p95.releaseSeconds ?? 'unknown'}s; P95 certification: ${report.build538.sourceP95Certification}`,
   `- Diagnostic regression exceptions: ${report.build538.regressions.map((item) => `${item.name}: +${item.observedRegressionSeconds}s (threshold ${item.budgetSeconds}s)`).join('; ') || 'none'}`,
   '- Timing categories overlap and cannot establish causal runner/network failure. Warnings never waive a protected gate or authorize retry.',
+  '### Build 539 — Runner handoff SLO, source step-gap drift and release stability',
+  `- Exact-main original Actions state: ${report.build539.state}; trend: ${report.build539.trendState}; verified distinct releases: ${report.build539.verifiedDistinctSamples}`,
+  `- Runner handoff/setup/step gap: ${report.build539.current?.handoffSeconds ?? 'unknown'}s / ${report.build539.current?.setupSeconds ?? 'unknown'}s / ${report.build539.current?.interStepGapSeconds ?? 'unknown'}s`,
+  `- Historical six-release P95 handoff/setup/gap: ${report.build539.historicalP95.runnerHandoffSeconds ?? 'unknown'}s / ${report.build539.historicalP95.runnerSetupSeconds ?? 'unknown'}s / ${report.build539.historicalP95.sourceStepGapSeconds ?? 'unknown'}s`,
+  `- Latest-three vs previous-three source/warm/release P95 increase: ${report.build539.cohorts?.metrics.sourceSeconds.increaseSeconds ?? 'unknown'}s / ${report.build539.cohorts?.metrics.warmSeconds.increaseSeconds ?? 'unknown'}s / ${report.build539.cohorts?.metrics.releaseSeconds.increaseSeconds ?? 'unknown'}s`,
+  `- SLO and drift state: ${report.build539.sloState}; original comparison run: ${report.build539.comparedRunId ?? 'none'}`,
+  `- Non-blocking SLO/drift alerts: ${report.build539.alerts.map((item) => `${item.code} +${item.overSeconds}s over ${item.limitSeconds}s`).join('; ') || 'none'}`,
+  '- Warnings are observational, with no protected gate change, automatic retry, causal claim or release authority.',
 ].join('\n');
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 console.log(summary);
+for (const alert of report.build539.alerts) {
+  console.log(`::warning title=Build 539 runner SLO drift::${alert.code} observed ${alert.observedSeconds}s exceeds ${alert.limitSeconds}s; review original Actions evidence; protected gate conclusions unchanged.`);
+}
 if (!exactCurrentMain || current.status !== 'VERIFIED_GREEN') {
   console.error('CI audit is HOLD; never infer production GREEN from incomplete, failed or superseded evidence.');
   process.exitCode = 1;

@@ -152,6 +152,13 @@ add('build538-scheduling-guardrails-remain-read-only',
   && !lanes.includes('build538-runner-scheduling-check.mjs')
   && releaseEvidence.includes('needs: source-checks'),
   'Build 538 diagnoses original scheduling evidence inside source-checks and does not create, weaken or bypass a protected job.');
+add('build539-slo-trend-alerting-is-read-only',
+  (source.match(/run: node scripts\/build539-runner-slo-check\.mjs/g) ?? []).length === 1
+  && !lanes.includes('build539-runner-slo-check.mjs')
+  && !repository.includes('build539-runner-slo-check.mjs')
+  && !releaseEvidence.includes('build539-runner-slo-check.mjs')
+  && releaseEvidence.includes('needs: source-checks'),
+  'Build 539 only reads original Actions SLO evidence and cannot weaken or replace any of the seven protected release gates.');
 
 add('build529-isolated-release-jobs-have-no-lane-guard',
   !repository.includes('Require all parallel browser lanes to pass')
