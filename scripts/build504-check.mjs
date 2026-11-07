@@ -37,7 +37,7 @@ assert.ok(index.includes('admin-owner-management-command-ui.js?v=2026-10-12b386&
 const scripts=JSON.parse(read('package.json')).scripts;
 assert.ok(scripts['test:build504']&&scripts['test:browser:build504']);
 const flow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(flow.includes('npm run test:build504')&&flow.includes('npm run test:browser:build504'));
+assert.ok(flow.includes('npm run test:build504')&&flow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 assert.equal(spawnSync(process.execPath,['--check','tests/browser/build504.spec.mjs'],
  {encoding:'utf8'}).status,0,'Build 504 browser suite syntax');
 console.log('Build 504: copy-only owner packet, reviewer gate matrix, device contrast recovery PASS');

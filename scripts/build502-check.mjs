@@ -41,5 +41,5 @@ assert.equal(spawnSync(process.execPath,['--check','tests/browser/build502.spec.
 const scripts=JSON.parse(read('package.json')).scripts;
 assert.ok(scripts['test:build502']&&scripts['test:browser:build502']);
 const flow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(flow.includes('npm run test:build502')&&flow.includes('npm run test:browser:build502'));
+assert.ok(flow.includes('npm run test:build502')&&flow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 console.log('Build 502: owner scope retry/history filters, fresh reviewer readiness, sampled navigation contrast PASS');

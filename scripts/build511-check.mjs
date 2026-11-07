@@ -27,6 +27,6 @@ assert(css.includes('.yw511-grid')&&css.includes('.owner511-continuity select:fo
   css.includes('@media(max-width:850px){.yw511-grid'),'Responsive high-contrast review cards required');
 assert(html.match(/b16=511/g)?.length===2,'Build 511 assets must both cache-bust');
 assert(pkg.scripts['test:build511']&&pkg.scripts['test:browser:build511'],'Source and browser scripts required');
-assert(workflow.includes('npm run test:build511')&&workflow.includes('npm run test:browser:build511'),
+assert(workflow.includes('npm run test:build511')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Build 511 checks must be in protected CI');
 console.log('Build 511 PASS: confidence exception review, owner source handoff, decision evidence continuity and protected CI gates.');

@@ -23,6 +23,6 @@ assert(html.includes('b11=506')&&html.includes('admin-owner-management-command-u
   'Build 506 assets must be cache-busted');
 assert(pkg.scripts['test:build506']&&pkg.scripts['test:browser:build506'],
   'Build 506 source and browser acceptance scripts must be defined');
-assert(workflow.includes('npm run test:build506')&&workflow.includes('npm run test:browser:build506'),
+assert(workflow.includes('npm run test:build506')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Both Build 506 gates must run in the protected workflow');
 console.log('Build 506 PASS: source-gated historical job cohorts, seasonal capacity confidence, bounded reliability exception drilldown and protected CI wiring.');

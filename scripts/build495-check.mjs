@@ -38,5 +38,5 @@ assert.equal(spawnSync(process.execPath,['--check',tests],{encoding:'utf8'}).sta
 const pkg=JSON.parse(read('package.json'));
 assert.ok(pkg.scripts['test:build495']&&pkg.scripts['test:browser:build495']);
 const workflow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(workflow.includes('npm run test:build495')&&workflow.includes('npm run test:browser:build495'));
+assert.ok(workflow.includes('npm run test:build495')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 console.log('Build 495: owner review presets, reference-only authority handoff and paused QL-269 operator review PASS');

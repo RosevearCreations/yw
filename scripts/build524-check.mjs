@@ -21,6 +21,6 @@ assert(html.includes('/js/owner-management-history-524.js?v=20261104b524')&&
 assert(site.includes("'build524-history.css'"),'Vercel static output must include Build 524 styles');
 assert(pkg.scripts['test:build524']&&pkg.scripts['test:browser:build524'],
   'Build 524 verification commands missing');
-assert(wf.includes('npm run test:build524')&&wf.includes('npm run test:browser:build524'),
+assert(wf.includes('npm run test:build524')&&wf.includes('node scripts/build533-browser-hotspots.mjs 19'),
   'Protected workflow must run Build 524 source and browser acceptance');
 console.log('Build 524 PASS: strict version migration, bounded nonsecret recovery history and local assistive follow-up.');

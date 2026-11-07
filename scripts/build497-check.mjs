@@ -38,5 +38,5 @@ assert.equal(spawnSync(process.execPath,['--check','tests/browser/build497.spec.
 const scripts=JSON.parse(read('package.json')).scripts;
 assert.ok(scripts['test:build497']&&scripts['test:browser:build497']);
 const workflow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(workflow.includes('npm run test:build497')&&workflow.includes('npm run test:browser:build497'));
+assert.ok(workflow.includes('npm run test:build497')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 console.log('Build 497: audit filter recovery, restricted reviewer reconciliation and management keyboard access PASS');

@@ -25,6 +25,6 @@ assert(css.includes('.yw507-grid')&&css.includes('.owner507-followup select:focu
 assert(html.match(/b12=507/g)?.length===2,'Build 507 JS and CSS cache-bust keys required');
 assert(pkg.scripts['test:build507']&&pkg.scripts['test:browser:build507'],
   'Build 507 source and browser scripts must be defined');
-assert(workflow.includes('npm run test:build507')&&workflow.includes('npm run test:browser:build507'),
+assert(workflow.includes('npm run test:build507')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Both Build 507 gates must run in the protected CI workflow');
 console.log('Build 507 PASS: source-lineage audit, gap priorities, non-mutating follow-up queue and protected gates.');

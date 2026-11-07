@@ -21,6 +21,6 @@ assert(css.includes('.yw505-evidence-grid')&&css.includes('max-width:850px'),
   'Responsive management evidence cards required');
 assert(pkg.scripts['test:build505']&&pkg.scripts['test:browser:build505'],
   'Source and browser checks must be scripted');
-assert(workflow.includes('npm run test:build505')&&workflow.includes('npm run test:browser:build505'),
+assert(workflow.includes('npm run test:build505')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Build 505 checks must be protected CI steps');
 console.log('Build 505 PASS: evidence-gated seasonal economics, capacity, reliability trend, source links and CI wiring.');

@@ -32,6 +32,6 @@ for(const token of ['.owner520-navigation .yw520-grid',
  assert(css.includes(token),'Missing Build 520 accessible visual rule: '+token);
 assert((html.match(/b25=520/g)||[]).length===2,'Build 520 JS/CSS cache-bust markers missing');
 assert(pkg.scripts['test:build520']&&pkg.scripts['test:browser:build520'],'Build 520 package tests missing');
-assert(wf.includes('npm run test:build520')&&wf.includes('npm run test:browser:build520'),
+assert(wf.includes('npm run test:build520')&&wf.includes('node scripts/build533-browser-hotspots.mjs 19'),
  'Protected staging CI must run source and browser Build 520 acceptance');
 console.log('Build 520 PASS: guided Management navigation, source/permission boundaries and accessible style.');
