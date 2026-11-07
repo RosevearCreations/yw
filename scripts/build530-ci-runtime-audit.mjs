@@ -2,6 +2,7 @@
 /** Read-only post-promotion CI audit. Never merges, approves, retries or changes a gate. */
 import { writeFile, appendFile } from 'node:fs/promises';
 import { summarizeRun, summarizeTrend } from './build530-ci-runtime-audit-core.mjs';
+import { reviewCiEvidence } from './build531-ci-exceptions-core.mjs';
 
 const repository = 'RosevearCreations/yw';
 const sourceRunId = String(process.env.YWI_SOURCE_RUN_ID ?? '');
@@ -56,6 +57,7 @@ const report = {
   exactCurrentMain,
   current,
   trend: summarizeTrend(history),
+  build531: reviewCiEvidence(current, history, { exactCurrentMain }),
   history: history.map(({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates }) =>
     ({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates })),
   ownerAction: exactCurrentMain && current.status === 'VERIFIED_GREEN'
@@ -74,6 +76,13 @@ const summary = [
   `- Trend samples: ${report.trend.sampleCount}; median runtime: ${report.trend.medianRunSeconds ?? 'unknown'}s; p95: ${report.trend.p95RunSeconds ?? 'unknown'}s`,
   `- Missing/failed required gates: ${current.failedOrMissingGates.join(', ') || 'none'}`,
   '- Budget exceedances are diagnostics, not permission to skip a release check.',
+  '### Build 531 — Queue SLA exceptions and recovery evidence',
+  `- Release evidence: ${report.build531.releaseEvidenceState}`,
+  `- Recovery decision: ${report.build531.recoveryDecision}`,
+  `- Queue / runtime SLA breaches in history: ${report.build531.trend.queueSlaBreaches} / ${report.build531.trend.runSlaBreaches}`,
+  `- Parallel regression lane budgets: ${report.build531.laneBudgets.map((lane) => `${lane.name} ${lane.executionSeconds ?? 'unknown'}s/${lane.budgetSeconds}s`).join('; ')}`,
+  `- Exceptions: ${report.build531.exceptions.map((item) => item.code).join(', ') || 'none'}`,
+  '- Recovery is evidence review only: no retries, waived gates or production changes.',
 ].join('\n');
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 console.log(summary);

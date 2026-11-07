@@ -91,7 +91,7 @@ jobs:
           exit 1
 
   ci-runtime-audit:
-    name: Build 530 read-only CI timing and gate audit
+    name: Build 530/531 read-only CI SLA and recovery evidence
     if: >-
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main' &&
@@ -110,14 +110,14 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Audit completed exact-main workflow and bounded history
+      - name: Audit exact-main workflow, queue exceptions and recovery evidence
         env:
           GH_TOKEN: ${{ github.token }}
           YWI_SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
           YWI_SOURCE_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
           YWI_CI_AUDIT_REPORT_PATH: ci-runtime-audit.json
         run: node scripts/build530-ci-runtime-audit.mjs
-      - name: Preserve read-only timing and recovery diagnostics
+      - name: Preserve read-only SLA exceptions and recovery diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
