@@ -4,12 +4,13 @@
  * signing MUST be furnished by separate trusted source-server adapters.
  */
 export const QL364_PATH = '/api/integration/v1/shell/health';
+export const QL364_SOURCE_ID = 'yw';
+export const QL364_REPOSITORY = 'RosevearCreations/yw';
 export const QL364_REQUEST_SCHEMA = 'rosevear.hub.ql362.source-owner-one-get.v1';
 export const QL364_HEALTH_SCHEMA = 'rosevear.hub.ql362.source-health-receipt.v1';
 export const QL364_ENVELOPE_SCHEMA = 'rosevear.hub.ql363.source-health-envelope.v1';
 export const QL364_RECEIPT_SCHEMA = 'rosevear.hub.ql363.source-signed-health-receipt.v1';
 export const QL364_CONTRACT_SCHEMA = 'rosevear.hub.ql363.six-source-health-contract.v1';
-const IDS = Object.freeze(['yw','icamp','rosiedazzlers','devilndove','ai-data-platform','rosevear-ai-hub']);
 const SHA = /^[a-f0-9]{64}$/;
 const COMMIT = /^[a-f0-9]{40}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -62,7 +63,8 @@ function validOriginalRequest(v,sourceId,now) {
  */
 export async function handleQl364SourceHealth({request,sourceId,repository,
   approveOriginalGet,claimOperation,signSourceReceipt,now=Date.now()}={}) {
-  if (!IDS.includes(sourceId) || !request) return response('DENY_UNKNOWN_SOURCE',403);
+  if (sourceId!==QL364_SOURCE_ID || repository!==QL364_REPOSITORY || !request)
+    return response('DENY_UNKNOWN_SOURCE_OR_REPOSITORY',403);
   const url = new URL(request.url);
   if (request.method!=='GET') return response('DENY_METHOD',405);
   if (url.pathname!==QL364_PATH || url.search || url.hash)
