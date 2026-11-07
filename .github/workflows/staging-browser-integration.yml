@@ -306,6 +306,7 @@ jobs:
         run: node scripts/build537-source-contract-lane.mjs
       - run: node scripts/build537-source-contract-lane-check.mjs
       - run: node scripts/build537-nonbrowser-p95-check.mjs
+      - run: node scripts/build538-runner-scheduling-check.mjs
       - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify
