@@ -1,0 +1,35 @@
+YARD WORKERS — BUILD 534
+Protected source-checks tail optimization and cross-release timing acceptance
+
+Change
+- Retain all 18 Playwright test files from source-checks batches 21 (10)
+  and 22 (8). The suites are invoked in their original order through one
+  pinned, no-network-install Playwright invocation per batch, with workers=1.
+- Preserve the 30 specs from Build 533, all 155 parallel browser lane
+  commands and the remaining 7 independent source-tail browser commands.
+- Strict mapping to the original package scripts and exact tested spec file
+  means drift, duplicates and missing browser files stop the source gate.
+- Retain the existing seven required status names, independent repository
+  protection, exact-main source evidence and truth-summary dependencies.
+
+Operator commands
+  node scripts/build534-browser-tail-check.mjs
+  node scripts/build534-throughput-check.mjs
+  node scripts/build534-browser-tail.mjs 21 --list
+  node scripts/build534-browser-tail.mjs 22 --list
+  node scripts/build534-browser-tail.mjs 21
+  node scripts/build534-browser-tail.mjs 22
+
+Evidence and caution
+- Existing read-only post-promotion Actions audit gathers exact source-run
+  main and a bounded recent original six-run window. It compares identical
+  step labels on different SHA verified-green runs, reports batch 21/22,
+  source-checks and whole-release seconds and a p50/p95 successful-run trend.
+- A held, missing, duplicate or failed required gate is never treated as
+  successful evidence. No automatic retries, approvals, waivers or writes.
+- Timing variation across GitHub runners, dependency installs and network
+  conditions can change the observed numbers. Do not infer causal speedup.
+
+Promotion: protected PR to dev, protected PR dev -> main, all seven exact-main
+required checks GREEN, Vercel production exact SHA READY and HTTP 200,
+post-promotion audit/reconciliation and no unreviewed production errors.

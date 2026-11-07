@@ -286,6 +286,8 @@ jobs:
       - run: node scripts/build532-ci-critical-path-check.mjs
       - run: node scripts/build533-browser-hotspots-check.mjs
       - run: node scripts/build533-runner-variance-check.mjs
+      - run: node scripts/build534-browser-tail-check.mjs
+      - run: node scripts/build534-throughput-check.mjs
       - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify
@@ -615,30 +617,10 @@ jobs:
       - run: npm run test:rosevear-ql245-source-evidence-477
       - name: Browser regression batch 21 (10 retained commands)
         shell: bash
-        run: |
-          set -euo pipefail
-          npm run test:browser:pms-owner-renewal-reviewer-followup-476
-          npm run test:browser:pms-owner-reviewer-followup-477
-          npm run test:browser:management-outcome-confidence-cohort-trend
-          npm run test:browser:workability-forecast-recovery-calibration
-          npm run test:browser:contextual-help
-          npm run test:browser:management-decision-outcome-journal
-          npm run test:browser:workability-schedule-recovery-outcomes
-          npm run test:browser:profile-reference-lifecycle
-          npm run test:browser:workspace-organization
-          npm run test:browser:performance-budgets
+        run: node scripts/build534-browser-tail.mjs 21
       - name: Browser regression batch 22 (8 retained commands)
         shell: bash
-        run: |
-          set -euo pipefail
-          npm run test:browser:finance
-          npm run test:browser:finance-mapping
-          npm run test:browser:it
-          npm run test:browser:equipment-scan
-          npm run test:browser:staging-acceptance
-          npx playwright test --config=playwright.config.mjs tests/browser/staging-infrastructure-readiness.spec.mjs
-          npm run test:browser:admin-account-security
-          npm run test:browser:help-seo
+        run: node scripts/build534-browser-tail.mjs 22
 
   repository-enforcement:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -5,6 +5,7 @@ import { summarizeRun, summarizeTrend } from './build530-ci-runtime-audit-core.m
 import { reviewCiEvidence } from './build531-ci-exceptions-core.mjs';
 import { reviewBuild532 } from './build532-ci-critical-path-core.mjs';
 import { reviewBuild533 } from './build533-runner-variance-core.mjs';
+import { verifyCrossReleaseThroughput } from './build534-throughput-core.mjs';
 
 const repository = 'RosevearCreations/yw';
 const sourceRunId = String(process.env.YWI_SOURCE_RUN_ID ?? '');
@@ -66,6 +67,7 @@ const report = {
   build531: reviewCiEvidence(current, history, { exactCurrentMain }),
   build532: reviewBuild532(current, currentRawJobs, history),
   build533: reviewBuild533(current, detailedHistory),
+  build534: verifyCrossReleaseThroughput(current, detailedHistory),
   history: history.map(({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates }) =>
     ({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates })),
   ownerAction: exactCurrentMain && current.status === 'VERIFIED_GREEN'
@@ -107,6 +109,15 @@ const summary = [
   `- Retained Playwright specs: ${report.build533.hotspotTiming.retainedSuiteCount}; processes previously/current: ${report.build533.hotspotTiming.plannedPriorInvocations}/${report.build533.hotspotTiming.plannedCurrentInvocations}`,
   `- Batch 17/18/19 observed differences: ${report.build533.hotspotTiming.batches.map((batch) => `${batch.name}: ${batch.observedDifferenceSeconds ?? 'unknown'}s`).join('; ')}`,
   '- Runtime reductions are observations only, not independently proven causal savings or any authority to waive gates.',
+  '### Build 534 — Source tail consolidation and cross-release throughput',
+  `- Verified comparison: ${report.build534.state}; previous original run: ${report.build534.previousVerifiedRunId ?? 'none'}`,
+  `- Cross-release samples: ${report.build534.verifiedSampleCount}; trend: ${report.build534.trendState}`,
+  `- Retained browser specs: ${report.build534.retainedSpecs}; prior/current Playwright launches: ${report.build534.previousProcessLaunches}/${report.build534.currentProcessLaunches}`,
+  `- Source-checks current/prior/difference: ${report.build534.sourceSeconds ?? 'unknown'}s / ${report.build534.priorSourceSeconds ?? 'unknown'}s / ${report.build534.sourceDifferenceSeconds ?? 'unknown'}s`,
+  `- Tail 21+22 current/prior/difference: ${report.build534.tailTotalSeconds ?? 'unknown'}s / ${report.build534.priorTailTotalSeconds ?? 'unknown'}s / ${report.build534.tailDifferenceSeconds ?? 'unknown'}s`,
+  `- Whole release current/prior/difference: ${report.build534.releaseSeconds ?? 'unknown'}s / ${report.build534.priorReleaseSeconds ?? 'unknown'}s / ${report.build534.releaseDifferenceSeconds ?? 'unknown'}s`,
+  `- Median/p95 verified release runtime: ${report.build534.releaseMedianSeconds ?? 'unknown'}s / ${report.build534.releaseP95Seconds ?? 'unknown'}s`,
+  '- Cross-release timing is observational only; no cause, waiver, retry, release approval or production mutation inferred.',
 ].join('\n');
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 console.log(summary);

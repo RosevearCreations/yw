@@ -26,6 +26,6 @@ for(const marker of ['Client CRM','Contract Lifecycle','Advanced GL','Tenant RLS
 assert.ok(!spec.includes('live subscription enabled'));
 assert.equal(pkg.scripts['test:management-outcome-confidence-cohort-trend'],'node scripts/management-outcome-confidence-cohort-trend-check.mjs');
 assert.equal(pkg.scripts['test:browser:management-outcome-confidence-cohort-trend'],'playwright test --config=playwright.config.mjs tests/browser/management-outcome-confidence-cohort-trend.spec.mjs');
-must(workflow,['npm run test:management-outcome-confidence-cohort-trend','npm run test:browser:management-outcome-confidence-cohort-trend'],'CI');
+must(workflow,['npm run test:management-outcome-confidence-cohort-trend','node scripts/build534-browser-tail.mjs 21'],'CI');
 assert.ok(html.includes('/js/admin-owner-management-command-ui.js?v=2026-10-11b380'));
 console.log('Build 377 cohort, Help and expanded SaaS roadmap checks: PASS');

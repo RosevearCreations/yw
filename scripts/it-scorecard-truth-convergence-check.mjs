@@ -111,7 +111,7 @@ add('browser-nonpersistent',!/(?:fetch\(|supabase|payment_intent|paypal_order|ex
 add('package-source-gate',packageJson.scripts?.['test:it-scorecard-truth']==='node scripts/it-scorecard-truth-convergence-check.mjs');
 add('package-browser-gate',packageJson.scripts?.['test:browser:it']==='playwright test --config=playwright.config.mjs tests/browser/it-scorecard-truth.spec.mjs');
 add('workflow-source-gate',workflow.includes('npm run test:it-scorecard-truth'));
-add('workflow-browser-gate',workflow.includes('npm run test:browser:it'));
+add('workflow-browser-gate',workflow.includes('node scripts/build534-browser-tail.mjs 22'));
 
 const passed=results.filter((item)=>item.ok).length;
 console.log(`\nSchema 184 I.T. scorecard truth source gate: ${passed}/${results.length} passed\n`);

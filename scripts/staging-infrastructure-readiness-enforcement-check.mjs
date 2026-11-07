@@ -149,7 +149,8 @@ add('build214-source-check-is-mandatory',
   'Staging infrastructure source authority runs on each release PR.');
 
 add('build214-browser-check-is-mandatory',
-  workflow.includes('tests/browser/staging-infrastructure-readiness.spec.mjs'),
+  workflow.includes('node scripts/build534-browser-tail.mjs 22') &&
+  read('scripts/build534-browser-tail.mjs').includes("'direct:staging-infrastructure-readiness'"),
   'Rendered fail-closed staging acceptance runs on each release PR.');
 
 const failed = checks.filter((check) => !check.ok);

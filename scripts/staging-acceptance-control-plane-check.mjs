@@ -127,7 +127,7 @@ add('browser-current-schema-derived-from-repository',
   'Staging acceptance fixture derives current schema from variable-width numbered migrations and guards the Schema 1000+ boundary.'
 );
 
-add('workflow-source-gates-staging',workflow.includes('npm run test:staging-acceptance')&&workflow.includes('npm run test:staging-scenarios')&&workflow.includes('npm run test:browser:staging-acceptance'));
+add('workflow-source-gates-staging',workflow.includes('npm run test:staging-acceptance')&&workflow.includes('npm run test:staging-scenarios')&&workflow.includes('node scripts/build534-browser-tail.mjs 22'));
 add('workflow-live-staging-manual-only',hasAll(workflow,[
   "github.event_name == 'workflow_dispatch' && inputs.run_staging == 'true'",'environment: staging',
   'YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}',
