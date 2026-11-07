@@ -24,7 +24,7 @@ const seconds = (a, b) => {
 const quantile = (items, fraction) => items.length
   ? [...items].sort((a, b) => a - b)[Math.ceil(items.length * fraction) - 1] : null;
 
-function verifiedSourceObservation(entry) {
+export function verifiedSourceObservation(entry) {
   const { sample, jobs } = entry ?? {};
   if (sample?.status !== 'VERIFIED_GREEN' || !Array.isArray(jobs) ||
     !REQUIRED_GATES.every((name) => unique(jobs, name)?.conclusion === 'success')) return null;
