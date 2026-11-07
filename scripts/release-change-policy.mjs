@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import {pathToFileURL} from 'node:url';
 import {classifyChangedFiles, collectReleaseCandidateContext, resolveCandidateKind} from './release-candidate-manifest.mjs';
+import { planTailBatch, TAIL_BATCHES } from './build534-browser-tail.mjs';
 
 export const POLICY_AUTHORITY='build_246_release_change_policy';
 export const WORKFLOW_PATH='.github/workflows/staging-browser-integration.yml';
@@ -164,9 +165,24 @@ export function verifyPolicyGateCoverage(policy,options={}){
   const workflow=options.workflowSource ?? fs.readFileSync(WORKFLOW_PATH,'utf8');
   const missingPackageScripts=[];
   const missingWorkflowSteps=[];
+  const consolidatedWorkflow = workflow.split('  source-checks:\n')[1]?.split('\n  repository-enforcement:\n')[0] || '';
+  const consolidatedGatePresent=(gate)=>{
+    if (!gate.startsWith('test:browser:')) return false;
+    const scriptName=gate.slice('test:browser:'.length);
+    const batch=Object.entries(TAIL_BATCHES).find(([,scripts])=>scripts.includes(scriptName))?.[0];
+    if (!batch || (consolidatedWorkflow.match(new RegExp(`^\\s+run: node scripts/build534-browser-tail\\.mjs ${batch}$`,'gm'))||[]).length!==1) return false;
+    try {
+      // The original package mapping, exact 18 files, one isolated Playwright
+      // invocation and source-job placement must all agree. Missing coverage
+      // is never replaced with merely a matching string or an untrusted hint.
+      const specs=planTailBatch(batch,packageJson).suites;
+      const expected=clean(packageJson.scripts?.[gate]).split(' ').at(-1);
+      return specs.includes(expected);
+    } catch { return false; }
+  };
   for(const gate of policy.required_gate_scripts || []){
     if(!clean(packageJson?.scripts?.[gate]))missingPackageScripts.push(gate);
-    if(!workflow.includes(`npm run ${gate}`))missingWorkflowSteps.push(gate);
+    if(!workflow.includes(`npm run ${gate}`) && !consolidatedGatePresent(gate))missingWorkflowSteps.push(gate);
   }
   return {
     ok:missingPackageScripts.length===0 && missingWorkflowSteps.length===0,

@@ -9,6 +9,7 @@
  */
 import fs from 'node:fs';
 import { planHotspotBatch } from './build533-browser-hotspots.mjs';
+import { planTailBatch } from './build534-browser-tail.mjs';
 
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 const checks=[];
@@ -46,8 +47,8 @@ add('build257-separation-authority-is-mandatory',
 
 add('source-checks-retains-rendered-tail',
   source.includes('Install Chromium for rendered module acceptance')
-  && source.includes('npm run test:browser:help-seo')
-  && source.includes('tests/browser/staging-infrastructure-readiness.spec.mjs'),
+  && source.includes('node scripts/build534-browser-tail.mjs 22')
+  && planTailBatch('22').suites.includes('tests/browser/staging-infrastructure-readiness.spec.mjs'),
   'The exact-main application job still reaches the rendered/browser tail when application checks are healthy.');
 
 add('build529-three-isolated-browser-lanes',
@@ -75,11 +76,23 @@ try {
   console.error(`Consolidated browser coverage cannot be authenticated: ${error.message}`);
   retainedHotspotSuites = -1;
 }
-add('build529-533-browser-suite-equivalence',
+let retainedTailSuites = 0;
+try {
+  for (const batch of ['21', '22']) {
+    if ((source.match(new RegExp(`node scripts/build534-browser-tail\\.mjs ${batch}(?!\\d)`, 'g')) ?? []).length !== 1) {
+      throw new Error(`Missing or duplicate Build 534 browser tail batch ${batch}`);
+    }
+    retainedTailSuites += planTailBatch(batch).suites.length;
+  }
+} catch (error) {
+  console.error(`Tail batch coverage cannot be authenticated: ${error.message}`);
+  retainedTailSuites = -1;
+}
+add('build529-534-browser-suite-equivalence',
   (lanes.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 155
-  && (source.match(/(?:npm run test:browser|npx playwright test)/g) || []).length + retainedHotspotSuites === 55
-  && retainedHotspotSuites === 30,
-  'All 210 original browser suites remain accounted for: 155 isolated lane calls, 25 source calls, and 30 verified bundled specs.');
+  && (source.match(/(?:npm run test:browser|npx playwright test)/g) || []).length + retainedHotspotSuites + retainedTailSuites === 55
+  && retainedHotspotSuites === 30 && retainedTailSuites === 18,
+  'All 210 original browser suites remain accounted for: 155 isolated lane calls, 7 source calls, and 48 verified bundled specs.');
 
 add('build529-isolated-release-jobs-have-no-lane-guard',
   !repository.includes('Require all parallel browser lanes to pass')

@@ -98,7 +98,7 @@ must(handbook,[
 
 assert.equal(pkg.scripts?.['test:management-decision-outcome-journal'],'node scripts/management-decision-outcome-journal-check.mjs');
 assert.equal(pkg.scripts?.['test:browser:management-decision-outcome-journal'],'playwright test --config=playwright.config.mjs tests/browser/management-decision-outcome-journal.spec.mjs');
-must(workflow,['npm run test:management-decision-outcome-journal','npm run test:browser:management-decision-outcome-journal'],'Build 363 CI');
+must(workflow,['npm run test:management-decision-outcome-journal','node scripts/build534-browser-tail.mjs 21'],'Build 363 CI');
 
 const require=createRequire(import.meta.url);
 const ts=require('typescript');

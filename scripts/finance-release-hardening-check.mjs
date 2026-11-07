@@ -63,6 +63,6 @@ for(const token of ['execute_posting','reverse_posting','AR_ACCOUNT_MAPPING_NOT_
 assert.ok(pkg.includes('"test:finance-release-hardening"'),'package.json must expose the Schema 179 source gate.');
 assert.ok(pkg.includes('"test:browser:finance"'),'package.json must expose rendered Finance acceptance.');
 assert.ok(workflow.includes('npm run test:finance-release-hardening'),'CI must execute the Schema 179 source gate.');
-assert.ok(workflow.includes('npm run test:browser:finance'),'CI must execute rendered Build 179 Finance acceptance.');
+assert.ok(workflow.includes('node scripts/build534-browser-tail.mjs 22'),'CI must execute rendered Build 179 Finance acceptance.');
 
 console.log('Schema 179 Finance permissions/acceptance/release hardening source gate: PASS');

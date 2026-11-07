@@ -59,7 +59,7 @@ assert.equal(pkg.scripts['test:workability-schedule-recovery-outcomes'],'node sc
 assert.equal(pkg.scripts['test:browser:workability-schedule-recovery-outcomes'],'playwright test --config=playwright.config.mjs tests/browser/workability-schedule-recovery-outcomes.spec.mjs');
 must(workflow,[
   'npm run test:workability-schedule-recovery-outcomes',
-  'npm run test:browser:workability-schedule-recovery-outcomes'
+  'node scripts/build534-browser-tail.mjs 21'
 ],'Build 364 CI');
 
 must(help,[

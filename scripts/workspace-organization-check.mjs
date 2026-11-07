@@ -29,7 +29,7 @@ add('no-finance-provider-enablement',!/(FINANCE_POSTING_EXECUTION_ENABLED\s*=\s*
 add('source-command-wired',pkg.scripts?.['test:workspace-organization']==='node scripts/workspace-organization-check.mjs');
 add('browser-command-wired',pkg.scripts?.['test:browser:workspace-organization']==='playwright test --config=playwright.config.mjs tests/browser/workspace-organization.spec.mjs');
 add('workflow-source-gate-wired',/npm run test:workspace-organization/.test(workflow));
-add('workflow-browser-gate-wired',/npm run test:browser:workspace-organization/.test(workflow));
+add('workflow-browser-gate-wired',workflow.includes('node scripts/build534-browser-tail.mjs 21'));
 
 for(const c of checks) console.log(`${c.ok?'PASS':'FAIL'}  ${c.name}`);
 const failed=checks.filter((c)=>!c.ok);

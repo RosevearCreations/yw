@@ -36,7 +36,7 @@ add('no-finance-provider-enablement',!/(FINANCE_POSTING_EXECUTION_ENABLED\s*=\s*
 add('source-command-wired',pkg.scripts?.['test:profile-reference-lifecycle']==='node scripts/profile-reference-lifecycle-check.mjs');
 add('browser-command-wired',pkg.scripts?.['test:browser:profile-reference-lifecycle']==='playwright test --config=playwright.config.mjs tests/browser/profile-reference-lifecycle.spec.mjs');
 add('workflow-source-gate-wired',/npm run test:profile-reference-lifecycle/.test(workflow));
-add('workflow-browser-gate-wired',/npm run test:browser:profile-reference-lifecycle/.test(workflow));
+add('workflow-browser-gate-wired',workflow.includes('node scripts/build534-browser-tail.mjs 21'));
 add('help-current-profile-lifecycle',/profile record first/i.test(help)&&/Crew.*only when/i.test(help));
 add('handbook-current-profile-lifecycle',/reference data/i.test(handbook)&&/in-flight/i.test(handbook));
 add('next-sanity-profile-lifecycle',/Profile.*Crew.*reference data/i.test(next));
