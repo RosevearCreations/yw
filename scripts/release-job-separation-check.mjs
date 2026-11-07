@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import { planHotspotBatch } from './build533-browser-hotspots.mjs';
 import { planTailBatch } from './build534-browser-tail.mjs';
 import { manifestFromWorkflow, planLaneC } from './build535-lane-c.mjs';
+import { manifestFromWorkflow as warmBatch20Manifest, planWarmBatch20 } from './build536-batch20.mjs';
 
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 const checks=[];
@@ -90,6 +91,20 @@ try {
   console.error(`Tail batch coverage cannot be authenticated: ${error.message}`);
   retainedTailSuites = -1;
 }
+let warmBatch20Suites = -1;
+try {
+  const manifest = warmBatch20Manifest(workflow);
+  const plan = planWarmBatch20(manifest);
+  const batch20 = between(source, '      - name: Browser regression batch 20 (3 retained commands)\n',
+    '      - run: npm run test:rosevear-ql245-source-evidence-477\n');
+  if ((source.match(/run: node scripts\/build536-batch20\.mjs/g) ?? []).length !== 1
+    || !batch20.includes('run: node scripts/build536-batch20.mjs')) {
+    throw new Error('Canonical batch-20 step is not actually wired to the verified runner.');
+  }
+  warmBatch20Suites = plan.suites.length;
+} catch (error) {
+  console.error(`Warm batch-20 coverage cannot be authenticated: ${error.message}`);
+}
 let laneCSuiteCount = -1;
 try {
   const plan = planLaneC(manifestFromWorkflow(workflow));
@@ -109,6 +124,10 @@ add('build529-535-browser-suite-equivalence',
   && 100 + laneCSuiteCount + 7 + retainedHotspotSuites + retainedTailSuites === 210
   && retainedHotspotSuites === 30 && retainedTailSuites === 18,
   'All 210 browser suites remain accounted for: 100 direct lane calls, 55 verified lane-C specs, 7 source calls, 48 verified bundled source specs.');
+add('build536-warm-source-browser-batch-equivalence',
+  warmBatch20Suites === 3 && retainedHotspotSuites === 30 && retainedTailSuites === 18
+  && 4 + warmBatch20Suites + retainedHotspotSuites + retainedTailSuites === 55,
+  'Source browser coverage remains exactly 55 suites: four isolated calls, three exact mapped batch-20 specs, and 48 source bundles.');
 
 add('build529-isolated-release-jobs-have-no-lane-guard',
   !repository.includes('Require all parallel browser lanes to pass')

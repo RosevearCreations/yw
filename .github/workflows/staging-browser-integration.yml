@@ -295,6 +295,8 @@ jobs:
       - run: node scripts/build534-throughput-check.mjs
       - run: node scripts/build535-lane-c-check.mjs
       - run: node scripts/build535-lane-c-timing-check.mjs
+      - run: node scripts/build536-warm-batches-check.mjs
+      - run: node scripts/build536-source-variance-check.mjs
       - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify
@@ -616,11 +618,14 @@ jobs:
         run: node scripts/build533-browser-hotspots.mjs 19
       - name: Browser regression batch 20 (3 retained commands)
         shell: bash
-        run: |
-          set -euo pipefail
-          npm run test:browser:build525
-          npm run test:browser:build526
-          npm run test:browser:company-owner-session-491
+        # Original commands are source-bound executable manifest inputs;
+        # each maps to the same Playwright spec in one fail-closed launch.
+        env:
+          YWI_WARM_BATCH20_MANIFEST: |
+            npm run test:browser:build525
+            npm run test:browser:build526
+            npm run test:browser:company-owner-session-491
+        run: node scripts/build536-batch20.mjs
       - run: npm run test:rosevear-ql245-source-evidence-477
       - name: Browser regression batch 21 (10 retained commands)
         shell: bash

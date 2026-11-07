@@ -7,6 +7,7 @@ import { reviewBuild532 } from './build532-ci-critical-path-core.mjs';
 import { reviewBuild533 } from './build533-runner-variance-core.mjs';
 import { verifyCrossReleaseThroughput } from './build534-throughput-core.mjs';
 import { reviewLaneCRelease } from './build535-lane-c-timing-core.mjs';
+import { reviewSourceWarmVariance } from './build536-source-variance-core.mjs';
 
 const repository = 'RosevearCreations/yw';
 const sourceRunId = String(process.env.YWI_SOURCE_RUN_ID ?? '');
@@ -70,6 +71,7 @@ const report = {
   build533: reviewBuild533(current, detailedHistory),
   build534: verifyCrossReleaseThroughput(current, detailedHistory),
   build535: reviewLaneCRelease(current, detailedHistory),
+  build536: reviewSourceWarmVariance(current, detailedHistory),
   history: history.map(({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates }) =>
     ({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates })),
   ownerAction: exactCurrentMain && current.status === 'VERIFIED_GREEN'
@@ -130,6 +132,17 @@ const summary = [
   `- Lane execution median/p95 and prep median/p95: ${report.build535.trends.laneExecutionMedianSeconds ?? 'unknown'}s/${report.build535.trends.laneExecutionP95Seconds ?? 'unknown'}s; ${report.build535.trends.runnerPreparationMedianSeconds ?? 'unknown'}s/${report.build535.trends.runnerPreparationP95Seconds ?? 'unknown'}s`,
   `- Budget acceptance: ${report.build535.sla.result}; history: ${report.build535.multiReleaseTrend}`,
   '- Runner, suite and queue variation are observational only. No gate waiver, automatic retry, causal speedup claim or release authorization.',
+  '### Build 536 — Source checks and post-Chromium warm-run batches 17–22',
+  `- Exact-main source evidence: ${report.build536.state}; warm context: ${report.build536.warmContext}`,
+  `- Six warm batches retain ${report.build536.sourceBrowserSuiteCount} browser specs; batch 20 launches prior/current: ${report.build536.batch20OriginalLaunches}/${report.build536.batch20CurrentLaunches}`,
+  `- Verified history: ${report.build536.verifiedSampleCount} releases; trend: ${report.build536.trendState}; previous source run: ${report.build536.priorVerifiedRunId ?? 'none'}`,
+  `- Source checks current/prior/difference: ${report.build536.current?.sourceSeconds ?? 'unknown'}s / ${report.build536.prior?.sourceSeconds ?? 'unknown'}s / ${report.build536.sourceDifferenceSeconds ?? 'unknown'}s`,
+  `- Warm batch 17–22 current/prior/difference: ${report.build536.current?.batchSeconds ?? 'unknown'}s / ${report.build536.prior?.batchSeconds ?? 'unknown'}s / ${report.build536.batchDifferenceSeconds ?? 'unknown'}s`,
+  `- Other source time change: ${report.build536.otherSourceDifferenceSeconds ?? 'unknown'}s; observed variance location: ${report.build536.observedVarianceLocation}`,
+  `- Batch medians/p95s: ${report.build536.batchStats.map((step) => `${step.name}: ${step.medianSeconds ?? 'unknown'}s/${step.p95Seconds ?? 'unknown'}s`).join('; ')}`,
+  `- Source / warm batches / release median and p95: ${report.build536.trend.sourceMedianSeconds ?? 'unknown'}/${report.build536.trend.sourceP95Seconds ?? 'unknown'}s; ${report.build536.trend.warmBatchMedianSeconds ?? 'unknown'}/${report.build536.trend.warmBatchP95Seconds ?? 'unknown'}s; ${report.build536.trend.releaseMedianSeconds ?? 'unknown'}/${report.build536.trend.releaseP95Seconds ?? 'unknown'}s`,
+  `- End-to-end SLA: ${report.build536.sla.state}; source budget ${report.build536.sla.sourceBudgetSeconds}s, warm-batch budget ${report.build536.sla.warmBatchesBudgetSeconds}s, total release budget ${report.build536.sla.releaseBudgetSeconds}s`,
+  '- Warm context is source-step order evidence, not a measured cache hit. No retries, gate waiver, causal speedup claim or production mutation.',
 ].join('\n');
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 console.log(summary);

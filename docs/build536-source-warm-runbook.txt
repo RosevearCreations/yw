@@ -1,0 +1,39 @@
+Yard Workers Build 536 — Source critical path, post-Chromium warm-context
+browser batches 17–22 and end-to-end release SLA stabilization
+
+Scope
+  - Source-checks retains all 55 original browser suites. Batches 17–22
+    collectively retain 51 spec files; four existing standalone suites remain.
+  - Batch 20's three original npm scripts are an immutable source-owned
+    execution manifest. The runner checks its SHA-256, exact script-to-spec
+    mappings, cardinality, order, duplicates and file existence before
+    launching one single-worker Playwright process. Any failure fails the job.
+  - The three independent browser lanes, source-checks, repository enforcement,
+    release evidence and release truth summary are all retained unmodified as
+    mandatory gates. No self-attested or synthetic production approval.
+
+Local deterministic acceptance
+  node scripts/build536-warm-batches-check.mjs
+  node scripts/build536-source-variance-check.mjs
+  node scripts/release-job-separation-check.mjs
+  npm run test:repo
+  npm run test:vercel-static-output
+
+Post-promotion evidence
+  - Read-only post-promotion audit reads six recent exact-main release runs,
+    original GitHub jobs and original per-step Actions timestamps.
+  - Each verified release must have all seven successful gates, a successful
+    pinned Chromium install preceding the six successful browser batches,
+    and consistent source/release timing. Missing, duplicate or out-of-order
+    evidence is excluded, never filled in with assumptions.
+  - The audit compares exact-main source-checks, six-batch total, non-batch
+    source time and full release time with the nearest distinct-SHA verified
+    release; it reports bounded median and p95 history.
+  - Diagnostics use 240-second source-checks, 160-second six-batch and
+    900-second whole-release budgets. Exceedance means review, never a waived
+    release gate, retry or owner approval.
+  - 'Warm context' means Chromium installation finished before the batches on
+    that same runner. It is not proof of a Chromium cache hit, a cold-versus-
+    warm benchmark, or a causally established performance improvement.
+
+No customer communications, production data mutation or device actions.
