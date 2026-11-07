@@ -1,0 +1,37 @@
+Yard Workers Build 535 — Browser Lane C and multi-release SLA acceptance
+
+Scope
+  - Browser lane C retains all 55 original test:browser scripts.
+  - The canonical workflow passes their original command list as an execution
+    manifest (YWI_LANE_C_COMMAND_MANIFEST); the runner validates its SHA-256,
+    55-entry cardinality, exact package script to spec mappings and file
+    existence. Invalid entries, omitted/duplicated suites, or changed mappings
+    stop the lane before any browser tests run.
+  - Five single-worker Playwright invocations replace 55 distinct startup
+    processes. Every original spec is included once. Any failing batch stops
+    with a nonzero status; all browser lanes and protected release jobs remain.
+  - Existing source static checks still see their real source-owned command
+    manifest; the new release gate tests prove it is actually consumed.
+
+Acceptance
+  node scripts/build535-lane-c-check.mjs
+  node scripts/build535-lane-c-timing-check.mjs
+  node scripts/release-job-separation-check.mjs
+  npm run test:repo
+  npm run test:vercel-static-output
+
+On CI
+  - PR: three independent browser lanes must succeed, followed by source-checks;
+    security and authentication verification remain separate required checks.
+  - main: all seven named required jobs must pass on the exact commit.
+  - The existing workflow_run audit, not a new release trigger, reads original
+    Actions jobs and step timestamps. No self-created attestations.
+  - Build 535 audit records Lane C execution, runner preparation, queue,
+    release total, median/p95 and the nearest different-SHA verified comparison.
+  - The 360s lane execution, 120s job queue and 900s release budgets are
+    diagnostic; an SLA exception does not waive security, browser or source
+    checks and does not approve a promotion.
+  - Runner and networking variance prevent causal attribution based solely on
+    observed before/after seconds. Never claim independent causal savings.
+
+No production/customer/device mutation, no CI gate waiver, no automatic retries.
