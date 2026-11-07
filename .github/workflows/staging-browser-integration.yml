@@ -525,6 +525,7 @@ jobs:
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
+      - run: npm run test:comms-source
       - run: npm run test:contrast
       - run: npm run test:navigation
       - run: npm run test:three-surface
