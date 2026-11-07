@@ -9,6 +9,7 @@ import { verifyCrossReleaseThroughput } from './build534-throughput-core.mjs';
 import { reviewLaneCRelease } from './build535-lane-c-timing-core.mjs';
 import { reviewSourceWarmVariance } from './build536-source-variance-core.mjs';
 import { reviewNonBrowserP95 } from './build537-nonbrowser-p95-core.mjs';
+import { reviewBuild538 } from './build538-runner-scheduling-core.mjs';
 
 const repository = 'RosevearCreations/yw';
 const sourceRunId = String(process.env.YWI_SOURCE_RUN_ID ?? '');
@@ -74,6 +75,7 @@ const report = {
   build535: reviewLaneCRelease(current, detailedHistory),
   build536: reviewSourceWarmVariance(current, detailedHistory),
   build537: reviewNonBrowserP95(current, detailedHistory, { exactCurrentMain }),
+  build538: reviewBuild538(current, detailedHistory, { exactCurrentMain }),
   history: history.map(({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates }) =>
     ({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates })),
   ownerAction: exactCurrentMain && current.status === 'VERIFIED_GREEN'
@@ -154,6 +156,16 @@ const summary = [
   `- Historical P95 source / warm batches / non-browser residual / release: ${report.build537.trend.sourceP95Seconds ?? 'unknown'}s / ${report.build537.trend.warmBatchP95Seconds ?? 'unknown'}s / ${report.build537.trend.nonBrowserResidualP95Seconds ?? 'unknown'}s / ${report.build537.trend.releaseP95Seconds ?? 'unknown'}s`,
   `- P95 exceptions (diagnostic HOLD only): ${report.build537.p95Breaches.map((item) => `${item.name}: +${item.overBudgetSeconds}s`).join('; ') || 'none'}`,
   '- Six-release historical P95 HOLD never overrides independently passing protected release gates. Runner overhead and observed changes are not causal proof.',
+  '### Build 538 — Runner scheduling, warm browser tail P95 and throughput guardrails',
+  `- Exact-main scheduling evidence: ${report.build538.state}; comparison: ${report.build538.comparisonState}; verified scheduling samples: ${report.build538.validSchedulingSamples}`,
+  `- Source runner handoff, setup and between-step gaps: ${report.build538.current?.handoffSeconds ?? 'unknown'}s / ${report.build538.current?.setupSeconds ?? 'unknown'}s / ${report.build538.current?.interStepGapSeconds ?? 'unknown'}s`,
+  `- Compared original run: ${report.build538.priorRunId ?? 'none'}; source / release / warm / non-browser differences: ${report.build538.differences.sourceSeconds ?? 'unknown'}s / ${report.build538.differences.releaseSeconds ?? 'unknown'}s / ${report.build538.differences.warmBatchesSeconds ?? 'unknown'}s / ${report.build538.differences.nonBrowserResidualSeconds ?? 'unknown'}s`,
+  `- Scheduling setup/handoff/gap differences: ${report.build538.differences.setupSeconds ?? 'unknown'}s / ${report.build538.differences.sourceHandoffSeconds ?? 'unknown'}s / ${report.build538.differences.interStepGapSeconds ?? 'unknown'}s`,
+  `- Dominant observed positive source segment: ${report.build538.dominantMeasuredRegression}; guardrail: ${report.build538.guardrailState}`,
+  `- Warm batch 17–22 differences and P95: ${report.build538.warmBatchAttribution.map((item) => `${item.name}: ${item.differenceSeconds ?? 'unknown'}s; P95=${item.historicalP95Seconds ?? 'unknown'}s`).join('; ')}`,
+  `- Historical source/warm/non-browser/release P95: ${report.build538.p95.sourceSeconds ?? 'unknown'}/${report.build538.p95.warmBatchesSeconds ?? 'unknown'}/${report.build538.p95.nonBrowserResidualSeconds ?? 'unknown'}/${report.build538.p95.releaseSeconds ?? 'unknown'}s; P95 certification: ${report.build538.sourceP95Certification}`,
+  `- Diagnostic regression exceptions: ${report.build538.regressions.map((item) => `${item.name}: +${item.observedRegressionSeconds}s (threshold ${item.budgetSeconds}s)`).join('; ') || 'none'}`,
+  '- Timing categories overlap and cannot establish causal runner/network failure. Warnings never waive a protected gate or authorize retry.',
 ].join('\n');
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 console.log(summary);

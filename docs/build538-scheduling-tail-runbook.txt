@@ -1,0 +1,38 @@
+Yard Workers Build 538 — Runner scheduling, warm browser tail and throughput
+
+Scope
+  - Adds source-owned tests for original GitHub Actions scheduling evidence,
+    six browser batch 17–22 P95 comparisons and regression exception triage.
+  - No browser suite is omitted, parallel-lane topology is unchanged, all
+    source-owned tests and every protected security/release gate remain.
+  - Read-only post-promotion audit draws the original exact-main source run,
+    runner jobs, six original browser batch steps and recent verified releases.
+  - Requires successful seven-gate evidence, bounded source job identity,
+    valid completed lane timestamps and successful source Chromium/npm setup.
+    Missing or contradictory evidence is HOLD, never imputed.
+
+Scheduling interpretation
+  - Source handoff = source runner start minus last completed browser lane.
+  - Setup = source runner start to completed npm install step.
+  - Between-step gap = positive gaps in original successful step timestamps.
+    Timestamps are second-granularity; observed gaps overlap other source
+    residual categories, and must not be asserted as CPU, queue or network cause.
+  - Measured source, warm-batch, non-browser and full-release changes use the
+    nearest different-SHA verified release. The six per-batch differences and
+    historical P95 are reported separately.
+
+Guardrails (diagnostic; never production authority)
+  - Alert when source regresses by >20s, release >30s, warm batches >15s,
+    non-browser residual >10s or source handoff >10s between verified runs.
+  - Keep six-release P95 certification from Build 537 separate. Missing
+    current or comparable evidence remains HOLD rather than guessed GREEN.
+  - Exceptions prompt root-cause review; no auto-retry, security bypass,
+    changed gate, deployment approval or production mutation.
+
+Acceptance
+  node scripts/build538-runner-scheduling-check.mjs
+  node scripts/release-job-separation-check.mjs
+  npm run test:repo
+  npm run test:vercel-static-output
+
+Use Actions post-promotion audit artifacts as authoritative timing evidence.

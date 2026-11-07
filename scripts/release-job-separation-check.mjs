@@ -146,6 +146,12 @@ add('build537-nonbrowser-source-contract-execution-equivalence',
   && source.includes('node scripts/build537-nonbrowser-p95-check.mjs')
   && source.includes('node scripts/exact-main-release-truth-summary-check.mjs'),
   'Eleven original CI contract verifiers run through the bounded fail-closed lane, with exact-main truth still independent.');
+add('build538-scheduling-guardrails-remain-read-only',
+  source.includes('node scripts/build538-runner-scheduling-check.mjs')
+  && (source.match(/run: node scripts\/build538-runner-scheduling-check\.mjs/g) ?? []).length === 1
+  && !lanes.includes('build538-runner-scheduling-check.mjs')
+  && releaseEvidence.includes('needs: source-checks'),
+  'Build 538 diagnoses original scheduling evidence inside source-checks and does not create, weaken or bypass a protected job.');
 
 add('build529-isolated-release-jobs-have-no-lane-guard',
   !repository.includes('Require all parallel browser lanes to pass')
