@@ -5,7 +5,7 @@
   "source_app_id": "yard-workers",
   "source_role": "business_shell",
   "repository": "RosevearCreations/yw",
-  "source_revision": "ql333-discovery-v1",
+  "source_revision": "028aee250857415b9b9035aaec50060757e377a5",
   "issuer": "yard-workers",
   "audience": "rosevear-master",
   "tenant_boundary": "platform_shell",
