@@ -27,6 +27,6 @@ for(const token of ['.owner518-readiness .yw518-grid','.owner518-readiness :is(a
  assert(css.includes(token),'Missing Build 518 style: '+token);
 assert((html.match(/b23=518/g)||[]).length===2,'Build 518 CSS/JS cache markers missing');
 assert(pkg.scripts['test:build518']&&pkg.scripts['test:browser:build518'],'Build 518 test scripts missing');
-assert(workflow.includes('npm run test:build518')&&workflow.includes('npm run test:browser:build518'),
+assert(workflow.includes('npm run test:build518')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 19'),
  'Build 518 source/browser tests must be in protected CI');
 console.log('Build 518 PASS: source-gated independent review, original-source evidence boundaries and management styling.');

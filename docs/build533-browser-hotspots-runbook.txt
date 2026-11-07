@@ -1,0 +1,38 @@
+YARD WORKERS — BUILD 533
+Browser regression hotspot optimization, runner variance and safe CI reduction
+
+Scope
+- The 30 Playwright spec files from original source-checks batches 17, 18,
+  and 19 (build495–build524) remain mandatory, in their original batch order.
+- One bounded Playwright process per 10-spec batch replaces 10 separate CLI
+  launches per batch (30 -> 3). Workers=1 preserves sequential execution
+  inside a batch, while the three independent required browser regression
+  lanes remain parallel and unchanged.
+- The runner checks every package script's exact spec mapping and file
+  presence before execution; unknown batch, drift, missing suite or a failed
+  Playwright test fails the whole original protected source-checks job.
+
+Independent CI evidence
+- Existing post-promotion workflow gathers six bounded historical main push
+  runs and their original required job timestamps (read-only Actions access).
+- Build 533 reports verified per-lane median, p95, range and suspicious
+  variance (diagnostic >90s p95-median spread, >=3 successful samples).
+- Batch 17/18/19 timing is compared to the newest different-SHA verified
+  original source run with all three named batch steps present and timed.
+- This is observational; runner variance, browser work and other external
+  causes are not isolated. Do not claim a causal or guaranteed improvement.
+
+Verification commands
+  node scripts/build533-browser-hotspots-check.mjs
+  node scripts/build533-runner-variance-check.mjs
+  node scripts/build533-browser-hotspots.mjs 17 --list
+  node scripts/build533-browser-hotspots.mjs 17
+
+Production promotion conditions
+- Normal review: PR to dev and protected dev->main PR, never force push.
+- Preserve browser lane a/b/c, source-checks, repository-enforcement,
+  release-source-evidence and release-truth-summary success at exact main SHA.
+- Verify current production Vercel deployment READY with matching git SHA,
+  live alias response, and post-promotion audit artifact.
+- Historical failed runs remain held evidence; do not retry, change owner
+  authorization, waive security gates or infer GREEN from this timing report.

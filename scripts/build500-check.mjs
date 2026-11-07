@@ -40,5 +40,5 @@ assert.equal(spawnSync(process.execPath,['--check','tests/browser/build500.spec.
 const scripts=JSON.parse(read('package.json')).scripts;
 assert.ok(scripts['test:build500']&&scripts['test:browser:build500']);
 const flow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(flow.includes('npm run test:build500')&&flow.includes('npm run test:browser:build500'));
+assert.ok(flow.includes('npm run test:build500')&&flow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 console.log('Build 500: owner receipt count change, copy-only priority follow-up, manual navigation retest summary PASS');

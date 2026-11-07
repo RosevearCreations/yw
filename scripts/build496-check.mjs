@@ -35,5 +35,5 @@ assert.equal(spawnSync(process.execPath,['--check',file],{encoding:'utf8'}).stat
 const pkg=JSON.parse(read('package.json'));
 assert.ok(pkg.scripts['test:build496']&&pkg.scripts['test:browser:build496']);
 const workflow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(workflow.includes('npm run test:build496')&&workflow.includes('npm run test:browser:build496'));
+assert.ok(workflow.includes('npm run test:build496')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 console.log('Build 496: owner/company device-local filters, unverified independent review intake, dashboard navigation PASS');

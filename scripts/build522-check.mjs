@@ -17,6 +17,6 @@ for(const token of ['.yw522-portability',':focus-visible','@media(max-width:600p
 assert(html.includes('/js/owner-management-portability-522.js?v=20261104b522')&&
   html.includes('/build522-portability.css?v=20261104b522'),'Build 522 assets not loaded');
 assert(pkg.scripts['test:build522']&&pkg.scripts['test:browser:build522'],'Build 522 test scripts missing');
-assert(wf.includes('npm run test:build522')&&wf.includes('npm run test:browser:build522'),
+assert(wf.includes('npm run test:build522')&&wf.includes('node scripts/build533-browser-hotspots.mjs 19'),
   'Protected staging workflow must run Build 522 source and browser checks');
 console.log('Build 522 PASS: validated portable display views, local recovery and manual navigation acceptance.');

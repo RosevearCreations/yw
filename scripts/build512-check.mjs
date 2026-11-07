@@ -27,6 +27,6 @@ assert(css.includes('.yw512-grid')&&css.includes('.owner512-disposition select:f
   css.includes('@media(max-width:850px){.yw512-grid'),'Responsive, keyboard-visible cards required');
 assert(html.match(/b17=512/g)?.length===2,'Build 512 JS and CSS cache markers required');
 assert(pkg.scripts['test:build512']&&pkg.scripts['test:browser:build512'],'Source and browser scripts required');
-assert(workflow.includes('npm run test:build512')&&workflow.includes('npm run test:browser:build512'),
+assert(workflow.includes('npm run test:build512')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Protected source/browser CI checks required');
 console.log('Build 512 PASS: proposed source disposition, before/after gap recheck, unsigned owner receipt readiness and CI gates.');

@@ -27,6 +27,6 @@ assert(css.includes('.yw509-grid')&&css.includes('.owner509-trace select:focus-v
 assert(html.match(/b14=509/g)?.length===2,'Build 509 must cache-bust JS and CSS');
 assert(pkg.scripts['test:build509']&&pkg.scripts['test:browser:build509'],
   'Build 509 source/browser scripts are required');
-assert(workflow.includes('npm run test:build509')&&workflow.includes('npm run test:browser:build509'),
+assert(workflow.includes('npm run test:build509')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Build 509 must pass protected source/browser gates');
 console.log('Build 509 PASS: evidence-classified cohort drift, scenario source trace, read-only reliability reconciliation and protected CI gates.');

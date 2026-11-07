@@ -42,5 +42,5 @@ assert.equal(spawnSync(process.execPath,['--check','tests/browser/build501.spec.
 const scripts=JSON.parse(read('package.json')).scripts;
 assert.ok(scripts['test:build501']&&scripts['test:browser:build501']);
 const flow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(flow.includes('npm run test:build501')&&flow.includes('npm run test:browser:build501'));
+assert.ok(flow.includes('npm run test:build501')&&flow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 console.log('Build 501: bounded receipt history, server scope recheck, local priority queue and distinct-card navigation PASS');

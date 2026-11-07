@@ -284,6 +284,8 @@ jobs:
       - run: node scripts/build530-ci-runtime-audit-check.mjs
       - run: node scripts/build531-ci-exceptions-check.mjs
       - run: node scripts/build532-ci-critical-path-check.mjs
+      - run: node scripts/build533-browser-hotspots-check.mjs
+      - run: node scripts/build533-runner-variance-check.mjs
       - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify
@@ -596,46 +598,13 @@ jobs:
       - run: npm run test:build526
       - name: Browser regression batch 17 (10 retained commands)
         shell: bash
-        run: |
-          set -euo pipefail
-          npm run test:browser:build495
-          npm run test:browser:build496
-          npm run test:browser:build497
-          npm run test:browser:build498
-          npm run test:browser:build499
-          npm run test:browser:build500
-          npm run test:browser:build501
-          npm run test:browser:build502
-          npm run test:browser:build503
-          npm run test:browser:build504
+        run: node scripts/build533-browser-hotspots.mjs 17
       - name: Browser regression batch 18 (10 retained commands)
         shell: bash
-        run: |
-          set -euo pipefail
-          npm run test:browser:build505
-          npm run test:browser:build506
-          npm run test:browser:build507
-          npm run test:browser:build508
-          npm run test:browser:build509
-          npm run test:browser:build510
-          npm run test:browser:build511
-          npm run test:browser:build512
-          npm run test:browser:build513
-          npm run test:browser:build514
+        run: node scripts/build533-browser-hotspots.mjs 18
       - name: Browser regression batch 19 (10 retained commands)
         shell: bash
-        run: |
-          set -euo pipefail
-          npm run test:browser:build515
-          npm run test:browser:build516
-          npm run test:browser:build517
-          npm run test:browser:build518
-          npm run test:browser:build519
-          npm run test:browser:build520
-          npm run test:browser:build521
-          npm run test:browser:build522
-          npm run test:browser:build523
-          npm run test:browser:build524
+        run: node scripts/build533-browser-hotspots.mjs 19
       - name: Browser regression batch 20 (3 retained commands)
         shell: bash
         run: |

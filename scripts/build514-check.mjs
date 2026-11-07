@@ -29,6 +29,6 @@ for(const marker of ['.yw514-grid','.yw514-list summary','.owner514-proof :is(se
   '@media(max-width:850px){.yw514-grid'])assert(css.includes(marker),`Missing Build 514 responsive/focus CSS: ${marker}`);
 assert(html.match(/b19=514/g)?.length===2,'Build 514 JS/CSS cache markers required');
 assert(pkg.scripts['test:build514']&&pkg.scripts['test:browser:build514'],'Build 514 source/browser scripts required');
-assert(workflow.includes('npm run test:build514')&&workflow.includes('npm run test:browser:build514'),
+assert(workflow.includes('npm run test:build514')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Protected Build 514 source and Playwright gates required');
 console.log('Build 514 PASS: original-field economic proof, gap closure conditions and owner receipt provenance remain read-only and unsigned.');

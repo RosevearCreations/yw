@@ -21,6 +21,6 @@ assert(html.includes('/js/owner-management-conflicts-523.js?v=20261104b523')&&
 assert(staticBuild.includes("'build523-conflicts.css'"),'Static build must publish the Build 523 stylesheet');
 assert(pkg.scripts['test:build523']&&pkg.scripts['test:browser:build523'],
   'Build 523 source and browser commands missing');
-assert(workflow.includes('npm run test:build523')&&workflow.includes('npm run test:browser:build523'),
+assert(workflow.includes('npm run test:build523')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 19'),
   'Protected GitHub staging workflow must execute both Build 523 checks');
 console.log('Build 523 PASS: guarded view conflict, local recovery and non-certifying accessibility follow-up.');

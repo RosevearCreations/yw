@@ -42,5 +42,5 @@ assert.equal(spawnSync(process.execPath,['--check','tests/browser/build499.spec.
 const scripts=JSON.parse(read('package.json')).scripts;
 assert.ok(scripts['test:build499']&&scripts['test:browser:build499']);
 const flow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(flow.includes('npm run test:build499')&&flow.includes('npm run test:browser:build499'));
+assert.ok(flow.includes('npm run test:build499')&&flow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 console.log('Build 499: recovered audit receipt review, session-only reviewer exception aging and navigation retest PASS');
