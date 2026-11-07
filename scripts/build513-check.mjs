@@ -27,6 +27,6 @@ assert(css.includes('.yw513-grid')&&css.includes('.owner513-followup select:focu
   css.includes('@media(max-width:850px){.yw513-grid'),'Responsive high-contrast cards required');
 assert(html.match(/b18=513/g)?.length===2,'Build 513 JS and CSS cache markers required');
 assert(pkg.scripts['test:build513']&&pkg.scripts['test:browser:build513'],'Source/browser scripts required');
-assert(workflow.includes('npm run test:build513')&&workflow.includes('npm run test:browser:build513'),
+assert(workflow.includes('npm run test:build513')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Protected source/browser CI checks required');
 console.log('Build 513 PASS: source outcome recheck, closure conditions, unsigned owner receipt follow-up and CI gates.');

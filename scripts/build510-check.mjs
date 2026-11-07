@@ -23,6 +23,6 @@ assert(css.includes('.yw510-grid')&&css.includes('.owner510-readiness select:foc
   css.includes('@media(max-width:850px){.yw510-grid'),'Accessible responsive review cards required');
 assert(html.match(/b15=510/g)?.length===2,'Both management assets must cache-bust Build 510');
 assert(pkg.scripts['test:build510']&&pkg.scripts['test:browser:build510'],'Source and browser scripts required');
-assert(workflow.includes('npm run test:build510')&&workflow.includes('npm run test:browser:build510'),
+assert(workflow.includes('npm run test:build510')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Protected source and browser CI gates required');
 console.log('Build 510 PASS: source confidence, capacity exception queue, owner follow-up readiness and protected CI gates.');

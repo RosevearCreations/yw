@@ -39,5 +39,5 @@ assert.equal(spawnSync(process.execPath,['--check','tests/browser/build503.spec.
 const scripts=JSON.parse(read('package.json')).scripts;
 assert.ok(scripts['test:build503']&&scripts['test:browser:build503']);
 const flow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(flow.includes('npm run test:build503')&&flow.includes('npm run test:browser:build503'));
+assert.ok(flow.includes('npm run test:build503')&&flow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 console.log('Build 503: comparison drill-down, selected exception resolution, high-contrast keyboard follow-up PASS');

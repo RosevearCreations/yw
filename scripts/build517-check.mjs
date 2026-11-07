@@ -40,6 +40,6 @@ for(const marker of [
 ])assert(css.includes(marker),`Missing Build 517 field-style/accessibility rule: ${marker}`);
 assert(html.match(/b22=517/g)?.length===2,'Build 517 JS/CSS release asset marker missing');
 assert(pkg.scripts['test:build517']&&pkg.scripts['test:browser:build517'],'Build 517 package test gates missing');
-assert(workflow.includes('npm run test:build517')&&workflow.includes('npm run test:browser:build517'),
+assert(workflow.includes('npm run test:build517')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 19'),
   'Build 517 source/browser tests must run in protected staging CI');
 console.log('Build 517 PASS: source-linked owner exception packets and accessible field-operations styling remain read-only.');

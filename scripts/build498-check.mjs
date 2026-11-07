@@ -43,5 +43,5 @@ assert.equal(spawnSync(process.execPath,['--check','tests/browser/build498.spec.
 const scripts=JSON.parse(read('package.json')).scripts;
 assert.ok(scripts['test:build498']&&scripts['test:browser:build498']);
 const flow=read('.github/workflows/staging-browser-integration.yml');
-assert.ok(flow.includes('npm run test:build498')&&flow.includes('npm run test:browser:build498'));
+assert.ok(flow.includes('npm run test:build498')&&flow.includes('node scripts/build533-browser-hotspots.mjs 17'));
 console.log('Build 498: server-verified recovered view, reviewer exception follow-up and manual navigation acceptance PASS');

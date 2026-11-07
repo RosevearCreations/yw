@@ -27,6 +27,6 @@ assert(css.includes('.yw508-grid')&&css.includes('.owner508-recheck button:focus
 assert(html.match(/b13=508/g)?.length===2,'Build 508 must cache-bust JS and CSS');
 assert(pkg.scripts['test:build508']&&pkg.scripts['test:browser:build508'],
   'Build 508 source and browser scripts required');
-assert(workflow.includes('npm run test:build508')&&workflow.includes('npm run test:browser:build508'),
+assert(workflow.includes('npm run test:build508')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 18'),
   'Both Build 508 gates required in protected CI');
 console.log('Build 508 PASS: session-only source comparisons, non-closure gap readback, Production-backed exception validation and protected gates.');

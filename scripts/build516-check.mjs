@@ -31,6 +31,6 @@ for(const marker of ['.yw516-grid','.yw516-queue summary','.owner516-continuity 
   '@media(max-width:850px){.yw516-grid'])assert(css.includes(marker),`Missing Build 516 responsive/high-contrast style: ${marker}`);
 assert(html.match(/b21=516/g)?.length===2,'Build 516 JS/CSS cache bust required');
 assert(pkg.scripts['test:build516']&&pkg.scripts['test:browser:build516'],'Source/browser package gates required');
-assert(workflow.includes('npm run test:build516')&&workflow.includes('npm run test:browser:build516'),
+assert(workflow.includes('npm run test:build516')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 19'),
   'Protected Build 516 source/browser CI gates required');
 console.log('Build 516 PASS: economic date trace, seasonal closure exceptions and source-time receipt age recheck remain read-only.');

@@ -4,6 +4,7 @@ import { writeFile, appendFile } from 'node:fs/promises';
 import { summarizeRun, summarizeTrend } from './build530-ci-runtime-audit-core.mjs';
 import { reviewCiEvidence } from './build531-ci-exceptions-core.mjs';
 import { reviewBuild532 } from './build532-ci-critical-path-core.mjs';
+import { reviewBuild533 } from './build533-runner-variance-core.mjs';
 
 const repository = 'RosevearCreations/yw';
 const sourceRunId = String(process.env.YWI_SOURCE_RUN_ID ?? '');
@@ -47,9 +48,12 @@ const currentRawJobs = await jobsFor(sourceRunId);
 const current = summarizeRun(run, currentRawJobs, { expectedSha: sourceSha });
 const recent = await github('actions/workflows/staging-browser-integration.yml/runs?branch=main&event=push&status=completed&per_page=6');
 const history = [];
+const detailedHistory = [];
 for (const entry of (recent.workflow_runs ?? []).slice(0, 6)) {
-  const jobs = Number(entry.id) === Number(sourceRunId) ? await jobsFor(sourceRunId) : await jobsFor(entry.id);
-  history.push(summarizeRun(entry, jobs));
+  const jobs = Number(entry.id) === Number(sourceRunId) ? currentRawJobs : await jobsFor(entry.id);
+  const sample = summarizeRun(entry, jobs);
+  history.push(sample);
+  detailedHistory.push({ sample, jobs });
 }
 const report = {
   schema: 'ywi.build530.ci-runtime-report.v1',
@@ -61,6 +65,7 @@ const report = {
   trend: summarizeTrend(history),
   build531: reviewCiEvidence(current, history, { exactCurrentMain }),
   build532: reviewBuild532(current, currentRawJobs, history),
+  build533: reviewBuild533(current, detailedHistory),
   history: history.map(({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates }) =>
     ({ runId, headSha, status, runConclusion, runSeconds, queueSeconds, laneOverlapSeconds, budget, failedOrMissingGates })),
   ownerAction: exactCurrentMain && current.status === 'VERIFIED_GREEN'
@@ -95,6 +100,13 @@ const summary = [
   `- Historical held runs: ${report.build532.historicalGateExceptions.length} (review original run/job evidence)`,
   `- Comparable verified run: ${report.build532.slaComparison.previousVerifiedRunId ?? 'none'}; measured runtime difference: ${report.build532.slaComparison.secondsDifference ?? 'unknown'}s`,
   '- A measured comparison is not independent proof of causal savings. No gate waiver, retry or deployment changes.',
+  '### Build 533 — Source browser hotspots and runner variance',
+  `- Verified runner samples: ${report.build533.runnerVariance.verifiedSampleCount}; state: ${report.build533.runnerVariance.state}`,
+  `- Lane medians / p95s: ${report.build533.runnerVariance.laneStats.map((lane) => `${lane.name}: ${lane.medianSeconds ?? 'unknown'}s / ${lane.p95Seconds ?? 'unknown'}s`).join('; ')}`,
+  `- Batch timing state: ${report.build533.hotspotTiming.state}; comparable run: ${report.build533.hotspotTiming.priorRunId ?? 'none'}`,
+  `- Retained Playwright specs: ${report.build533.hotspotTiming.retainedSuiteCount}; processes previously/current: ${report.build533.hotspotTiming.plannedPriorInvocations}/${report.build533.hotspotTiming.plannedCurrentInvocations}`,
+  `- Batch 17/18/19 observed differences: ${report.build533.hotspotTiming.batches.map((batch) => `${batch.name}: ${batch.observedDifferenceSeconds ?? 'unknown'}s`).join('; ')}`,
+  '- Runtime reductions are observations only, not independently proven causal savings or any authority to waive gates.',
 ].join('\n');
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
 console.log(summary);

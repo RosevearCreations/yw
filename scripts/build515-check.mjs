@@ -29,6 +29,6 @@ for(const marker of ['.yw515-grid','.yw515-queue summary','.owner515-reconcile :
   '@media(max-width:850px){.yw515-grid'])assert(css.includes(marker),`Missing responsive/high-contrast Build 515 styles: ${marker}`);
 assert(html.match(/b20=515/g)?.length===2,'Build 515 script and stylesheet cache bust required');
 assert(pkg.scripts['test:build515']&&pkg.scripts['test:browser:build515'],'Build 515 source/browser scripts required');
-assert(workflow.includes('npm run test:build515')&&workflow.includes('npm run test:browser:build515'),
+assert(workflow.includes('npm run test:build515')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 19'),
   'Build 515 must run in protected CI');
 console.log('Build 515 PASS: read-only economic source reconciliation, unsigned seasonal closure review and service-date receipt aging.');

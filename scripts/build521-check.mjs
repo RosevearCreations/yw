@@ -19,6 +19,6 @@ for(const token of ['.yw521-workspace','@media(max-width:600px)',':focus-visible
 assert(index.includes('/js/owner-management-workspace-521.js?v=20261104b521')&&
   index.includes('/build521-workspace.css?v=20261104b521'),'Build 521 assets not loaded');
 assert(pkg.scripts['test:build521']&&pkg.scripts['test:browser:build521'],'Build 521 scripts missing');
-assert(wf.includes('npm run test:build521')&&wf.includes('npm run test:browser:build521'),
+assert(wf.includes('npm run test:build521')&&wf.includes('node scripts/build533-browser-hotspots.mjs 19'),
   'Protected workflow must run Build 521 source and browser acceptance');
 console.log('Build 521 PASS: saved display navigation, source-safe drill-through and accessible workspace.');

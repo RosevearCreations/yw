@@ -8,6 +8,7 @@
  * evidence remains locked until branch protection is actually reported true.
  */
 import fs from 'node:fs';
+import { planHotspotBatch } from './build533-browser-hotspots.mjs';
 
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 const checks=[];
@@ -62,10 +63,23 @@ add('build529-required-source-gate-waits-and-fails-closed',
   && source.includes("run: test '\u0024{{ needs.browser-regression-lanes.result }}' = success"),
   'The existing required source-checks status must fail if any browser lane fails.');
 
-add('build529-browser-command-equivalence',
+let retainedHotspotSuites = 0;
+try {
+  for (const batch of ['17', '18', '19']) {
+    if ((source.match(new RegExp(`node scripts/build533-browser-hotspots\\.mjs ${batch}(?!\\d)`, 'g')) ?? []).length !== 1) {
+      throw new Error(`Missing or duplicate consolidated batch ${batch}`);
+    }
+    retainedHotspotSuites += planHotspotBatch(batch).suites.length;
+  }
+} catch (error) {
+  console.error(`Consolidated browser coverage cannot be authenticated: ${error.message}`);
+  retainedHotspotSuites = -1;
+}
+add('build529-533-browser-suite-equivalence',
   (lanes.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 155
-  && (source.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 55,
-  'All 210 browser commands remain accounted for across the lanes and guarded source tail.');
+  && (source.match(/(?:npm run test:browser|npx playwright test)/g) || []).length + retainedHotspotSuites === 55
+  && retainedHotspotSuites === 30,
+  'All 210 original browser suites remain accounted for: 155 isolated lane calls, 25 source calls, and 30 verified bundled specs.');
 
 add('build529-isolated-release-jobs-have-no-lane-guard',
   !repository.includes('Require all parallel browser lanes to pass')

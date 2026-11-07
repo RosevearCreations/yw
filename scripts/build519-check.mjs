@@ -31,6 +31,6 @@ for(const marker of ['.owner519-command .yw519-grid',
 }
 assert((html.match(/b24=519/g)||[]).length===2,'Build 519 release markers absent');
 assert(pkg.scripts['test:build519']&&pkg.scripts['test:browser:build519'],'Build 519 test scripts absent');
-assert(workflow.includes('npm run test:build519')&&workflow.includes('npm run test:browser:build519'),
+assert(workflow.includes('npm run test:build519')&&workflow.includes('node scripts/build533-browser-hotspots.mjs 19'),
  'Build 519 gates must run in protected CI');
 console.log('Build 519 PASS: management source-status overview, permission gates, read-only safeguards and accessible visual styling.');
