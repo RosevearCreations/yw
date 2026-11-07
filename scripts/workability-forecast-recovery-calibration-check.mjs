@@ -32,7 +32,7 @@ must(html,['admin-owner-management-command-ui.js?v=2026-10-11b380'],'asset');
 assert.equal(pkg.scripts['test:workability-forecast-recovery-calibration'],'node scripts/workability-forecast-recovery-calibration-check.mjs');
 assert.equal(pkg.scripts['test:browser:workability-forecast-recovery-calibration'],'playwright test --config=playwright.config.mjs tests/browser/workability-forecast-recovery-calibration.spec.mjs');
 must(workflow,['npm run test:workability-forecast-recovery-calibration',
-  'npm run test:browser:workability-forecast-recovery-calibration'],'CI');
+  'node scripts/build534-browser-tail.mjs 21'],'CI');
 
 const js=ts.transpileModule(block,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
 const calibrate=vm.runInNewContext(js+';buildWorkabilityForecastRecoveryCalibration;');

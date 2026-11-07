@@ -95,7 +95,7 @@ add('help-documents-release-cockpit', /Release &amp; Deployment Cockpit/.test(he
 add('source-command-wired', pkg.scripts?.['test:performance-budgets'] === 'node scripts/application-performance-budget-check.mjs');
 add('browser-command-wired', pkg.scripts?.['test:browser:performance-budgets'] === 'playwright test --config=playwright.config.mjs tests/browser/application-performance-budget.spec.mjs');
 add('workflow-source-gate-wired', /npm run test:performance-budgets/.test(workflow));
-add('workflow-browser-gate-wired', /npm run test:browser:performance-budgets/.test(workflow));
+add('workflow-browser-gate-wired', workflow.includes('node scripts/build534-browser-tail.mjs 21'));
 
 for (const check of checks) console.log(`${check.ok ? 'PASS' : 'FAIL'}  ${check.name}${check.detail ? ` — ${check.detail}` : ''}`);
 const failed = checks.filter((check) => !check.ok);
