@@ -1,0 +1,44 @@
+YARD WORKERS — BUILD 540 OWNER CI RELEASE SLO EVIDENCE
+====================================================
+
+Purpose
+-------
+The Management Command dashboard is a local, read-only review of imported
+original GitHub Actions post-promotion audit records. It does NOT run a live
+API, grant production release authority, automatically certify GREEN, or
+change any security gates. The original source remains GitHub Actions.
+
+How to use
+----------
+1. In https://github.com/RosevearCreations/yw/actions find the completed
+   'YWI post-promotion dev reconciliation' workflow for an exact-main push.
+2. In its 'Build 530–540 read-only CI throughput and recovery evidence' job,
+   inspect the original run ID, commit SHA, verified GREEN state, and evidence.
+3. Download that job's ywi-ci-runtime-audit-* artifact while it is available.
+   The artifact includes ci-runtime-audit.json, ci-slo-archive.json and
+   ci-slo-retention-receipt.json. GitHub Actions keeps this artifact for up to
+   30 days; it is NOT an indefinite external archive.
+4. In Yard Workers, sign in with an owner/management role, open the Management
+   Command panel and locate 'CI release SLOs & evidence history'. Import
+   ci-runtime-audit.json or ci-slo-archive.json. Import original additional
+   release audits to form a rolling window. 1 MB/file, 16 files/import and
+   120 distinct releases maximum.
+5. Review runner handoff, source-step gap, six-release P95, source/warm-browser
+   drift and repeated alert codes. Follow source Actions run links for review.
+   An alert repeated in the window is grouped and remains visible; it is NOT
+   suppressed or automatically resolved. Fewer than six verified historical
+   releases retain the HOLD/unknown state; never fabricate a complete cohort.
+6. Click 'Download owner evidence archive' to save the integrity-checked JSON
+   into an owner-controlled long-term archive. Maintain backups and separately
+   retain original GitHub artifact and receipt. Verify them against the source.
+
+Boundaries
+----------
+* Owner imports are locally schema-checked; they are not independently signed.
+* SHA-256 detects modified archive bytes; it is not proof of original issuer.
+* No credentials, automated privileged GitHub calls, browser persistence,
+  production mutations, gate removals, retries or releases are permitted.
+* If the exact source run is superseded, incomplete or unverified, evidence
+  must remain HOLD; an old imported report cannot certify current production.
+* Original source protections retain seven required gates; do not weaken them
+  to improve time-to-GREEN. An 'SLO meets budget' statement is observational.
