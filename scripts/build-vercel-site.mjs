@@ -20,6 +20,7 @@ const files = [
   'build525-retest.css',
   'build526-triage.css',
   'build540-ci-slo.css',
+  'build541-ci-custody.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',

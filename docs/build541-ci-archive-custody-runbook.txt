@@ -1,0 +1,52 @@
+YARD WORKERS BUILD 541 — OWNER ORIGINAL CI CUSTODY AND SLO ALERT REVIEW
+======================================================================
+
+Scope: management/owner read-only evidence review; no deployment authority.
+
+Obtain original evidence
+------------------------
+1. Open https://github.com/RosevearCreations/yw/actions and find the exact
+   successful `main` push workflow and dependent post-promotion workflow.
+2. Download its `ywi-ci-runtime-audit-*` artifact. Preserve the ZIP as the
+   original Actions package and separately retain the original run URL,
+   commit SHA, artifact ID, reported digest and authoritative expiry date.
+3. It contains four files:
+   - ci-runtime-audit.json
+   - ci-slo-archive.json
+   - ci-slo-retention-receipt.json
+   - ci-slo-custody-checkpoint.json
+4. Under Owner / Management Command, open "CI evidence custody & renewal".
+   Import all four files from the SAME original exact-main Actions artifact
+   and press "Cross-check four original files". Missing or conflicting bytes,
+   an incorrect run SHA, corrupt archive or unsafe release status fails closed.
+5. Save `ci-slo-archive.json` again to a second independently owner-controlled
+   device or storage location. Re-open that DIFFERENT file using "Read back
+   second copy". Equal SHA-256 bytes are necessary, but do not independently
+   prove a storage provider, original issuer or signer.
+6. Open the original GitHub Actions artifact listing to check the real expiry
+   date. GitHub was asked to retain the original package for only 30 days.
+   The dashboard shows an approximate date based on the audit timestamp;
+   exporting a new owner record does NOT extend GitHub's expiration.
+7. Only after physically checking that the second copy is separate, review
+   and tick the owner confirmation. Choose a follow-up for each observed
+   alert: acknowledged, investigating, or request closure review. Repeated
+   alerts stay visible; no owner action closes an original GitHub alert.
+8. Download the owner renewal JSON. Keep it with BOTH original source copies
+   and their GitHub source run links. Re-import later original bundles to
+   accumulate a rolling six-release alert review. This is a manually reviewed
+   portability receipt, NOT a digital owner signature or external archive.
+9. At a future owner review, import the same exact-run source bundle and use
+   "Verify and restore alert follow-up" with the saved owner review JSON;
+   original SHA and digest checks must match. Revisit all open alert states.
+
+What remains unverified
+-----------------------
+* Independent original-issuer cryptographic authentication, independent
+  archive/custodian storage proof, signed owner approval and a real external
+  second-device receipt remain HOLD until separate owner-provided proof.
+* Never claim current GREEN from a previously imported audit; current main
+  commit and seven original protected gate statuses must be checked at source.
+* Original browser lanes, source checks, repository enforcement, release
+  evidence and truth summary remain required; no automatic gate waiver,
+  privileged CI token, third-party message, customer operation or device
+  action is created by the dashboard.

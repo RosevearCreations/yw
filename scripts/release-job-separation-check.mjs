@@ -166,6 +166,13 @@ add('build540-owner-dashboard-retention-is-read-only',
   && !releaseEvidence.includes('build540-ci-slo-check.mjs')
   && releaseEvidence.includes('needs: source-checks'),
   'Build 540 checks owner-imported CI evidence and archive retention without changing the protected release gate topology.');
+add('build541-independent-owner-custody-review-is-read-only',
+  (source.match(/run: node scripts\/build541-ci-custody-check\.mjs/g) ?? []).length === 1
+  && !lanes.includes('build541-ci-custody-check.mjs')
+  && !repository.includes('build541-ci-custody-check.mjs')
+  && !releaseEvidence.includes('build541-ci-custody-check.mjs')
+  && releaseEvidence.includes('needs: source-checks'),
+  'Build 541 readback and owner alert review are diagnostic only; the seven required release jobs remain independent.');
 
 add('build529-isolated-release-jobs-have-no-lane-guard',
   !repository.includes('Require all parallel browser lanes to pass')

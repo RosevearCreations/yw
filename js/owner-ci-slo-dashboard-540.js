@@ -30,7 +30,7 @@
         <button id="yw540Clear" class="secondary" type="button" disabled>Clear this session</button>
         <a href="https://github.com/RosevearCreations/yw/actions/workflows/staging-browser-integration.yml" target="_blank" rel="noopener noreferrer">Original CI runs</a>
       </div>
-      <p id="yw540ImportHint" class="yw540-muted">Download <strong>ci-runtime-audit.json</strong> from the successful “Build 530–540” post-promotion Actions artifact, then import it here. Up to 16 JSON files per import, 1 MB each. Nothing is uploaded.</p>
+      <p id="yw540ImportHint" class="yw540-muted">Download <strong>ci-runtime-audit.json</strong> from the successful “Build 530–541” post-promotion Actions artifact, then import it here. Up to 16 JSON files per import, 1 MB each. Nothing is uploaded.</p>
       <p id="yw540Status" class="yw540-status" role="status" aria-live="polite" aria-atomic="true">No original audit imported. Current production health is not inferred.</p>
       <div class="yw540-metrics" id="yw540Metrics" aria-label="Latest imported CI metrics"></div>
       <div class="yw540-split">
