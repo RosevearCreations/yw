@@ -51,6 +51,11 @@ test('YW 548 supervisor compares private evidence on mobile without changing a c
   expect(await page.locator('.oc-closeout-photo-review').innerHTML()).toContain('Retake &lt;script&gt;.jpg');
   expect(await page.evaluate(()=>window.__photoCalls)).toEqual([{action:'supervisor_review',closeout_package_id:id}]);
   expect(await page.evaluate(()=>window.__decisions)).toEqual([]);
+  const overflow=await page.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,
+    offenders:[...document.querySelectorAll('body *')].filter((element)=>element.getBoundingClientRect().right>innerWidth+1)
+      .slice(0,12).map((element)=>({tag:element.tagName,className:String(element.className).slice(0,90),
+        right:Math.round(element.getBoundingClientRect().right),scrollWidth:element.scrollWidth,clientWidth:element.clientWidth}))}));
+  if (overflow.scrollWidth>overflow.width+1) console.log('YW548 mobile layout overflow diagnostic',JSON.stringify(overflow));
   await expect.poll(async()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
   await page.getByRole('button',{name:'Hide photo comparison'}).click();
   await expect(page.locator('.oc-closeout-photo-review')).toHaveCount(0);
