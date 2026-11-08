@@ -4043,6 +4043,73 @@ serve(async (req) => {
     }
 
 
+    // Rework uses the original supervisor HOLD, but lets the assigned crew append
+    // internal correction proof and send a staff-only review signal. It never
+    // changes a closeout decision or creates a customer notification.
+    if (action === 'work_order_rework_proof_submit' || action === 'work_order_rework_resubmit') {
+      requireRank(profile, 20, action);
+      const workOrderId = clean(body.work_order_id, 80);
+      if (!isUuid(workOrderId)) throw new HttpError(400, 'Valid work_order_id is required.');
+      const {data:closeout,error:closeoutError} = await supabase.from('work_order_closeout_packages')
+        .select('id,closeout_status,rejected_at').eq('work_order_id',workOrderId).maybeSingle();
+      if (closeoutError) throw closeoutError;
+      if (!closeout || !['rework_required','rejected'].includes(closeout.closeout_status) || !closeout.rejected_at)
+        throw new HttpError(409, 'A current supervisor rework request is required. Refresh before submitting.');
+      const {data:memberRows,error:memberError}=await supabase.from('crew_members')
+        .select('crew_id').eq('profile_id',profile.id);
+      if (memberError) throw memberError;
+      const memberIds=new Set((memberRows || []).map((m:any)=>String(m.crew_id)));
+      const {data:dispatchRows,error:dispatchError}=await supabase.from('dispatch_schedule_items')
+        .select('id,crew_id,lead_profile_id,assigned_supervisor_profile_id,assigned_crew_profile_ids,schedule_status')
+        .eq('work_order_id',workOrderId).limit(100);
+      if (dispatchError) throw dispatchError;
+      const assigned=(dispatchRows || []).some((d:any)=>{
+        if (['cancelled','superseded'].includes(d.schedule_status)) return false;
+        let profiles:any[]=[];
+        try { profiles=Array.isArray(d.assigned_crew_profile_ids)?d.assigned_crew_profile_ids:JSON.parse(d.assigned_crew_profile_ids || '[]'); } catch { profiles=[]; }
+        return d.lead_profile_id===profile.id || d.assigned_supervisor_profile_id===profile.id ||
+          memberIds.has(String(d.crew_id || '')) || profiles.some((p:any)=>String(typeof p==='object'?(p?.profile_id || p?.id):p)===profile.id);
+      });
+      if (!assigned) throw new HttpError(403,'Only crew assigned to this work order may submit rework corrections.');
+      if (action === 'work_order_rework_proof_submit') {
+        const notes=clean(body.staff_notes, 4000);
+        if (notes.length < 12) throw new HttpError(400,'Describe the correction in at least 12 characters.');
+        const result=await callRpc(supabase,'ywi_rpc_submit_work_order_execution_proof',{
+          p_work_order_id:workOrderId,p_actor_profile_id:profile.id,p_proof_type:'quality',
+          p_title:'Crew rework correction',p_staff_notes:notes,p_customer_visible:false,
+          p_asset_ids:[],p_metadata:{build:546,source:'mobile_rework',closeout_id:closeout.id}
+        });
+        await audit(supabase,{operation_action:action,operation_status:'submitted',entity_type:'work_order_execution_proof',entity_id:result.execution_proof_id,actor_profile_id:profile.id,request_payload:safeRequest(body),response_payload:result});
+        return Response.json({ok:true,proof:result,closeout_status:closeout.closeout_status},{headers:corsHeaders});
+      }
+      const proofId=clean(body.execution_proof_id,80);
+      if (!isUuid(proofId)) throw new HttpError(400,'A server-confirmed correction proof ID is required.');
+      const {data:proof,error:proofError}=await supabase.from('work_order_execution_proofs')
+        .select('id,proof_status,created_at,title').eq('id',proofId).eq('work_order_id',workOrderId)
+        .eq('captured_by_profile_id',profile.id).maybeSingle();
+      if (proofError) throw proofError;
+      if (!proof || proof.title!=='Crew rework correction' || !['submitted','approved'].includes(proof.proof_status) ||
+          !(Date.parse(proof.created_at)>Date.parse(closeout.rejected_at)))
+        throw new HttpError(409,'Provide a current, server-confirmed correction proof from this crew member.');
+      const note=clean(body.resubmission_note,1500);
+      if (note.length < 12) throw new HttpError(400,'Explain what the supervisor should recheck (at least 12 characters).');
+      const title='Crew rework corrections resubmitted';
+      const {data:existing,error:existingError}=await supabase.from('work_order_live_updates')
+        .select('id').eq('work_order_id',workOrderId).eq('author_profile_id',profile.id)
+        .eq('visibility','staff').eq('title',title).gte('created_at',closeout.rejected_at)
+        .ilike('message',`Correction proof ${proofId}%`).limit(1);
+      if (existingError) throw existingError;
+      if (existing?.length) return Response.json({ok:true,replayed:true,update_id:existing[0].id,closeout_status:closeout.closeout_status},{headers:corsHeaders});
+      const result=await callRpc(supabase,'ywi_rpc_create_work_order_live_update',{
+        p_work_order_id:workOrderId,p_actor_profile_id:profile.id,p_visibility:'staff',
+        p_update_type:'note',p_title:title,p_message:`Correction proof ${proofId}\n${note}`,
+        p_asset_ids:[],p_customer_notification_requested:false,
+        p_metadata:{build:546,source:'mobile_rework_resubmission',correction_proof_id:proofId,closeout_id:closeout.id}
+      });
+      await audit(supabase,{operation_action:action,operation_status:'submitted_for_supervisor',entity_type:'work_order_live_update',entity_id:result.live_update_id,actor_profile_id:profile.id,request_payload:safeRequest(body),response_payload:result});
+      return Response.json({ok:true,update_id:result.live_update_id,closeout_status:closeout.closeout_status},{headers:corsHeaders});
+    }
+
     if (action === 'work_order_execution_proof_submit') {
       requireRank(profile, 20, action);
       const workOrderId = clean(body.work_order_id, 80);
