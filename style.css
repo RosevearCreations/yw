@@ -3301,6 +3301,17 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 .operations-cockpit .oc-closeout-photo-grid figcaption span,.operations-cockpit .oc-closeout-photo-empty{color:var(--oc-text-muted,#b2bfd0)}
 .operations-cockpit .oc-closeout-photo-decision{display:grid;gap:8px;padding:12px;border-left:3px solid #fbbf24;background:rgba(251,191,36,.08);border-radius:8px}
 .operations-cockpit .oc-closeout-photo-decision small{color:var(--oc-text-muted,#b2bfd0)}
+/* YW 549: compact, accessible read-only decision audit and crew receipt. */
+.operations-cockpit .oc-closeout-history{display:grid;gap:10px;min-width:0;max-width:100%;box-sizing:border-box;margin:12px 0;padding:14px;border:1px solid rgba(52,211,153,.45);border-radius:12px;background:rgba(9,30,35,.9);overflow-wrap:anywhere}
+.operations-cockpit .oc-closeout-history>header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.operations-cockpit .oc-closeout-history p{margin:0;line-height:1.5}
+.operations-cockpit .oc-closeout-history-events{list-style:decimal;display:grid;gap:10px;margin:0;padding-left:25px;max-height:390px;overflow:auto}
+.operations-cockpit .oc-closeout-history-events li{min-width:0;padding:10px;border:1px solid rgba(52,211,153,.28);border-radius:10px;background:rgba(2,15,24,.6)}
+.operations-cockpit .oc-closeout-history-events strong,.operations-cockpit .oc-closeout-history-events time{display:block}
+.operations-cockpit .oc-closeout-history-events time,.operations-cockpit .oc-closeout-history-events small{font-size:.78rem;color:var(--oc-text-muted,#b2bfd0)}
+.mobile-crew-v2-rework .mobile-crew-v2-rework-ack{display:grid;gap:8px;margin-top:10px;padding:12px;border:1px solid rgba(52,211,153,.5);border-radius:10px;background:rgba(5,42,39,.22);overflow-wrap:anywhere}
+.mobile-crew-v2-rework .mobile-crew-v2-rework-ack p{margin:0;white-space:pre-wrap}
+.mobile-crew-v2-rework .mobile-crew-v2-rework-ack button{min-height:44px}
 @media(max-width:660px){.operations-cockpit .oc-closeout-photo-pair{grid-template-columns:1fr}.operations-cockpit .oc-closeout-photo-grid img{height:210px}}
 @media(max-width:660px){.operations-cockpit.admin-panel-block{min-width:0;width:min(100%,100vw);max-width:100vw;box-sizing:border-box;overflow-x:clip}}
 @media(max-width:760px){.operations-cockpit .oc-closeout-review-controls{grid-template-columns:1fr}.operations-cockpit .oc-closeout-review-controls output{padding:0}.operations-cockpit .oc-closeout-review-badge{display:grid}}

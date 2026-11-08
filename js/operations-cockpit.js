@@ -21,6 +21,8 @@
   let closeoutReworkOpenId = '';
   let closeoutPhotoOpenId = '';
   let closeoutPhotoReview = null;
+  let closeoutHistoryOpenId = '';
+  let closeoutHistory = null;
 
   const actionCapability = {
     'payment-approve':'payment_action_decision', 'payment-reject':'payment_action_decision', 'payment-post':'payment_action_decision',
@@ -33,7 +35,7 @@
     'job-update-retract':'work_order_live_update_retract',
     'execution-proof-approve':'work_order_execution_proof_decision', 'execution-proof-reject':'work_order_execution_proof_decision',
     'customer-notification-retry':'customer_notification_retry',
-    'closeout-approve':'work_order_closeout_decision', 'closeout-reject':'work_order_closeout_decision', 'closeout-rework':'work_order_closeout_decision', 'closeout-invoice':'work_order_closeout_decision', 'closeout-photo-review':'work_order_closeout_decision',
+    'closeout-approve':'work_order_closeout_decision', 'closeout-reject':'work_order_closeout_decision', 'closeout-rework':'work_order_closeout_decision', 'closeout-invoice':'work_order_closeout_decision', 'closeout-photo-review':'work_order_closeout_decision', 'closeout-history':'work_order_closeout_decision',
     'webhook-ack':'stripe_webhook_alert_decision', 'webhook-resolve':'stripe_webhook_alert_decision',
     'signal-review':'content_signal_decision', 'signal-actioned':'content_signal_decision',
     'release-readiness-capture':'release_readiness_snapshot',
@@ -136,6 +138,8 @@
       // Signed image links and prior decisions must not survive a fresh queue snapshot.
       closeoutPhotoOpenId = '';
       closeoutPhotoReview = null;
+      closeoutHistoryOpenId = '';
+      closeoutHistory = null;
       renderQueues();
       hydrateBankSelects();
       hydrateArApplicationSelects();
@@ -403,6 +407,23 @@
       : 'No confirmed crew resubmission signal accompanies this proof. A photo or draft never clears the supervisor rework HOLD.';
     return `<section class="oc-closeout-photo-review" aria-label="Private correction photo comparison"><header><strong>Private supervisor evidence review</strong><span class="oc-badge">Links expire after five minutes</span></header><p>Compare earlier visit proof with the latest crew correction. These are staff-only images, never a customer gallery or automatic approval.</p><div class="oc-closeout-photo-pair">${renderPhotoGroup(baseline,'Earlier visit evidence','No earlier proof photos are linked to this work order. Use the original execution-proof queue.')}${renderPhotoGroup(corrections,'Latest correction evidence',proof?'The latest correction proof has no linked private photos.':'No crew correction proof is available for this closeout.')}</div><div class="oc-closeout-photo-decision"><strong>Decision clarity · ${esc(current.replaceAll('_',' '))}</strong><p>${proof?`Correction proof is <b>${esc(proof.status)}</b>, captured ${esc(when(proof.created_at))}.`:'No correction proof is recorded.'} ${esc(decisionText)}</p>${proof?.staff_notes?`<p><strong>Crew correction notes:</strong> ${esc(proof.staff_notes)}</p>`:''}<p>${corrections.length?'Review whether the photos actually show the requested correction.':'Photos are optional; absence alone does not mean the work was not corrected.'} Only the server-controlled approved-proof and closeout rules authorize approval. Customer signoff and invoice readiness remain separate.</p><small>No customer messages, approval or invoice actions are sent by viewing these images.</small></div></section>`;
   }
+  function renderCloseoutReworkHistory(row) {
+    if (closeoutHistoryOpenId!==String(row.id)) return '';
+    if (!closeoutHistory || closeoutHistory.id!==String(row.id))
+      return '<section class="oc-closeout-history" role="status">Loading original supervisor and crew records…</section>';
+    if (closeoutHistory.error)
+      return `<section class="oc-closeout-history" role="alert"><strong>Rework history unavailable</strong><p>${esc(closeoutHistory.error)}</p><small>No decision or acknowledgement changed.</small></section>`;
+    const result=closeoutHistory.result||{};
+    const events=Array.isArray(result.events)?result.events:[];
+    const current=result.closeout||{};
+    const acks=Array.isArray(result.current_acknowledgements)?result.current_acknowledgements:[];
+    const receiptCount=new Set(acks.map((item)=>String(item.actor_id))).size;
+    return `<section class="oc-closeout-history" aria-label="Supervisor rework history timeline"><header><strong>Staff-only rework decision history</strong><span class="oc-badge">${events.length} recorded events</span></header>`+
+      `<p><strong>Current closeout:</strong> ${esc(String(current.status||row.closeout_status||'unknown').replaceAll('_',' '))}. ${receiptCount} individual crew member acknowledgement${receiptCount===1?'':'s'} for the current rejection. Acknowledgement is not acceptance, proof approval, or job completion.</p>`+
+      (current.rejection_reason?`<p><strong>Latest supervisor instructions:</strong> ${esc(current.rejection_reason)}</p>`:'')+
+      (events.length?`<ol class="oc-closeout-history-events">${events.map((event)=>`<li data-rework-event="${esc(event.type||'unknown')}"><strong>${esc(event.title||'Recorded event')}</strong><time>${esc(when(event.at))}</time>${event.detail?`<p>${esc(event.detail)}</p>`:''}<small>Source record ${esc(String(event.id||'').slice(0,8))}</small></li>`).join('')}</ol>`:'<p>No original decision or correction audit entries were returned. This does not prove that no earlier activity occurred.</p>')+
+      '<small>History is bounded to recent source records and may omit older entries. The original closeout RPC remains the only supervisor decision authority. No customer message, invoice release or crew assignment occurs here.</small></section>';
+  }
   function renderCloseoutQueue() {
     const wrap = byId('oc_closeout_queue'); if (!wrap) return;
     const rows = Array.isArray(queues.closeouts) ? queues.closeouts : [];
@@ -425,6 +446,7 @@
       if (['submitted','rework_required','rejected'].includes(row.closeout_status)) {
         actions.push(button(closeoutPhotoOpenId===String(row.id)?'Hide photo comparison':'Compare correction photos','closeout-photo-review',row.id,'',true));
       }
+      actions.push(button(closeoutHistoryOpenId===String(row.id)?'Hide rework history':'View rework history','closeout-history',row.id,'',true));
       if (row.closeout_status === 'submitted') {
         if (!checks.some((item) => item.kind === 'block')) actions.push(button('Approve closeout','closeout-approve',row.id));
         actions.push(button(isOpen ? 'Close rework guidance' : 'Guide crew rework','closeout-rework',row.id,'',true));
@@ -435,7 +457,7 @@
       }
       const reworkForm = isOpen ? `<form class="oc-closeout-rework-form" data-oc-closeout-rework-form="${esc(row.id)}" aria-label="Crew rework instructions for ${esc(row.work_order_number || 'work order')}"><strong>Send a specific correction request to the official closeout record</strong><p>Supervisor-only decision note. It does not assign a crew, send a message or change a schedule. Crew should correct the visit evidence and submit an updated closeout.</p><label>Exception category<select name="issue_category" required><option value="">Choose the main issue</option><option value="missing_proof">Missing or unapproved proof</option><option value="quality">Quality or scope correction</option><option value="documentation">Visit notes / documentation</option><option value="customer_request">Customer-requested correction</option><option value="other">Other field correction</option></select></label><label>Clear crew correction instructions<textarea name="crew_instructions" required minlength="12" maxlength="1000" placeholder="Describe what to check, correct and resubmit. Do not include access codes or private customer data."></textarea></label><div class="oc-closeout-rework-actions"><button type="submit" data-oc-permission="work_order_closeout_decision">Record rework decision</button><button type="button" class="secondary" data-oc-rework-cancel="${esc(row.id)}">Cancel</button></div></form>` : '';
       const priorRework = (lane === 'rework' && (row.rejection_reason || row.customer_change_request_note)) ? `<section class="oc-closeout-rework-history"><strong>Existing crew rework / rejection guidance</strong><p>${esc(row.rejection_reason || row.customer_change_request_note)}</p><small>Recorded on the official closeout. Reviewer identity is not available in this queue. Crew should correct the record and resubmit; this display does not notify them.</small></section>` : '';
-      return `<article class="oc-queue-card oc-closeout-card" data-oc-closeout-lane="${esc(lane)}"><header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.client_name || 'Client')} · ${esc(row.cost_status || 'cost status pending')}</small></div><span class="${statusClass(row.closeout_status)}">${esc(String(row.closeout_status || 'unknown').replaceAll('_',' '))}</span></header><div class="oc-closeout-review-badge"><strong>${esc(lane.replaceAll('_',' '))}</strong><small>${esc(row.submitted_by_name || 'Submitter not returned')} · ${esc(when(row.submitted_at || row.created_at))}</small></div><dl><div><dt>Signoff</dt><dd>${esc(String(row.customer_signoff_status || 'not requested').replaceAll('_',' '))}</dd></div><div><dt>Invoice readiness</dt><dd>${esc(String(row.invoice_readiness_status || 'blocked').replaceAll('_',' '))}</dd></div><div><dt>Review / maintenance</dt><dd>${esc(String(row.review_request_status || 'not requested').replaceAll('_',' '))} · ${esc(row.maintenance_followup_due_at || 'no reminder')}</dd></div><div><dt>Proof / gallery</dt><dd>${row.approved_proof_count == null ? 'unknown' : Number(row.approved_proof_count)} approved proof · ${row.before_count == null ? '?' : Number(row.before_count)} before / ${row.after_count == null ? '?' : Number(row.after_count)} after</dd></div><div><dt>Internal margin</dt><dd>${money(row.margin_amount)} · ${Number(row.margin_percent || 0).toFixed(1)}%</dd></div></dl><p class="oc-closeout-summary">${esc(short(row.customer_summary || row.closeout_message || 'Closeout summary pending.', 260))}</p><div class="oc-closeout-review-checks" aria-label="Supervisor review prompts">${checks.map((item) => `<p data-review-kind="${esc(item.kind)}">${esc(item.note)}</p>`).join('') || '<p>No extra review prompts returned; supervisor must still inspect the original record.</p>'}</div><small>${esc(row.closeout_message || 'Closeout is awaiting supervisor review.')}</small>${priorRework}${buttons(actions)}${renderCloseoutPhotoReview(row)}${reworkForm}</article>`;
+      return `<article class="oc-queue-card oc-closeout-card" data-oc-closeout-lane="${esc(lane)}"><header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.client_name || 'Client')} · ${esc(row.cost_status || 'cost status pending')}</small></div><span class="${statusClass(row.closeout_status)}">${esc(String(row.closeout_status || 'unknown').replaceAll('_',' '))}</span></header><div class="oc-closeout-review-badge"><strong>${esc(lane.replaceAll('_',' '))}</strong><small>${esc(row.submitted_by_name || 'Submitter not returned')} · ${esc(when(row.submitted_at || row.created_at))}</small></div><dl><div><dt>Signoff</dt><dd>${esc(String(row.customer_signoff_status || 'not requested').replaceAll('_',' '))}</dd></div><div><dt>Invoice readiness</dt><dd>${esc(String(row.invoice_readiness_status || 'blocked').replaceAll('_',' '))}</dd></div><div><dt>Review / maintenance</dt><dd>${esc(String(row.review_request_status || 'not requested').replaceAll('_',' '))} · ${esc(row.maintenance_followup_due_at || 'no reminder')}</dd></div><div><dt>Proof / gallery</dt><dd>${row.approved_proof_count == null ? 'unknown' : Number(row.approved_proof_count)} approved proof · ${row.before_count == null ? '?' : Number(row.before_count)} before / ${row.after_count == null ? '?' : Number(row.after_count)} after</dd></div><div><dt>Internal margin</dt><dd>${money(row.margin_amount)} · ${Number(row.margin_percent || 0).toFixed(1)}%</dd></div></dl><p class="oc-closeout-summary">${esc(short(row.customer_summary || row.closeout_message || 'Closeout summary pending.', 260))}</p><div class="oc-closeout-review-checks" aria-label="Supervisor review prompts">${checks.map((item) => `<p data-review-kind="${esc(item.kind)}">${esc(item.note)}</p>`).join('') || '<p>No extra review prompts returned; supervisor must still inspect the original record.</p>'}</div><small>${esc(row.closeout_message || 'Closeout is awaiting supervisor review.')}</small>${priorRework}${buttons(actions)}${renderCloseoutPhotoReview(row)}${renderCloseoutReworkHistory(row)}${reworkForm}</article>`;
     }).join('') : emptyQueue(rows.length ? 'No closeouts match these filters' : 'No closeout packages yet', rows.length ? 'Change the status or search filters to review another package.' : 'Create a supervisor closeout after approved proof is available. Customer signoff, invoice readiness, review request, and maintenance follow-up will appear here.');
   }
 
@@ -1552,6 +1574,27 @@
   async function handleRowAction(buttonEl) {
     const action = buttonEl.dataset.ocAction; const id = buttonEl.dataset.id;
     if (!action || !id || buttonEl.disabled) return;
+    if (action==='closeout-history') {
+      if (capabilityFor('work_order_closeout_decision')?.permitted!==true) {
+        status('Supervisor Jobs approval permission is required to view rework history.',true); return;
+      }
+      if (closeoutHistoryOpenId===id) {
+        closeoutHistoryOpenId='';closeoutHistory=null;renderCloseoutQueue();return;
+      }
+      closeoutHistoryOpenId=id;closeoutHistory=null;renderCloseoutQueue();
+      try {
+        if (!window.YWIAPI?.mobileReworkPhoto) throw new Error('Private history service is unavailable.');
+        const result=await window.YWIAPI.mobileReworkPhoto({action:'supervisor_history',closeout_package_id:id});
+        if (closeoutHistoryOpenId!==id) return;
+        if (result?.staff_only!==true || result.closeout?.id!==id || !Array.isArray(result.events))
+          throw new Error('Source-backed history could not be verified.');
+        closeoutHistory={id,result};
+      } catch(error) {
+        if (closeoutHistoryOpenId!==id) return;
+        closeoutHistory={id,error:error?.message||'The history could not be loaded.'};
+      }
+      renderCloseoutQueue();return;
+    }
     if (action === 'closeout-photo-review') {
       if (capabilityFor('work_order_closeout_decision')?.permitted !== true) {
         status('Supervisor Jobs approval permission is required to view private correction evidence.',true); return;
