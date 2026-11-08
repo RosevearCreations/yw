@@ -279,3 +279,72 @@ test('YW 544 allows explicitly confirmed closeout only through the original serv
   expect(result.invoice_ready_requested).toBe(false);
   expect(result.review_request_requested).toBe(false);
 });
+
+for (const width of [390,430]) {
+  test(`YW 546 mobile rework inbox records own proof and resubmits only for supervisor at ${width}px`,async({page})=>{
+    await boot(page,width);
+    await page.evaluate(async()=>{
+      const payload=structuredClone(await window.YWIAPI.fetchMobileCrewContext());
+      const row=payload.my_route[0];
+      row.closeout={id:'b1111111-1111-4111-8111-111111111111',closeout_status:'rework_required',rejected_at:'2026-11-08T10:00:00Z',rejection_reason:'Correct <script>alert(1)</script> east fence section.'};
+      row.evidence={proof_count:0,correction_proofs:[]};
+      payload.my_jobs=[row];
+      window.YWIAPI.fetchMobileCrewContext=async()=>payload;
+      window.YWIAPI.manageOperations=async(body)=>{
+        window.__opsCalls.push(body);
+        if(body.action==='work_order_rework_proof_submit'){
+          row.evidence.correction_proofs=[{id:'c1111111-1111-4111-8111-111111111111',created_at:'2026-11-08T12:00:00Z',proof_status:'submitted'}];
+          return {ok:true,proof:{execution_proof_id:'c1111111-1111-4111-8111-111111111111'}};
+        }
+        if(body.action==='work_order_rework_resubmit') return {ok:true,update_id:'d1111111-1111-4111-8111-111111111111',closeout_status:'rework_required'};
+        return {ok:true};
+      };
+      await window.YWIMobileToday.loadMobileCrewContext(true);
+    });
+    await page.locator('[data-crew-tab="rework"]').click();
+    await expect(page.locator('[data-crew-match-count]')).toHaveText('1 assigned rework job(s) shown');
+    await expect(page.locator('.mobile-crew-v2-rework')).toContainText('Correct <script>alert(1)</script> east fence section.');
+    expect(await page.locator('.mobile-crew-v2-rework script').count()).toBe(0);
+    await expect(page.locator('[data-crew-action="rework_resubmit"]')).toBeDisabled();
+    page.on('dialog',async(dialog)=>{
+      if(dialog.type()==='prompt') await dialog.accept('The east fence panel is repaired and secured.');
+      else if(dialog.type()==='confirm') await dialog.accept();
+    });
+    await page.locator('[data-crew-action="rework_proof"]').click();
+    await expect.poll(()=>page.evaluate(()=>window.__opsCalls.length)).toBe(1);
+    expect(await page.evaluate(()=>window.__opsCalls[0].action)).toBe('work_order_rework_proof_submit');
+    await expect(page.locator('[data-crew-action="rework_resubmit"]')).toBeEnabled();
+    await page.locator('[data-crew-action="rework_resubmit"]').click();
+    await expect.poll(()=>page.evaluate(()=>window.__opsCalls.length)).toBe(2);
+    const resubmit=await page.evaluate(()=>window.__opsCalls[1]);
+    expect(resubmit.action).toBe('work_order_rework_resubmit');
+    expect(resubmit.execution_proof_id).toBe('c1111111-1111-4111-8111-111111111111');
+    await expect(page.locator('[data-crew-save-state]')).toContainText('Closeout remains on rework HOLD');
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+}
+
+test('YW 546 denied/offline rework actions and unassigned inbox have no write path',async({page})=>{
+  await boot(page,390);
+  await page.evaluate(async()=>{
+    const payload=structuredClone(await window.YWIAPI.fetchMobileCrewContext());
+    payload.my_route[0].closeout={closeout_status:'rework_required',rejected_at:'2026-11-08T10:00:00Z',rejection_reason:'Recheck gate hinge.'};
+    payload.my_jobs=payload.my_route;
+    payload.capabilities.execution_proof=false;
+    window.YWIAPI.fetchMobileCrewContext=async()=>payload;
+    await window.YWIMobileToday.loadMobileCrewContext(true);
+  });
+  await page.locator('[data-crew-tab="rework"]').click();
+  await expect(page.locator('[data-crew-action="rework_proof"]')).toBeDisabled();
+  await page.evaluate(()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});window.dispatchEvent(new Event('offline'));});
+  await expect(page.locator('[data-crew-action="rework_resubmit"]')).toBeDisabled();
+  expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
+  await page.evaluate(async()=>{
+    Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>true});
+    window.YWIAPI.fetchMobileCrewContext=async()=>({ok:true,profile:{id:'new-crew',role:'site_leader'},capabilities:{execution_proof:true},my_route:[],my_jobs:[]});
+    await window.YWIMobileToday.loadMobileCrewContext(true);
+  });
+  await expect(page.locator('.mobile-crew-v2-card')).toHaveCount(0);
+  expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
+});

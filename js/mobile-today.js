@@ -340,6 +340,7 @@
       .mobile-crew-v2-finder{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:12px 0}.mobile-crew-v2-finder label{flex:1 1 210px;min-width:0;display:grid;gap:5px;font-weight:650}.mobile-crew-v2-finder input{width:100%;max-width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.45);background:var(--surface,#111827);color:var(--text,#f8fafc);font:inherit}.mobile-crew-v2-finder .mobile-crew-v2-cautions{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(148,163,184,.4);border-radius:10px;font-weight:650}.mobile-crew-v2-cautions input{width:18px;height:18px;min-height:18px;accent-color:#d4af37}.mobile-crew-v2-count{margin:4px 0 10px;color:var(--text-soft,#cbd5e1)}
       .mobile-crew-v2-details{margin:12px 0;border:1px solid rgba(148,163,184,.28);border-radius:12px;overflow:hidden}.mobile-crew-v2-details summary{cursor:pointer;min-height:44px;padding:11px 12px;font-weight:700;background:rgba(148,163,184,.08)}.mobile-crew-v2-details summary:focus-visible{outline:3px solid #d4af37;outline-offset:-3px}.mobile-crew-v2-details[open] summary{border-bottom:1px solid rgba(148,163,184,.25)}.mobile-crew-v2-detail-body{padding:12px}.mobile-crew-v2-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 12px}.mobile-crew-v2-facts div{min-width:0;padding:8px;border-radius:9px;background:rgba(148,163,184,.07)}.mobile-crew-v2-facts dt{font-size:.78rem;color:var(--text-soft,#cbd5e1)}.mobile-crew-v2-facts dd{margin:2px 0 0;font-weight:650;overflow-wrap:anywhere}.mobile-crew-v2-prep{margin:0;padding:0;border:0;min-width:0}.mobile-crew-v2-prep legend{font-weight:750}.mobile-crew-v2-prep label{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:9px 0;line-height:1.35}.mobile-crew-v2-prep input{width:20px;height:20px;flex:none;accent-color:#d4af37}.mobile-crew-v2-prep-note{margin:8px 0 0;color:var(--text-soft,#cbd5e1);font-size:.85rem;line-height:1.5}@media(max-width:520px){.mobile-crew-v2-facts{grid-template-columns:1fr}}
       .mobile-crew-v2-closeout{margin:12px 0;border:1px solid rgba(212,175,55,.4);border-radius:12px;overflow:hidden}.mobile-crew-v2-closeout summary{cursor:pointer;min-height:44px;padding:11px 12px;font-weight:750;background:rgba(212,175,55,.09)}.mobile-crew-v2-closeout summary:focus-visible{outline:3px solid #d4af37;outline-offset:-3px}.mobile-crew-v2-closeout-list{display:grid;gap:10px;list-style:none;margin:0;padding:12px}.mobile-crew-v2-closeout-item{min-width:0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px;border:1px solid rgba(148,163,184,.22);border-radius:10px;background:rgba(148,163,184,.06)}.mobile-crew-v2-closeout-item>div{flex:1 1 180px;min-width:0}.mobile-crew-v2-closeout-item strong,.mobile-crew-v2-closeout-item small{display:block;line-height:1.4}.mobile-crew-v2-closeout-item small{margin-top:3px;color:var(--text-soft,#cbd5e1)}.mobile-crew-v2-closeout-item button{min-height:44px}.mobile-crew-v2-closeout-tag{font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.mobile-crew-v2-closeout-item[data-closeout-kind="attention"] .mobile-crew-v2-closeout-tag{color:#ffd4d4}.mobile-crew-v2-closeout-item[data-closeout-kind="confirmed"] .mobile-crew-v2-closeout-tag{color:#d7ffe9}.mobile-crew-v2-closeout-note{margin:0;padding:0 12px 12px;color:var(--text-soft,#cbd5e1);font-size:.85rem;line-height:1.45}
+      .mobile-crew-v2-rework{margin:12px 0;padding:12px;border:1px solid rgba(251,191,36,.64);border-radius:12px;background:rgba(251,191,36,.08);overflow-wrap:anywhere}.mobile-crew-v2-rework>strong{display:block;color:var(--text,#f8fafc);font-size:1rem}.mobile-crew-v2-rework>p{white-space:pre-wrap;overflow-wrap:anywhere}.mobile-crew-v2-rework>small{display:block;margin-top:10px;color:var(--text-soft,#cbd5e1);line-height:1.45}.mobile-crew-v2-rework .mobile-crew-v2-actions{margin-top:12px}.mobile-crew-v2-rework button{min-height:44px}
       .jobs-desktop-workbench{display:none}.jobs-sync-health{margin:12px 0}.job-workbench-result{align-self:end;min-height:42px;display:flex;align-items:center;color:var(--text-soft,#cbd5e1)}
       @media(max-width:520px){.field-sync-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.field-sync-actions>*{flex:1 1 145px}.offline-recovery-compare{grid-template-columns:1fr}.offline-recovery-actions button{flex:1 1 120px}}
       @media(min-width:900px){.jobs-desktop-workbench{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(170px,.7fr) auto auto;gap:10px;align-items:end;padding:12px;margin:10px 0 12px;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(15,23,42,.48)}.jobs-desktop-workbench label{min-width:0}.jobs-desktop-workbench button{min-height:44px}}
@@ -676,16 +677,53 @@
     '</details>';
   }
 
+  function crewReworkRequired(row) {
+    return ['rework_required','rejected'].includes(String(row?.closeout?.closeout_status || ''));
+  }
+
+  function crewCorrectionProof(row, profileId = state.crewContext?.profile?.id) {
+    if (!crewReworkRequired(row)) return null;
+    const rejectedAt = Date.parse(String(row?.closeout?.rejected_at || ''));
+    if (!Number.isFinite(rejectedAt)) return null;
+    const proofs = row?.evidence?.correction_proofs || (row?.evidence?.proofs || []).filter((proof) =>
+      proof.title === 'Crew rework correction' && proof.captured_by_profile_id === profileId);
+    return (Array.isArray(proofs) ? proofs : []).filter((proof) =>
+      proof?.id && ['submitted','approved'].includes(String(proof.proof_status || '')) &&
+      Date.parse(String(proof.created_at || '')) > rejectedAt
+    ).sort((a,b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0] || null;
+  }
+
+  function crewReworkMarkup(row, index) {
+    if (!crewReworkRequired(row)) return '';
+    const note = String(row?.closeout?.rejection_reason || '').trim();
+    const proof = crewCorrectionProof(row);
+    const capabilities = state.crewContext?.capabilities || {};
+    const enabled = navigator.onLine !== false && !state.crewPendingAction;
+    return '<section class="mobile-crew-v2-rework" aria-label="Supervisor rework instructions">' +
+      '<strong>Supervisor requested corrections · Rework inbox</strong>' +
+      '<p>' + (note ? crewEscape(note) : 'Supervisor instructions are not in this snapshot. Refresh before changing work; ask the supervisor if instructions are still missing.') + '</p>' +
+      '<p class="field-sync-note">' + (proof ? 'Correction proof recorded ' + crewEscape(crewDateTime(proof.created_at)) + '. Ready to send a staff-only review request.' : 'No post-rejection correction proof from this crew member is confirmed yet.') + '</p>' +
+      '<div class="mobile-crew-v2-actions">' +
+        crewActionButton('Record correction evidence','rework_proof',index,enabled && !!capabilities.execution_proof && !!note) +
+        crewActionButton('Resubmit corrections for supervisor','rework_resubmit',index,enabled && !!capabilities.execution_proof && !!proof && !!note) +
+      '</div><small>Supervisor still decides the closeout. Rework, customer signoff and invoicing remain on HOLD until that decision. Nothing is sent to the customer.</small>' +
+    '</section>';
+  }
+
+  function crewRows() {
+    return state.crewTab === 'route' ? state.crewContext?.my_route : state.crewContext?.my_jobs;
+  }
+
   function bindCrewDetails(panel) {
     panel.querySelectorAll('[data-crew-details]').forEach((details) => details.addEventListener('toggle', () => {
       const index = Number(details.dataset.crewDetails);
-      const row = (state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route)?.[index];
+      const row = crewRows()?.[index];
       const key = crewAssignmentKey(row);
       if (key) state.crewDetailsOpen[key] = details.open;
     }));
     panel.querySelectorAll('[data-crew-prep]').forEach((input) => input.addEventListener('change', () => {
       const index = Number(input.dataset.crewIndex);
-      const row = (state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route)?.[index];
+      const row = crewRows()?.[index];
       const key = crewAssignmentKey(row);
       if (!key || !CREW_PREP_STEPS.some((step) => step.id === input.dataset.crewPrep)) return;
       const reviews = state.crewPrepByAssignment[key] || (state.crewPrepByAssignment[key] = Object.create(null));
@@ -698,7 +736,7 @@
   function bindCrewCloseout(panel) {
     panel.querySelectorAll('[data-crew-closeout-index]').forEach((details) => details.addEventListener('toggle', () => {
       const index = Number(details.dataset.crewCloseoutIndex);
-      const row = (state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route)?.[index];
+      const row = crewRows()?.[index];
       const key = crewAssignmentKey(row);
       if (key) state.crewCloseoutOpen[key] = details.open;
     }));
@@ -709,6 +747,7 @@
   function crewVisibleRows(rows, query = state.crewSearch, cautionsOnly = state.crewSiteCautionsOnly) {
     const needle = String(query || '').trim().toLocaleLowerCase();
     return (Array.isArray(rows) ? rows : []).map((row, index) => ({ row, index })).filter(({ row }) => {
+      if (state.crewTab === 'rework' && !crewReworkRequired(row)) return false;
       const notes = crewPropertyNotes(row);
       const equipmentCaution = (row?.equipment || []).some((item) => item?.is_locked_out || (item?.defect_status && !['clear','none'].includes(item.defect_status)));
       if (cautionsOnly && !notes.hazard && !equipmentCaution) return false;
@@ -720,11 +759,11 @@
   }
 
   function renderCrewFilteredList(panel) {
-    const rows = state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route;
+    const rows = crewRows();
     const total = Array.isArray(rows) ? rows.length : 0;
     const visible = crewVisibleRows(rows);
     const count = panel.querySelector('[data-crew-match-count]');
-    if (count) count.textContent = `${visible.length} of ${total} assigned ${state.crewTab === 'jobs' ? 'jobs' : 'route stops'} shown`;
+    if (count) count.textContent = state.crewTab === 'rework' ? `${visible.length} assigned rework job(s) shown` : `${visible.length} of ${total} assigned ${state.crewTab === 'jobs' ? 'jobs' : 'route stops'} shown`;
     const list = panel.querySelector('.mobile-crew-v2-list');
     if (!list) return;
     list.innerHTML = state.crewLoading && !state.crewContext
@@ -732,7 +771,7 @@
       : !state.crewContext && state.crewError
         ? '<div class="mobile-crew-v2-empty">Assigned work unavailable. Refresh when the server is reachable.</div>'
         : visible.length ? visible.map(({ row, index }) => crewCard(row, index)).join('')
-          : '<div class="mobile-crew-v2-empty">' + (total ? 'No assigned work matches these filters. Clear the search or site cautions filter.' : 'No assigned work is in the current seven-day crew window.') + '</div>';
+          : '<div class="mobile-crew-v2-empty">' + (state.crewTab === 'rework' ? 'No assigned rework is in this seven-day window, or the active filters exclude it.' : total ? 'No assigned work matches these filters. Clear the search or site cautions filter.' : 'No assigned work is in the current seven-day crew window.') + '</div>';
     list.querySelectorAll('[data-crew-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewAction, Number(button.dataset.crewIndex || 0))));
     list.querySelectorAll('[data-crew-guide-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewGuideAction, Number(button.dataset.crewIndex || 0))));
     bindCrewDetails(list);
@@ -790,6 +829,7 @@
       (notes.hazard ? '<div class="mobile-crew-v2-notes"><strong>Hazards / site notes</strong>' + crewEscape(notes.hazard) + '</div>' : '') +
       (dispatch.dispatch_notes ? '<div class="mobile-crew-v2-notes"><strong>Dispatch notes</strong>' + crewEscape(dispatch.dispatch_notes) + '</div>' : '') +
       (equipmentProblems.length ? '<div class="mobile-crew-v2-notes"><strong>Equipment attention</strong>' + equipmentProblems.map((item) => crewEscape(item.equipment_name || item.equipment_code || item.id) + (item.is_locked_out ? ' — LOCKED OUT' : ' — ' + crewEscape(item.defect_status))).join('<br>') + '</div>' : '') +
+      crewReworkMarkup(row, index) +
       crewDetailsMarkup(row, index) +
       crewCloseoutMarkup(row, index) +
       '<div class="mobile-crew-v2-actions">' + crewActionMarkup(row,index) + '</div>' +
@@ -821,7 +861,7 @@
     const selectionStart = finderFocused ? panel.querySelector('[data-crew-search]').selectionStart : null;
     panel.innerHTML =
       '<div class="mobile-crew-v2-head"><div><h2>Mobile Crew App v2</h2><p>My Jobs, My Route and field actions for 390/430-width phones.</p></div><span class="field-sync-state">' + crewEscape(syncLabel(snapshot)) + '</span></div>' +
-      '<div class="mobile-crew-v2-tabs"><button type="button" class="secondary" data-crew-tab="route" aria-selected="' + (state.crewTab === 'route') + '">My Route</button><button type="button" class="secondary" data-crew-tab="jobs" aria-selected="' + (state.crewTab === 'jobs') + '">My Jobs</button><button type="button" class="secondary" data-crew-refresh="1"' + (state.crewLoading || !snapshot.online ? ' disabled' : '') + '>' + (state.crewLoading ? 'Refreshing…' : 'Refresh') + '</button></div>' +
+      '<div class="mobile-crew-v2-tabs"><button type="button" class="secondary" data-crew-tab="route" aria-selected="' + (state.crewTab === 'route') + '">My Route</button><button type="button" class="secondary" data-crew-tab="jobs" aria-selected="' + (state.crewTab === 'jobs') + '">My Jobs</button><button type="button" class="secondary" data-crew-tab="rework" aria-selected="' + (state.crewTab === 'rework') + '">Rework (' + (payload?.my_jobs || []).filter(crewReworkRequired).length + ')</button><button type="button" class="secondary" data-crew-refresh="1"' + (state.crewLoading || !snapshot.online ? ' disabled' : '') + '>' + (state.crewLoading ? 'Refreshing…' : 'Refresh') + '</button></div>' +
       '<p class="field-sync-note">' + crewEscape(syncCopy) + '</p>' +
       '<p class="field-sync-note" data-crew-save-state role="status" aria-live="polite">' + crewEscape(state.crewActionStatus || 'Job start/finish needs an acknowledged online save.') + '</p>' +
       '<div class="mobile-crew-v2-finder"><label for="crew542Search">Find assigned job or property<input id="crew542Search" type="search" data-crew-search autocomplete="off" placeholder="Job, property, address or notes" value="' + crewEscape(state.crewSearch) + '"></label>' +
@@ -854,13 +894,48 @@
   }
 
   async function runCrewAction(action, index) {
-    const row = (state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route)?.[index] || null;
+    const row = crewRows()?.[index] || null;
     if (!row && !['clock','safety','equipment'].includes(action)) return;
     if (action === 'clock') return router()?.showSection?.('me');
     if (action === 'safety') return router()?.showSection?.('inspect');
     if (action === 'equipment') return router()?.showSection?.('equipment');
     const workOrderId = row?.work_order?.id || row?.dispatch?.work_order_id || '';
     try {
+      if (action === 'rework_proof' || action === 'rework_resubmit') {
+        if (state.crewPendingAction) return;
+        if (!crewReworkRequired(row) || !row?.closeout?.rejection_reason || !state.crewContext?.capabilities?.execution_proof)
+          throw new Error('A current assigned rework request and proof permission are required.');
+        if (navigator.onLine === false) throw new Error('Rework submissions require an online server acknowledgement.');
+        let payload;
+        if (action === 'rework_proof') {
+          const notes = window.prompt('Describe precisely what was corrected (staff-only; minimum 12 characters)','');
+          if (notes === null) return;
+          if (notes.trim().length < 12) throw new Error('Correction details need at least 12 characters.');
+          payload = {action:'work_order_rework_proof_submit',work_order_id:workOrderId,staff_notes:notes.trim()};
+        } else {
+          const proof = crewCorrectionProof(row);
+          if (!proof) throw new Error('Record and refresh a current correction proof before resubmitting.');
+          const notes = window.prompt('What should the supervisor recheck? (staff-only; minimum 12 characters)','');
+          if (notes === null) return;
+          if (notes.trim().length < 12) throw new Error('Review guidance needs at least 12 characters.');
+          if (!window.confirm('Send the correction proof and staff-only review request to the supervisor? Closeout will remain on rework HOLD.')) return;
+          payload = {action:'work_order_rework_resubmit',work_order_id:workOrderId,execution_proof_id:proof.id,resubmission_note:notes.trim()};
+        }
+        state.crewPendingAction = action + ':' + workOrderId;
+        state.crewActionStatus = 'Submitting staff-only correction to the server…';
+        renderMobileCrewApp();
+        try {
+          const answer = await crewOperation(payload);
+          if (!answer?.ok || (action === 'rework_proof' ? !answer.proof?.execution_proof_id : !answer.update_id))
+            throw new Error(answer?.error || 'The server did not confirm the correction.');
+          state.crewActionStatus = action === 'rework_proof'
+            ? 'Correction proof saved. Refresh the assigned rework card to resubmit.'
+            : (answer.replayed ? 'Previously submitted correction confirmed.' : 'Corrections sent to supervisor for review.') + ' Closeout remains on rework HOLD.';
+          state.crewError = '';
+        } finally { state.crewPendingAction = ''; renderMobileCrewApp(); }
+        await loadMobileCrewContext(true);
+        return;
+      }
       if (action === 'start_visit' || action === 'finish_visit') {
         if (state.crewPendingAction) return;
         if (navigator.onLine === false) throw new Error('Start/Finish needs an online server acknowledgement.');
@@ -1061,7 +1136,7 @@
     document.addEventListener('ywi:auth-changed', () => {
       state.crewAuthEpoch += 1;
       state.crewContext=null; state.crewLoadedAt=0; state.crewLoading=false;
-      state.crewSearch=''; state.crewSiteCautionsOnly=false;
+      state.crewTab='route'; state.crewSearch=''; state.crewSiteCautionsOnly=false;
       state.crewPrepByAssignment=Object.create(null); state.crewDetailsOpen=Object.create(null); state.crewCloseoutOpen=Object.create(null);
       render(); loadMobileCrewContext(true);
     });
@@ -1085,7 +1160,7 @@
 
   window.YWIMobileToday = {
     bind, render, countOutboxItems, countActionItems, countConflictItems, countDraftForms,
-    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery, crewVisibleRows, crewAssignmentKey, crewPrepCount, crewDetailsMarkup, crewCloseoutGuidance, crewCloseoutMarkup,
+    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery, crewVisibleRows, crewAssignmentKey, crewPrepCount, crewDetailsMarkup, crewCloseoutGuidance, crewCloseoutMarkup, crewReworkRequired, crewCorrectionProof, crewReworkMarkup,
     reliabilityReleaseHistory: () => MOBILE_RELIABILITY_RELEASE_HISTORY.map((row) => ({ ...row }))
   };
   document.addEventListener('DOMContentLoaded', bind);

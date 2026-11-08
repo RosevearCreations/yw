@@ -54,6 +54,8 @@ insert into public.app_module_write_contracts(
   ('work_order_live_update_create','jobs','create','write','work_order_updates','jobs.work_order.update_created',true,true,'Create a work-order update consumed by customer/shared surfaces.'),
   ('work_order_live_update_retract','jobs','approve','write','work_order_updates','jobs.work_order.update_retracted',true,true,'Retract a published work-order update and emit the declared boundary event.'),
   ('work_order_execution_proof_submit','jobs','create','write','execution_proof','jobs.execution_proof.submitted',true,true,'Submit execution evidence used by downstream closeout/costing surfaces.'),
+  ('work_order_rework_proof_submit','jobs','create','write','execution_proof','jobs.rework.correction_proof_submitted',true,true,'Assigned crew may submit internal correction proof for existing supervisor rework.'),
+  ('work_order_rework_resubmit','jobs','create','write','closeout','jobs.rework.correction_resubmitted',true,true,'Assigned crew may request supervisor review after a verified correction proof; does not approve closeout.'),
   ('work_order_execution_proof_decision','jobs','approve','write','execution_proof','jobs.execution_proof.decided',true,true,'Approve or reject execution evidence and emit the declared boundary event.'),
   ('work_order_closeout_submit','jobs','approve','write','closeout','jobs.closeout.submitted',true,true,'Submit a closeout package used by customer/Finance follow-up surfaces.'),
   ('work_order_closeout_decision','jobs','approve','write','closeout','jobs.closeout.decided',true,true,'Decide a closeout package and emit the declared boundary event.'),
