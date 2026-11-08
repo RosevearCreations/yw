@@ -199,3 +199,83 @@ test('YW 543 clears personal checklist on identity switch and ignores stale prev
   await expect(page.locator('.mobile-crew-v2-card')).toContainText('New user route');
   await expect(page.locator('.mobile-crew-v2-card')).not.toContainText('Old user private route');
 });
+
+for (const width of [390,430]) {
+  test('YW 544 guided closeout shows real source gaps without granting approvals at '+width+'px', async ({page})=>{
+    await boot(page,width);
+    const guide=page.locator('[data-crew-closeout-index="0"]');
+    await expect(guide.locator('summary')).toContainText('4 review prompts');
+    await guide.locator('summary').click();
+    await expect(guide).toHaveAttribute('open');
+    await expect(guide).toContainText('No completed visit is shown');
+    await expect(guide).toContainText('No quantity is recorded');
+    await expect(guide).toContainText('No execution proof is recorded');
+    await expect(guide).toContainText('Safety / PPE approval status is not included');
+    await expect(guide).toContainText('do not certify readiness');
+    expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
+    await page.locator('[data-crew-search]').fill('Maple');
+    await expect(page.locator('[data-crew-closeout-index="0"]')).toHaveAttribute('open');
+    await page.locator('[data-crew-closeout-index="0"] [data-crew-action="safety"]').click();
+    expect(await page.evaluate(()=>window.__route)).toBe('inspect');
+    expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+}
+
+test('YW 544 requires acknowledgement of closeout prompts, preserves server permission and sends no customer message', async ({page})=>{
+  await boot(page,390);
+  await page.evaluate(async()=>{
+    const payload=structuredClone(await window.YWIAPI.fetchMobileCrewContext());
+    payload.capabilities.closeout_request=true;
+    payload.my_route[0].latest_session={id:'session-544',session_status:'in_progress'};
+    payload.my_route[0].equipment=[{id:9,equipment_name:'Mower 9',is_locked_out:true,defect_status:'lockout'}];
+    window.YWIAPI.fetchMobileCrewContext=async()=>payload;
+    await window.YWIMobileToday.loadMobileCrewContext(true);
+  });
+  await expect(page.locator('[data-crew-closeout-index="0"]')).toContainText('Equipment caution');
+  const messages=[];
+  page.on('dialog',async(dialog)=>{
+    messages.push({type:dialog.type(),message:dialog.message()});
+    await dialog.dismiss();
+  });
+  await page.locator('.mobile-crew-v2-actions [data-crew-action="closeout"]').click();
+  await expect(page.locator('[data-crew-save-state]')).toContainText('Closeout was not submitted');
+  await expect(page.locator('[data-crew-closeout-index="0"]')).toHaveAttribute('open');
+  expect(messages).toHaveLength(1);
+  expect(messages[0].type).toBe('confirm');
+  expect(messages[0].message).toContain('Equipment caution');
+  expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
+  await page.evaluate(()=>{
+    const current=window.YWIAPI.fetchMobileCrewContext;
+    window.YWIAPI.fetchMobileCrewContext=async()=>{
+      const payload=await current();
+      return {...payload,capabilities:{...payload.capabilities,closeout_request:false}};
+    };
+  });
+  await page.evaluate(()=>window.YWIMobileToday.loadMobileCrewContext(true));
+  await expect(page.locator('.mobile-crew-v2-actions [data-crew-action="closeout"]')).toHaveCount(0);
+});
+
+test('YW 544 allows explicitly confirmed closeout only through the original server action', async ({page})=>{
+  await boot(page,430);
+  await page.evaluate(async()=>{
+    const payload=structuredClone(await window.YWIAPI.fetchMobileCrewContext());
+    payload.capabilities.closeout_request=true;
+    window.YWIAPI.fetchMobileCrewContext=async()=>payload;
+    await window.YWIMobileToday.loadMobileCrewContext(true);
+  });
+  page.on('dialog',async(dialog)=>{
+    if(dialog.type()==='confirm') await dialog.accept();
+    else if(dialog.type()==='prompt') await dialog.accept('Mowing completed; client gate closed.');
+    else await dialog.dismiss();
+  });
+  await page.locator('.mobile-crew-v2-actions [data-crew-action="closeout"]').click();
+  await expect.poll(()=>page.evaluate(()=>window.__opsCalls.length)).toBe(1);
+  const result=await page.evaluate(()=>window.__opsCalls[0]);
+  expect(result.action).toBe('work_order_closeout_submit');
+  expect(result.work_order_id).toBe('31111111-1111-4111-8111-111111111111');
+  expect(result.customer_summary).toBe('Mowing completed; client gate closed.');
+  expect(result.invoice_ready_requested).toBe(false);
+  expect(result.review_request_requested).toBe(false);
+});
