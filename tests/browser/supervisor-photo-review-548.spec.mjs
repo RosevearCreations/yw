@@ -26,6 +26,7 @@ async function mount(page,role='permitted') {
         window.__photoCalls.push(body);
         if (window.__denyPrivate) throw Error('The work order is assigned to another supervisor.');
         return {ok:true,staff_only:true,closeout:{id,status:'submitted',invoice_readiness_status:'blocked'},expires_in:300,
+          resubmission:{at:'2026-11-08T14:10:00Z'},
           baseline:[{id:'before-1',url:'https://example.test/secure-before.jpg',name:'Arrival before.jpg',proof_status:'approved',proof_title:'Arrival'}],
           corrections:[{id:'after-1',url:'https://example.test/secure-after.jpg',name:'Retake <script>.jpg',proof_status:'submitted',proof_title:'Crew rework correction'}],
           correction_proof:{id:'proof-548',status:'submitted',staff_notes:'Replaced missed edge trimming; awaiting supervisor approval.',created_at:'2026-11-08T14:00:00Z'}};
@@ -44,7 +45,8 @@ test('YW 548 supervisor compares private evidence on mobile without changing a c
   await expect(page.locator('.oc-closeout-photo-pair img')).toHaveCount(2);
   await expect(page.locator('.oc-closeout-photo-review')).toContainText('Earlier visit evidence');
   await expect(page.locator('.oc-closeout-photo-review')).toContainText('Latest correction evidence');
-  await expect(page.locator('.oc-closeout-photo-review')).toContainText('resubmitted and awaits a new human supervisor decision');
+  await expect(page.locator('.oc-closeout-photo-review')).toContainText('Crew sent the staff-only correction resubmission');
+  await expect(page.locator('.oc-closeout-photo-review')).toContainText('until a supervisor makes the next canonical decision');
   await expect(page.locator('.oc-closeout-photo-review')).toContainText('Customer signoff and invoice readiness remain separate');
   expect(await page.locator('.oc-closeout-photo-review').innerHTML()).toContain('Retake &lt;script&gt;.jpg');
   expect(await page.evaluate(()=>window.__photoCalls)).toEqual([{action:'supervisor_review',closeout_package_id:id}]);

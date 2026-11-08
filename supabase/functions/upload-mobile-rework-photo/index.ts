@@ -113,10 +113,18 @@ async function supervisorComparison(supabase:any,profile:any,closeoutId:string) 
   };
   const baseline=await makePhotos(baselineProofs,6,false);
   const corrections=await makePhotos(latestCorrection?[latestCorrection]:[],4,true);
+  // A crew resubmission is a staff-only update, never a closeout status change.
+  const {data:updates,error:updateError}=latestCorrection?await supabase.from('work_order_live_updates')
+    .select('created_at,metadata').eq('work_order_id',order.id).eq('visibility','staff')
+    .eq('title','Crew rework corrections resubmitted')
+    .gte('created_at',latestCorrection.created_at).order('created_at',{ascending:false}).limit(30):{data:[],error:null};
+  if (updateError) throw updateError;
+  const resubmission=(updates||[]).find((item:any)=>item.metadata?.source==='mobile_rework_resubmission' &&
+    item.metadata?.closeout_id===closeout.id && item.metadata?.correction_proof_id===latestCorrection?.id);
   return {ok:true,closeout:{id:closeout.id,status:closeout.closeout_status,rejected_at:closeout.rejected_at,
       rejection_reason:closeout.rejection_reason,submitted_at:closeout.submitted_at,
       customer_signoff_status:closeout.customer_signoff_status,invoice_readiness_status:closeout.invoice_readiness_status},
-    baseline,corrections,correction_proof:latestCorrection?{
+    baseline,corrections,resubmission:resubmission?{at:resubmission.created_at}:null,correction_proof:latestCorrection?{
       id:latestCorrection.id,status:latestCorrection.proof_status,staff_notes:String(latestCorrection.staff_notes||'').slice(0,1000),
       created_at:latestCorrection.created_at}:null,expires_in:300,staff_only:true};
 }

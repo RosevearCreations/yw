@@ -10,7 +10,7 @@ for (const expected of [
   '.eq(\'work_order_id\',order.id)', "p.title==='Crew rework correction'",
   "asset.review_storage_bucket!==BUCKET", "asset.metadata?.closeout_id!==closeout.id",
   'createSignedUrl(asset.review_storage_path,300)', "'Cache-Control':'no-store'",
-  'correction_proof:latestCorrection', 'staff_only:true'
+  'correction_proof:latestCorrection', "item.metadata?.source==='mobile_rework_resubmission'", 'staff_only:true'
 ]) assert.ok(edge.includes(expected),'Missing private supervisor photo guard: '+expected);
 for (const expected of [
   'closeoutPhotoOpenId', "action:'supervisor_review'", 'closeoutSafePhotoUrl',
