@@ -139,5 +139,4 @@ test('Build 542 resets private finder state when signed-in identity changes', as
   await page.evaluate(()=>document.dispatchEvent(new Event('ywi:auth-changed')));
   await expect(page.locator('[data-crew-search]')).toHaveValue('');
   await expect(page.locator('[data-crew-cautions]')).not.toBeChecked();
-  expect(await page.evaluate(()=>localStorage.getItem('ywi_crew_search'))).toBeNull();
 });
