@@ -14,6 +14,12 @@
   ]);
   const MOBILE_RELIABILITY_BASELINE = MOBILE_RELIABILITY_RELEASE_HISTORY[0];
   const MOBILE_RELIABILITY_CURRENT = MOBILE_RELIABILITY_RELEASE_HISTORY[MOBILE_RELIABILITY_RELEASE_HISTORY.length - 1];
+  const CREW_PREP_STEPS = Object.freeze([
+    Object.freeze({ id:'task', label:'Review task and scheduled visit' }),
+    Object.freeze({ id:'access', label:'Review access, parking and property instructions' }),
+    Object.freeze({ id:'hazards', label:'Review site hazards and follow required safety procedures' }),
+    Object.freeze({ id:'equipment', label:'Review equipment condition and any lockout warnings' })
+  ]);
 
   const state = {
     bound: false,
@@ -27,6 +33,9 @@
     crewTab: 'route',
     crewSearch: '',
     crewSiteCautionsOnly: false,
+    crewPrepByAssignment: Object.create(null),
+    crewDetailsOpen: Object.create(null),
+    crewAuthEpoch: 0,
     crewPendingAction: '',
     crewActionStatus: '',
     crewIntentKeys: Object.create(null),
@@ -328,6 +337,7 @@
       .mobile-crew-v2-notes{margin:8px 0;padding:9px;border-radius:10px;background:rgba(148,163,184,.07)}.mobile-crew-v2-notes strong{display:block;margin-bottom:3px}
       .mobile-crew-v2-actions button{min-height:42px}.mobile-crew-v2-empty{padding:12px;border-radius:12px;background:rgba(148,163,184,.06);color:var(--text-soft,#cbd5e1)}
       .mobile-crew-v2-finder{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:12px 0}.mobile-crew-v2-finder label{flex:1 1 210px;min-width:0;display:grid;gap:5px;font-weight:650}.mobile-crew-v2-finder input{width:100%;max-width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.45);background:var(--surface,#111827);color:var(--text,#f8fafc);font:inherit}.mobile-crew-v2-finder .mobile-crew-v2-cautions{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(148,163,184,.4);border-radius:10px;font-weight:650}.mobile-crew-v2-cautions input{width:18px;height:18px;min-height:18px;accent-color:#d4af37}.mobile-crew-v2-count{margin:4px 0 10px;color:var(--text-soft,#cbd5e1)}
+      .mobile-crew-v2-details{margin:12px 0;border:1px solid rgba(148,163,184,.28);border-radius:12px;overflow:hidden}.mobile-crew-v2-details summary{cursor:pointer;min-height:44px;padding:11px 12px;font-weight:700;background:rgba(148,163,184,.08)}.mobile-crew-v2-details summary:focus-visible{outline:3px solid #d4af37;outline-offset:-3px}.mobile-crew-v2-details[open] summary{border-bottom:1px solid rgba(148,163,184,.25)}.mobile-crew-v2-detail-body{padding:12px}.mobile-crew-v2-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 12px}.mobile-crew-v2-facts div{min-width:0;padding:8px;border-radius:9px;background:rgba(148,163,184,.07)}.mobile-crew-v2-facts dt{font-size:.78rem;color:var(--text-soft,#cbd5e1)}.mobile-crew-v2-facts dd{margin:2px 0 0;font-weight:650;overflow-wrap:anywhere}.mobile-crew-v2-prep{margin:0;padding:0;border:0;min-width:0}.mobile-crew-v2-prep legend{font-weight:750}.mobile-crew-v2-prep label{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:9px 0;line-height:1.35}.mobile-crew-v2-prep input{width:20px;height:20px;flex:none;accent-color:#d4af37}.mobile-crew-v2-prep-note{margin:8px 0 0;color:var(--text-soft,#cbd5e1);font-size:.85rem;line-height:1.5}@media(max-width:520px){.mobile-crew-v2-facts{grid-template-columns:1fr}}
       .jobs-desktop-workbench{display:none}.jobs-sync-health{margin:12px 0}.job-workbench-result{align-self:end;min-height:42px;display:flex;align-items:center;color:var(--text-soft,#cbd5e1)}
       @media(max-width:520px){.field-sync-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.field-sync-actions>*{flex:1 1 145px}.offline-recovery-compare{grid-template-columns:1fr}.offline-recovery-actions button{flex:1 1 120px}}
       @media(min-width:900px){.jobs-desktop-workbench{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(170px,.7fr) auto auto;gap:10px;align-items:end;padding:12px;margin:10px 0 12px;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(15,23,42,.48)}.jobs-desktop-workbench label{min-width:0}.jobs-desktop-workbench button{min-height:44px}}
@@ -515,6 +525,7 @@
     const signedIn = !!authState().isAuthenticated;
     if (!signedIn || state.crewLoading) return;
     if (!force && state.crewContext && Date.now() - state.crewLoadedAt < CREW_LIVE_TTL_MS) return;
+    const authEpoch = state.crewAuthEpoch;
     if (navigator.onLine === false) {
       const cached = readCrewCache();
       if (cached?.payload) {
@@ -532,17 +543,22 @@
     renderMobileCrewApp();
     try {
       const payload = await crewApi().fetchMobileCrewContext({ days: 7 });
+      if (authEpoch !== state.crewAuthEpoch || !authState().isAuthenticated) return;
       if (!payload?.ok) throw new Error(payload?.error || 'Mobile crew context did not load.');
       state.crewContext = payload;
       state.crewLoadedAt = Date.now();
+      pruneCrewPrepState(payload);
       writeCrewCache(payload);
     } catch (error) {
+      if (authEpoch !== state.crewAuthEpoch || !authState().isAuthenticated) return;
       const cached = readCrewCache();
       if (cached?.payload) state.crewContext = cached.payload;
       state.crewError = (error?.message || 'Mobile crew context failed.') + (cached?.payload ? ' Showing the last signed-in-session snapshot.' : '');
     } finally {
-      state.crewLoading = false;
-      renderMobileCrewApp();
+      if (authEpoch === state.crewAuthEpoch) {
+        state.crewLoading = false;
+        renderMobileCrewApp();
+      }
     }
   }
 
@@ -567,6 +583,65 @@
     const access = [site.access_notes,site.gate_fence_summary,site.parking_trailer_limits,site.pet_notes,site.recurring_property_instructions].filter(Boolean).join(' • ');
     const hazard = [site.hazard_notes,site.slope_notes,site.drainage_wet_area_notes,site.utility_locate_notes,site.tree_brush_notes].filter(Boolean).join(' • ');
     return { access, hazard };
+  }
+
+  // Review ticks are personal, session-only reminders, never a Safety/Jobs approval or write.
+  function crewAssignmentKey(row) {
+    const dispatchId = String(row?.dispatch?.id || '').trim();
+    const workOrderId = String(row?.work_order?.id || '').trim();
+    return dispatchId ? 'dispatch:' + dispatchId : workOrderId ? 'work_order:' + workOrderId : '';
+  }
+
+  function pruneCrewPrepState(payload) {
+    const keys = new Set([...(payload?.my_route || []), ...(payload?.my_jobs || [])].map(crewAssignmentKey).filter(Boolean));
+    for (const key of Object.keys(state.crewPrepByAssignment)) if (!keys.has(key)) delete state.crewPrepByAssignment[key];
+    for (const key of Object.keys(state.crewDetailsOpen)) if (!keys.has(key)) delete state.crewDetailsOpen[key];
+  }
+
+  function crewPrepCount(key) {
+    return CREW_PREP_STEPS.filter((step) => state.crewPrepByAssignment[key]?.[step.id] === true).length;
+  }
+
+  function crewDetailsMarkup(row, index) {
+    const key = crewAssignmentKey(row);
+    const dispatch = row?.dispatch || {};
+    const workOrder = row?.work_order || {};
+    const job = row?.job || {};
+    const facts = [
+      ['Work order',workOrder.work_order_number || 'Not provided'],
+      ['Job reference',job.job_code || 'Not provided'],
+      ['Service',workOrder.work_type || 'Not provided'],
+      ['Workability',dispatch.workability_state || 'Not reported']
+    ];
+    const checked = key ? crewPrepCount(key) : 0;
+    return '<details class="mobile-crew-v2-details" data-crew-details="' + index + '"' + (key && state.crewDetailsOpen[key] ? ' open' : '') + '>' +
+      '<summary>Job details & on-site prep · <span data-crew-prep-count>' + checked + ' of ' + CREW_PREP_STEPS.length + ' reviewed</span></summary>' +
+      '<div class="mobile-crew-v2-detail-body">' +
+        '<dl class="mobile-crew-v2-facts">' + facts.map(([label,value]) => '<div><dt>' + crewEscape(label) + '</dt><dd>' + crewEscape(value) + '</dd></div>').join('') + '</dl>' +
+        '<fieldset class="mobile-crew-v2-prep"><legend>Personal arrival review</legend>' +
+        CREW_PREP_STEPS.map((step) => '<label><input type="checkbox" data-crew-prep="' + step.id + '" data-crew-index="' + index + '"' + (key && state.crewPrepByAssignment[key]?.[step.id] ? ' checked' : '') + (key ? '' : ' disabled') + '> ' + crewEscape(step.label) + '</label>').join('') +
+        '</fieldset><p class="mobile-crew-v2-prep-note">Personal reminders only — not saved to the server or a completed safety inspection, PPE signoff, work approval or lockout clearance. Use Safety / Inspection and the assigned job actions for official records.</p>' +
+        (key ? '' : '<p class="mobile-crew-v2-prep-note">Review tracking is unavailable until a stable assignment ID is supplied.</p>') +
+      '</div></details>';
+  }
+
+  function bindCrewDetails(panel) {
+    panel.querySelectorAll('[data-crew-details]').forEach((details) => details.addEventListener('toggle', () => {
+      const index = Number(details.dataset.crewDetails);
+      const row = (state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route)?.[index];
+      const key = crewAssignmentKey(row);
+      if (key) state.crewDetailsOpen[key] = details.open;
+    }));
+    panel.querySelectorAll('[data-crew-prep]').forEach((input) => input.addEventListener('change', () => {
+      const index = Number(input.dataset.crewIndex);
+      const row = (state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route)?.[index];
+      const key = crewAssignmentKey(row);
+      if (!key || !CREW_PREP_STEPS.some((step) => step.id === input.dataset.crewPrep)) return;
+      const reviews = state.crewPrepByAssignment[key] || (state.crewPrepByAssignment[key] = Object.create(null));
+      reviews[input.dataset.crewPrep] = input.checked;
+      const count = input.closest('[data-crew-details]')?.querySelector('[data-crew-prep-count]');
+      if (count) count.textContent = crewPrepCount(key) + ' of ' + CREW_PREP_STEPS.length + ' reviewed';
+    }));
   }
 
   // Presentation-only: the server's assignment-filtered response is the sole source of rows.
@@ -599,6 +674,7 @@
         : visible.length ? visible.map(({ row, index }) => crewCard(row, index)).join('')
           : '<div class="mobile-crew-v2-empty">' + (total ? 'No assigned work matches these filters. Clear the search or site cautions filter.' : 'No assigned work is in the current seven-day crew window.') + '</div>';
     list.querySelectorAll('[data-crew-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewAction, Number(button.dataset.crewIndex || 0))));
+    bindCrewDetails(list);
   }
 
   function crewActionButton(label, action, index, enabled = true) {
@@ -652,6 +728,7 @@
       (notes.hazard ? '<div class="mobile-crew-v2-notes"><strong>Hazards / site notes</strong>' + crewEscape(notes.hazard) + '</div>' : '') +
       (dispatch.dispatch_notes ? '<div class="mobile-crew-v2-notes"><strong>Dispatch notes</strong>' + crewEscape(dispatch.dispatch_notes) + '</div>' : '') +
       (equipmentProblems.length ? '<div class="mobile-crew-v2-notes"><strong>Equipment attention</strong>' + equipmentProblems.map((item) => crewEscape(item.equipment_name || item.equipment_code || item.id) + (item.is_locked_out ? ' — LOCKED OUT' : ' — ' + crewEscape(item.defect_status))).join('<br>') + '</div>' : '') +
+      crewDetailsMarkup(row, index) +
       '<div class="mobile-crew-v2-actions">' + crewActionMarkup(row,index) + '</div>' +
     '</article>';
   }
@@ -905,7 +982,13 @@
     });
     window.addEventListener('online', () => { render(); loadMobileCrewContext(true); });
     window.addEventListener('offline', render);
-    document.addEventListener('ywi:auth-changed', () => { state.crewContext=null; state.crewLoadedAt=0; state.crewSearch=''; state.crewSiteCautionsOnly=false; render(); loadMobileCrewContext(true); });
+    document.addEventListener('ywi:auth-changed', () => {
+      state.crewAuthEpoch += 1;
+      state.crewContext=null; state.crewLoadedAt=0; state.crewLoading=false;
+      state.crewSearch=''; state.crewSiteCautionsOnly=false;
+      state.crewPrepByAssignment=Object.create(null); state.crewDetailsOpen=Object.create(null);
+      render(); loadMobileCrewContext(true);
+    });
     document.addEventListener('ywi:route-shown', (event) => {
       render();
       if (String(event?.detail?.allowed || event?.detail?.section || '') === 'today' && authState().isAuthenticated) loadMobileCrewContext(false);
@@ -926,7 +1009,7 @@
 
   window.YWIMobileToday = {
     bind, render, countOutboxItems, countActionItems, countConflictItems, countDraftForms,
-    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery, crewVisibleRows,
+    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery, crewVisibleRows, crewAssignmentKey, crewPrepCount, crewDetailsMarkup,
     reliabilityReleaseHistory: () => MOBILE_RELIABILITY_RELEASE_HISTORY.map((row) => ({ ...row }))
   };
   document.addEventListener('DOMContentLoaded', bind);
