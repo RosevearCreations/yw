@@ -687,6 +687,27 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     });
   }
 
+  async function mobileReworkPhoto(payload) {
+    const token = await getAccessToken();
+    if (!token) throw new Error('Sign in before accessing private correction photos.');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+    try {
+      const isForm = payload instanceof FormData;
+      const key = getSupabaseAnonKey();
+      const response = await fetch(`${getFunctionsBaseUrl()}/upload-mobile-rework-photo`, {
+        method:'POST',
+        headers:{ ...(key ? {apikey:key} : {}), Authorization:`Bearer ${token}`, ...(!isForm ? {'Content-Type':'application/json'} : {}) },
+        body:isForm ? payload : JSON.stringify(payload),signal:controller.signal
+      });
+      const rawText = await response.text();
+      let result;
+      try { result = JSON.parse(rawText); } catch { result = null; }
+      if (!response.ok || !result?.ok) throw buildError(response.status,rawText,result);
+      return result;
+    } finally { clearTimeout(timeout); }
+  }
+
   async function customerPortal(payload = {}) {
     return jsonFetch('customer-portal', {
       method: 'POST',
@@ -1149,6 +1170,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     sendToFunction,
     submitQuoteContact,
     manageOperations,
+    mobileReworkPhoto,
     customerPortal,
     accountantExport,
     fetchPublicContent,

@@ -310,9 +310,14 @@ for (const width of [390,430]) {
       if(dialog.type()==='prompt') await dialog.accept('The east fence panel is repaired and secured.');
       else if(dialog.type()==='confirm') await dialog.accept();
     });
-    await page.locator('[data-crew-action="rework_proof"]').click();
+    await page.locator('[data-crew-action="rework_photo"]').click();
+    await page.locator('[data-crew-photo-notes="0"]').fill('The east fence panel is repaired and secured.');
+    await page.locator('[data-crew-photo-review="0"]').click();
+    await expect(page.locator('.mobile-crew-v2-photo-confirm')).toContainText('The east fence panel is repaired');
+    await page.locator('[data-crew-photo-save="0"]').click();
     await expect.poll(()=>page.evaluate(()=>window.__opsCalls.length)).toBe(1);
     expect(await page.evaluate(()=>window.__opsCalls[0].action)).toBe('work_order_rework_proof_submit');
+    expect(await page.evaluate(()=>window.__opsCalls[0].asset_ids)).toEqual([]);
     await expect(page.locator('[data-crew-action="rework_resubmit"]')).toBeEnabled();
     await page.locator('[data-crew-action="rework_resubmit"]').click();
     await expect.poll(()=>page.evaluate(()=>window.__opsCalls.length)).toBe(2);
@@ -336,7 +341,7 @@ test('YW 546 denied/offline rework actions and unassigned inbox have no write pa
     await window.YWIMobileToday.loadMobileCrewContext(true);
   });
   await page.locator('[data-crew-tab="rework"]').click();
-  await expect(page.locator('[data-crew-action="rework_proof"]')).toBeDisabled();
+  await expect(page.locator('[data-crew-action="rework_photo"]')).toBeDisabled();
   await page.evaluate(()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});window.dispatchEvent(new Event('offline'));});
   await expect(page.locator('[data-crew-action="rework_resubmit"]')).toBeDisabled();
   expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
@@ -347,4 +352,76 @@ test('YW 546 denied/offline rework actions and unassigned inbox have no write pa
   });
   await expect(page.locator('.mobile-crew-v2-card')).toHaveCount(0);
   expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
+});
+
+for (const width of [390,430]) {
+  test(`YW 547 previews and privately attaches correction photo before supervisor proof at ${width}px`,async({page})=>{
+    await boot(page,width);
+    await page.evaluate(async()=>{
+      const payload=structuredClone(await window.YWIAPI.fetchMobileCrewContext());
+      const row=payload.my_route[0];
+      row.closeout={id:'b1111111-1111-4111-8111-111111111111',closeout_status:'rework_required',rejected_at:'2026-11-08T10:00:00Z',rejection_reason:'Recheck corrected fence.'};
+      row.evidence={proof_count:0,correction_proofs:[]};payload.my_jobs=[row];
+      window.YWIAPI.fetchMobileCrewContext=async()=>payload;
+      window.__photoCalls=[];
+      window.YWIAPI.mobileReworkPhoto=async(body)=>{
+        window.__photoCalls.push(body instanceof FormData ? {type:'upload',file:body.get('file')?.name,work_order_id:body.get('work_order_id')} : body);
+        return body instanceof FormData
+          ? {ok:true,asset_id:'a1111111-1111-4111-8111-111111111111',review_only:true,customer_visible:false}
+          : {ok:true,photos:[],expires_in:300};
+      };
+      window.YWIAPI.manageOperations=async(body)=>{
+        window.__opsCalls.push(body);
+        if(body.action==='work_order_rework_proof_submit'){
+          row.evidence.correction_proofs=[{id:'c1111111-1111-4111-8111-111111111111',created_at:'2026-11-08T12:00:00Z',proof_status:'submitted'}];
+          return {ok:true,proof:{execution_proof_id:'c1111111-1111-4111-8111-111111111111'}};
+        }
+        return {ok:true};
+      };
+      await window.YWIMobileToday.loadMobileCrewContext(true);
+    });
+    await page.locator('[data-crew-tab="rework"]').click();
+    await page.locator('[data-crew-action="rework_photo"]').click();
+    await page.locator('[data-crew-photo-notes="0"]').fill('Repaired the broken east fence and secured the hinge.');
+    await page.locator('[data-crew-photo-files="0"]').setInputFiles({name:'fence.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/NwAAAABJRU5ErkJggg==','base64')});
+    await expect(page.locator('.mobile-crew-v2-photo-grid figure')).toHaveCount(1);
+    expect(await page.evaluate(()=>window.__photoCalls.length)).toBe(0);
+    await page.locator('[data-crew-photo-review="0"]').click();
+    await expect(page.locator('.mobile-crew-v2-photo-confirm')).toContainText('1 private correction photo');
+    page.on('dialog',dialog=>dialog.accept());
+    await page.locator('[data-crew-photo-save="0"]').click();
+    await expect.poll(()=>page.evaluate(()=>window.__opsCalls.length)).toBe(1);
+    const result=await page.evaluate(()=>({photos:window.__photoCalls,ops:window.__opsCalls}));
+    expect(result.photos[0]).toEqual({type:'upload',file:'fence.png',work_order_id:'31111111-1111-4111-8111-111111111111'});
+    expect(result.ops[0].asset_ids).toEqual(['a1111111-1111-4111-8111-111111111111']);
+    expect(result.ops[0].staff_notes).toContain('broken east fence');
+    await expect(page.locator('[data-crew-action="rework_resubmit"]')).toBeEnabled();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+  });
+}
+
+test('YW 547 recovers only draft text after session rebind and never silently uploads files',async({page})=>{
+  await boot(page,390);
+  await page.evaluate(async()=>{
+    const payload=structuredClone(await window.YWIAPI.fetchMobileCrewContext());
+    payload.my_route[0].closeout={closeout_status:'rework_required',rejected_at:'2026-11-08T10:00:00Z',rejection_reason:'Inspect repaired fence.'};
+    payload.my_jobs=payload.my_route;
+    window.YWIAPI.fetchMobileCrewContext=async()=>payload;
+    await window.YWIMobileToday.loadMobileCrewContext(true);
+  });
+  await page.locator('[data-crew-tab="rework"]').click();
+  await page.locator('[data-crew-action="rework_photo"]').click();
+  await page.locator('[data-crew-photo-notes="0"]').fill('Fence repair completed, awaiting another image.');
+  await page.locator('[data-crew-photo-cancel="0"]').click();
+  await page.evaluate(async()=>{
+    document.dispatchEvent(new CustomEvent('ywi:auth-changed'));
+    await window.YWIMobileToday.loadMobileCrewContext(true);
+  });
+  await page.locator('[data-crew-tab="rework"]').click();
+  await expect(page.locator('[data-crew-photo-notes="0"]')).toHaveValue('Fence repair completed, awaiting another image.');
+  await expect(page.locator('.mobile-crew-v2-photo-grid figure')).toHaveCount(0);
+  expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
+  await page.evaluate(()=>{Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});window.dispatchEvent(new Event('offline'));});
+  await expect(page.locator('[data-crew-photo-review="0"]')).toBeDisabled();
+  await expect(page.locator('[data-crew-photo-save="0"]')).toHaveCount(0);
 });

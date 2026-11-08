@@ -378,6 +378,7 @@ jobs:
       - run: npm run test:guided-visit-closeout-544
       - run: npm run test:supervisor-closeout-review-545
       - run: npm run test:mobile-crew-rework-546
+      - run: npm run test:mobile-rework-photo-547
       - run: npm run test:mobile-production-transition
       - run: node scripts/safety-equipment-preflight-397-check.mjs
       - run: node scripts/material-issue-return-reconciliation-398-check.mjs
