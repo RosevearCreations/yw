@@ -24,7 +24,9 @@ add('schema195-no-business-auto-close',migration.includes("'business_rail_auto_c
 add('schema195-no-history-delete',migration.includes("'historical_audit_delete',false"));
 add('schema195-drift-marker',migration.includes('select 195::int as expected_schema_version')&&migration.includes("values(195,'195_current_readiness_authority'"));
 add('endpoint-consumes-live-view',endpoint.includes('["v_production_readiness_checklist", "sort_order", true, 160]'));
-add('ui-production-readiness-panel-retained',ui.includes("panel('production_readiness','Release','Production readiness')"));
+add('ui-production-readiness-audit-retained',ui.includes("['production_readiness','Prelaunch production checklist']")
+  && ui.includes('historicalTechnicalArchive()')
+  && ui.includes('itHistoricalTechnicalArchive'));
 add('help-current-readiness-language',/historical[^.]{0,120}audit/i.test(help)&&/Production readiness/i.test(help));
 add('active-docs-no-build-ledgers',docs.every((text)=>!(/\bBuild\s+\d+\b/i.test(text))&&!(/\b[0-9a-f]{40}\b/i.test(text))));
 const passed=checks.filter((item)=>item.ok).length;

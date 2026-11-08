@@ -27,7 +27,7 @@
   }
 
   function getNavLinks() {
-    return Array.from(document.querySelectorAll('#mainNav a[href^="#"], #moduleSectionNav a[href^="#"]'));
+    return Array.from(document.querySelectorAll('#mainNav a[href^="#"], #moduleSectionNav a[href^="#"], #workspace550Nav a[href^="#"]'));
   }
 
   function isAuthCallbackHash(raw) {
