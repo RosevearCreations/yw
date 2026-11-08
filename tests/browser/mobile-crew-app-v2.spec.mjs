@@ -403,6 +403,14 @@ for (const width of [390,430]) {
 test('YW 547 recovers only draft text after session rebind and never silently uploads files',async({page})=>{
   await boot(page,390);
   await page.evaluate(async()=>{
+    // setContent() uses about:blank (opaque origin), which cannot access real
+    // sessionStorage. Model a signed-in device session for this isolated test.
+    const saved=new Map();
+    Object.defineProperty(window,'sessionStorage',{configurable:true,value:{
+      getItem:(key)=>saved.get(key)||null,
+      setItem:(key,value)=>saved.set(key,value),
+      removeItem:(key)=>saved.delete(key)
+    }});
     const payload=structuredClone(await window.YWIAPI.fetchMobileCrewContext());
     payload.my_route[0].closeout={closeout_status:'rework_required',rejected_at:'2026-11-08T10:00:00Z',rejection_reason:'Inspect repaired fence.'};
     payload.my_jobs=payload.my_route;
