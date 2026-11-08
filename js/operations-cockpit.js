@@ -16,6 +16,9 @@
   let reconciliationSuggestions = [];
   let selectedReconSuggestion = null;
   let paymentApplicationPreview = null;
+  let closeoutReviewFilter = 'all';
+  let closeoutReviewQuery = '';
+  let closeoutReworkOpenId = '';
 
   const actionCapability = {
     'payment-approve':'payment_action_decision', 'payment-reject':'payment_action_decision', 'payment-post':'payment_action_decision',
@@ -91,7 +94,7 @@
       else if (!field.value) field.value = String(value ?? '');
     });
   }
-  async function send(payload, label, refresh = true) {
+  async function send(payload, label, refresh = true, retryOnFailure = true) {
     if (!window.YWIAPI?.manageOperations) throw new Error('Operations API is not loaded.');
     status(`${label}…`);
     try {
@@ -103,8 +106,8 @@
       document.dispatchEvent(new CustomEvent('ywi:operations-cockpit-updated', { detail:{ action:payload.action, response } }));
       return response;
     } catch (error) {
-      saveRetry(payload, label);
-      status(`${error?.message || label + ' failed.'} A retry copy was saved on this device.`, true);
+      if (retryOnFailure) saveRetry(payload, label);
+      status(`${error?.message || label + ' failed.'} ${retryOnFailure ? 'A retry copy was saved on this device.' : 'The review form is still open; nothing was approved.'}`, true);
       throw error;
     }
   }
@@ -344,21 +347,61 @@
     wrap.innerHTML = `<div class="oc-execution-summary"><p>Approved proof updates internal job-cost snapshots. Customer portal proof cards show only approved customer summaries and public images; labour, material, equipment, and margin data stay in this Cockpit.</p></div>${costCards ? `<div class="oc-execution-cost-grid">${costCards}</div>` : ''}${proofCards || emptyQueue('No execution proof yet', 'Submit arrival, progress, completion, or quality proof when a dispatched crew captures real service evidence.')}`;
   }
 
+  function closeoutReviewLane(row) {
+    const state = String(row?.closeout_status || '').toLowerCase();
+    if (state === 'submitted') return 'needs_review';
+    if (state === 'rework_required' || state === 'rejected') return 'rework';
+    if (state === 'invoice_ready') return 'complete';
+    if (state === 'approved' && row?.customer_signoff_required && row?.customer_signoff_status !== 'signed') return 'waiting_customer';
+    if (state === 'approved') return 'approved';
+    return 'other';
+  }
+  function closeoutReviewChecks(row) {
+    const checks = [];
+    const proof = row?.approved_proof_count;
+    if (proof === null || proof === undefined || proof === '') checks.push({ kind:'review', note:'Approved proof count unavailable; verify the official execution-proof queue.' });
+    else if (Number(proof) === 0) checks.push({ kind:'block', note:'No approved execution proof. Supervisor approval is blocked by the server until proof is approved.' });
+    else checks.push({ kind:'ok', note:`${Number(proof)} approved execution proof(s) recorded.` });
+    if (!String(row?.customer_summary || '').trim()) checks.push({ kind:'review', note:'Customer-safe closeout summary is unavailable. Verify before approval.' });
+    const before = row?.before_count;
+    const after = row?.after_count;
+    if (before === null || before === undefined || after === null || after === undefined) checks.push({ kind:'review', note:'Before/after gallery counts unavailable; review approved media if applicable.' });
+    else if (Number(before) === 0 || Number(after) === 0) checks.push({ kind:'advisory', note:'Before/after gallery incomplete. Gallery images are optional, not an approval requirement.' });
+    if (Number(row?.submitted_proof_count || 0) > 0) checks.push({ kind:'review', note:'Some execution proofs are still submitted; they have not been approved.' });
+    if (row?.customer_signoff_required && row?.customer_signoff_status !== 'signed' && ['approved','invoice_ready'].includes(String(row?.closeout_status))) checks.push({ kind:'review', note:'Customer signoff is pending. Invoice readiness remains under the canonical signoff guard.' });
+    return checks;
+  }
   function renderCloseoutQueue() {
     const wrap = byId('oc_closeout_queue'); if (!wrap) return;
-    const rows = queues.closeouts || [];
-    wrap.innerHTML = rows.length ? rows.map((row) => {
+    const rows = Array.isArray(queues.closeouts) ? queues.closeouts : [];
+    const counts = {needs_review:0,rework:0,waiting_customer:0,approved:0,complete:0,other:0};
+    rows.forEach((row) => { counts[closeoutReviewLane(row)] += 1; });
+    const summary = byId('oc_closeout_review_summary');
+    if (summary) summary.innerHTML = `<strong>${counts.needs_review} awaiting supervisor decision</strong><span>${counts.rework} rework / rejected · ${counts.waiting_customer} waiting on customer · ${counts.complete} invoice-ready</span><small>Live server-returned closeouts only. No approval, crew dispatch or customer contact is triggered by filtering.</small>`;
+    const shown = rows.filter((row) => {
+      if (closeoutReviewFilter !== 'all' && closeoutReviewLane(row) !== closeoutReviewFilter) return false;
+      if (!closeoutReviewQuery) return true;
+      return [row.work_order_number,row.client_name,row.closeout_status,row.rejection_reason].some((value) => String(value || '').toLowerCase().includes(closeoutReviewQuery));
+    });
+    const countLabel = byId('oc_closeout_result_count');
+    if (countLabel) countLabel.textContent = `${shown.length} of ${rows.length} closeout packages`;
+    wrap.innerHTML = shown.length ? shown.map((row) => {
       const actions = [];
+      const lane = closeoutReviewLane(row);
+      const checks = closeoutReviewChecks(row);
+      const isOpen = closeoutReworkOpenId === String(row.id);
       if (row.closeout_status === 'submitted') {
-        actions.push(button('Approve closeout','closeout-approve',row.id));
-        actions.push(button('Request rework','closeout-rework',row.id,'',true));
+        if (!checks.some((item) => item.kind === 'block')) actions.push(button('Approve closeout','closeout-approve',row.id));
+        actions.push(button(isOpen ? 'Close rework guidance' : 'Guide crew rework','closeout-rework',row.id,'',true));
         actions.push(button('Reject','closeout-reject',row.id,'',true));
       }
       if ((row.closeout_status === 'approved' || row.closeout_status === 'invoice_ready') && row.invoice_readiness_status !== 'ready') {
         actions.push(button('Mark invoice-ready','closeout-invoice',row.id));
       }
-      return `<article class="oc-queue-card oc-closeout-card"><header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.client_name || 'Client')} · ${esc(row.cost_status || 'cost status pending')}</small></div><span class="${statusClass(row.closeout_status)}">${esc(String(row.closeout_status || 'unknown').replaceAll('_',' '))}</span></header><dl><div><dt>Signoff</dt><dd>${esc(String(row.customer_signoff_status || 'not requested').replaceAll('_',' '))}</dd></div><div><dt>Invoice readiness</dt><dd>${esc(String(row.invoice_readiness_status || 'blocked').replaceAll('_',' '))}</dd></div><div><dt>Review / maintenance</dt><dd>${esc(String(row.review_request_status || 'not requested').replaceAll('_',' '))} · ${esc(row.maintenance_followup_due_at || 'no reminder')}</dd></div><div><dt>Proof / gallery</dt><dd>${Number(row.approved_proof_count || 0)} approved proof · ${Number(row.before_count || 0)} before / ${Number(row.after_count || 0)} after</dd></div><div><dt>Internal margin</dt><dd>${money(row.margin_amount)} · ${Number(row.margin_percent || 0).toFixed(1)}%</dd></div></dl><p class="oc-closeout-summary">${esc(short(row.customer_summary || row.closeout_message || 'Closeout summary pending.', 260))}</p><small>${esc(row.closeout_message || 'Closeout is awaiting supervisor review.')}</small>${buttons(actions)}</article>`;
-    }).join('') : emptyQueue('No closeout packages yet', 'Create a supervisor closeout after approved proof is available. Customer signoff, invoice readiness, review request, and maintenance follow-up will appear here.');
+      const reworkForm = isOpen ? `<form class="oc-closeout-rework-form" data-oc-closeout-rework-form="${esc(row.id)}" aria-label="Crew rework instructions for ${esc(row.work_order_number || 'work order')}"><strong>Send a specific correction request to the official closeout record</strong><p>Supervisor-only decision note. It does not assign a crew, send a message or change a schedule. Crew should correct the visit evidence and submit an updated closeout.</p><label>Exception category<select name="issue_category" required><option value="">Choose the main issue</option><option value="missing_proof">Missing or unapproved proof</option><option value="quality">Quality or scope correction</option><option value="documentation">Visit notes / documentation</option><option value="customer_request">Customer-requested correction</option><option value="other">Other field correction</option></select></label><label>Clear crew correction instructions<textarea name="crew_instructions" required minlength="12" maxlength="1000" placeholder="Describe what to check, correct and resubmit. Do not include access codes or private customer data."></textarea></label><div class="oc-closeout-rework-actions"><button type="submit" data-oc-permission="work_order_closeout_decision">Record rework decision</button><button type="button" class="secondary" data-oc-rework-cancel="${esc(row.id)}">Cancel</button></div></form>` : '';
+      const priorRework = (lane === 'rework' && (row.rejection_reason || row.customer_change_request_note)) ? `<section class="oc-closeout-rework-history"><strong>Existing crew rework / rejection guidance</strong><p>${esc(row.rejection_reason || row.customer_change_request_note)}</p><small>Recorded on the official closeout. Reviewer identity is not available in this queue. Crew should correct the record and resubmit; this display does not notify them.</small></section>` : '';
+      return `<article class="oc-queue-card oc-closeout-card" data-oc-closeout-lane="${esc(lane)}"><header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.client_name || 'Client')} · ${esc(row.cost_status || 'cost status pending')}</small></div><span class="${statusClass(row.closeout_status)}">${esc(String(row.closeout_status || 'unknown').replaceAll('_',' '))}</span></header><div class="oc-closeout-review-badge"><strong>${esc(lane.replaceAll('_',' '))}</strong><small>${esc(row.submitted_by_name || 'Submitter not returned')} · ${esc(when(row.submitted_at || row.created_at))}</small></div><dl><div><dt>Signoff</dt><dd>${esc(String(row.customer_signoff_status || 'not requested').replaceAll('_',' '))}</dd></div><div><dt>Invoice readiness</dt><dd>${esc(String(row.invoice_readiness_status || 'blocked').replaceAll('_',' '))}</dd></div><div><dt>Review / maintenance</dt><dd>${esc(String(row.review_request_status || 'not requested').replaceAll('_',' '))} · ${esc(row.maintenance_followup_due_at || 'no reminder')}</dd></div><div><dt>Proof / gallery</dt><dd>${row.approved_proof_count == null ? 'unknown' : Number(row.approved_proof_count)} approved proof · ${row.before_count == null ? '?' : Number(row.before_count)} before / ${row.after_count == null ? '?' : Number(row.after_count)} after</dd></div><div><dt>Internal margin</dt><dd>${money(row.margin_amount)} · ${Number(row.margin_percent || 0).toFixed(1)}%</dd></div></dl><p class="oc-closeout-summary">${esc(short(row.customer_summary || row.closeout_message || 'Closeout summary pending.', 260))}</p><div class="oc-closeout-review-checks" aria-label="Supervisor review prompts">${checks.map((item) => `<p data-review-kind="${esc(item.kind)}">${esc(item.note)}</p>`).join('') || '<p>No extra review prompts returned; supervisor must still inspect the original record.</p>'}</div><small>${esc(row.closeout_message || 'Closeout is awaiting supervisor review.')}</small>${priorRework}${buttons(actions)}${reworkForm}</article>`;
+    }).join('') : emptyQueue(rows.length ? 'No closeouts match these filters' : 'No closeout packages yet', rows.length ? 'Change the status or search filters to review another package.' : 'Create a supervisor closeout after approved proof is available. Customer signoff, invoice readiness, review request, and maintenance follow-up will appear here.');
   }
 
   function renderCustomerNotificationQueue() {
@@ -1319,6 +1362,38 @@
     hydrateLiveUpdateSelects();
   }
 
+  async function handleCloseoutRework(form) {
+    const id = form?.dataset?.ocCloseoutReworkForm;
+    const row = (queues.closeouts || []).find((item) => String(item.id) === String(id));
+    if (!row || row.closeout_status !== 'submitted') { status('This closeout is no longer submitted. Refresh and review the latest server status.', true); return; }
+    const capability = capabilityFor('work_order_closeout_decision');
+    if (capability?.permitted !== true) { status(capability?.reason || 'Supervisor closeout decision permission must be confirmed by the server.', true); return; }
+    const category = String(form.elements.issue_category.value || '').trim();
+    const categories = {
+      missing_proof:'Missing or unapproved proof', quality:'Quality or scope correction',
+      documentation:'Visit notes or documentation', customer_request:'Customer-requested correction',
+      other:'Other field correction'
+    };
+    const instructions = String(form.elements.crew_instructions.value || '').trim();
+    if (!Object.hasOwn(categories, category) || instructions.length < 12 || instructions.length > 1000) {
+      status('Choose an exception category and enter 12–1000 characters of clear crew instructions.', true);
+      return;
+    }
+    if (!window.confirm(`Record rework for ${row.work_order_number || 'this work order'}? This changes its official closeout status; it does not notify or dispatch a crew.`)) return;
+    const note = `Rework category: ${categories[category]}. Crew correction instructions: ${instructions}`;
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit?.disabled) return;
+    if (submit) submit.disabled = true;
+    try {
+      await send({ action:'work_order_closeout_decision', closeout_package_id:id, decision:'rework', decision_note:note }, 'Supervisor crew rework decision', true, false);
+      closeoutReworkOpenId = '';
+      renderCloseoutQueue();
+    } catch (error) {
+      if (submit) submit.disabled = false;
+      throw error;
+    }
+  }
+
   async function handlePayment(event) {
     event.preventDefault(); const data = formData(event.currentTarget);
     await send({ action:'payment_action_request', idempotency_key:idem('payment'), action_type:data.action_type, ledger_side:data.ledger_side, bank_account_id:data.bank_account_id, transaction_date:data.transaction_date, customer_or_vendor_name:data.customer_or_vendor_name, invoice_reference:data.invoice_reference, payment_reference:data.payment_reference, reversal_of_request_id:data.reversal_of_request_id, amount:Number(data.amount || 0), reason:data.reason, proof_required:true, proof_reference:data.proof_reference }, 'Payment action request');
@@ -1442,6 +1517,17 @@
   async function handleRowAction(buttonEl) {
     const action = buttonEl.dataset.ocAction; const id = buttonEl.dataset.id;
     if (!action || !id || buttonEl.disabled) return;
+    if (action === 'closeout-rework') {
+      if (capabilityFor('work_order_closeout_decision')?.permitted !== true) {
+        status('The server must permit supervisor closeout decisions before opening rework guidance.', true); return;
+      }
+      const row = (queues.closeouts || []).find((item) => String(item.id) === String(id));
+      if (row?.closeout_status !== 'submitted') { status('Refresh the closeout queue before reviewing this package.', true); return; }
+      closeoutReworkOpenId = closeoutReworkOpenId === String(id) ? '' : String(id);
+      renderCloseoutQueue();
+      if (closeoutReworkOpenId) document.querySelector('[data-oc-closeout-rework-form] select')?.focus();
+      return;
+    }
     if (action === 'attention-open') {
       const row=(queues.operations_attention || []).find((item)=>String(item.source_key)===String(id));
       if (!row) return;
@@ -1673,7 +1759,7 @@
     if (action === 'webhook-ack' || action === 'webhook-resolve') { const decision = action === 'webhook-ack' ? 'acknowledged' : 'resolved'; await send({ action:'stripe_webhook_alert_decision', alert_id:id, alert_status:decision }, `Webhook alert ${decision}`); return; }
     if (action === 'signal-review' || action === 'signal-actioned') { const decision = action === 'signal-review' ? 'review' : 'actioned'; const note = prompt(decision === 'actioned' ? 'What change was made or scheduled?' : 'Review note (optional):') || ''; await send({ action:'content_signal_decision', observation_id:id, decision_status:decision, decision_note:note }, `Route signal marked ${decision}`); return; }
     if (action === 'execution-proof-approve' || action === 'execution-proof-reject') { const decision = action.endsWith('approve') ? 'approve' : 'reject'; const note = prompt(decision === 'approve' ? 'Approval note (optional):' : 'Why is this proof rejected?'); if (decision === 'reject' && !note) return; await send({ action:'work_order_execution_proof_decision', execution_proof_id:id, decision, decision_note:note || '' }, `Execution proof ${decision}`); return; }
-    if (action.startsWith('closeout-')) { const map = { 'closeout-approve':'approve', 'closeout-reject':'reject', 'closeout-rework':'rework', 'closeout-invoice':'invoice_ready' }; const decision = map[action] || 'approve'; const promptText = decision === 'approve' ? 'Approval note (optional):' : decision === 'invoice_ready' ? 'Invoice readiness note (optional):' : 'Reason required:'; const note = prompt(promptText) || ''; if ((decision === 'reject' || decision === 'rework') && !note) return; await send({ action:'work_order_closeout_decision', closeout_package_id:id, decision, decision_note:note }, `Closeout ${decision.replace('_',' ')}`); return; }
+    if (action.startsWith('closeout-')) { const map = { 'closeout-approve':'approve', 'closeout-reject':'reject', 'closeout-invoice':'invoice_ready' }; const decision = map[action]; if (!decision) return; const promptText = decision === 'approve' ? 'Approval note (optional):' : decision === 'invoice_ready' ? 'Invoice readiness note (optional):' : 'Reason required:'; const response = prompt(promptText); if (response === null) return; const note = response.trim(); if (decision === 'reject' && !note) return; await send({ action:'work_order_closeout_decision', closeout_package_id:id, decision, decision_note:note }, `Closeout ${decision.replace('_',' ')}`); return; }
     if (action === 'customer-notification-retry') { const note = prompt('Why is this e-mail safe to retry? This note remains staff-only.'); if (!note) return; await send({ action:'customer_notification_retry', outbox_id:id, retry_note:note }, 'Re-queuing customer e-mail'); return; }
     if (action === 'job-update-retract') { const reason = prompt('Why should this live update be retracted?'); if (!reason) return; await send({ action:'work_order_live_update_retract', live_update_id:id, retraction_reason:reason }, 'Live work update retraction'); return; }
     if (action === 'deposit-paid') { status('Deposit status is webhook-controlled. Use Stripe test checkout and confirm the verified webhook health card updates.', true); return; }
@@ -1972,7 +2058,7 @@
         <details open><summary>Quote owners, alerts, and follow-up</summary><p class="muted">Assign each request, set a due time, and preserve every contact event.</p><div id="oc_quote_queue" class="oc-live-queue"></div></details>
         <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Production session<select name="job_session_id" data-oc-production-session><option value="">No production session link</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a consent-controlled customer e-mail when the customer has opted in</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div><h4>Customer e-mail delivery</h4><div id="oc_customer_notification_queue" class="oc-live-queue"></div></details>
         <details open><summary>Service-execution proof and internal job cost</summary><p class="muted">Capture arrival/completion evidence plus labour, material, equipment, and other costs. Customer-visible proof requires approved public images and a customer-safe summary; internal costs never appear in the portal.</p><form id="oc_execution_proof_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Production session<select name="job_session_id" data-oc-production-session><option value="">No production session link</option></select></label><label>Proof type<select name="proof_type"><option value="arrival">Arrival</option><option value="progress">Progress</option><option value="completion">Completion</option><option value="quality">Quality check</option><option value="material">Material use</option><option value="equipment">Equipment use</option><option value="expense">Other expense</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label>Labour minutes<input name="labour_minutes" type="number" min="0" step="1" value="0" /></label><label>Labour hourly cost<input name="labour_hourly_rate" type="number" min="0" step="0.01" value="0" /></label><label>Material cost<input name="material_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Equipment cost<input name="equipment_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Other cost<input name="other_cost_total" type="number" min="0" step="0.01" value="0" /></label><label class="operations-span">Proof title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Arrival walkaround completed" /></label><label class="operations-span">Staff notes<textarea name="staff_notes" maxlength="4000" placeholder="Internal proof notes, cost context, issue notes, or crew details. Never shown to customers."></textarea></label><label class="operations-span">Customer-safe summary<textarea name="customer_summary" maxlength="1500" placeholder="Optional summary shown only after supervisor approval if customer-visible is checked. Do not include costs or access details."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4"></select><small>Customer-visible proof may use only approved public images. Private review media stays internal.</small></label><label class="operations-inline-check operations-span"><input name="customer_visible" type="checkbox" /> After supervisor approval, show this proof summary in the secure customer portal</label><button type="submit" data-oc-permission="work_order_execution_proof_submit">Capture service proof</button></form><h4>Execution proof and cost review</h4><div id="oc_execution_proof_queue" class="oc-live-queue"></div></details>
-        <details open><summary>Supervisor closeout, signoff, invoice readiness, and follow-up</summary><p class="muted">Build the final customer-safe closeout from approved proof. Before/after gallery, customer signoff, review request, invoice-readiness, and maintenance follow-up stay separate from public SEO pages and never expose costs.</p><form id="oc_closeout_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Maintenance follow-up due<input name="maintenance_followup_due_at" type="date" /></label><label class="operations-inline-check"><input name="invoice_ready_requested" type="checkbox" /> Prepare invoice-readiness after customer signoff</label><label class="operations-inline-check"><input name="review_request_requested" type="checkbox" /> Queue review request after customer signoff</label><label class="operations-span">Customer-safe closeout summary<textarea name="customer_summary" maxlength="2000" minlength="12" required placeholder="Summarize what was completed, what the customer should know, and any care/maintenance tip. Do not include costs, staff notes, access codes, or internal margin."></textarea></label><label class="operations-span">Staff-only closeout notes<textarea name="staff_closeout_notes" maxlength="4000" placeholder="Internal notes for invoice, rework, cost context, or supervisor review. Never shown in the customer portal."></textarea></label><label class="operations-span">Approved BEFORE images<select name="before_asset_ids" data-oc-closeout-before-assets multiple size="4"></select><small>Only approved public images are selectable. Review-stage media stays private.</small></label><label class="operations-span">Approved AFTER images<select name="after_asset_ids" data-oc-closeout-after-assets multiple size="4"></select><small>The portal gallery shows approved customer-safe public images only.</small></label><button type="submit" data-oc-permission="work_order_closeout_submit">Submit closeout package</button></form><h4>Closeout review queue</h4><div id="oc_closeout_queue" class="oc-live-queue"></div></details>
+        <details open><summary>Supervisor closeout, signoff, invoice readiness, and follow-up</summary><p class="muted">Build the final customer-safe closeout from approved proof. Before/after gallery, customer signoff, review request, invoice-readiness, and maintenance follow-up stay separate from public SEO pages and never expose costs.</p><form id="oc_closeout_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Maintenance follow-up due<input name="maintenance_followup_due_at" type="date" /></label><label class="operations-inline-check"><input name="invoice_ready_requested" type="checkbox" /> Prepare invoice-readiness after customer signoff</label><label class="operations-inline-check"><input name="review_request_requested" type="checkbox" /> Queue review request after customer signoff</label><label class="operations-span">Customer-safe closeout summary<textarea name="customer_summary" maxlength="2000" minlength="12" required placeholder="Summarize what was completed, what the customer should know, and any care/maintenance tip. Do not include costs, staff notes, access codes, or internal margin."></textarea></label><label class="operations-span">Staff-only closeout notes<textarea name="staff_closeout_notes" maxlength="4000" placeholder="Internal notes for invoice, rework, cost context, or supervisor review. Never shown in the customer portal."></textarea></label><label class="operations-span">Approved BEFORE images<select name="before_asset_ids" data-oc-closeout-before-assets multiple size="4"></select><small>Only approved public images are selectable. Review-stage media stays private.</small></label><label class="operations-span">Approved AFTER images<select name="after_asset_ids" data-oc-closeout-after-assets multiple size="4"></select><small>The portal gallery shows approved customer-safe public images only.</small></label><button type="submit" data-oc-permission="work_order_closeout_submit">Submit closeout package</button></form><h4>Closeout review queue</h4><div id="oc_closeout_review_summary" class="oc-closeout-review-summary" aria-live="polite"></div><div class="oc-closeout-review-controls"><label>Status<select id="oc_closeout_filter" aria-label="Filter closeout review status"><option value="all">All closeouts</option><option value="needs_review">Awaiting supervisor</option><option value="rework">Rework / rejected</option><option value="waiting_customer">Waiting on customer</option><option value="approved">Approved / other follow-up</option><option value="complete">Invoice-ready</option><option value="other">Other statuses</option></select></label><label>Find work order or customer<input id="oc_closeout_search" type="search" placeholder="Search closeouts" autocomplete="off" /></label><output id="oc_closeout_result_count" aria-live="polite"></output></div><div id="oc_closeout_queue" class="oc-live-queue"></div></details>
         <details open><summary>Payment Application &amp; A/R Completion</summary><p class="muted">Apply receipts and unapplied cash, paid deposits, credits, discounts, approved write-offs, or overpayments only after server validation. Every submission is review/audit evidence; <strong>ledger posting remains OFF</strong> until a separately authorized release.</p><form id="oc_ar_application_form" class="operations-form">
           <label>Application type<select name="application_type"><option value="receipt">Receipt to invoice</option><option value="unapplied_cash">Unapplied cash to invoice</option><option value="deposit">Paid deposit to invoice</option><option value="credit">Credit to invoice</option><option value="discount">Discount to invoice</option><option value="writeoff">Approved write-off</option><option value="overpayment">Overpayment / customer credit</option></select></label>
           <label>Application date<input id="oc_ar_application_date" name="application_date" type="date" value="${todayValue}" required /></label>
@@ -2039,6 +2125,20 @@
     byId('oc_live_update_form')?.addEventListener('submit', (e) => handleLiveUpdate(e).catch((err) => status(err?.message || 'Live work update failed.', true)));
     byId('oc_execution_proof_form')?.addEventListener('submit', (e) => handleExecutionProof(e).catch((err) => status(err?.message || 'Service-execution proof failed.', true)));
     byId('oc_closeout_form')?.addEventListener('submit', (e) => handleCloseout(e).catch((err) => status(err?.message || 'Closeout package failed.', true)));
+    byId('oc_closeout_filter')?.addEventListener('change', (e) => { closeoutReviewFilter = e.target.value; renderCloseoutQueue(); });
+    byId('oc_closeout_search')?.addEventListener('input', (e) => { closeoutReviewQuery = e.target.value.trim().toLowerCase(); renderCloseoutQueue(); });
+    byId('oc_closeout_queue')?.addEventListener('submit', (event) => {
+      const form = event.target.closest('[data-oc-closeout-rework-form]');
+      if (!form) return;
+      event.preventDefault();
+      handleCloseoutRework(form).catch((err) => status(err?.message || 'Crew rework decision failed.', true));
+    });
+    byId('oc_closeout_queue')?.addEventListener('click', (event) => {
+      const cancel = event.target.closest('[data-oc-rework-cancel]');
+      if (!cancel) return;
+      closeoutReworkOpenId = '';
+      renderCloseoutQueue();
+    });
     byId('oc_ar_application_form')?.addEventListener('submit', (e) => handleArApplication(e).catch((err) => status(err?.message || 'A/R application request failed.', true)));
     byId('oc_ar_application_preview_btn')?.addEventListener('click', () => handleArApplicationPreview().catch((err) => status(err?.message || 'A/R application validation failed.', true)));
     byId('oc_ar_application_form')?.addEventListener('input', invalidateArApplicationPreview);
@@ -2098,8 +2198,9 @@
     anchor.insertAdjacentHTML('afterend', panelHtml()); bind(); restoreDraft(); renderRetry(); routeReadiness(); hydrateBankSelects(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); loadQueues(true);
   }
 
+  window.YWICloseoutReview545 = Object.freeze({ reviewLane:closeoutReviewLane, reviewChecks:closeoutReviewChecks });
   const observer = new MutationObserver(inject);
   document.addEventListener('DOMContentLoaded', () => { inject(); observer.observe(document.body, { childList:true, subtree:true }); });
-  document.addEventListener('ywi:auth-changed', () => setTimeout(() => { inject(); loadQueues(true); }, 0));
+  document.addEventListener('ywi:auth-changed', () => setTimeout(() => { closeoutReworkOpenId = ''; closeoutReviewFilter = 'all'; closeoutReviewQuery = ''; const filter = byId('oc_closeout_filter'); if (filter) filter.value = 'all'; const query = byId('oc_closeout_search'); if (query) query.value = ''; inject(); loadQueues(true); }, 0));
   window.addEventListener('beforeunload', stopCamera);
 })();
