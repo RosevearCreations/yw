@@ -102,8 +102,8 @@
     const candidates = [
       normalizeRole(profile?.role, profile, user),
       normalizeRole(profile?.staff_tier, profile, user),
-      normalizeRole(user?.user_metadata?.role, profile, user),
-      normalizeRole(user?.user_metadata?.staff_tier, profile, user),
+      // User metadata is editable by the account holder; never derive role
+      // display, module navigation or Sysop eligibility from it.
       normalizeRole(user?.app_metadata?.role, profile, user),
       normalizeRole(user?.app_metadata?.staff_tier, profile, user)
     ].filter(Boolean);
@@ -130,7 +130,7 @@
 
   function normalizeRole(role, profile = null, user = null) {
     const clean = String(role || '').trim().toLowerCase();
-    const tier = String(profile?.staff_tier || user?.user_metadata?.staff_tier || '').trim().toLowerCase();
+    const tier = String(profile?.staff_tier || user?.app_metadata?.staff_tier || '').trim().toLowerCase();
     if (clean === 'worker' || clean === 'staff') return 'employee';
     if (clean) return clean;
     if (tier === 'admin') return 'admin';

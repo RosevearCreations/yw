@@ -173,6 +173,10 @@
       <a href="#today" data-module="jobs">Jobs</a>
       <a href="#admin" data-module="admin">Admin</a>
     </nav>
+    <nav id="workspace550Nav" class="yw550-workspace-nav" aria-label="Choose platform or landscaping workspace" hidden>
+      <a href="#company" id="workspace550CompanyLink">Landscaping company workspace</a>
+      <a href="#sysop" id="workspace550SysopLink" hidden>Ree / Jack · Sysop monitoring</a>
+    </nav>
     <nav id="moduleSectionNav" class="module-section-nav" aria-label="Current module screens"></nav>
   </header>
 
@@ -380,6 +384,8 @@
     <section id="equipment" class="card"><h2>Equipment</h2><div class="section-graphic-placeholder"><span aria-hidden="true">⌁</span><strong>Equipment scan placeholder</strong><small>Future image: QR/barcode scan, custody timeline, or return-to-service checklist.</small></div></section>
     <section id="settings" class="card"><h2>Settings</h2></section>
     <section id="admin" class="card"><h2>Admin</h2><div class="section-graphic-placeholder"><span aria-hidden="true">▥</span><strong>Admin control center placeholder</strong><small>Future image: scorecards, progress rails, release readiness, and issue heat map.</small></div></section>
+    <section id="company" class="card"><span class="module-kicker">YW 550 · Landscaping product</span><h2>Company workspace</h2><p class="section-subtitle">Your verified company and operational modules. Rosevear Landscaping is our sample landscaper; other companies remain private to their owners.</p><div id="workspace550Company" aria-live="polite"></div></section>
+    <section id="sysop" class="card"><span class="module-kicker">YW 550 · Outer platform shell</span><h2>Sysop · Platform Operations</h2><p class="section-subtitle">Ree and Jack’s platform monitoring, status, diagnostics and elevated help. Company-specific work stays in the landscaping product.</p><div id="workspace550Sysop" aria-live="polite"></div></section>
   </main>
 
   <aside class="app-supporting-panels" aria-label="Public service information and quote access">
@@ -442,6 +448,7 @@
   <!-- Shared Core shell. Business modules are permission-loaded by module-runtime.js. -->
   <script src="/js/security.js?v=2026-09-03a"></script>
   <script src="/js/router.js?v=2026-09-03a"></script>
+  <script src="/js/dual-workspace-550.js?v=20261108b550"></script>
   <script src="/js/module-nav.js?v=2026-09-03a"></script>
   <script src="/js/mobile-menu.js?v=2026-09-03a"></script>
   <!-- Build 361 asset provenance: /js/mobile-today.js?v=2026-09-30b361 -->

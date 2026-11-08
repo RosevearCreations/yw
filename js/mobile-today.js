@@ -810,6 +810,9 @@
 
   function bindCrewCloseout(panel) {
     panel.querySelectorAll('[data-crew-closeout-index]').forEach((details) => details.addEventListener('toggle', () => {
+      // A filter render may detach the old <details> before its queued toggle
+      // fires. A stale event must never overwrite the new card's open state.
+      if (!details.isConnected || !panel.contains(details)) return;
       const index = Number(details.dataset.crewCloseoutIndex);
       const row = crewRows()?.[index];
       const key = crewAssignmentKey(row);
@@ -841,6 +844,13 @@
     if (count) count.textContent = state.crewTab === 'rework' ? `${visible.length} assigned rework job(s) shown` : `${visible.length} of ${total} assigned ${state.crewTab === 'jobs' ? 'jobs' : 'route stops'} shown`;
     const list = panel.querySelector('.mobile-crew-v2-list');
     if (!list) return;
+    // Capture the live DOM state synchronously before replacing filtered cards:
+    // <details> toggle events are asynchronous, but search input is immediate.
+    list.querySelectorAll('[data-crew-closeout-index]').forEach((details) => {
+      const row = rows?.[Number(details.dataset.crewCloseoutIndex)];
+      const key = crewAssignmentKey(row);
+      if (key) state.crewCloseoutOpen[key] = details.open;
+    });
     list.innerHTML = state.crewLoading && !state.crewContext
       ? '<div class="mobile-crew-v2-empty">Loading assigned field work…</div>'
       : !state.crewContext && state.crewError

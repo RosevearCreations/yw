@@ -66,11 +66,8 @@
     if (Number(summary.scorecard_unclassified_open_count || 0) > 0) {
       return 'Classify every open readiness rail before release evidence can be treated as complete.';
     }
-    if (Number(summary.current_todo_count || 0) > 0) {
-      return 'Resolve the current Admin To-Do queue in priority order without bypassing human or external gates.';
-    }
-    if (Number(summary.open_rail_acceptance_count || 0) > 0) {
-      return 'Complete required human/external acceptance on dedicated non-Production staging; do not substitute Production.';
+    if (Number(summary.open_rail_acceptance_count || 0) > 0 || Number(summary.current_todo_count || 0) > 0) {
+      return 'Review the current human, staging, accounting and provider acceptance backlog for the affected feature. Historical launch tasks are not automatically prerequisites for unrelated source-green releases.';
     }
     return 'Review exact release evidence and approvals. Production promotion remains a separate manual human decision.';
   }
@@ -159,6 +156,20 @@
       ? 'Deep verification deferred from interactive load'
       : `${Number(summary.blocking||0)} blocking · ${Number(summary.warning||0)} warning · ${Number(summary.total||0)} row(s)`;
     return `<section class="it-readiness-panel"><span class="it-readiness-kicker">${esc(title)}</span><h3>${esc(subtitle)}</h3><p>${esc(summaryLine)}</p>${renderRows(section,subtitle)}</section>`;
+  }
+
+  function historicalTechnicalArchive() {
+    const items=[
+      ['schema_preflight','Schema preflight'],
+      ['deployment_checklist','Former deployment checklist'],
+      ['function_readiness','Historical function readiness'],
+      ['production_readiness','Prelaunch production checklist']
+    ];
+    return `<details id="itHistoricalTechnicalArchive" class="it-readiness-panel it-historical-archive">
+      <summary>Historical preflight and prelaunch checks (audit only)</summary>
+      <p>These historical panels are no longer listed as routine release prerequisites. The current exact-main CI, repository enforcement, schema parity and any feature-specific human/provider approval remain authoritative. An error in an archived check is not silently marked passed.</p>
+      ${items.map(([key,title])=>`<div class="it-historical-group"><h4>${esc(title)}</h4>${renderRows(state.payload?.sections?.[key],title)}</div>`).join('')}
+    </details>`;
   }
 
   function renderAssertions() {
@@ -269,10 +280,7 @@
         ${renderAdminIntegrity()}
         ${renderAssertions()}
         ${panel('schema_drift','Database','Schema drift')}
-        ${panel('schema_preflight','Preflight','Schema preflight checks')}
-        ${panel('deployment_checklist','Deployment','Deployment checklist')}
-        ${panel('function_readiness','Functions','Edge Function readiness')}
-        ${panel('production_readiness','Release','Production readiness')}
+        ${historicalTechnicalArchive()}
         ${panel('deployment_gate','Release gate','Deployment gate status')}
         ${panel('backup_restore','Recovery','Backup / restore preparedness')}
         ${panel('runtime_health','Runtime','Runtime and error health')}

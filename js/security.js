@@ -169,6 +169,8 @@
 
   function canViewSection(sectionId, role) {
     const id = String(sectionId || '').trim();
+    if (id === 'sysop') return window.YWIDualWorkspace?.isSysopVerified?.() === true;
+    if (id === 'company') return window.YWI_AUTH?.getState?.()?.isAuthenticated === true;
     if (id === 'me' || id === 'settings') return true;
     const moduleKey = getModuleForSection(id);
     if (moduleKey) return canViewModule(moduleKey, role, getRequiredModuleAccess(id));
