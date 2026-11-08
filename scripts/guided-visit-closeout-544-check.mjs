@@ -50,6 +50,7 @@ assert.ok(!markup.includes('<script>'),'Never inject server-supplied markup');
 for(const required of [
   'crewCloseoutMarkup(row, index)',
   'bindCrewCloseout(list)',
+  "list.querySelectorAll('[data-crew-guide-action]')",
   'state.crewCloseoutOpen=Object.create(null)',
   'pruneCrewPrepState(payload)',
   'if (!state.crewContext?.capabilities?.closeout_request) throw new Error',

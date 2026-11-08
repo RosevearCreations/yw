@@ -215,7 +215,7 @@ for (const width of [390,430]) {
     expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
     await page.locator('[data-crew-search]').fill('Maple');
     await expect(page.locator('[data-crew-closeout-index="0"]')).toHaveAttribute('open');
-    await page.locator('[data-crew-closeout-index="0"] [data-crew-action="safety"]').click();
+    await page.locator('[data-crew-closeout-index="0"] [data-crew-guide-action="safety"]').click();
     expect(await page.evaluate(()=>window.__route)).toBe('inspect');
     expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);

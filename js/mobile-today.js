@@ -670,7 +670,7 @@
       '<summary>Guided visit closeout · ' + reminders + ' review prompt' + (reminders === 1 ? '' : 's') + '</summary>' +
       '<ol class="mobile-crew-v2-closeout-list">' + items.map((item) =>
         '<li class="mobile-crew-v2-closeout-item" data-closeout-kind="' + crewEscape(item.kind) + '"><div><span class="mobile-crew-v2-closeout-tag">' + crewEscape(item.kind) + '</span><strong>' + crewEscape(item.title) + '</strong><small>' + crewEscape(item.note) + '</small></div>' +
-        (item.action ? crewActionButton('Open ' + item.title, item.action, index, (online || ['safety','equipment'].includes(item.action)) && !state.crewPendingAction) : '') + '</li>'
+        (item.action ? '<button type="button" class="secondary" data-crew-guide-action="' + crewEscape(item.action) + '" data-crew-index="' + index + '"' + ((online || ['safety','equipment'].includes(item.action)) && !state.crewPendingAction ? '' : ' disabled') + '>Open ' + crewEscape(item.title) + '</button>' : '') + '</li>'
       ).join('') + '</ol>' +
       '<p class="mobile-crew-v2-closeout-note">Review prompts are not mandatory for every service and do not certify readiness. Offline and cached counts can be stale. The existing Safety, production and server-controlled closeout actions remain authoritative; nothing here dispatches work or contacts customers.</p>' +
     '</details>';
@@ -734,6 +734,7 @@
         : visible.length ? visible.map(({ row, index }) => crewCard(row, index)).join('')
           : '<div class="mobile-crew-v2-empty">' + (total ? 'No assigned work matches these filters. Clear the search or site cautions filter.' : 'No assigned work is in the current seven-day crew window.') + '</div>';
     list.querySelectorAll('[data-crew-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewAction, Number(button.dataset.crewIndex || 0))));
+    list.querySelectorAll('[data-crew-guide-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewGuideAction, Number(button.dataset.crewIndex || 0))));
     bindCrewDetails(list);
     bindCrewCloseout(list);
   }
