@@ -148,6 +148,8 @@
     "test:mobile-rework-photo-547": "node scripts/mobile-rework-photo-547-check.mjs",
     "test:supervisor-photo-review-548": "node scripts/supervisor-photo-review-548-check.mjs",
     "test:browser:supervisor-photo-review-548": "playwright test --config=playwright.config.mjs tests/browser/supervisor-photo-review-548.spec.mjs",
+    "test:supervisor-rework-history-549": "node scripts/supervisor-rework-history-549-check.mjs",
+    "test:browser:supervisor-rework-history-549": "playwright test --config=playwright.config.mjs tests/browser/supervisor-rework-history-549.spec.mjs",
     "test:mobile-production-transition": "node scripts/mobile-production-transition-check.mjs",
     "test:browser:mobile-production-transition": "playwright test --config=playwright.config.mjs tests/browser/mobile-production-transition.spec.mjs",
     "test:browser:mobile-crew-app-v2": "playwright test --config=playwright.config.mjs tests/browser/mobile-crew-app-v2.spec.mjs",

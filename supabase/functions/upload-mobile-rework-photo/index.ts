@@ -129,6 +129,114 @@ async function supervisorComparison(supabase:any,profile:any,closeoutId:string) 
       created_at:latestCorrection.created_at}:null,expires_in:300,staff_only:true};
 }
 
+// YW 549: read the original decision audit and staff-only correction events.
+// This is deliberately a history projection, not a new closeout authority.
+async function supervisorReworkHistory(supabase:any,profile:any,closeoutId:string) {
+  if (!isUuid(closeoutId)) throw new HttpError(400,'A valid closeout is required.');
+  if (rank(profile.role)<30 || !(await hasModuleAccess(supabase,profile,'jobs','approve')))
+    throw new HttpError(403,'Supervisor Jobs approval permission is required.');
+  const {data:closeout,error:closeoutError}=await supabase.from('work_order_closeout_packages')
+    .select('id,work_order_id,closeout_status,rejected_at,rejection_reason,submitted_at,approved_at,customer_signoff_status,invoice_readiness_status')
+    .eq('id',closeoutId).maybeSingle();
+  if (closeoutError) throw closeoutError;
+  if (!closeout) throw new HttpError(404,'Closeout not found.');
+  const {data:order,error:orderError}=await supabase.from('work_orders')
+    .select('id,supervisor_profile_id').eq('id',closeout.work_order_id).maybeSingle();
+  if (orderError) throw orderError;
+  if (!order) throw new HttpError(404,'Work order not found.');
+  if (rank(profile.role)<45 && order.supervisor_profile_id && order.supervisor_profile_id!==profile.id)
+    throw new HttpError(403,'This work order is assigned to another supervisor.');
+
+  const [audits,proofs,updates]=await Promise.all([
+    supabase.from('operation_write_audit_events')
+      .select('id,operation_status,actor_profile_id,request_payload,created_at')
+      .eq('entity_type','work_order_closeout_package').eq('entity_id',closeout.id)
+      .eq('operation_action','work_order_closeout_decision').order('created_at',{ascending:false}).limit(60),
+    supabase.from('work_order_execution_proofs')
+      .select('id,title,proof_status,created_at,captured_by_profile_id,metadata')
+      .eq('work_order_id',order.id).eq('title','Crew rework correction')
+      .order('created_at',{ascending:false}).limit(60),
+    supabase.from('work_order_live_updates')
+      .select('id,title,author_profile_id,created_at,metadata')
+      .eq('work_order_id',order.id).eq('visibility','staff')
+      .in('title',['Crew rework corrections resubmitted','Crew acknowledged supervisor rework instructions'])
+      .order('created_at',{ascending:false}).limit(100)
+  ]);
+  for (const response of [audits,proofs,updates]) if (response.error) throw response.error;
+  const history:any[]=[];
+  for (const record of audits.data||[]) {
+    const decision=String(record.request_payload?.decision||record.operation_status||'').toLowerCase();
+    if (!['approve','reject','rework','invoice_ready'].includes(decision)) continue;
+    history.push({id:record.id,type:'supervisor_decision',at:record.created_at,actor_id:record.actor_profile_id,
+      title:`Supervisor ${decision.replaceAll('_',' ')}`,detail:String(record.request_payload?.decision_note||'').slice(0,1000)});
+  }
+  for (const proof of proofs.data||[]) {
+    if (proof.metadata?.closeout_id!==closeout.id) continue;
+    history.push({id:proof.id,type:'correction_proof',at:proof.created_at,actor_id:proof.captured_by_profile_id,
+      title:'Crew correction proof',detail:`Current recorded proof status: ${String(proof.proof_status||'unknown').slice(0,50)}`});
+  }
+  const currentAcknowledgements:any[]=[];
+  for (const update of updates.data||[]) {
+    if (update.metadata?.closeout_id!==closeout.id) continue;
+    if (update.title==='Crew rework corrections resubmitted' && update.metadata?.source==='mobile_rework_resubmission') {
+      history.push({id:update.id,type:'resubmission',at:update.created_at,actor_id:update.author_profile_id,
+        title:'Corrections resubmitted',detail:'Staff-only request for supervisor review; not a closeout decision.'});
+    } else if (update.title==='Crew acknowledged supervisor rework instructions' &&
+      update.metadata?.source==='crew_rework_ack_549') {
+      history.push({id:update.id,type:'acknowledgement',at:update.created_at,actor_id:update.author_profile_id,
+        title:'Crew member acknowledged instructions',detail:'Acknowledged receipt only; not proof, approval or completion.'});
+      if (closeout.rejected_at && update.metadata?.rejected_at===closeout.rejected_at)
+        currentAcknowledgements.push({actor_id:update.author_profile_id,at:update.created_at});
+    }
+  }
+  history.sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
+  return {ok:true,staff_only:true,closeout:{id:closeout.id,status:closeout.closeout_status,
+    rejected_at:closeout.rejected_at,rejection_reason:String(closeout.rejection_reason||'').slice(0,1500),
+    customer_signoff_status:closeout.customer_signoff_status,invoice_readiness_status:closeout.invoice_readiness_status},
+    events:history.slice(0,60),current_acknowledgements:currentAcknowledgements,
+    history_limited:true,decision_authority:'work_order_closeout_decision'};
+}
+
+async function crewReworkAcknowledgement(supabase:any,profile:any,body:any) {
+  const workOrderId=String(body.work_order_id||'');
+  const closeout=await assignedRework(supabase,profile,workOrderId);
+  if (!isUuid(body.closeout_package_id) || body.closeout_package_id!==closeout.id ||
+      body.rejected_at!==closeout.rejected_at)
+    throw new HttpError(409,'The supervisor instructions have changed. Refresh before acknowledging.');
+  const {data:current,error:currentError}=await supabase.from('work_order_closeout_packages')
+    .select('id,rejection_reason,closeout_status,rejected_at').eq('id',closeout.id).maybeSingle();
+  if (currentError) throw currentError;
+  if (!current?.rejection_reason || !['rework_required','rejected'].includes(current.closeout_status) ||
+    current.rejected_at!==closeout.rejected_at)
+    throw new HttpError(409,'Current supervisor instructions are unavailable. Refresh before acknowledging.');
+  const title='Crew acknowledged supervisor rework instructions';
+  const {data:previous,error:previousError}=await supabase.from('work_order_live_updates')
+    .select('id,created_at,metadata').eq('work_order_id',workOrderId)
+    .eq('visibility','staff').eq('author_profile_id',profile.id).eq('title',title)
+    .gte('created_at',closeout.rejected_at).order('created_at',{ascending:false}).limit(20);
+  if (previousError) throw previousError;
+  const ack=(previous||[]).find((item:any)=>item.metadata?.source==='crew_rework_ack_549' &&
+    item.metadata?.closeout_id===closeout.id && item.metadata?.rejected_at===closeout.rejected_at);
+  if (body.action==='crew_history')
+    return {ok:true,staff_only:true,closeout_id:closeout.id,rejected_at:closeout.rejected_at,
+      instructions:String(current.rejection_reason).slice(0,1500),acknowledgement:ack?{at:ack.created_at,id:ack.id}:null,
+      status:current.closeout_status};
+  if (body.action!=='crew_acknowledge') throw new HttpError(400,'Unsupported acknowledgement request.');
+  if (ack) return {ok:true,staff_only:true,replayed:true,closeout_id:closeout.id,
+    acknowledgement:{at:ack.created_at,id:ack.id},status:current.closeout_status};
+  if (body.confirmed!==true) throw new HttpError(400,'Review and explicitly confirm the current supervisor instructions.');
+  const {data:result,error:saveError}=await supabase.rpc('ywi_rpc_create_work_order_live_update',{
+    p_work_order_id:workOrderId,p_actor_profile_id:profile.id,p_visibility:'staff',p_update_type:'note',
+    p_title:title,p_message:'I have read the current supervisor rework instructions.',p_asset_ids:[],
+    p_customer_notification_requested:false,
+    p_metadata:{build:549,source:'crew_rework_ack_549',closeout_id:closeout.id,rejected_at:closeout.rejected_at}
+  });
+  if (saveError) throw saveError;
+  if (!isUuid(result?.live_update_id)) throw new HttpError(500,'Acknowledgement was not confirmed by the server.');
+  return {ok:true,staff_only:true,closeout_id:closeout.id,acknowledgement:{id:result.live_update_id,at:new Date().toISOString()},
+    status:current.closeout_status};
+}
+
 // Verify actual bytes, not just a browser-provided MIME type or filename.
 async function imageKind(file:File) {
   const bytes=new Uint8Array(await file.slice(0,32).arrayBuffer());
@@ -157,6 +265,12 @@ serve(async(req)=>{
       const body=await req.json();
       if (body.action==='supervisor_review') {
         return Response.json(await supervisorComparison(supabase,profile,body.closeout_package_id),{headers:{...corsHeaders,'Cache-Control':'no-store'}});
+      }
+      if (body.action==='supervisor_history') {
+        return Response.json(await supervisorReworkHistory(supabase,profile,body.closeout_package_id),{headers:{...corsHeaders,'Cache-Control':'no-store'}});
+      }
+      if (body.action==='crew_history' || body.action==='crew_acknowledge') {
+        return Response.json(await crewReworkAcknowledgement(supabase,profile,body),{headers:{...corsHeaders,'Cache-Control':'no-store'}});
       }
       if (body.action!=='review' || !isUuid(body.work_order_id) || !isUuid(body.proof_id)) throw new HttpError(400,'Valid review identifiers are required.');
       await assignedRework(supabase,profile,body.work_order_id);
