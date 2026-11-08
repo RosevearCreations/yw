@@ -373,6 +373,7 @@ jobs:
       - run: npm run test:estimate-job-invoice-workflow
       - run: npm run test:landscape-production-tracking
       - run: npm run test:mobile-crew-app-v2
+      - run: npm run test:crew-field-finder-542
       - run: npm run test:mobile-production-transition
       - run: node scripts/safety-equipment-preflight-397-check.mjs
       - run: node scripts/material-issue-return-reconciliation-398-check.mjs
