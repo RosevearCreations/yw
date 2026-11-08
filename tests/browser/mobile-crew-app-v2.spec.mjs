@@ -84,3 +84,59 @@ test('Build 326 uses canonical production action and disables writes offline', a
   await expect(page.locator('[data-crew-action="clock"]')).toBeEnabled();
   await expect(page.locator('[data-crew-action="safety"]')).toBeEnabled();
 });
+
+test('Build 542 finds only assigned work, preserves route action identity and keeps filters read-only', async ({page})=>{
+  await boot(page,390);
+  const secondId='71111111-1111-4111-8111-111111111111';
+  await page.evaluate(async (id)=>{
+    const original=await window.YWIAPI.fetchMobileCrewContext();
+    const second=structuredClone(original.my_route[0]);
+    second.dispatch.id=id;
+    second.dispatch.route_order=3;
+    second.job.job_name='Oak hedge trimming';
+    second.job.job_code='JOB-542';
+    second.site.site_name='Oak Property';
+    second.site.service_address='44 Cedar Street';
+    second.site.hazard_notes='';
+    second.site.slope_notes='';
+    second.site.drainage_wet_area_notes='';
+    second.site.utility_locate_notes='';
+    second.site.tree_brush_notes='';
+    second.equipment=[];
+    original.my_route.push(second);
+    original.my_jobs=[second];
+    window.YWIAPI.fetchMobileCrewContext=async()=>original;
+    await window.YWIMobileToday.loadMobileCrewContext(true);
+  },secondId);
+  await expect(page.locator('[data-crew-match-count]')).toHaveText('2 of 2 assigned route stops shown');
+  await page.locator('[data-crew-search]').fill('cedar');
+  await expect(page.locator('.mobile-crew-v2-card')).toHaveCount(1);
+  await expect(page.locator('.mobile-crew-v2-card')).toContainText('Oak hedge trimming');
+  await expect(page.locator('[data-crew-match-count]')).toHaveText('1 of 2 assigned route stops shown');
+  expect(await page.locator('.mobile-crew-v2-card').getAttribute('data-crew-card')).toBe('1');
+  await page.locator('[data-crew-action="start_visit"]').click();
+  await expect.poll(()=>page.evaluate(()=>window.__opsCalls.length)).toBe(1);
+  expect((await page.evaluate(()=>window.__opsCalls[0])).dispatch_schedule_item_id).toBe(secondId);
+
+  await page.locator('[data-crew-clear]').click();
+  await page.locator('[data-crew-cautions]').check();
+  await expect(page.locator('.mobile-crew-v2-card')).toHaveCount(1);
+  await expect(page.locator('.mobile-crew-v2-card')).toContainText('Maple lawn service');
+  await page.locator('[data-crew-search]').fill('impossible address');
+  await expect(page.locator('.mobile-crew-v2-empty')).toContainText('No assigned work matches');
+  await expect(page.locator('[data-crew-match-count]')).toHaveText('0 of 2 assigned route stops shown');
+  expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(1);
+  await page.locator('[data-crew-clear]').click();
+  await page.locator('[data-crew-tab="jobs"]').click();
+  await expect(page.locator('[data-crew-match-count]')).toHaveText('1 of 1 assigned jobs shown');
+  await expect(page.locator('.mobile-crew-v2-card')).toContainText('Oak hedge trimming');
+});
+
+test('Build 542 resets private finder state when signed-in identity changes', async ({page})=>{
+  await boot(page,430);
+  await page.locator('[data-crew-search]').fill('Maple');
+  await page.locator('[data-crew-cautions]').check();
+  await page.evaluate(()=>document.dispatchEvent(new Event('ywi:auth-changed')));
+  await expect(page.locator('[data-crew-search]')).toHaveValue('');
+  await expect(page.locator('[data-crew-cautions]')).not.toBeChecked();
+});

@@ -25,6 +25,8 @@
     crewError: '',
     crewLoadedAt: 0,
     crewTab: 'route',
+    crewSearch: '',
+    crewSiteCautionsOnly: false,
     crewPendingAction: '',
     crewActionStatus: '',
     crewIntentKeys: Object.create(null),
@@ -325,6 +327,7 @@
       .mobile-crew-v2-meta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.mobile-crew-v2-chip{display:inline-flex;padding:4px 8px;border-radius:999px;background:rgba(148,163,184,.1);font-size:.78rem}
       .mobile-crew-v2-notes{margin:8px 0;padding:9px;border-radius:10px;background:rgba(148,163,184,.07)}.mobile-crew-v2-notes strong{display:block;margin-bottom:3px}
       .mobile-crew-v2-actions button{min-height:42px}.mobile-crew-v2-empty{padding:12px;border-radius:12px;background:rgba(148,163,184,.06);color:var(--text-soft,#cbd5e1)}
+      .mobile-crew-v2-finder{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:12px 0}.mobile-crew-v2-finder label{flex:1 1 210px;min-width:0;display:grid;gap:5px;font-weight:650}.mobile-crew-v2-finder input{width:100%;max-width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.45);background:var(--surface,#111827);color:var(--text,#f8fafc);font:inherit}.mobile-crew-v2-finder .mobile-crew-v2-cautions{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(148,163,184,.4);border-radius:10px;font-weight:650}.mobile-crew-v2-cautions input{width:18px;height:18px;min-height:18px;accent-color:#d4af37}.mobile-crew-v2-count{margin:4px 0 10px;color:var(--text-soft,#cbd5e1)}
       .jobs-desktop-workbench{display:none}.jobs-sync-health{margin:12px 0}.job-workbench-result{align-self:end;min-height:42px;display:flex;align-items:center;color:var(--text-soft,#cbd5e1)}
       @media(max-width:520px){.field-sync-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.field-sync-actions>*{flex:1 1 145px}.offline-recovery-compare{grid-template-columns:1fr}.offline-recovery-actions button{flex:1 1 120px}}
       @media(min-width:900px){.jobs-desktop-workbench{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(170px,.7fr) auto auto;gap:10px;align-items:end;padding:12px;margin:10px 0 12px;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(15,23,42,.48)}.jobs-desktop-workbench label{min-width:0}.jobs-desktop-workbench button{min-height:44px}}
@@ -566,6 +569,38 @@
     return { access, hazard };
   }
 
+  // Presentation-only: the server's assignment-filtered response is the sole source of rows.
+  // Keep the original array index so every field action targets the displayed assignment.
+  function crewVisibleRows(rows, query = state.crewSearch, cautionsOnly = state.crewSiteCautionsOnly) {
+    const needle = String(query || '').trim().toLocaleLowerCase();
+    return (Array.isArray(rows) ? rows : []).map((row, index) => ({ row, index })).filter(({ row }) => {
+      const notes = crewPropertyNotes(row);
+      const equipmentCaution = (row?.equipment || []).some((item) => item?.is_locked_out || (item?.defect_status && !['clear','none'].includes(item.defect_status)));
+      if (cautionsOnly && !notes.hazard && !equipmentCaution) return false;
+      if (!needle) return true;
+      return [crewTitle(row),crewSiteLine(row),row?.job?.job_code,row?.work_order?.work_order_number,
+        row?.work_order?.work_type,row?.dispatch?.dispatch_notes,notes.access,notes.hazard]
+        .some((value) => String(value || '').toLocaleLowerCase().includes(needle));
+    });
+  }
+
+  function renderCrewFilteredList(panel) {
+    const rows = state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route;
+    const total = Array.isArray(rows) ? rows.length : 0;
+    const visible = crewVisibleRows(rows);
+    const count = panel.querySelector('[data-crew-match-count]');
+    if (count) count.textContent = `${visible.length} of ${total} assigned ${state.crewTab === 'jobs' ? 'jobs' : 'route stops'} shown`;
+    const list = panel.querySelector('.mobile-crew-v2-list');
+    if (!list) return;
+    list.innerHTML = state.crewLoading && !state.crewContext
+      ? '<div class="mobile-crew-v2-empty">Loading assigned field work…</div>'
+      : !state.crewContext && state.crewError
+        ? '<div class="mobile-crew-v2-empty">Assigned work unavailable. Refresh when the server is reachable.</div>'
+        : visible.length ? visible.map(({ row, index }) => crewCard(row, index)).join('')
+          : '<div class="mobile-crew-v2-empty">' + (total ? 'No assigned work matches these filters. Clear the search or site cautions filter.' : 'No assigned work is in the current seven-day crew window.') + '</div>';
+    list.querySelectorAll('[data-crew-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewAction, Number(button.dataset.crewIndex || 0))));
+  }
+
   function crewActionButton(label, action, index, enabled = true) {
     return '<button type="button" class="secondary" data-crew-action="' + crewEscape(action) + '" data-crew-index="' + index + '"' + (enabled ? '' : ' disabled') + '>' + crewEscape(label) + '</button>';
   }
@@ -635,7 +670,6 @@
       else today.appendChild(panel);
     }
     const payload = state.crewContext;
-    const rows = state.crewTab === 'jobs' ? (payload?.my_jobs || []) : (payload?.my_route || []);
     const snapshot = syncSnapshot();
     const readBudget = payload?.meta?.read_budget || null;
     const reliabilityMarkup = mobileReliabilityEvidenceMarkup(payload, snapshot);
@@ -643,17 +677,34 @@
       ? ` Read budget ≤${Number(readBudget.business_read_budget_max || 0)} business reads; payload ≈${Math.max(1, Math.round(Number(readBudget.payload_bytes_estimate || 0) / 1024))} KB.`
       : '';
     const syncCopy = state.crewError || (snapshot.online ? 'Assignment-filtered live field context.' + budgetCopy : 'Offline — server writes are disabled; local supported forms retain their own drafts/outbox.');
+    const finderFocused = panel.querySelector('[data-crew-search]') === document.activeElement;
+    const selectionStart = finderFocused ? panel.querySelector('[data-crew-search]').selectionStart : null;
     panel.innerHTML =
       '<div class="mobile-crew-v2-head"><div><h2>Mobile Crew App v2</h2><p>My Jobs, My Route and field actions for 390/430-width phones.</p></div><span class="field-sync-state">' + crewEscape(syncLabel(snapshot)) + '</span></div>' +
       '<div class="mobile-crew-v2-tabs"><button type="button" class="secondary" data-crew-tab="route" aria-selected="' + (state.crewTab === 'route') + '">My Route</button><button type="button" class="secondary" data-crew-tab="jobs" aria-selected="' + (state.crewTab === 'jobs') + '">My Jobs</button><button type="button" class="secondary" data-crew-refresh="1"' + (state.crewLoading || !snapshot.online ? ' disabled' : '') + '>' + (state.crewLoading ? 'Refreshing…' : 'Refresh') + '</button></div>' +
       '<p class="field-sync-note">' + crewEscape(syncCopy) + '</p>' +
       '<p class="field-sync-note" data-crew-save-state role="status" aria-live="polite">' + crewEscape(state.crewActionStatus || 'Job start/finish needs an acknowledged online save.') + '</p>' +
+      '<div class="mobile-crew-v2-finder"><label for="crew542Search">Find assigned job or property<input id="crew542Search" type="search" data-crew-search autocomplete="off" placeholder="Job, property, address or notes" value="' + crewEscape(state.crewSearch) + '"></label>' +
+      '<label class="mobile-crew-v2-cautions"><input type="checkbox" data-crew-cautions' + (state.crewSiteCautionsOnly ? ' checked' : '') + '>Site cautions only</label>' +
+      '<button type="button" class="secondary" data-crew-clear>Clear</button></div>' +
+      '<p class="mobile-crew-v2-count" data-crew-match-count role="status" aria-live="polite"></p>' +
       reliabilityMarkup +
       deviceSafeReliabilityMarkup() +
-      '<div class="mobile-crew-v2-list">' + (state.crewLoading && !payload ? '<div class="mobile-crew-v2-empty">Loading assigned field work…</div>' : rows.length ? rows.map(crewCard).join('') : '<div class="mobile-crew-v2-empty">No assigned work is in the current seven-day crew window.</div>') + '</div>';
+      '<div class="mobile-crew-v2-list"></div>';
     panel.querySelectorAll('[data-crew-tab]').forEach((button) => button.addEventListener('click', () => { state.crewTab = button.dataset.crewTab || 'route'; renderMobileCrewApp(); }));
     panel.querySelector('[data-crew-refresh]')?.addEventListener('click', () => loadMobileCrewContext(true));
-    panel.querySelectorAll('[data-crew-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewAction, Number(button.dataset.crewIndex || 0))));
+    panel.querySelector('[data-crew-search]')?.addEventListener('input', (event) => { state.crewSearch = event.target.value; renderCrewFilteredList(panel); });
+    panel.querySelector('[data-crew-cautions]')?.addEventListener('change', (event) => { state.crewSiteCautionsOnly = event.target.checked; renderCrewFilteredList(panel); });
+    panel.querySelector('[data-crew-clear]')?.addEventListener('click', () => {
+      state.crewSearch = ''; state.crewSiteCautionsOnly = false;
+      renderMobileCrewApp(); panel.querySelector('[data-crew-search]')?.focus();
+    });
+    renderCrewFilteredList(panel);
+    if (finderFocused) {
+      const search = panel.querySelector('[data-crew-search]');
+      search?.focus();
+      if (selectionStart !== null) search?.setSelectionRange(selectionStart, selectionStart);
+    }
   }
 
   async function crewOperation(payload) {
@@ -854,7 +905,7 @@
     });
     window.addEventListener('online', () => { render(); loadMobileCrewContext(true); });
     window.addEventListener('offline', render);
-    document.addEventListener('ywi:auth-changed', () => { state.crewContext=null; state.crewLoadedAt=0; render(); loadMobileCrewContext(true); });
+    document.addEventListener('ywi:auth-changed', () => { state.crewContext=null; state.crewLoadedAt=0; state.crewSearch=''; state.crewSiteCautionsOnly=false; render(); loadMobileCrewContext(true); });
     document.addEventListener('ywi:route-shown', (event) => {
       render();
       if (String(event?.detail?.allowed || event?.detail?.section || '') === 'today' && authState().isAuthenticated) loadMobileCrewContext(false);
@@ -875,7 +926,7 @@
 
   window.YWIMobileToday = {
     bind, render, countOutboxItems, countActionItems, countConflictItems, countDraftForms,
-    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery,
+    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery, crewVisibleRows,
     reliabilityReleaseHistory: () => MOBILE_RELIABILITY_RELEASE_HISTORY.map((row) => ({ ...row }))
   };
   document.addEventListener('DOMContentLoaded', bind);
