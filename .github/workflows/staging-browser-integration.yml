@@ -173,6 +173,7 @@ jobs:
               npm run test:browser:estimate-job-invoice-workflow
               npm run test:browser:landscape-production-tracking
               npm run test:browser:mobile-crew-app-v2
+              npm run test:browser:supervisor-photo-review-548
               npm run test:browser:mobile-production-transition
               npm run test:browser:safety-compliance-command-centre
               npm run test:browser:job-hazard-site-safety-plans
@@ -379,6 +380,7 @@ jobs:
       - run: npm run test:supervisor-closeout-review-545
       - run: npm run test:mobile-crew-rework-546
       - run: npm run test:mobile-rework-photo-547
+      - run: npm run test:supervisor-photo-review-548
       - run: npm run test:mobile-production-transition
       - run: node scripts/safety-equipment-preflight-397-check.mjs
       - run: node scripts/material-issue-return-reconciliation-398-check.mjs

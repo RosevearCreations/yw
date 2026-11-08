@@ -42,6 +42,93 @@ async function assignedRework(supabase:any, profile:any, workOrderId:string) {
   return closeout;
 }
 
+// Supervisor comparison is separate from crew access. Never reuse the crew's
+// upload/review authorization for a supervisor-facing private-media view.
+async function supervisorComparison(supabase:any,profile:any,closeoutId:string) {
+  if (!isUuid(closeoutId)) throw new HttpError(400,'A valid closeout is required.');
+  if (rank(profile.role)<30 || !(await hasModuleAccess(supabase,profile,'jobs','approve')))
+    throw new HttpError(403,'Supervisor Jobs approval permission is required.');
+  const {data:closeout,error:closeoutError}=await supabase.from('work_order_closeout_packages')
+    .select('id,work_order_id,closeout_status,rejected_at,rejection_reason,submitted_at,customer_signoff_status,invoice_readiness_status')
+    .eq('id',closeoutId).maybeSingle();
+  if (closeoutError) throw closeoutError;
+  if (!closeout) throw new HttpError(404,'Closeout not found.');
+  const {data:order,error:orderError}=await supabase.from('work_orders')
+    .select('id,supervisor_profile_id').eq('id',closeout.work_order_id).maybeSingle();
+  if (orderError) throw orderError;
+  if (!order) throw new HttpError(404,'Work order not found.');
+  // Administrators can cover the entire company; other supervisors cannot
+  // inspect a colleague's explicitly assigned private work order.
+  if (rank(profile.role)<45 && order.supervisor_profile_id && order.supervisor_profile_id!==profile.id)
+    throw new HttpError(403,'This work order is assigned to another supervisor.');
+
+  const {data:proofs,error:proofError}=await supabase.from('work_order_execution_proofs')
+    .select('id,title,proof_type,proof_status,staff_notes,customer_visible,created_at,metadata')
+    .eq('work_order_id',order.id).in('proof_status',['submitted','approved','rejected'])
+    .order('created_at',{ascending:false}).limit(60);
+  if (proofError) throw proofError;
+  const correctionProofs=(proofs||[]).filter((p:any)=>p.title==='Crew rework correction' && p.customer_visible===false && p.metadata?.closeout_id===closeout.id);
+  const latestCorrection=correctionProofs[0]||null;
+  const baselineProofs=(proofs||[]).filter((p:any)=>p.title!=='Crew rework correction');
+  const selectedProofs=[...baselineProofs.slice(0,12),...(latestCorrection?[latestCorrection]:[])];
+  const ids=selectedProofs.map((p:any)=>p.id);
+  const {data:links,error:linkError}=ids.length?await supabase.from('work_order_execution_proof_media')
+    .select('execution_proof_id,visual_asset_id,display_order').in('execution_proof_id',ids)
+    .order('display_order').limit(120):{data:[],error:null};
+  if (linkError) throw linkError;
+  const assetIds=[...new Set((links||[]).map((l:any)=>l.visual_asset_id))];
+  const {data:assets,error:assetError}=assetIds.length?await supabase.from('visual_asset_approval_items')
+    .select('id,asset_status,review_storage_bucket,review_storage_path,original_file_name,public_url,metadata')
+    .in('id',assetIds):{data:[],error:null};
+  if (assetError) throw assetError;
+  const assetMap=new Map((assets||[]).map((a:any)=>[a.id,a]));
+  const makePhotos=async(proofRows:any[],max:number,correction:boolean)=>{
+    const results:any[]=[];
+    for (const proof of proofRows) {
+      for (const link of (links||[]).filter((l:any)=>l.execution_proof_id===proof.id)) {
+        if (results.length>=max) return results;
+        const asset:any=assetMap.get(link.visual_asset_id);
+        if (!asset) continue;
+        let url='';
+        if (correction) {
+          if (asset.asset_status!=='review' || asset.public_url || asset.review_storage_bucket!==BUCKET ||
+            asset.metadata?.source!=='mobile_rework_photo_547' || asset.metadata?.work_order_id!==order.id ||
+            asset.metadata?.closeout_id!==closeout.id ||
+            !asset.review_storage_path?.startsWith(`crew-rework/${order.id}/`)) continue;
+        } else if (asset.asset_status==='approved' && /^https:\/\//i.test(asset.public_url||'')) {
+          url=asset.public_url;
+        } else if (asset.review_storage_bucket!==BUCKET || asset.public_url ||
+          !/^[a-z0-9_/-]+\/[a-z0-9_./-]+$/i.test(asset.review_storage_path||'') ||
+          String(asset.review_storage_path).includes('..')) continue;
+        if (!url) {
+          const {data:signed,error:signedError}=await supabase.storage.from(BUCKET).createSignedUrl(asset.review_storage_path,300);
+          if (signedError) throw signedError;
+          url=signed.signedUrl;
+        }
+        results.push({id:asset.id,url,name:String(asset.original_file_name||'Site photo').slice(0,150),
+          proof_status:proof.proof_status,proof_title:proof.title,proof_created_at:proof.created_at});
+      }
+    }
+    return results;
+  };
+  const baseline=await makePhotos(baselineProofs,6,false);
+  const corrections=await makePhotos(latestCorrection?[latestCorrection]:[],4,true);
+  // A crew resubmission is a staff-only update, never a closeout status change.
+  const {data:updates,error:updateError}=latestCorrection?await supabase.from('work_order_live_updates')
+    .select('created_at,metadata').eq('work_order_id',order.id).eq('visibility','staff')
+    .eq('title','Crew rework corrections resubmitted')
+    .gte('created_at',latestCorrection.created_at).order('created_at',{ascending:false}).limit(30):{data:[],error:null};
+  if (updateError) throw updateError;
+  const resubmission=(updates||[]).find((item:any)=>item.metadata?.source==='mobile_rework_resubmission' &&
+    item.metadata?.closeout_id===closeout.id && item.metadata?.correction_proof_id===latestCorrection?.id);
+  return {ok:true,closeout:{id:closeout.id,status:closeout.closeout_status,rejected_at:closeout.rejected_at,
+      rejection_reason:closeout.rejection_reason,submitted_at:closeout.submitted_at,
+      customer_signoff_status:closeout.customer_signoff_status,invoice_readiness_status:closeout.invoice_readiness_status},
+    baseline,corrections,resubmission:resubmission?{at:resubmission.created_at}:null,correction_proof:latestCorrection?{
+      id:latestCorrection.id,status:latestCorrection.proof_status,staff_notes:String(latestCorrection.staff_notes||'').slice(0,1000),
+      created_at:latestCorrection.created_at}:null,expires_in:300,staff_only:true};
+}
+
 // Verify actual bytes, not just a browser-provided MIME type or filename.
 async function imageKind(file:File) {
   const bytes=new Uint8Array(await file.slice(0,32).arrayBuffer());
@@ -68,6 +155,9 @@ serve(async(req)=>{
 
     if ((req.headers.get('content-type')||'').includes('application/json')) {
       const body=await req.json();
+      if (body.action==='supervisor_review') {
+        return Response.json(await supervisorComparison(supabase,profile,body.closeout_package_id),{headers:{...corsHeaders,'Cache-Control':'no-store'}});
+      }
       if (body.action!=='review' || !isUuid(body.work_order_id) || !isUuid(body.proof_id)) throw new HttpError(400,'Valid review identifiers are required.');
       await assignedRework(supabase,profile,body.work_order_id);
       const {data:proof,error:proofError}=await supabase.from('work_order_execution_proofs')
