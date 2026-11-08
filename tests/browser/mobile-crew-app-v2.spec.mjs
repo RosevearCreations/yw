@@ -140,3 +140,62 @@ test('Build 542 resets private finder state when signed-in identity changes', as
   await expect(page.locator('[data-crew-search]')).toHaveValue('');
   await expect(page.locator('[data-crew-cautions]')).not.toBeChecked();
 });
+
+for (const width of [390,430]) {
+  test('YW 543 quick job details and personal checklist fit '+width+'px and never become official signoff', async ({page})=>{
+    await boot(page,width);
+    await expect(page.locator('.mobile-crew-v2-card')).toContainText('Watch wet slope');
+    const details=page.locator('[data-crew-details="0"]');
+    await expect(details).not.toHaveAttribute('open');
+    await details.locator('summary').click();
+    await expect(details).toHaveAttribute('open');
+    await expect(details).toContainText('WO-326');
+    await expect(details).toContainText('Lawn maintenance');
+    await expect(details).toContainText('Personal reminders only');
+    await expect(details.locator('[data-crew-prep]')).toHaveCount(4);
+    await details.locator('[data-crew-prep="task"]').check();
+    await details.locator('[data-crew-prep="hazards"]').check();
+    await expect(details.locator('[data-crew-prep-count]')).toHaveText('2 of 4 reviewed');
+    expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
+    await page.locator('[data-crew-search]').fill('Maple');
+    await expect(page.locator('[data-crew-details="0"]')).toHaveAttribute('open');
+    await expect(page.locator('[data-crew-prep="task"]')).toBeChecked();
+    await page.locator('[data-crew-action="safety"]').click();
+    expect(await page.evaluate(()=>window.__route)).toBe('inspect');
+    expect(await page.evaluate(()=>window.__opsCalls.length)).toBe(0);
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+}
+
+test('YW 543 clears personal checklist on identity switch and ignores stale previous-user fetch', async ({page})=>{
+  await boot(page,390);
+  await page.locator('[data-crew-details="0"] summary').click();
+  await page.locator('[data-crew-prep="access"]').check();
+  await expect(page.locator('[data-crew-prep-count]')).toHaveText('1 of 4 reviewed');
+  await page.evaluate(()=>{
+    const originalFetch=window.YWIAPI.fetchMobileCrewContext;
+    window.__oldFetchResolve=null;
+    window.YWIAPI.fetchMobileCrewContext=()=>new Promise((resolve)=>{window.__oldFetchResolve=resolve;});
+    window.YWIMobileToday.loadMobileCrewContext(true);
+    window.YWI_AUTH.getState=()=>({isAuthenticated:true,role:'site_leader',profile:{id:'99999999-9999-4999-8999-999999999999',role:'site_leader'}});
+    window.YWIAPI.fetchMobileCrewContext=async()=>{
+      const payload=await originalFetch();
+      const copy=structuredClone(payload);
+      copy.profile.id='99999999-9999-4999-8999-999999999999';
+      copy.my_route[0].dispatch.id='new-user-dispatch';
+      copy.my_route[0].job.job_name='New user route';
+      return copy;
+    };
+    document.dispatchEvent(new Event('ywi:auth-changed'));
+  });
+  await expect(page.locator('.mobile-crew-v2-card')).toContainText('New user route');
+  await expect(page.locator('[data-crew-details="0"]')).not.toHaveAttribute('open');
+  await page.locator('[data-crew-details="0"] summary').click();
+  await expect(page.locator('[data-crew-prep-count]')).toHaveText('0 of 4 reviewed');
+  await page.evaluate(()=>{
+    window.__oldFetchResolve({ok:true,my_route:[{job:{job_name:'Old user private route'},dispatch:{id:'old-user-dispatch'}}],my_jobs:[]});
+  });
+  await expect(page.locator('.mobile-crew-v2-card')).toContainText('New user route');
+  await expect(page.locator('.mobile-crew-v2-card')).not.toContainText('Old user private route');
+});
