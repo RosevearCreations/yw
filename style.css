@@ -3266,6 +3266,29 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 /* Build 2026-08-05a — schema 158 supervisor closeout and customer signoff. */
 .operations-cockpit .oc-closeout-card{border-color:rgba(125,211,252,.32);background:linear-gradient(135deg,rgba(14,35,65,.96),rgba(9,20,38,.98))}
 .operations-cockpit .oc-closeout-card .oc-closeout-summary{margin:.7rem 0;color:var(--oc-text);line-height:1.5}
+/* YW 545 — supervisor review and crew rework guidance. Staff-only surfaces. */
+.operations-cockpit .oc-closeout-review-summary{margin:10px 14px 12px;padding:14px;border:1px solid var(--oc-border,rgba(125,211,252,.3));border-radius:12px;background:rgba(30,64,111,.2);color:var(--oc-text,#e6efff);display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
+.operations-cockpit .oc-closeout-review-summary>strong{font-size:1.04rem}.operations-cockpit .oc-closeout-review-summary>small{flex-basis:100%;color:var(--oc-text-muted,#b2bfd0)}
+.operations-cockpit .oc-closeout-review-controls{display:grid;grid-template-columns:minmax(160px,1fr) minmax(180px,1.2fr) auto;gap:12px;align-items:end;margin:0 14px 14px;color:var(--oc-text,#e6efff)}
+.operations-cockpit .oc-closeout-review-controls label{display:grid;gap:6px;min-width:0;font-weight:700}
+.operations-cockpit .oc-closeout-review-controls input,.operations-cockpit .oc-closeout-review-controls select{width:100%;min-width:0;min-height:44px}
+.operations-cockpit .oc-closeout-review-controls output{padding-bottom:10px;font-size:.85rem;color:var(--oc-text-muted,#b2bfd0)}
+.operations-cockpit .oc-closeout-review-badge{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 10px;padding:9px 0;color:var(--oc-text-soft,#d8e4f2);font-size:.86rem;text-transform:capitalize}
+.operations-cockpit .oc-closeout-review-badge small{color:var(--oc-text-muted,#b2bfd0);text-transform:none}
+.operations-cockpit .oc-closeout-review-checks{display:grid;gap:6px;margin:8px 0 12px}
+.operations-cockpit .oc-closeout-review-checks p{margin:0;padding:8px 10px;border-left:3px solid #7dd3fc;border-radius:7px;background:rgba(125,211,252,.1);font-size:.89rem;line-height:1.4}
+.operations-cockpit .oc-closeout-review-checks [data-review-kind="block"]{border-color:#fb7185;background:rgba(251,113,133,.14)}
+.operations-cockpit .oc-closeout-review-checks [data-review-kind="advisory"]{border-color:#fbbf24;background:rgba(251,191,36,.12)}
+.operations-cockpit .oc-closeout-review-checks [data-review-kind="ok"]{border-color:#34d399;background:rgba(52,211,153,.09)}
+.operations-cockpit .oc-closeout-rework-form,.operations-cockpit .oc-closeout-rework-history{display:grid;gap:10px;margin-top:12px;padding:14px;border:1px solid rgba(125,211,252,.3);border-radius:12px;background:rgba(9,24,44,.75)}
+.operations-cockpit .oc-closeout-rework-form label{display:grid;gap:6px;font-weight:700}
+.operations-cockpit .oc-closeout-rework-form p,.operations-cockpit .oc-closeout-rework-history p{margin:0;line-height:1.5;overflow-wrap:anywhere}
+.operations-cockpit .oc-closeout-rework-form select,.operations-cockpit .oc-closeout-rework-form textarea{width:100%;min-width:0}
+.operations-cockpit .oc-closeout-rework-form textarea{min-height:110px;resize:vertical}
+.operations-cockpit .oc-closeout-rework-actions{display:flex;flex-wrap:wrap;gap:8px}
+.operations-cockpit .oc-closeout-rework-actions button{min-height:44px;flex:1 1 160px}
+@media(max-width:760px){.operations-cockpit .oc-closeout-review-controls{grid-template-columns:1fr}.operations-cockpit .oc-closeout-review-controls output{padding:0}.operations-cockpit .oc-closeout-review-badge{display:grid}}
+@media(forced-colors:active){.operations-cockpit .oc-closeout-review-summary,.operations-cockpit .oc-closeout-rework-form,.operations-cockpit .oc-closeout-rework-history{border:1px solid CanvasText;background:Canvas;color:CanvasText}}
 .customer-portal-closeout{margin:1.25rem 0;padding:clamp(1rem,2vw,1.35rem);border:1px solid rgba(15,76,129,.16);border-radius:22px;background:linear-gradient(135deg,#ffffff,#f1f7fb);box-shadow:0 18px 42px rgba(15,31,48,.09)}
 .customer-portal-closeout>header{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;margin-bottom:.8rem}
 .customer-portal-closeout>header h2{margin:.1rem 0 0;color:#10233d}
