@@ -62,7 +62,12 @@ check('admin-it-control-auth-user-count-only',endpoint.includes('auth.admin.list
 check('admin-it-control-jwt-config',config.includes('[functions.admin-it-control]')&&/\[functions\.admin-it-control\][\s\S]*?verify_jwt\s*=\s*true/.test(config));
 
 check('runtime-readiness-endpoint-present',exists('supabase/functions/admin-it-readiness-runtime/index.ts'));
-check('runtime-readiness-admin-only',runtimeEndpoint.includes('normalizeRole(actorProfile.role) !== "admin"')&&runtimeEndpoint.includes('Active Admin role is required'));
+check('runtime-readiness-curated-sysop-only',
+  runtimeEndpoint.includes('normalizeRole(actorProfile.role) !== "admin"')
+  && runtimeEndpoint.includes('.from("ywi_platform_administrators_489")')
+  && runtimeEndpoint.includes('.eq("user_id", actorId)')
+  && runtimeEndpoint.includes('membership?.user_id !== actorId')
+  && runtimeEndpoint.includes('Verified platform Sysop membership is required for I.T. Readiness.'));
 check('runtime-readiness-bounded-sources', ['v_schema_drift_status','v_it_release_authority_status','v_it_scorecard_progress_truth_status','v_it_open_rail_acceptance_readiness','v_admin_module_access_integrity','v_admin_error_health_center','v_admin_function_readiness_checks','v_it_current_admin_todo'].every((value)=>runtimeEndpoint.includes(value)));
 check('runtime-readiness-no-deep-rpc',!runtimeEndpoint.includes('.rpc(')&&!runtimeEndpoint.includes('ywi_finance_release_hardening_assertions'));
 check('runtime-readiness-deferred-truth',runtimeEndpoint.includes('deep_verification_deferred: true')&&runtimeEndpoint.includes('explicit_deep_verification_only'));

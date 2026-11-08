@@ -4053,3 +4053,20 @@ body[data-authenticated="false"] .module-section-nav {
 .pms477 button{min-height:44px;white-space:normal;overflow-wrap:anywhere}
 .pms477-entry{border:1px solid var(--border-color,#ccc);padding:12px;margin:10px 0;border-radius:8px;overflow-wrap:anywhere}
 @media(max-width:680px){.pms477-controls{grid-template-columns:minmax(0,1fr)}}
+
+/* YW 550: separate platform Sysop and landscaping company workspaces. */
+.yw550-workspace-nav{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:8px 12px 12px}
+.yw550-workspace-nav[hidden],.yw550-workspace-nav a[hidden]{display:none!important}
+.yw550-workspace-nav a{display:inline-flex;align-items:center;min-height:42px;padding:9px 14px;border-radius:999px;border:1px solid rgba(148,163,184,.45);background:rgba(15,23,42,.4);color:var(--text-primary,#fff);font-weight:700;text-decoration:none}
+.yw550-workspace-nav a[aria-current="page"]{border-color:#c4b5fd;background:rgba(139,92,246,.24)}
+.yw550-workspace-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:14px;margin-top:14px}
+.yw550-workspace-card{padding:16px;border:1px solid rgba(148,163,184,.35);border-radius:16px;background:rgba(30,41,59,.33);min-width:0;overflow-wrap:anywhere}
+.yw550-workspace-card h3{margin:0 0 8px}.yw550-workspace-card p{margin:0 0 12px}
+.yw550-workspace-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.yw550-workspace-actions button{min-height:44px;white-space:normal}
+.yw550-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 16px}
+.yw550-metrics article{display:grid;gap:6px;min-width:0;padding:14px;border:1px solid rgba(148,163,184,.32);border-radius:14px;background:rgba(30,41,59,.3)}
+.yw550-metrics span{font-size:.85rem;color:var(--text-soft,#cbd5e1)}.yw550-metrics strong{font-size:1.6rem;overflow-wrap:anywhere}
+.yw550-table-scroll{max-width:100%;overflow:auto}.yw550-company-stats{width:100%;border-collapse:collapse;text-align:left;min-width:420px}
+.yw550-company-stats th,.yw550-company-stats td{padding:10px;border-bottom:1px solid rgba(148,163,184,.25)}
+.yw550-company-stats caption{text-align:left;padding:8px 0;font-weight:700}
+@media(max-width:640px){.yw550-metrics{grid-template-columns:1fr}.yw550-workspace-nav{justify-content:stretch}.yw550-workspace-nav a{flex:1 1 190px;justify-content:center}}

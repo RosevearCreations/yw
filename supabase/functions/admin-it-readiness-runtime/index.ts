@@ -399,7 +399,19 @@ Deno.serve(async (req: Request) => {
     .eq("id", actorId)
     .maybeSingle();
   if (profileError || !actorProfile || actorProfile.is_active === false || normalizeRole(actorProfile.role) !== "admin") {
-    return response({ ok: false, error: "Active Admin role is required for I.T. Readiness." }, 403);
+    return response({ ok: false, error: "Verified platform Sysop membership is required for I.T. Readiness." }, 403);
+  }
+
+  // A historical/global `admin` profile, company ownership, or user-editable JWT
+  // metadata is not enough for the outer platform shell. The server checks the
+  // existing curated membership independently of all browser role labels.
+  const { data: membership, error: membershipError } = await supabase
+    .from("ywi_platform_administrators_489")
+    .select("user_id")
+    .eq("user_id", actorId)
+    .maybeSingle();
+  if (membershipError || membership?.user_id !== actorId) {
+    return response({ ok: false, error: "Verified platform Sysop membership is required for I.T. Readiness." }, 403);
   }
 
   const releaseDivergencePromise = loadReleaseDivergence();

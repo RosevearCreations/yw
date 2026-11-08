@@ -360,7 +360,7 @@
             {id:'owner-test-not-inferred',passed:true}],
           localPass:true, networkRequests:0, authenticatedGatewayGets:0,
           signedProofB:'NOT_VERIFIED', privateRoles:'NOT_VERIFIED', isolatedNonproductionTenant:'NOT_VERIFIED',
-          ownerTestAuthorization:'NOT_GIVEN', remoteConnection:'DISCONNECTED / HOLD'
+          ownerTestAuthorization:'NOT_CHECKED', remoteConnection:'NOT_CHECKED_BY_LOCAL_TEST'
         };
         const output = host.querySelector('#commsHubLocalReport');
         if (output) output.textContent = JSON.stringify(report,null,2);
@@ -401,14 +401,11 @@
         <div class="it-system-context"><div><strong>Release evidence:</strong> ${esc(sourceContext(payload))}</div><div><strong>Operator context:</strong> ${esc(operatorContext(payload))}</div></div>
         <section class="it-system-policy" aria-labelledby="commsHubConnectionTitle" style="margin:12px 0;padding:14px;border:2px solid #a78bfa;border-radius:12px">
            <h3 id="commsHubConnectionTitle">I.T. Connections · Rosevear Comms Hub</h3>
-           <p><strong>DISCONNECTED / HOLD.</strong> This source workspace is an offline connection readiness gate, not a connection to six apps.</p>
-           <p>Source: <code>RosevearCreations/yw</code> · Proof: <code>docs/integration/ql246-source-proof.json</code> (original B not verified).</p>
-           <ol><li>Use a separate nonproduction datastore project and synthetic tenant; never expose Rosevear Landscaping production data.</li>
-           <li>Privately authenticate the signer custodian, separate nonce witness and reviewer; independently pin source Ed25519 SPKI.</li>
-           <li>Require an independently approved restricted signer host and owner TEST-only authorization before any read-only source GET.</li></ol>
+           <p><strong>Live connection not verified by this screen.</strong> Legacy QL-246/266 HOLD labels and prelaunch handoffs are historical evidence, not present-day release prerequisites. Check the signed Comms Hub operator record for live connection state.</p>
+           <p>Yard Workers connects at the <strong>application shell</strong>, never by exposing another landscaping company's customers, jobs or invoices. Historical source proof remains retained in the repository for audit.</p>
            <button type="button" id="commsHubLocalCheck" class="secondary">Run local interface self-test (no network)</button>
-           <p>Local PASS proves only this static boundary. No real signer proof, owner authorization, key, database or gateway request is created.</p>
-           <pre id="commsHubLocalReport" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere">Not run. Remote connection remains HOLD.</pre>
+           <p>The local self-test does not verify a live remote session, enrollment or delivery. It does not change connection state.</p>
+           <pre id="commsHubLocalReport" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere">Not checked in this session.</pre>
          </section>
          ${releaseDivergenceCockpit(payload)}
         ${releaseClassificationCockpit(payload)}
