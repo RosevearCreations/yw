@@ -50,7 +50,8 @@ assert.equal(indices(find(route, 'elm', true)), '2', 'Combined search retains ca
 assert.equal(indices(find(route, 'no match', false)), '', 'An empty match cannot introduce other jobs');
 assert.equal(indices(find(null, '', false)), '', 'Unavailable assigned work remains empty');
 assert.equal(serviceCalls, 0, 'Presentation-only filters must not contact a server');
-assert.match(source, /state\.crewSearch=''; state\.crewSiteCautionsOnly=false; render\(\)/, 'Clear filter state on identity change');
+assert.ok(source.includes("state.crewSearch=''; state.crewSiteCautionsOnly=false;"), 'Clear filters on identity change');
+assert.ok(source.includes('state.crewAuthEpoch += 1'), 'Invalidate stale requests before changing identity');
 assert.match(source, /crewEscape\(state\.crewSearch\)/, 'Escape search value in markup');
 assert.match(source, /visible\.map\(\(\{ row, index \}\) => crewCard\(row, index\)\)/, 'Preserve canonical index in actions');
 assert.match(source, /No assigned work matches these filters/, 'Differentiate no matches from no assignments');
