@@ -143,6 +143,7 @@
     "test:crew-field-finder-542": "node scripts/crew-field-finder-542-check.mjs",
     "test:job-detail-prep-543": "node scripts/job-detail-prep-543-check.mjs",
     "test:guided-visit-closeout-544": "node scripts/guided-visit-closeout-544-check.mjs",
+    "test:supervisor-closeout-review-545": "node scripts/supervisor-closeout-review-545-check.mjs",
     "test:mobile-production-transition": "node scripts/mobile-production-transition-check.mjs",
     "test:browser:mobile-production-transition": "playwright test --config=playwright.config.mjs tests/browser/mobile-production-transition.spec.mjs",
     "test:browser:mobile-crew-app-v2": "playwright test --config=playwright.config.mjs tests/browser/mobile-crew-app-v2.spec.mjs",
