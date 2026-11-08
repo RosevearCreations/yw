@@ -42,7 +42,8 @@
     crewIntentKeys: Object.create(null),
     crewAcknowledgement: null,
     crewPhotoDrafts: Object.create(null),
-    crewPhotoReview: Object.create(null)
+    crewPhotoReview: Object.create(null),
+    crewReworkHistory: Object.create(null)
   };
 
   function authState() {
@@ -762,15 +763,23 @@
     const proof = crewCorrectionProof(row);
     const capabilities = state.crewContext?.capabilities || {};
     const enabled = navigator.onLine !== false && !state.crewPendingAction;
+    const workOrderId=String(row?.work_order?.id||row?.dispatch?.work_order_id||'');
+    const history=state.crewReworkHistory[workOrderId];
+    const currentHistory=history?.closeout_id===row?.closeout?.id && history?.rejected_at===row?.closeout?.rejected_at ? history : null;
+    const acknowledgement=currentHistory?.acknowledgement;
     return '<section class="mobile-crew-v2-rework" aria-label="Supervisor rework instructions">' +
       '<strong>Supervisor requested corrections · Rework inbox</strong>' +
       '<p>' + (note ? crewEscape(note) : 'Supervisor instructions are not in this snapshot. Refresh before changing work; ask the supervisor if instructions are still missing.') + '</p>' +
       '<p class="field-sync-note">' + (proof ? 'Correction proof recorded ' + crewEscape(crewDateTime(proof.created_at)) + '. Ready to send a staff-only review request.' : 'No post-rejection correction proof from this crew member is confirmed yet.') + '</p>' +
       '<div class="mobile-crew-v2-actions">' +
+        crewActionButton('Review instruction acknowledgement','rework_history',index,enabled && !!note) +
         crewActionButton('Record correction evidence + photos','rework_photo',index,!!capabilities.execution_proof && !!note && !state.crewPendingAction) +
         crewActionButton('Resubmit corrections for supervisor','rework_resubmit',index,enabled && !!capabilities.execution_proof && !!proof && !!note) +
         (proof ? crewActionButton('Review saved correction photos','rework_photo_review',index,enabled) : '') +
-      '</div>' + crewPhotoEditorMarkup(row,index) +
+      '</div>' + (currentHistory ? '<div class="mobile-crew-v2-rework-ack" aria-live="polite"><strong>Current supervisor instruction receipt</strong><p>'+crewEscape(currentHistory.instructions||'')+'</p>'+
+        (acknowledgement ? '<small>Acknowledged by this signed-in crew member '+crewEscape(crewDateTime(acknowledgement.at))+'. This is not proof of completion or closeout approval.</small>' :
+        '<small>Not yet acknowledged by this signed-in crew member. Read the instructions carefully before confirming.</small>'+crewActionButton('I have read these instructions','rework_ack',index,enabled))+
+        '</div>' : '') + crewPhotoEditorMarkup(row,index) +
       (state.crewPhotoReview[row?.work_order?.id]?.length ? '<div class="mobile-crew-v2-photo-grid">'+state.crewPhotoReview[row.work_order.id].map((photo,i)=>'<figure><img src="'+crewEscape(photo.url)+'" alt="Private saved correction photo '+(i+1)+'"><figcaption>'+crewEscape(photo.name)+'</figcaption></figure>').join('')+'</div>':'')+
       '<small>Supervisor still decides the closeout. Rework, customer signoff and invoicing remain on HOLD until that decision. Nothing is sent to the customer.</small>' +
     '</section>';
@@ -1042,6 +1051,39 @@
     if (action === 'equipment') return router()?.showSection?.('equipment');
     const workOrderId = row?.work_order?.id || row?.dispatch?.work_order_id || '';
     try {
+      if (action==='rework_history' || action==='rework_ack') {
+        if (!crewReworkRequired(row) || !row?.closeout?.id || !row.closeout.rejected_at || !row.closeout.rejection_reason)
+          throw new Error('Refresh the current supervisor instructions before acknowledging.');
+        if (navigator.onLine===false || !crewApi()?.mobileReworkPhoto) throw new Error('An online private supervisor instruction read is required.');
+        if (state.crewPendingAction) return;
+        const existing=state.crewReworkHistory[workOrderId];
+        if (action==='rework_ack') {
+          if (!existing || existing.closeout_id!==row.closeout.id || existing.rejected_at!==row.closeout.rejected_at)
+            throw new Error('Review the current instructions from the server before acknowledging.');
+          if (existing.acknowledgement) return;
+          if (!window.confirm('Confirm only that you have read these supervisor instructions? This does not approve or close the job.')) return;
+        }
+        const epoch=state.crewAuthEpoch;
+        state.crewPendingAction=action+':'+workOrderId;
+        renderMobileCrewApp();
+        try {
+          const result=await crewApi().mobileReworkPhoto({action:action==='rework_ack'?'crew_acknowledge':'crew_history',
+            work_order_id:workOrderId,closeout_package_id:row.closeout.id,rejected_at:row.closeout.rejected_at,
+            ...(action==='rework_ack'?{confirmed:true}:{})});
+          if (epoch!==state.crewAuthEpoch) return;
+          if (result?.staff_only!==true || result?.closeout_id!==row.closeout.id ||
+            (action==='rework_history' && result.rejected_at!==row.closeout.rejected_at) ||
+            (action==='rework_ack' && !result.acknowledgement?.id))
+            throw new Error('Current instruction acknowledgement was not verified. Refresh before retrying.');
+          state.crewReworkHistory[workOrderId]=action==='rework_ack'
+            ? {...existing,acknowledgement:result.acknowledgement}
+            : result;
+          state.crewActionStatus=action==='rework_ack'
+            ? 'Your instruction receipt is confirmed. Crew correction and supervisor approval remain separate.'
+            : 'Current supervisor instructions loaded privately. Read and acknowledge only if understood.';
+        } finally {state.crewPendingAction='';renderMobileCrewApp();}
+        return;
+      }
       if (action==='rework_photo') {
         if (!crewReworkRequired(row) || !row?.closeout?.rejection_reason || !state.crewContext?.capabilities?.execution_proof) return;
         const draft=crewPhotoDraft(row);if(!draft)return;
@@ -1292,7 +1334,7 @@
     document.addEventListener('ywi:auth-changed', () => {
       state.crewAuthEpoch += 1;
       for (const draft of Object.values(state.crewPhotoDrafts)) for (const item of draft.files||[]) try{URL.revokeObjectURL(item.url);}catch{}
-      state.crewPhotoDrafts=Object.create(null);state.crewPhotoReview=Object.create(null);
+      state.crewPhotoDrafts=Object.create(null);state.crewPhotoReview=Object.create(null);state.crewReworkHistory=Object.create(null);
       state.crewContext=null; state.crewLoadedAt=0; state.crewLoading=false;
       state.crewTab='route'; state.crewSearch=''; state.crewSiteCautionsOnly=false;
       state.crewPrepByAssignment=Object.create(null); state.crewDetailsOpen=Object.create(null); state.crewCloseoutOpen=Object.create(null);
