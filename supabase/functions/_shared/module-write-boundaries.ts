@@ -90,6 +90,8 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
   work_order_live_update_create: contract('work_order_live_update_create', 'jobs', 'create', 'write', 'work_order_updates', 'jobs.work_order.update_created', true),
   work_order_live_update_retract: contract('work_order_live_update_retract', 'jobs', 'approve', 'write', 'work_order_updates', 'jobs.work_order.update_retracted', true),
   work_order_execution_proof_submit: contract('work_order_execution_proof_submit', 'jobs', 'create', 'write', 'execution_proof', 'jobs.execution_proof.submitted', true),
+  work_order_rework_proof_submit: contract('work_order_rework_proof_submit', 'jobs', 'create', 'write', 'execution_proof', 'jobs.rework.correction_proof_submitted', true),
+  work_order_rework_resubmit: contract('work_order_rework_resubmit', 'jobs', 'create', 'write', 'closeout', 'jobs.rework.correction_resubmitted', true),
   work_order_execution_proof_decision: contract('work_order_execution_proof_decision', 'jobs', 'approve', 'write', 'execution_proof', 'jobs.execution_proof.decided', true),
   work_order_closeout_submit: contract('work_order_closeout_submit', 'jobs', 'approve', 'write', 'closeout', 'jobs.closeout.submitted', true),
   work_order_closeout_decision: contract('work_order_closeout_decision', 'jobs', 'approve', 'write', 'closeout', 'jobs.closeout.decided', true),

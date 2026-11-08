@@ -172,10 +172,11 @@ begin
         'closeout',coalesce((
           select to_jsonb(c)
           from (
-            select id,work_order_id,closeout_status,customer_signoff_required,customer_signoff_status,
+              select id,work_order_id,closeout_status,customer_signoff_required,customer_signoff_status,
                    invoice_ready_requested,invoice_readiness_status,review_request_requested,review_request_status,
                    maintenance_followup_status,maintenance_followup_due_at,customer_summary,submitted_at,
-                   approved_at,rejected_at,updated_at
+                   approved_at,rejected_at,updated_at,
+                   case when closeout_status in ('rework_required','rejected') then rejection_reason else null end as rejection_reason
             from public.work_order_closeout_packages
             where work_order_id=wo.id
             order by updated_at desc

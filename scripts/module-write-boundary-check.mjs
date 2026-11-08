@@ -54,7 +54,7 @@ const handledActions = [...new Set([...operations.matchAll(/action\s*===\s*['"](
 const helperActions = [...new Set([...helper.matchAll(/^\s{2}([a-z0-9_]+):\s*contract\('([^']+)'/gmi)].map((m) => m[2]))].sort();
 const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}\n${propertyMigration}\n${commercialMigration}\n${productionMigration}\n${hazardPlanMigration}\n${incidentInvestigationMigration}\n${trainingMatrixMigration}\n${customerPropertyCrmMigration}\n${routeOptimizationMigration}\n${weatherWorkabilityMigration}\n${landscapeMaterialEstimatorMigration}\n${changeOrdersExtrasMigration}\n${qualityControlMigration}\n${seasonalOperationsMigration}\n${managementOutcomeMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
 
-add('schema236-exact-handler-count', handledActions.length === 92, `Handled operations actions: ${handledActions.length}.`);
+add('schema236-exact-handler-count', handledActions.length === 94, `Handled operations actions: ${handledActions.length}.`);
 add('schema236-helper-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
 add('schema236-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
 

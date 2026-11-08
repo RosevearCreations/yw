@@ -129,8 +129,8 @@ serve(async (req) => {
       routeIds.length && siteIds.length ? safeRows(supabase.from("route_stops").select("id,route_id,client_site_id,stop_order").in("route_id", routeIds).in("client_site_id", siteIds).eq("is_active", true)) : [],
       inRows(supabase,"job_sessions","id,work_order_id,session_status,started_at,ended_at,completion_state,updated_at", "work_order_id", workOrderIds),
       inRows(supabase,"material_issues","id,work_order_id", "work_order_id", workOrderIds),
-      inRows(supabase,"work_order_execution_proofs","id,work_order_id", "work_order_id", workOrderIds),
-      inRows(supabase,"work_order_closeout_packages","id,work_order_id,closeout_status,updated_at", "work_order_id", workOrderIds),
+      inRows(supabase,"work_order_execution_proofs","id,work_order_id,title,proof_type,proof_status,created_at,captured_by_profile_id", "work_order_id", workOrderIds),
+      inRows(supabase,"work_order_closeout_packages","id,work_order_id,closeout_status,rejection_reason,rejected_at,updated_at", "work_order_id", workOrderIds),
       inRows(supabase,"equipment_signouts","id,equipment_item_id,work_order_id", "work_order_id", workOrderIds),
       inRows(supabase,"job_session_production_quantities","id,work_order_id", "work_order_id", workOrderIds)
     ]);
@@ -179,6 +179,15 @@ serve(async (req) => {
       const workMaterials=byWorkOrder.materials.get(workOrderId) || [];
       const workProofs=byWorkOrder.proofs.get(workOrderId) || [];
       const workCloseouts=byWorkOrder.closeouts.get(workOrderId) || [];
+      const closeout=latest(workCloseouts);
+      const reworkRequired=['rework_required','rejected'].includes(String(closeout?.closeout_status || ''));
+      const correctionProofs=reworkRequired ? workProofs.filter((proof:any) =>
+        proof.title === 'Crew rework correction' &&
+        proof.captured_by_profile_id === profile.id &&
+        !!closeout?.rejected_at &&
+        Date.parse(String(proof.created_at || '')) > Date.parse(String(closeout.rejected_at)) &&
+        ['submitted','approved'].includes(String(proof.proof_status || ''))
+      ) : [];
       const workSignouts=byWorkOrder.signouts.get(workOrderId) || [];
       const assignedEquipmentIds=uniq([
         dispatch.assigned_truck_equipment_item_id,dispatch.assigned_trailer_equipment_item_id,
@@ -193,8 +202,13 @@ serve(async (req) => {
         route: stop ? { stop } : null,
         latest_session:latestSession,
         production:{ session_count:workSessions.length, quantity_count:workQuantities.length, material_issue_count:workMaterials.length },
-        evidence:{ proof_count:workProofs.length },
-        closeout:latest(workCloseouts),
+        evidence:{ proof_count:workProofs.length, correction_proofs:correctionProofs.map((proof:any)=>({id:proof.id,created_at:proof.created_at,proof_status:proof.proof_status})) },
+        closeout:closeout ? {
+          id:closeout.id, work_order_id:closeout.work_order_id,
+          closeout_status:closeout.closeout_status, updated_at:closeout.updated_at,
+          // Staff-only instructions are delivered AFTER the server's assigned-dispatch filter.
+          ...(reworkRequired ? { rejection_reason:closeout.rejection_reason, rejected_at:closeout.rejected_at } : {})
+        } : null,
         equipment:assignedEquipmentIds.map((id)=>equipmentById.get(String(id))).filter(Boolean)
       };
     });

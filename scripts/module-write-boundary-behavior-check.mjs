@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 92, 'Exactly 92 operations actions must be contracted through Schema 236.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 92);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 94, 'Exactly 94 operations actions must be contracted through the canonical module registry.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 94);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
