@@ -35,6 +35,7 @@
     crewSiteCautionsOnly: false,
     crewPrepByAssignment: Object.create(null),
     crewDetailsOpen: Object.create(null),
+    crewCloseoutOpen: Object.create(null),
     crewAuthEpoch: 0,
     crewPendingAction: '',
     crewActionStatus: '',
@@ -338,6 +339,7 @@
       .mobile-crew-v2-actions button{min-height:42px}.mobile-crew-v2-empty{padding:12px;border-radius:12px;background:rgba(148,163,184,.06);color:var(--text-soft,#cbd5e1)}
       .mobile-crew-v2-finder{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:12px 0}.mobile-crew-v2-finder label{flex:1 1 210px;min-width:0;display:grid;gap:5px;font-weight:650}.mobile-crew-v2-finder input{width:100%;max-width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.45);background:var(--surface,#111827);color:var(--text,#f8fafc);font:inherit}.mobile-crew-v2-finder .mobile-crew-v2-cautions{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(148,163,184,.4);border-radius:10px;font-weight:650}.mobile-crew-v2-cautions input{width:18px;height:18px;min-height:18px;accent-color:#d4af37}.mobile-crew-v2-count{margin:4px 0 10px;color:var(--text-soft,#cbd5e1)}
       .mobile-crew-v2-details{margin:12px 0;border:1px solid rgba(148,163,184,.28);border-radius:12px;overflow:hidden}.mobile-crew-v2-details summary{cursor:pointer;min-height:44px;padding:11px 12px;font-weight:700;background:rgba(148,163,184,.08)}.mobile-crew-v2-details summary:focus-visible{outline:3px solid #d4af37;outline-offset:-3px}.mobile-crew-v2-details[open] summary{border-bottom:1px solid rgba(148,163,184,.25)}.mobile-crew-v2-detail-body{padding:12px}.mobile-crew-v2-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 12px}.mobile-crew-v2-facts div{min-width:0;padding:8px;border-radius:9px;background:rgba(148,163,184,.07)}.mobile-crew-v2-facts dt{font-size:.78rem;color:var(--text-soft,#cbd5e1)}.mobile-crew-v2-facts dd{margin:2px 0 0;font-weight:650;overflow-wrap:anywhere}.mobile-crew-v2-prep{margin:0;padding:0;border:0;min-width:0}.mobile-crew-v2-prep legend{font-weight:750}.mobile-crew-v2-prep label{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:9px 0;line-height:1.35}.mobile-crew-v2-prep input{width:20px;height:20px;flex:none;accent-color:#d4af37}.mobile-crew-v2-prep-note{margin:8px 0 0;color:var(--text-soft,#cbd5e1);font-size:.85rem;line-height:1.5}@media(max-width:520px){.mobile-crew-v2-facts{grid-template-columns:1fr}}
+      .mobile-crew-v2-closeout{margin:12px 0;border:1px solid rgba(212,175,55,.4);border-radius:12px;overflow:hidden}.mobile-crew-v2-closeout summary{cursor:pointer;min-height:44px;padding:11px 12px;font-weight:750;background:rgba(212,175,55,.09)}.mobile-crew-v2-closeout summary:focus-visible{outline:3px solid #d4af37;outline-offset:-3px}.mobile-crew-v2-closeout-list{display:grid;gap:10px;list-style:none;margin:0;padding:12px}.mobile-crew-v2-closeout-item{min-width:0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px;border:1px solid rgba(148,163,184,.22);border-radius:10px;background:rgba(148,163,184,.06)}.mobile-crew-v2-closeout-item>div{flex:1 1 180px;min-width:0}.mobile-crew-v2-closeout-item strong,.mobile-crew-v2-closeout-item small{display:block;line-height:1.4}.mobile-crew-v2-closeout-item small{margin-top:3px;color:var(--text-soft,#cbd5e1)}.mobile-crew-v2-closeout-item button{min-height:44px}.mobile-crew-v2-closeout-tag{font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.mobile-crew-v2-closeout-item[data-closeout-kind="attention"] .mobile-crew-v2-closeout-tag{color:#ffd4d4}.mobile-crew-v2-closeout-item[data-closeout-kind="confirmed"] .mobile-crew-v2-closeout-tag{color:#d7ffe9}.mobile-crew-v2-closeout-note{margin:0;padding:0 12px 12px;color:var(--text-soft,#cbd5e1);font-size:.85rem;line-height:1.45}
       .jobs-desktop-workbench{display:none}.jobs-sync-health{margin:12px 0}.job-workbench-result{align-self:end;min-height:42px;display:flex;align-items:center;color:var(--text-soft,#cbd5e1)}
       @media(max-width:520px){.field-sync-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.field-sync-actions>*{flex:1 1 145px}.offline-recovery-compare{grid-template-columns:1fr}.offline-recovery-actions button{flex:1 1 120px}}
       @media(min-width:900px){.jobs-desktop-workbench{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(170px,.7fr) auto auto;gap:10px;align-items:end;padding:12px;margin:10px 0 12px;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(15,23,42,.48)}.jobs-desktop-workbench label{min-width:0}.jobs-desktop-workbench button{min-height:44px}}
@@ -596,6 +598,7 @@
     const keys = new Set([...(payload?.my_route || []), ...(payload?.my_jobs || [])].map(crewAssignmentKey).filter(Boolean));
     for (const key of Object.keys(state.crewPrepByAssignment)) if (!keys.has(key)) delete state.crewPrepByAssignment[key];
     for (const key of Object.keys(state.crewDetailsOpen)) if (!keys.has(key)) delete state.crewDetailsOpen[key];
+    for (const key of Object.keys(state.crewCloseoutOpen)) if (!keys.has(key)) delete state.crewCloseoutOpen[key];
   }
 
   function crewPrepCount(key) {
@@ -625,6 +628,54 @@
       '</div></details>';
   }
 
+  // Advisory only. The service decides whether a real completion or closeout is valid.
+  // Zero counts are observations, not proof that every job requires a quantity or photo.
+  function crewCloseoutGuidance(row, capabilities = state.crewContext?.capabilities || {}) {
+    const session = row?.latest_session || null;
+    const sessionStatus = String(session?.session_status || '').toLowerCase();
+    const quantities = Number(row?.production?.quantity_count ?? row?.production?.quantities?.length ?? -1);
+    const proofs = Number(row?.evidence?.proof_count ?? row?.evidence?.proofs?.length ?? -1);
+    const assignedEquipment = Array.isArray(row?.equipment) ? row.equipment : [];
+    const equipmentProblem = assignedEquipment.some((item) => item?.is_locked_out || (item?.defect_status && !['clear','none'].includes(item.defect_status)));
+    const closeoutStatus = String(row?.closeout?.closeout_status || '').trim();
+    const items = [
+      sessionStatus === 'completed'
+        ? { kind:'confirmed', title:'Visit completion', note:'The server reports a completed visit session.' }
+        : sessionStatus === 'in_progress'
+          ? { kind:'attention', title:'Finish visit', note:'The latest server session is in progress. Finish the visit and wait for acknowledgement.', action:capabilities.production_capture ? 'finish_visit' : '' }
+          : { kind:'attention', title:'Visit completion not confirmed', note:'No completed visit is shown. Verify the assigned session before requesting closeout.', action:!session && capabilities.production_capture ? 'start_visit' : '' },
+      quantities > 0
+        ? { kind:'confirmed', title:'Production quantity', note:'The server reports ' + quantities + ' recorded quantity item(s).' }
+        : { kind:'review', title:'Production quantity', note:quantities === 0 ? 'No quantity is recorded. Add one if this service requires it.' : 'Quantity status is unavailable. Refresh or check the job.', action:capabilities.production_capture && !!session?.id ? 'quantity' : '' },
+      proofs > 0
+        ? { kind:'confirmed', title:'Execution proof', note:'The server reports ' + proofs + ' proof item(s).' }
+        : { kind:'review', title:'Execution proof', note:proofs === 0 ? 'No execution proof is recorded. Add one if this service requires it.' : 'Proof status is unavailable. Refresh or check the job.', action:capabilities.execution_proof ? 'execution_proof' : '' },
+      equipmentProblem
+        ? { kind:'attention', title:'Equipment caution', note:'Equipment has a defect or lockout flag. Follow the equipment and safety process; a closeout does not clear it.', action:capabilities.equipment_scan ? 'equipment' : '' }
+        : assignedEquipment.length
+          ? { kind:'confirmed', title:'Equipment flags', note:'No defect or lockout flag is shown on the returned equipment. Verify its actual condition.' }
+          : { kind:'review', title:'Equipment details unavailable', note:'No assigned equipment detail is shown. Confirm actual equipment condition if applicable.', action:capabilities.equipment_scan ? 'equipment' : '' },
+      { kind:'review', title:'Safety signoffs', note:'Official Safety / PPE approval status is not included in this crew snapshot. Check the Safety workflow if required.', action:capabilities.safety_create ? 'safety' : '' },
+      { kind:'status', title:'Server closeout status', note:closeoutStatus ? 'Current closeout status: ' + closeoutStatus : 'No closeout request is shown in this snapshot.', action:!closeoutStatus && capabilities.closeout_request ? 'closeout' : '' }
+    ];
+    return items;
+  }
+
+  function crewCloseoutMarkup(row, index) {
+    const key = crewAssignmentKey(row);
+    const items = crewCloseoutGuidance(row);
+    const reminders = items.filter((item) => item.kind === 'attention' || item.kind === 'review').length;
+    const online = navigator.onLine !== false;
+    return '<details class="mobile-crew-v2-closeout" data-crew-closeout-index="' + index + '"' + (key && state.crewCloseoutOpen[key] ? ' open' : '') + '>' +
+      '<summary>Guided visit closeout · ' + reminders + ' review prompt' + (reminders === 1 ? '' : 's') + '</summary>' +
+      '<ol class="mobile-crew-v2-closeout-list">' + items.map((item) =>
+        '<li class="mobile-crew-v2-closeout-item" data-closeout-kind="' + crewEscape(item.kind) + '"><div><span class="mobile-crew-v2-closeout-tag">' + crewEscape(item.kind) + '</span><strong>' + crewEscape(item.title) + '</strong><small>' + crewEscape(item.note) + '</small></div>' +
+        (item.action ? '<button type="button" class="secondary" data-crew-guide-action="' + crewEscape(item.action) + '" data-crew-index="' + index + '"' + ((online || ['safety','equipment'].includes(item.action)) && !state.crewPendingAction ? '' : ' disabled') + '>Open ' + crewEscape(item.title) + '</button>' : '') + '</li>'
+      ).join('') + '</ol>' +
+      '<p class="mobile-crew-v2-closeout-note">Review prompts are not mandatory for every service and do not certify readiness. Offline and cached counts can be stale. The existing Safety, production and server-controlled closeout actions remain authoritative; nothing here dispatches work or contacts customers.</p>' +
+    '</details>';
+  }
+
   function bindCrewDetails(panel) {
     panel.querySelectorAll('[data-crew-details]').forEach((details) => details.addEventListener('toggle', () => {
       const index = Number(details.dataset.crewDetails);
@@ -641,6 +692,15 @@
       reviews[input.dataset.crewPrep] = input.checked;
       const count = input.closest('[data-crew-details]')?.querySelector('[data-crew-prep-count]');
       if (count) count.textContent = crewPrepCount(key) + ' of ' + CREW_PREP_STEPS.length + ' reviewed';
+    }));
+  }
+
+  function bindCrewCloseout(panel) {
+    panel.querySelectorAll('[data-crew-closeout-index]').forEach((details) => details.addEventListener('toggle', () => {
+      const index = Number(details.dataset.crewCloseoutIndex);
+      const row = (state.crewTab === 'jobs' ? state.crewContext?.my_jobs : state.crewContext?.my_route)?.[index];
+      const key = crewAssignmentKey(row);
+      if (key) state.crewCloseoutOpen[key] = details.open;
     }));
   }
 
@@ -674,7 +734,9 @@
         : visible.length ? visible.map(({ row, index }) => crewCard(row, index)).join('')
           : '<div class="mobile-crew-v2-empty">' + (total ? 'No assigned work matches these filters. Clear the search or site cautions filter.' : 'No assigned work is in the current seven-day crew window.') + '</div>';
     list.querySelectorAll('[data-crew-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewAction, Number(button.dataset.crewIndex || 0))));
+    list.querySelectorAll('[data-crew-guide-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewGuideAction, Number(button.dataset.crewIndex || 0))));
     bindCrewDetails(list);
+    bindCrewCloseout(list);
   }
 
   function crewActionButton(label, action, index, enabled = true) {
@@ -729,6 +791,7 @@
       (dispatch.dispatch_notes ? '<div class="mobile-crew-v2-notes"><strong>Dispatch notes</strong>' + crewEscape(dispatch.dispatch_notes) + '</div>' : '') +
       (equipmentProblems.length ? '<div class="mobile-crew-v2-notes"><strong>Equipment attention</strong>' + equipmentProblems.map((item) => crewEscape(item.equipment_name || item.equipment_code || item.id) + (item.is_locked_out ? ' — LOCKED OUT' : ' — ' + crewEscape(item.defect_status))).join('<br>') + '</div>' : '') +
       crewDetailsMarkup(row, index) +
+      crewCloseoutMarkup(row, index) +
       '<div class="mobile-crew-v2-actions">' + crewActionMarkup(row,index) + '</div>' +
     '</article>';
   }
@@ -872,6 +935,19 @@
         if (!message) return;
         await crewOperation({ action:'work_order_live_update_create', work_order_id:workOrderId, job_session_id:row?.latest_session?.id || null, visibility:'staff', update_type:'deficiency', title:'Deficiency / rework', message, occurred_at:new Date().toISOString(), customer_notification_requested:false });
       } else if (action === 'closeout') {
+        if (!state.crewContext?.capabilities?.closeout_request) throw new Error('Closeout request permission is required.');
+        const reviewPrompts = crewCloseoutGuidance(row).filter((item) => ['attention','review'].includes(item.kind));
+        if (reviewPrompts.length) {
+          const message = 'Review before requesting closeout:\n' + reviewPrompts.map((item) => '• ' + item.title + ': ' + item.note).join('\n') +
+            '\n\nThese are advisory prompts, not approval. The server still validates the request. Continue to enter a customer-safe summary?';
+          if (!window.confirm(message)) {
+            const key = crewAssignmentKey(row);
+            if (key) state.crewCloseoutOpen[key] = true;
+            state.crewActionStatus = 'Closeout was not submitted. Review the guided items and refresh server status before trying again.';
+            renderMobileCrewApp();
+            return;
+          }
+        }
         const summary = window.prompt('Customer-safe closeout summary','');
         if (!summary) return;
         await crewOperation({ action:'work_order_closeout_submit', work_order_id:workOrderId, customer_summary:summary, staff_closeout_notes:'Submitted from Mobile Crew App v2.', invoice_ready_requested:false, review_request_requested:false, before_asset_ids:[], after_asset_ids:[] });
@@ -986,7 +1062,7 @@
       state.crewAuthEpoch += 1;
       state.crewContext=null; state.crewLoadedAt=0; state.crewLoading=false;
       state.crewSearch=''; state.crewSiteCautionsOnly=false;
-      state.crewPrepByAssignment=Object.create(null); state.crewDetailsOpen=Object.create(null);
+      state.crewPrepByAssignment=Object.create(null); state.crewDetailsOpen=Object.create(null); state.crewCloseoutOpen=Object.create(null);
       render(); loadMobileCrewContext(true);
     });
     document.addEventListener('ywi:route-shown', (event) => {
@@ -1009,7 +1085,7 @@
 
   window.YWIMobileToday = {
     bind, render, countOutboxItems, countActionItems, countConflictItems, countDraftForms,
-    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery, crewVisibleRows, crewAssignmentKey, crewPrepCount, crewDetailsMarkup,
+    syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery, crewVisibleRows, crewAssignmentKey, crewPrepCount, crewDetailsMarkup, crewCloseoutGuidance, crewCloseoutMarkup,
     reliabilityReleaseHistory: () => MOBILE_RELIABILITY_RELEASE_HISTORY.map((row) => ({ ...row }))
   };
   document.addEventListener('DOMContentLoaded', bind);
