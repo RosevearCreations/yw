@@ -4074,10 +4074,27 @@ serve(async (req) => {
       if (action === 'work_order_rework_proof_submit') {
         const notes=clean(body.staff_notes, 4000);
         if (notes.length < 12) throw new HttpError(400,'Describe the correction in at least 12 characters.');
+        const supplied=Array.isArray(body.asset_ids)?body.asset_ids:[];
+        const assetIds=supplied.map((id:unknown)=>clean(id,80));
+        if (assetIds.length>4 || new Set(assetIds).size!==assetIds.length || assetIds.some((id:string)=>!isUuid(id)))
+          throw new HttpError(400,'Select up to four distinct, valid correction photo attachments.');
+        if (assetIds.length) {
+          const {data:assets,error:assetError}=await supabase.from('visual_asset_approval_items')
+            .select('id,asset_status,review_storage_bucket,review_storage_path,public_url,metadata')
+            .in('id',assetIds);
+          if (assetError) throw assetError;
+          if ((assets||[]).length!==assetIds.length || (assets||[]).some((asset:any)=>
+            asset.asset_status!=='review' || asset.review_storage_bucket!=='review-assets' || !!asset.public_url ||
+            !asset.review_storage_path?.startsWith(`crew-rework/${workOrderId}/${profile.id}/`) ||
+            asset.metadata?.source!=='mobile_rework_photo_547' ||
+            asset.metadata?.work_order_id!==workOrderId || asset.metadata?.closeout_id!==closeout.id ||
+            asset.metadata?.rejected_at!==closeout.rejected_at || asset.metadata?.uploaded_by_profile_id!==profile.id))
+            throw new HttpError(403,'Correction photos must belong to this crew member and current assigned rework request.');
+        }
         const result=await callRpc(supabase,'ywi_rpc_submit_work_order_execution_proof',{
           p_work_order_id:workOrderId,p_actor_profile_id:profile.id,p_proof_type:'quality',
           p_title:'Crew rework correction',p_staff_notes:notes,p_customer_visible:false,
-          p_asset_ids:[],p_metadata:{build:546,source:'mobile_rework',closeout_id:closeout.id}
+          p_asset_ids:assetIds,p_metadata:{build:547,source:'mobile_rework',closeout_id:closeout.id,photo_count:assetIds.length}
         });
         await audit(supabase,{operation_action:action,operation_status:'submitted',entity_type:'work_order_execution_proof',entity_id:result.execution_proof_id,actor_profile_id:profile.id,request_payload:safeRequest(body),response_payload:result});
         return Response.json({ok:true,proof:result,closeout_status:closeout.closeout_status},{headers:corsHeaders});

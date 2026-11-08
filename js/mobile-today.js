@@ -40,7 +40,9 @@
     crewPendingAction: '',
     crewActionStatus: '',
     crewIntentKeys: Object.create(null),
-    crewAcknowledgement: null
+    crewAcknowledgement: null,
+    crewPhotoDrafts: Object.create(null),
+    crewPhotoReview: Object.create(null)
   };
 
   function authState() {
@@ -341,6 +343,7 @@
       .mobile-crew-v2-details{margin:12px 0;border:1px solid rgba(148,163,184,.28);border-radius:12px;overflow:hidden}.mobile-crew-v2-details summary{cursor:pointer;min-height:44px;padding:11px 12px;font-weight:700;background:rgba(148,163,184,.08)}.mobile-crew-v2-details summary:focus-visible{outline:3px solid #d4af37;outline-offset:-3px}.mobile-crew-v2-details[open] summary{border-bottom:1px solid rgba(148,163,184,.25)}.mobile-crew-v2-detail-body{padding:12px}.mobile-crew-v2-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 12px}.mobile-crew-v2-facts div{min-width:0;padding:8px;border-radius:9px;background:rgba(148,163,184,.07)}.mobile-crew-v2-facts dt{font-size:.78rem;color:var(--text-soft,#cbd5e1)}.mobile-crew-v2-facts dd{margin:2px 0 0;font-weight:650;overflow-wrap:anywhere}.mobile-crew-v2-prep{margin:0;padding:0;border:0;min-width:0}.mobile-crew-v2-prep legend{font-weight:750}.mobile-crew-v2-prep label{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:9px 0;line-height:1.35}.mobile-crew-v2-prep input{width:20px;height:20px;flex:none;accent-color:#d4af37}.mobile-crew-v2-prep-note{margin:8px 0 0;color:var(--text-soft,#cbd5e1);font-size:.85rem;line-height:1.5}@media(max-width:520px){.mobile-crew-v2-facts{grid-template-columns:1fr}}
       .mobile-crew-v2-closeout{margin:12px 0;border:1px solid rgba(212,175,55,.4);border-radius:12px;overflow:hidden}.mobile-crew-v2-closeout summary{cursor:pointer;min-height:44px;padding:11px 12px;font-weight:750;background:rgba(212,175,55,.09)}.mobile-crew-v2-closeout summary:focus-visible{outline:3px solid #d4af37;outline-offset:-3px}.mobile-crew-v2-closeout-list{display:grid;gap:10px;list-style:none;margin:0;padding:12px}.mobile-crew-v2-closeout-item{min-width:0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px;border:1px solid rgba(148,163,184,.22);border-radius:10px;background:rgba(148,163,184,.06)}.mobile-crew-v2-closeout-item>div{flex:1 1 180px;min-width:0}.mobile-crew-v2-closeout-item strong,.mobile-crew-v2-closeout-item small{display:block;line-height:1.4}.mobile-crew-v2-closeout-item small{margin-top:3px;color:var(--text-soft,#cbd5e1)}.mobile-crew-v2-closeout-item button{min-height:44px}.mobile-crew-v2-closeout-tag{font-size:.72rem;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.mobile-crew-v2-closeout-item[data-closeout-kind="attention"] .mobile-crew-v2-closeout-tag{color:#ffd4d4}.mobile-crew-v2-closeout-item[data-closeout-kind="confirmed"] .mobile-crew-v2-closeout-tag{color:#d7ffe9}.mobile-crew-v2-closeout-note{margin:0;padding:0 12px 12px;color:var(--text-soft,#cbd5e1);font-size:.85rem;line-height:1.45}
       .mobile-crew-v2-rework{margin:12px 0;padding:12px;border:1px solid rgba(251,191,36,.64);border-radius:12px;background:rgba(251,191,36,.08);overflow-wrap:anywhere}.mobile-crew-v2-rework>strong{display:block;color:var(--text,#f8fafc);font-size:1rem}.mobile-crew-v2-rework>p{white-space:pre-wrap;overflow-wrap:anywhere}.mobile-crew-v2-rework>small{display:block;margin-top:10px;color:var(--text-soft,#cbd5e1);line-height:1.45}.mobile-crew-v2-rework .mobile-crew-v2-actions{margin-top:12px}.mobile-crew-v2-rework button{min-height:44px}
+      .mobile-crew-v2-photo-editor{display:grid;gap:10px;min-width:0;margin-top:14px;padding:10px;border:1px solid var(--line,#64748b);border-radius:10px}.mobile-crew-v2-photo-editor label{display:grid;gap:4px;min-width:0;font-weight:600}.mobile-crew-v2-photo-editor textarea,.mobile-crew-v2-photo-editor input[type=file]{width:100%;min-width:0;box-sizing:border-box;font:inherit}.mobile-crew-v2-photo-editor>small{font-weight:400;line-height:1.4}.mobile-crew-v2-photo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:8px;min-width:0;margin-top:10px}.mobile-crew-v2-photo-grid figure{margin:0;min-width:0;border:1px solid var(--line,#64748b);border-radius:8px;overflow:hidden}.mobile-crew-v2-photo-grid img{display:block;width:100%;height:135px;object-fit:cover}.mobile-crew-v2-photo-grid figcaption{padding:6px;overflow-wrap:anywhere;font-size:.8rem}.mobile-crew-v2-photo-grid button{display:block;width:100%;margin-top:5px}.mobile-crew-v2-photo-confirm{padding:8px;border-radius:8px;border:1px solid rgba(34,197,94,.6);overflow-wrap:anywhere}.mobile-crew-v2-photo-confirm p{white-space:pre-wrap}
       .jobs-desktop-workbench{display:none}.jobs-sync-health{margin:12px 0}.job-workbench-result{align-self:end;min-height:42px;display:flex;align-items:center;color:var(--text-soft,#cbd5e1)}
       @media(max-width:520px){.field-sync-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.field-sync-actions>*{flex:1 1 145px}.offline-recovery-compare{grid-template-columns:1fr}.offline-recovery-actions button{flex:1 1 120px}}
       @media(min-width:900px){.jobs-desktop-workbench{display:grid;grid-template-columns:minmax(220px,1.5fr) minmax(170px,.7fr) auto auto;gap:10px;align-items:end;padding:12px;margin:10px 0 12px;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(15,23,42,.48)}.jobs-desktop-workbench label{min-width:0}.jobs-desktop-workbench button{min-height:44px}}
@@ -693,6 +696,66 @@
     ).sort((a,b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0] || null;
   }
 
+  // Notes alone are recovered from this signed-in browser session. File objects and
+  // private signed URLs never enter Web Storage or the offline action queue.
+  function crewPhotoDraftKey(row) {
+    const profile=String(authState().profile?.id || authState().user?.id || '');
+    const workOrder=String(row?.work_order?.id || row?.dispatch?.work_order_id || '');
+    const rejected=String(row?.closeout?.rejected_at || '');
+    return profile && workOrder && rejected ? `ywi547:rework:${profile}:${workOrder}:${rejected}` : '';
+  }
+
+  function crewPhotoDraft(row) {
+    const key=crewPhotoDraftKey(row);
+    if (!key) return null;
+    if (!state.crewPhotoDrafts[key]) {
+      let recovered={};
+      try {
+        const value=JSON.parse(sessionStorage.getItem(key)||'null');
+        if (value?.saved_at && Date.now()-Date.parse(value.saved_at)<24*60*60*1000 && typeof value.notes==='string') recovered=value;
+      } catch {}
+      state.crewPhotoDrafts[key]={notes:recovered.notes||'',files:[],assets:[],open:!!recovered.notes,review:false};
+    }
+    return state.crewPhotoDrafts[key];
+  }
+
+  function persistCrewPhotoDraft(row) {
+    const key=crewPhotoDraftKey(row);
+    const draft=key && state.crewPhotoDrafts[key];
+    if (!draft) return;
+    try {
+      if (draft.notes) sessionStorage.setItem(key,JSON.stringify({notes:draft.notes.slice(0,4000),saved_at:new Date().toISOString()}));
+      else sessionStorage.removeItem(key);
+    } catch {}
+  }
+
+  function discardCrewPhotoDraft(row) {
+    const key=crewPhotoDraftKey(row);
+    const draft=key && state.crewPhotoDrafts[key];
+    for (const item of draft?.files||[]) try {URL.revokeObjectURL(item.url);}catch{}
+    if (key) {
+      delete state.crewPhotoDrafts[key];
+      try {sessionStorage.removeItem(key);}catch{}
+    }
+  }
+
+  function crewPhotoEditorMarkup(row, index) {
+    const draft=crewPhotoDraft(row);
+    if (!draft?.open) return '';
+    const ready=draft.notes.trim().length>=12 && navigator.onLine!==false && !state.crewPendingAction;
+    return '<div class="mobile-crew-v2-photo-editor" data-crew-photo-editor>' +
+      '<label for="crew547Notes'+index+'">What did we correct? (staff-only)<textarea id="crew547Notes'+index+'" rows="3" maxlength="4000" data-crew-photo-notes="'+index+'">'+crewEscape(draft.notes)+'</textarea></label>'+
+      '<label>Correction photos (optional; up to four JPEG, PNG or WebP, 5 MB each)<input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" multiple data-crew-photo-files="'+index+'"'+(state.crewPendingAction?' disabled':'')+'></label>'+
+      '<small>Photo selections stay in this open page only. If we reload, the note is recoverable for 24 hours in this signed-in browser session, but photos must be reselected. Nothing uploads until confirmed.</small>'+
+      (draft.files.length ? '<div class="mobile-crew-v2-photo-grid">'+draft.files.map((item,i)=>'<figure><img src="'+crewEscape(item.url)+'" alt="Selected correction photo '+(i+1)+'"><figcaption>'+crewEscape(item.file.name)+' · '+Math.round(item.file.size/1024)+' KB <button type="button" class="secondary" data-crew-photo-remove="'+index+'" data-crew-photo-file="'+i+'">Remove</button></figcaption></figure>').join('')+'</div>':'<p class="field-sync-note">No new photos selected. Existing correction evidence can still be recorded as staff-only notes.</p>')+
+      (draft.review ? '<div class="mobile-crew-v2-photo-confirm" role="status"><strong>Review before saving</strong><p>'+crewEscape(draft.notes)+'</p><p>'+draft.files.length+' private correction photo(s) selected. Upload and proof creation require online confirmation; supervisor closeout remains on HOLD.</p></div>' : '')+
+      '<div class="mobile-crew-v2-actions"><button type="button" class="secondary" data-crew-photo-review="'+index+'"'+(ready?'':' disabled')+'>Review evidence</button>'+
+        (draft.review?'<button type="button" data-crew-photo-save="'+index+'"'+(ready?'':' disabled')+'>Confirm and save proof</button>':'')+
+        '<button type="button" class="secondary" data-crew-photo-cancel="'+index+'">Keep draft and close</button>'+
+        '<button type="button" class="secondary" data-crew-photo-discard="'+index+'">Discard draft</button></div>'+
+    '</div>';
+  }
+
   function crewReworkMarkup(row, index) {
     if (!crewReworkRequired(row)) return '';
     const note = String(row?.closeout?.rejection_reason || '').trim();
@@ -704,9 +767,12 @@
       '<p>' + (note ? crewEscape(note) : 'Supervisor instructions are not in this snapshot. Refresh before changing work; ask the supervisor if instructions are still missing.') + '</p>' +
       '<p class="field-sync-note">' + (proof ? 'Correction proof recorded ' + crewEscape(crewDateTime(proof.created_at)) + '. Ready to send a staff-only review request.' : 'No post-rejection correction proof from this crew member is confirmed yet.') + '</p>' +
       '<div class="mobile-crew-v2-actions">' +
-        crewActionButton('Record correction evidence','rework_proof',index,enabled && !!capabilities.execution_proof && !!note) +
+        crewActionButton('Record correction evidence + photos','rework_photo',index,!!capabilities.execution_proof && !!note && !state.crewPendingAction) +
         crewActionButton('Resubmit corrections for supervisor','rework_resubmit',index,enabled && !!capabilities.execution_proof && !!proof && !!note) +
-      '</div><small>Supervisor still decides the closeout. Rework, customer signoff and invoicing remain on HOLD until that decision. Nothing is sent to the customer.</small>' +
+        (proof ? crewActionButton('Review saved correction photos','rework_photo_review',index,enabled) : '') +
+      '</div>' + crewPhotoEditorMarkup(row,index) +
+      (state.crewPhotoReview[row?.work_order?.id]?.length ? '<div class="mobile-crew-v2-photo-grid">'+state.crewPhotoReview[row.work_order.id].map((photo,i)=>'<figure><img src="'+crewEscape(photo.url)+'" alt="Private saved correction photo '+(i+1)+'"><figcaption>'+crewEscape(photo.name)+'</figcaption></figure>').join('')+'</div>':'')+
+      '<small>Supervisor still decides the closeout. Rework, customer signoff and invoicing remain on HOLD until that decision. Nothing is sent to the customer.</small>' +
     '</section>';
   }
 
@@ -774,6 +840,48 @@
           : '<div class="mobile-crew-v2-empty">' + (state.crewTab === 'rework' ? 'No assigned rework is in this seven-day window, or the active filters exclude it.' : total ? 'No assigned work matches these filters. Clear the search or site cautions filter.' : 'No assigned work is in the current seven-day crew window.') + '</div>';
     list.querySelectorAll('[data-crew-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewAction, Number(button.dataset.crewIndex || 0))));
     list.querySelectorAll('[data-crew-guide-action]').forEach((button) => button.addEventListener('click', () => runCrewAction(button.dataset.crewGuideAction, Number(button.dataset.crewIndex || 0))));
+    const rowAt=(element)=>crewRows()?.[Number(element.dataset.crewPhotoNotes||element.dataset.crewPhotoFiles||element.dataset.crewPhotoReview||element.dataset.crewPhotoSave||element.dataset.crewPhotoCancel||element.dataset.crewPhotoDiscard||element.dataset.crewPhotoRemove||0)];
+    list.querySelectorAll('[data-crew-photo-notes]').forEach((input)=>input.addEventListener('input',()=>{
+      const row=rowAt(input),draft=row&&crewPhotoDraft(row);
+      if (!draft) return;
+      draft.notes=input.value.slice(0,4000);draft.review=false;persistCrewPhotoDraft(row);
+      const editor=input.closest('[data-crew-photo-editor]');
+      editor?.querySelectorAll('[data-crew-photo-review],[data-crew-photo-save]').forEach((button)=>button.disabled=draft.notes.trim().length<12 || navigator.onLine===false);
+    }));
+    list.querySelectorAll('[data-crew-photo-files]').forEach((input)=>input.addEventListener('change',()=>{
+      const row=rowAt(input),draft=row&&crewPhotoDraft(row);
+      if (!draft) return;
+      const files=Array.from(input.files||[]);
+      if (files.length>4 || files.some((file)=>!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024||!file.size)) {
+        state.crewActionStatus='Choose up to four JPEG, PNG or WebP photos, no larger than 5 MB each.';
+        input.value='';renderCrewFilteredList(panel);return;
+      }
+      for (const item of draft.files) try{URL.revokeObjectURL(item.url);}catch{}
+      draft.files=files.map((file)=>({file,url:URL.createObjectURL(file)}));draft.assets=[];draft.review=false;
+      renderCrewFilteredList(panel);
+    }));
+    list.querySelectorAll('[data-crew-photo-remove]').forEach((button)=>button.addEventListener('click',()=>{
+      const row=rowAt(button),draft=row&&crewPhotoDraft(row);
+      if (!draft) return;
+      const removed=draft.files.splice(Number(button.dataset.crewPhotoFile),1)[0];
+      if (removed) URL.revokeObjectURL(removed.url);
+      draft.assets=[];draft.review=false;renderCrewFilteredList(panel);
+    }));
+    list.querySelectorAll('[data-crew-photo-review]').forEach((button)=>button.addEventListener('click',()=>{
+      const row=rowAt(button),draft=row&&crewPhotoDraft(row);
+      if (!draft || draft.notes.trim().length<12) return;
+      draft.review=true;renderCrewFilteredList(panel);
+    }));
+    list.querySelectorAll('[data-crew-photo-save]').forEach((button)=>button.addEventListener('click',()=>saveCrewPhotoProof(rowAt(button))));
+    list.querySelectorAll('[data-crew-photo-cancel]').forEach((button)=>button.addEventListener('click',()=>{
+      const row=rowAt(button),draft=row&&crewPhotoDraft(row);if(!draft)return;
+      draft.open=false;persistCrewPhotoDraft(row);renderCrewFilteredList(panel);
+    }));
+    list.querySelectorAll('[data-crew-photo-discard]').forEach((button)=>button.addEventListener('click',()=>{
+      const row=rowAt(button);if(!row)return;
+      if (!window.confirm('Discard this device draft and selected photos? Already uploaded private photos cannot be undone here.'))return;
+      discardCrewPhotoDraft(row);renderCrewFilteredList(panel);
+    }));
     bindCrewDetails(list);
     bindCrewCloseout(list);
   }
@@ -893,6 +1001,39 @@
     return crewApi().manageOperations(payload);
   }
 
+  async function saveCrewPhotoProof(row) {
+    const draft=row&&crewPhotoDraft(row);
+    const workOrderId=row?.work_order?.id||row?.dispatch?.work_order_id;
+    if (!draft?.review || draft.notes.trim().length<12 || !crewReworkRequired(row) || !workOrderId ||
+        state.crewPendingAction || navigator.onLine===false) return;
+    if (!window.confirm('Upload selected photos privately and record staff-only correction proof? Supervisor closeout remains on HOLD.'))return;
+    const epoch=state.crewAuthEpoch;
+    state.crewPendingAction='photo:'+workOrderId;
+    state.crewActionStatus='Saving private correction evidence…';renderMobileCrewApp();
+    try {
+      if (draft.files.length && !crewApi()?.mobileReworkPhoto) throw new Error('Private correction photo service is unavailable.');
+      for (let i=0;i<draft.files.length;i++) {
+        if (epoch!==state.crewAuthEpoch) throw new Error('Signed-in session changed. Reopen the assigned job.');
+        if (!draft.assets[i]) {
+          const form=new FormData();form.set('work_order_id',workOrderId);form.set('file',draft.files[i].file);
+          const response=await crewApi().mobileReworkPhoto(form);
+          if (!response?.review_only || !response?.asset_id) throw new Error('Private photo acknowledgement missing.');
+          draft.assets[i]=response.asset_id;
+        }
+      }
+      if (epoch!==state.crewAuthEpoch) throw new Error('Signed-in session changed.');
+      const result=await crewOperation({action:'work_order_rework_proof_submit',work_order_id:workOrderId,
+        staff_notes:draft.notes.trim(),asset_ids:draft.assets.filter(Boolean)});
+      if (!result?.ok || !result?.proof?.execution_proof_id) throw new Error(result?.error||'Correction proof was not acknowledged.');
+      discardCrewPhotoDraft(row);
+      state.crewActionStatus='Private correction evidence saved. Refresh the rework card, then resubmit to the supervisor.';
+      state.crewError='';
+      await loadMobileCrewContext(true);
+    } catch(error) {
+      state.crewActionStatus='Correction evidence not confirmed: '+(error?.message||'Retry when connected.')+' The device draft remains available.';
+    } finally {state.crewPendingAction='';renderMobileCrewApp();}
+  }
+
   async function runCrewAction(action, index) {
     const row = crewRows()?.[index] || null;
     if (!row && !['clock','safety','equipment'].includes(action)) return;
@@ -901,6 +1042,21 @@
     if (action === 'equipment') return router()?.showSection?.('equipment');
     const workOrderId = row?.work_order?.id || row?.dispatch?.work_order_id || '';
     try {
+      if (action==='rework_photo') {
+        if (!crewReworkRequired(row) || !row?.closeout?.rejection_reason || !state.crewContext?.capabilities?.execution_proof) return;
+        const draft=crewPhotoDraft(row);if(!draft)return;
+        draft.open=true;draft.review=false;renderMobileCrewApp();return;
+      }
+      if (action==='rework_photo_review') {
+        if (navigator.onLine===false || !crewReworkRequired(row)) return;
+        const proof=crewCorrectionProof(row);
+        if (!proof || !crewApi()?.mobileReworkPhoto) return;
+        const result=await crewApi().mobileReworkPhoto({action:'review',work_order_id:workOrderId,proof_id:proof.id});
+        if (!result?.ok) throw new Error('Private photo review not authorized.');
+        state.crewPhotoReview[workOrderId]=result.photos||[];
+        state.crewActionStatus=(result.photos||[]).length+' saved private correction photo(s) available for five minutes.';
+        renderMobileCrewApp();return;
+      }
       if (action === 'rework_proof' || action === 'rework_resubmit') {
         if (state.crewPendingAction) return;
         if (!crewReworkRequired(row) || !row?.closeout?.rejection_reason || !state.crewContext?.capabilities?.execution_proof)
@@ -1135,6 +1291,8 @@
     window.addEventListener('offline', render);
     document.addEventListener('ywi:auth-changed', () => {
       state.crewAuthEpoch += 1;
+      for (const draft of Object.values(state.crewPhotoDrafts)) for (const item of draft.files||[]) try{URL.revokeObjectURL(item.url);}catch{}
+      state.crewPhotoDrafts=Object.create(null);state.crewPhotoReview=Object.create(null);
       state.crewContext=null; state.crewLoadedAt=0; state.crewLoading=false;
       state.crewTab='route'; state.crewSearch=''; state.crewSiteCautionsOnly=false;
       state.crewPrepByAssignment=Object.create(null); state.crewDetailsOpen=Object.create(null); state.crewCloseoutOpen=Object.create(null);
@@ -1161,6 +1319,7 @@
   window.YWIMobileToday = {
     bind, render, countOutboxItems, countActionItems, countConflictItems, countDraftForms,
     syncSnapshot, mobileReliabilityEvidence, mobileReliabilityEvidenceMarkup, deviceSafeReliabilityMarkup, applyJobsWorkbenchFilter, ensureJobsDesktopWorkbench, loadMobileCrewContext, renderMobileCrewApp, renderConflictRecovery, crewVisibleRows, crewAssignmentKey, crewPrepCount, crewDetailsMarkup, crewCloseoutGuidance, crewCloseoutMarkup, crewReworkRequired, crewCorrectionProof, crewReworkMarkup,
+    crewPhotoDraftKey, crewPhotoDraft, persistCrewPhotoDraft, discardCrewPhotoDraft, crewPhotoEditorMarkup,
     reliabilityReleaseHistory: () => MOBILE_RELIABILITY_RELEASE_HISTORY.map((row) => ({ ...row }))
   };
   document.addEventListener('DOMContentLoaded', bind);
