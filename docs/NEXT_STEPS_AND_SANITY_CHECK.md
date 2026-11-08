@@ -1,6 +1,6 @@
 # Next Steps and Sanity Check
 
-## Build 542 — Crew Field Finder & Site Caution Focus (2026-11-07)
+## YW 542 — Crew Field Finder & Site Caution Focus (2026-11-07)
 
 The signed-in **Today → Mobile Crew App v2** screen now provides a 44px touch-friendly search for the assigned job, work-order code, property, address and authorized site notes; a **Site cautions only** filter for hazard notes and flagged equipment; match counts, meaningful empty states and a one-tap clear action. It works on both **My Route** and **My Jobs** while preserving the server's route order and original action indices. Filters are deliberately **in-memory, display-only**; they cannot fetch unassigned customers, expand access, alter a server record, dispatch a crew, send customer communication or persist private search terms. Switching identities clears the filters. Source-gate and 390/430px browser checks cover role-scoped payloads, source-index routing to the correct field action, zero-match behavior and offline-safe functionality. This is a product-operations feature, not a connection-readiness build. Future work should return to scheduling and crew usability only if real feedback identifies a specific limitation.
 
