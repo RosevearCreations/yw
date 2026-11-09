@@ -1,0 +1,45 @@
+# Yard Workers 551 — Landscaping Booking Catalogue & Master Shell Handoff
+
+## Company workspace and scope
+
+- **Source identity:** `yw` — Yard Workers platform-level source, repository `RosevearCreations/yw`.
+- **Platform shell:** Ree/Jack Sysop monitoring, identity, security, releases and integration authority; never a landscaping-company tenant.
+- **Company workspace:** e.g. **Rosevear Landscaping**, owned and separated by `ywi_companies.id` and server-side RLS.
+- **YW 551:** Company owners maintain landscaping services, add-ons, disposal/dump fees, price units, and spring/summer/fall/winter overrides in Settings. The season-specific preview gives a CAD pre-tax *illustration* only.
+- **Non-goals:** No actual booking submission, slot allocation, invoice, card charge, waste-hauling manifest, licensed-disposal assertion or historical-job mutation. None may be inferred from a catalogue row or preview.
+
+## Data and security
+
+1. Deploy additive, reviewed [`sql/company_booking_catalogue_551.sql`](../sql/company_booking_catalogue_551.sql) **after** `company_service_offering_registry_420.sql`; this repository file alone does not prove live installation.
+2. The table `ywi_company_booking_catalogue_551` stores per-company identifiers, draft/active state, price units, integer CAD cents, optional seasonal overrides and owner edit attribution. The `ywi_company_booking_catalogue_audit_551` records append-only create/update snapshots.
+3. Database grants and RLS restrict read/create/update to the authenticated owner of the same company. `company_id`, code, type and item identity are immutable after creation. Client UI rechecks authenticated owner; server RLS remains definitive.
+4. A company's `landscape` offering must be enabled in the independent service registry before the preview is considered potentially bookable. The catalogue does **not** bypass Build 421's separate new-work authorization.
+5. Disabled rows remain owner drafts; no public/anonymous read grants. A later customer-facing booking API must provide a carefully scoped public view and enforce server-side price/availability/booking confirmation.
+6. Fee labels are estimates only, not environmental-compliance proof. Actual disposal manifests, site authorization, invoices and receipts remain governed by separate modules and evidence.
+
+## Proposed shared integration — assessment, not activation
+
+The attached *Rosevear Suite Master Shell Architecture & Integration* document is a **proposed** common specification. No new peer trust, active transport route or owner witness is asserted by YW 551.
+
+| Requirement | YW 551 treatment | Verification state |
+| --- | --- | --- |
+| AI Data Platform module reporting | Catalogue module can report `implemented`, test counts, migration state and owner acceptance evidence; no invented completion percentage. Reuse existing source-health handler `server/ql364-source-health.mjs`. | Proposed payload extension; not submitted |
+| Comms Hub authorized notice | A future approved quote/booking follow-up may reference a company-scoped item and correlation ID. Consent, origin, audience, owner grants, idempotency and transport receipt required. | Not activated |
+| Contract identity | `sourceId: yw`, parent Sysop shell; company ID stays tenant-scoped. | Existing identity, reused |
+| New standard event envelope | Proposed `eventId`, `schemaVersion`, `sourceId`, `shellId`, `tenantId`, `occurredAt`, `correlationId`, `idempotencyKey`, `audience`, `verificationState`, `payloadHash` and evidence URI. | Do not publish until Master Shell coordination approves schema |
+| Integration topology | Direct, one-to-many and many-to-many routes require individual authorization and data minimization; no implicit broad access. | Unverified for this build |
+| Devices/UX | Unit browser tests cover mobile viewport, owner draft/preview, financial boundary and tenant mismatch. | Automated test outcome must be attached from CI |
+
+The YW 551 module should not be reported as 100% production complete until the database migration is applied and inspected, RLS is independently tested with separate owners, browser and CI checks pass, a live installed-version check succeeds, and owner acceptance is recorded. The module's current live database, active connection and customer booking availability remain **UNVERIFIED** absent original receipts.
+
+## Acceptance and promotion
+
+- `npm run test:company-booking-catalogue-551`
+- `npm run test:browser:company-booking-catalogue-551`
+- `npm run test:repo`
+- Protected PR into `dev`, then a distinct reviewed promotion PR from `dev` to `main`, with all required GitHub checks green.
+- Confirm deployment/installed revision and apply the database migration separately under authorized production change control; GitHub `main` green alone does not certify database runtime or customer bookings.
+
+## Next recommended build — YW 552
+
+**Customer-Facing Landscaping Quote and Booking Request Wizard** — company-scoped public catalogue read, live availability, authenticated/guest consent, estimate/fee confirmation, server-side price recalculation, privacy-safe Comms handoff and owner review before any actual job creation.
