@@ -1,0 +1,28 @@
+# YW 552 — Customer-Facing Landscaping Quote and Booking Request Wizard
+
+## Boundaries
+
+- Product system of record: Yard Workers, sourceId `yw`.
+- Business owner/tenant: authenticated owner of one `ywi_companies.id`, e.g. Rosevear Landscaping.
+- Master Sysop: read-only platform oversight; no customer request/quote/detail access from this feature.
+- AI Data Platform and Comms Hub: no new live peer contract, notice, messaging or transport is activated by this release.
+
+## Public flow
+
+1. An independently verified company owner enables YW 552 public requests in Settings. Without owner opt-in the public edge endpoint returns unavailable. Owner can disable intake again.
+2. Customer opens a link with an explicit company UUID, chooses active YW 551 landscaping services and optional add-ons/disposal estimates, and may request a date up to 12 months ahead.
+3. Backend recalculates integer CAD cents using current active company rows and the selected season, including separately disclosed disposal *estimates*. Only a current server digest can be submitted, with a unique idempotency key and explicit privacy consent. No tax, availability or final scope is assumed.
+4. A private YW 552 company-bound request is inserted with `owner_review` status. Duplicate keys do not create new records. Company owner can read only their own requests; no anonymous table grants exist and the service key remains server-only.
+5. No automatic reservation, staff/route/dispatch change, invoice, payment, waste-disposal certification, Comms message, or customer broadcast is created. Owner actions are intentionally deferred to YW 554.
+
+## Installation and acceptance
+
+- The registered YardWeasels Production Supabase project must first have the separately reviewed YW 551 `sql/company_booking_catalogue_551.sql` installed and independently checked; the initial 9 November readback showed the table ABSENT.
+- Review and apply `sql/landscape_booking_request_552.sql` only under authorized production change control. Confirm RLS from two independent owners and anon denial; do not infer these from tests.
+- Deploy the `landscape-booking-552` Edge Function with `verify_jwt=false` (intended public request endpoint) and server-only service key. Check the deployed function revision/health and confirm disabled-public and inactive-service denials before allowing a real company to publish.
+- Source checks: `npm run test:landscape-booking-552`, `npm run test:browser:landscape-booking-552`, `npm run test:repo`, `npm run build:vercel`, `node scripts/release-job-separation-check.mjs` and protected exact-SHA GitHub browser/source checks.
+- Promote feature PR to `dev`, then separate reviewed PR to protected `main`. Verify Vercel production exact revision and do not call production booking READY without database/function/owner acceptance.
+
+## Next proposal
+
+YW 553 — Service Area, Crew Capacity & Availability Validation; reuse existing calendar/crew/routes/weather before confirming a booking.
