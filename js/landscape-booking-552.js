@@ -113,7 +113,7 @@ function mountOwner(){const host=$('settings');if(!host||$('owner552'))return;
  panel.innerHTML='<summary>Landscaping · Incoming quote requests (owner only)</summary><div class="admin-panel-block"><p>Company-owner review only. Requests do not book crews, create work orders, send messages or charge cards. Public requests are OFF until this company owner explicitly enables them.</p><select id="owner552Company" aria-label="Owner company"></select> <button id="owner552Refresh" type="button">Refresh requests</button> <button id="owner552Access" type="button">Enable public requests</button> <button id="owner552Link" type="button">Show customer request link</button><p id="owner552Status" role="status" aria-live="polite">Sign in and refresh to verify company ownership.</p><div id="owner552LinkText"></div><div id="owner552Requests"></div></div>';
  host.appendChild(panel);
  const select=$('owner552Company'), status=$('owner552Status'), list=$('owner552Requests');
- let companies=[],currentUser='',publicEnabled=false,loading=false,epoch=0;
+ let companies=[],currentUser='',publicEnabled=false,publishingRowExists=false,loading=false,epoch=0;
  const option=(value,label)=>{const o=el('option',label);o.value=value;return o;};
  async function identity(){const auth=window.YWI_AUTH?.getState?.(),sb=window.YWI_SB||window._sb;
   if(auth?.isAuthenticated!==true||!auth.user?.id||!sb?.auth?.getUser||!sb?.from)throw Error('Company owner sign-in required.');
@@ -135,6 +135,7 @@ function mountOwner(){const host=$('settings');if(!host||$('owner552'))return;
     .eq('company_id',companyId).limit(1);
    if(publishing.error||!Array.isArray(publishing.data)||publishing.data.length>1||
      publishing.data.some(row=>row.company_id!==companyId))throw Error('Public publishing state could not be verified.');
+   publishingRowExists=publishing.data.length===1;
    publicEnabled=publishing.data[0]?.public_enabled===true;
    $('owner552Access').textContent=publicEnabled?'Disable public requests':'Enable public requests';
    const rows=await sb.from('ywi_landscape_booking_requests_552').select('id,company_id,request_status,full_name,contact_value,preferred_contact_method,service_area,requested_date,estimated_subtotal_cents,estimated_disposal_cents,quotation_snapshot,created_at')
@@ -154,18 +155,21 @@ function mountOwner(){const host=$('settings');if(!host||$('owner552'))return;
   finally{if(run===epoch){loading=false;$('owner552Refresh').disabled=false;}}
  }
  $('owner552Refresh').addEventListener('click',refresh);
- select.addEventListener('change',()=>{list.replaceChildren();publicEnabled=false;currentUser='';
+ select.addEventListener('change',()=>{list.replaceChildren();publicEnabled=false;publishingRowExists=false;currentUser='';
   status.textContent='Company changed. Refresh to verify and load requests.';$('owner552LinkText').replaceChildren();});
  $('owner552Access').addEventListener('click',async()=>{try{const {id,sb}=await identity();
   if(id!==currentUser||!companies.some(c=>c.id===select.value))throw Error('Refresh and verify owner companies first.');
   const enable=!publicEnabled;
   if(!window.confirm('Do you want to '+(enable?'ENABLE public service prices and quote requests':'DISABLE new public quote requests')+' for this company?'))return;
   const companyId=select.value;
-  const result=enable?await sb.from('ywi_company_booking_public_settings_552').upsert({company_id:companyId,public_enabled:true},{onConflict:'company_id'}).select('company_id,public_enabled'):
-   await sb.from('ywi_company_booking_public_settings_552').update({public_enabled:false}).eq('company_id',companyId).select('company_id,public_enabled');
+  // RLS grants INSERT(company_id,public_enabled) and UPDATE(public_enabled) only.
+  // A generic upsert may require UPDATE(company_id), which we intentionally withhold.
+  const result=enable&&!publishingRowExists?
+   await sb.from('ywi_company_booking_public_settings_552').insert({company_id:companyId,public_enabled:true}).select('company_id,public_enabled'):
+   await sb.from('ywi_company_booking_public_settings_552').update({public_enabled:enable}).eq('company_id',companyId).select('company_id,public_enabled');
   const now=window.YWI_AUTH?.getState?.();if(now?.isAuthenticated!==true||now.user?.id!==id||select.value!==companyId)throw Error('Owner session changed during publishing.');
   if(result.error||result.data?.length!==1||result.data[0].company_id!==companyId||result.data[0].public_enabled!==enable)throw Error('Publishing change was not verified by the database.');
-  publicEnabled=enable;$('owner552Access').textContent=enable?'Disable public requests':'Enable public requests';
+  publicEnabled=enable;publishingRowExists=true;$('owner552Access').textContent=enable?'Disable public requests':'Enable public requests';
   $('owner552LinkText').replaceChildren();status.textContent='Public quote requests '+(enable?'ENABLED':'DISABLED')+' for this verified company. No booking or payment was created.';
  }catch(e){status.textContent='WITHHELD: '+(e?.message||e);}});
  $('owner552Link').addEventListener('click',async()=>{try{const {id}=await identity();
@@ -174,7 +178,7 @@ function mountOwner(){const host=$('settings');if(!host||$('owner552'))return;
   const url=new URL(location.origin+location.pathname);url.searchParams.set('booking_company',select.value);url.hash='landscaping-quote-552';
   $('owner552LinkText').replaceChildren(el('p','Share this company-specific public request link: '),el('code',url.toString()));
  }catch(e){status.textContent='WITHHELD: '+(e?.message||e);}});
- document.addEventListener('ywi:auth-changed',()=>{epoch++;companies=[];currentUser='';publicEnabled=false;list.replaceChildren();select.replaceChildren();$('owner552LinkText').replaceChildren();status.textContent='Session changed. Refresh to reverify company ownership.';});
+ document.addEventListener('ywi:auth-changed',()=>{epoch++;companies=[];currentUser='';publicEnabled=false;publishingRowExists=false;list.replaceChildren();select.replaceChildren();$('owner552LinkText').replaceChildren();status.textContent='Session changed. Refresh to reverify company ownership.';});
 }
 function mount(){mountPublic();mountOwner();}
 window.YWI552=Object.freeze({mountPublic,mountOwner});
