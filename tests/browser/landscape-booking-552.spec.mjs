@@ -23,12 +23,14 @@ async function setup(page,opts={}){
       disposal_estimate_cents:0,availability_confirmed:false,lines:[{code:'mow',name:'Lawn mowing',quantity:2,unit_price_cents:7500,line_total_cents:15000}]}};
     if(payload.action==='submit')return {ok:true,status:'owner_review',message:'Request received for owner review; no booking or payment.'};
   }};
-  let publishing=false;
+  let publishing=false,publishingRowExists=false;
   window.YWI_SB={auth:{getUser:async()=>({data:{user:{id:'owner-1'}}})},from(table){
     if(table==='ywi_company_booking_public_settings_552')return {
-      select(){return {eq(){return {limit:async()=>({data:publishing?[{company_id:company,public_enabled:publishing}]:[],error:null})}}}},
-      upsert(payload){publishing=payload.public_enabled;return {select:async()=>({data:[{company_id:company,public_enabled:publishing}],error:null})}},
-      update(payload){publishing=payload.public_enabled;return {eq(){return {select:async()=>({data:[{company_id:company,public_enabled:publishing}],error:null})}}}}
+      select(){return {eq(){return {limit:async()=>({data:publishingRowExists?[{company_id:company,public_enabled:publishing}]:[],error:null})}}}},
+      insert(payload){if(publishingRowExists)throw Error('Owner publishing insert unexpectedly repeated');
+        publishingRowExists=true;publishing=payload.public_enabled;return {select:async()=>({data:[{company_id:company,public_enabled:publishing}],error:null})}},
+      update(payload){if(!publishingRowExists)throw Error('Owner publishing update occurred before first insert');
+        publishing=payload.public_enabled;return {eq(){return {select:async()=>({data:[{company_id:company,public_enabled:publishing}],error:null})}}}}
     };
     const query={table,company:null};const q={select(){return q},eq(k,v){if(k==='company_id')query.company=v;return q},order(){return q},
       limit:async()=>table==='ywi_companies'?{data:[{id:company,name:'Rosevear Landscaping',owner_user_id:'owner-1'}],error:null}:
@@ -93,6 +95,10 @@ test('only verified company owner can read requests and display share link',asyn
  await expect(page.locator('#owner552Requests')).toContainText('Sample Customer');
  await expect(page.locator('#owner552Status')).toContainText('Public intake: OFF');
  await page.on('dialog',dialog=>dialog.accept());
+ await page.locator('#owner552Access').click();
+ await expect(page.locator('#owner552Status')).toContainText('ENABLED');
+ await page.locator('#owner552Access').click();
+ await expect(page.locator('#owner552Status')).toContainText('DISABLED');
  await page.locator('#owner552Access').click();
  await expect(page.locator('#owner552Status')).toContainText('ENABLED');
  await page.locator('#owner552Link').click();

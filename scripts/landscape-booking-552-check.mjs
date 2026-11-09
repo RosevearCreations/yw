@@ -45,7 +45,10 @@ must(edge,['quoteFor(companyId, rows, selections, season)','body.quote_digest !=
  'published.data?.public_enabled !== true'], 'Edge');
 assert.ok(!/sendToFunction\(['"](?:comms|stripe|dispatch)/i.test(edge));
 must(js,['owner552Requests','booking552Form','booking552Preview','booking552Submit','request_status',
- 'privacy_consent','quote_digest','booking_company','owner552Link','owner552Access'], 'client');
+ 'privacy_consent','quote_digest','booking_company','owner552Link','owner552Access',
+ 'publishingRowExists', '.insert({company_id:companyId,public_enabled:true})',
+ '.update({public_enabled:enable})'], 'client');
+assert.ok(!js.includes('.upsert('),'Public publishing owner toggle must use column-restricted insert/update, never upsert');
 must(html,['id="landscaping-quote-552"','landscape-booking-552.js'], 'HTML');
 must(cfg,['[functions.landscape-booking-552]','verify_jwt = false'], 'config');
 must(api,["jsonFetch('landscape-booking-552'",'landscapeBooking552,'], 'API');
