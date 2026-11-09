@@ -408,6 +408,8 @@
     "test:browser:company-service-inventory-419": "playwright test --config=playwright.config.mjs tests/browser/company-service-inventory-419.spec.mjs",
     "test:company-service-registry-420": "node scripts/company-service-registry-420-check.mjs",
     "test:browser:company-service-registry-420": "playwright test --config=playwright.config.mjs tests/browser/company-service-registry-420.spec.mjs",
+    "test:company-booking-catalogue-551": "node scripts/company-booking-catalogue-551-check.mjs",
+    "test:browser:company-booking-catalogue-551": "playwright test --config=playwright.config.mjs tests/browser/company-booking-catalogue-551.spec.mjs",
     "test:new-work-company-gate-421": "node scripts/new-work-company-gate-421-check.mjs",
     "test:browser:new-work-company-gate-421": "playwright test --config=playwright.config.mjs tests/browser/new-work-company-gate-421.spec.mjs",
     "test:cross-service-continuity-422": "node scripts/cross-service-continuity-422-check.mjs",
