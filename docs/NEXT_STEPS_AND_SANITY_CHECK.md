@@ -1,5 +1,17 @@
 # Next Steps and Sanity Check
 
+## YW 553 — Service Area, Crew Capacity & Availability Validation (2026-11-09)
+
+**Company application, not the Sysop shell:** In Settings → Landscaping → Service Area, Crew Capacity & Availability, the verified company owner can configure exact town/area coverage rules and a date-specific crew-minute planning budget. The private request selector reads only that owner's YW 552 customer requests. No global directory, customer list or employee assignment crosses a company boundary.
+
+**Original source reuse:** The company-scoped, permission-gated YW 435 Dispatch/resource RPC supplies bounded original scheduled windows, crew/member gaps and equipment readiness for the requested Ontario date. YW 553 adds only owner-scoped area and capacity plans. The review also checks company-linked original workability observations/decisions; missing or stale sources produce UNKNOWN/HOLD, never an available appointment. Owner-entered crew minutes are declared plans, not verified shifts or a labour attendance record. An unmatched property/town is UNKNOWN, not silently excluded or accepted. An explicit excluded area, exhausted plan, blocked asset or adverse workability becomes HOLD.
+
+**State and authority:** Results are HOLD, UNKNOWN or REVIEW (potential headroom). There is no AVAILABLE/CONFIRMED state; route and equipment release, fresh weather/site safety, crew attendance, quote acceptance, scheduling, notifications and payment remain separate owner workflows. The YW 553 review RPC asserts the original YW 422 owner+Jobs-read gate and uses the exact company in the 435 source. Neither the public 552 endpoint nor the master Sysop shell receives private crew, customer or route records. New tables have owner-only RLS; no anonymous table grant and no write permission to the original request, Dispatch, Jobs, Finance or Comms sources.
+
+**Runtime verification:** Review the additive SQL migration installation, original function deployment, two-tenant RLS, fresh owner area/capacity records and witnessed field acceptance separately. Source/main GREEN alone does not certify actual crew or weather availability.
+
+**Next proposed operational build — YW 554: Booking Review, Requote, Acceptance & Scheduling.** The verified company owner must deliberately accept or requote requests, check fresh YW 553 evidence, and use existing canonical scheduling authority; no automation should convert REVIEW into an appointment.
+
 ## YW 552 — Customer-Facing Landscaping Quote & Booking Request Wizard (2026-11-09)
 
 **Company application, not Sysop:** A company's authenticated owner opens Settings → Landscaping → Incoming quote requests. They can explicitly enable or disable that company's public request link, then share its company-specific URL. Without verified owner opt-in, an enabled `landscape` service module and active YW 551 catalogue rows, public requests fail closed. An ordinary public visitor cannot enumerate companies, inspect owner draft prices or read private submissions. The company—not Ree/Jack's outer Sysop shell—owns the resulting customer requests and contact records.

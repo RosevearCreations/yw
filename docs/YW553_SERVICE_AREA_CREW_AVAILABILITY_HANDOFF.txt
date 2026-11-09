@@ -1,0 +1,48 @@
+YW 553 — SERVICE AREA, CREW CAPACITY & AVAILABILITY VALIDATION
+Source: RosevearCreations/yw  |  Ownership: Yard Workers company application
+Date: 2026-11-09
+
+WHAT CHANGED
+- Company-owner Settings panel: company-bound request selection, exact area coverage
+  include/exclude rules, dated crew-count and aggregate minute planning, and advisory review.
+- Additive SQL: ywi_landscape_service_areas_553, ywi_landscape_capacity_plans_553,
+  and ywi_rpc_landscape_availability_553(company,request,date).
+- The review invokes existing 422 company-owner/Jobs-read authorization and original
+  435 company-scoped Dispatch/capacity/asset source; linked workability is read-only.
+- Owner-owned pending 552 requests remain pending; no booking, work order, Dispatch,
+  route, equipment allocation, customer message, payment or Master Shell mutation.
+
+STATE MEANINGS
+HOLD = explicit area exclusion, exhausted owner capacity, original asset lockout,
+       or unsafe linked workability evidence.
+UNKNOWN = absent/mismatched area, no date or plan, stale budget, out-of-horizon
+          schedule source or unavailable original source. No zero-as-success.
+REVIEW = exact included area and fresh owner-declared minutes show potential
+         headroom against bounded company Dispatch, without a known hard blocker.
+No state is AVAILABLE or CONFIRMED. All require real owner site/crew/weather checks.
+
+SECURITY AND FRESHNESS
+- RLS owners only for the two new configuration tables; anon has no table grants.
+- Owner review RPC requires YW 422 original owner+Jobs-read authorization, an exact
+  552 company request and fresh original YW 435 company-scoped dispatch results.
+- No anonymous or Sysop endpoint for crew/route/customer details.
+- Company area matching is exact normalization, not geocoding or an automated
+  determination that a free-text property address is inside/outside service area.
+- Crew minutes are owner-declared, not HR attendance, fleet readiness or guaranteed
+  future availability; plans older than 14 days become UNKNOWN.
+- The original Dispatch capacity review accepts a bounded one-day window only
+  within its existing 180-day horizon. Future dates beyond that stay UNKNOWN.
+
+RELEASE / EXTERNAL PROOF
+- Required source checks: YW553 static SQL/source gates, full repository checks,
+  216-equivalent browser suite inventory and 390/768/1440 owner browser tests.
+- Install SQL only against the intended YW Supabase project after reviewing
+  existing 422, 435 and 552 schema; verify RLS, execute grants and no anon writes.
+- Check real original owner profile, Jobs-read entitlement, company data, date,
+  area, crew plan, equipment/workability evidence and denied other-tenant reads.
+- Main/Vercel READY is code release truth, not an owner-accepted available slot.
+
+NEXT PROPOSED BUILD
+YW 554 — Booking Review, Requote, Acceptance & Scheduling.
+Only deliberate authenticated company-owner decisions against canonical Jobs
+and Scheduling authority may begin that lifecycle, with its own safeguards.
