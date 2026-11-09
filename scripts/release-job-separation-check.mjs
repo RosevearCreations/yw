@@ -120,11 +120,12 @@ add('build535-lane-c-original-execution-contract',
   && !laneC.includes('npm run test:browser:'),
   'One runner must consume the exact 55-command manifest; no missing or duplicate source commands.');
 add('build529-535-browser-suite-equivalence',
-  (lanes.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 158
+  (lanes.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 159
   && (source.match(/(?:npm run test:browser|npx playwright test)/g) || []).length + retainedHotspotSuites + retainedTailSuites === 55
-  && 103 + laneCSuiteCount + 7 + retainedHotspotSuites + retainedTailSuites === 213
+  && 104 + laneCSuiteCount + 7 + retainedHotspotSuites + retainedTailSuites === 214
+  && lanes.includes('npm run test:browser:company-booking-catalogue-551')
   && retainedHotspotSuites === 30 && retainedTailSuites === 18,
-  'All 213 browser suites remain accounted for: 103 direct lane calls, 55 verified lane-C specs, 7 source calls, 48 verified bundled source specs.');
+  'All 214 browser suites remain accounted for: 104 direct lane calls (including YW 551), 55 verified lane-C specs, 7 source calls, 48 verified bundled source specs.');
 add('build536-warm-source-browser-batch-equivalence',
   warmBatch20Suites === 3 && retainedHotspotSuites === 30 && retainedTailSuites === 18
   && 4 + warmBatch20Suites + retainedHotspotSuites + retainedTailSuites === 55,
