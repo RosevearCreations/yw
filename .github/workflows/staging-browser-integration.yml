@@ -253,6 +253,7 @@ jobs:
               npm run test:browser:company-service-inventory-419
               npm run test:browser:company-service-registry-420
               npm run test:browser:company-booking-catalogue-551
+              npm run test:browser:landscape-booking-552
               ;;
             c)
               node scripts/build535-lane-c.mjs
@@ -524,6 +525,7 @@ jobs:
       - run: npm run test:company-service-inventory-419
       - run: npm run test:company-service-registry-420
       - run: npm run test:company-booking-catalogue-551
+      - run: npm run test:landscape-booking-552
       - run: npm run test:new-work-company-gate-421
       - run: npm run test:cross-service-continuity-422
       - run: npm run test:shared-allocation-proof-423
