@@ -678,6 +678,15 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     });
   }
 
+  async function landscapeBooking552(payload = {}) {
+    return jsonFetch('landscape-booking-552', {
+      method: 'POST',
+      body: payload,
+      requireAuth: false,
+      timeoutMs: 15000
+    });
+  }
+
   async function manageOperations(payload = {}) {
     return jsonFetch('operations-manage', {
       method: 'POST',
@@ -1169,6 +1178,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     jsonFetch,
     sendToFunction,
     submitQuoteContact,
+    landscapeBooking552,
     manageOperations,
     mobileReworkPhoto,
     customerPortal,

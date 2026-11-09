@@ -2578,6 +2578,22 @@ button[aria-disabled="true"]:hover {
   padding: 11px 12px;
 }
 
+/* YW 552 — mobile-friendly, explicit three-step company quote request. */
+#booking552Form > * { grid-column: 1 / -1; min-width: 0; }
+#booking552Form fieldset {
+  display: grid; gap: 12px; min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 16px; padding: 12px;
+}
+#booking552Form legend { color: #bae6fd; font-weight: 800; padding: 0 6px; }
+#booking552Items { display: grid; gap: 8px; min-width: 0; }
+#booking552Items label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#booking552Items input[type=number] { width: 85px; flex: 0 0 85px; }
+#booking552Estimate { overflow-wrap: anywhere; border-left: 3px solid #93c5fd; padding: 10px; background: rgba(15, 23, 42, 0.5); border-radius: 8px; }
+#booking552Estimate ul { padding-left: 20px; }
+#booking552Form label:has(input[type=checkbox]) { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+#booking552Form input[type=checkbox] { width: auto; }
+
 .public-intake-actions {
   display: flex;
   align-items: center;
