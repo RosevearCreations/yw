@@ -15,6 +15,18 @@
   const settings=$('settings');if(!settings||$('owner554'))return;
   const panel=el('details');panel.id='owner554';panel.className='admin-hub-detail';
   panel.innerHTML=`<summary>Landscaping · Booking Review, Requote &amp; Scheduling Proposals (owner)</summary>
+   <style>
+    #owner554,#owner554 .admin-panel-block,#owner554 fieldset,#owner554 label {
+     max-width:100%;min-width:0;box-sizing:border-box;overflow-wrap:anywhere
+    }
+    #owner554 select,#owner554 textarea,#owner554 input:not([type="checkbox"]) {
+     max-width:100%;min-width:0;width:100%;box-sizing:border-box
+    }
+    #owner554 button {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+    #owner554 #owner554RequestSummary,#owner554 #owner554Audit,#owner554 #owner554Availability {
+     min-width:0;max-width:100%;overflow-wrap:anywhere
+    }
+   </style>
    <div class="admin-panel-block">
     <p>Requests remain unchanged in the YW 552 inbox. Every decision is versioned and auditable.
     Approval creates an <strong>owner scheduling proposal awaiting original Dispatch and customer confirmation</strong>,
