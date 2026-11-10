@@ -24,7 +24,20 @@ const fixedWidthMigrationAuthorities=migrationAuthorityCandidates.flatMap(({file
   return reasons.map((reason)=>`${file}:${reason}`);
 });
 add('migration-width-authorities-converged',fixedWidthMigrationAuthorities.length===0,fixedWidthMigrationAuthorities.join(', '));
-const activeMd=files.filter((f)=>f.endsWith('.md')).map(rel).sort();
+// The three customer-facing project documents are the active docs authority.
+// A narrowly registered, read-only Master Shell connection handoff is a
+// separate integration artifact; preserve its stable GitHub URL and never
+// misclassify it as a fourth active project handbook.
+const shellHandoffPath='docs/master-shell/AI_DATA_PLATFORM_BUILD_353_HANDOFF.md';
+const shellHandoffMd=files.filter((f)=>f.endsWith('.md')).map(rel).filter((f)=>f.startsWith('docs/master-shell/')).sort();
+const shellHandoffSource=fs.existsSync(shellHandoffPath)?fs.readFileSync(shellHandoffPath,'utf8'):'';
+add('master-shell-handoff-exception-exact-and-read-only',
+ shellHandoffMd.every((f)=>f===shellHandoffPath)&&shellHandoffMd.length<=1&&
+ (!shellHandoffMd.length||(
+  shellHandoffSource.includes('MS353-AIDATA-YW-HELLO')&&
+  shellHandoffSource.includes('A docs-only handoff is not itself proof of connectivity')&&
+  !/-----BEGIN [A-Z ]*PRIVATE KEY-----|service_role\s*[:=]|SUPABASE_SERVICE_ROLE_KEY\s*[:=]/i.test(shellHandoffSource))));
+const activeMd=files.filter((f)=>f.endsWith('.md')).map(rel).filter((f)=>!f.startsWith('docs/master-shell/')).sort();
 add('active-markdown-exactly-three',JSON.stringify(activeMd)===JSON.stringify(['README.md','docs/ACTIVE_PROJECT_HANDBOOK.md','docs/NEXT_STEPS_AND_SANITY_CHECK.md']),activeMd.join(', '));
 add('no-archive-tree',!fs.existsSync('archive')); add('no-retired-markdown-tree',!files.some((f)=>/retired-markdown-/i.test(rel(f))));
 add('no-temporary-artifacts',!files.some((f)=>/(?:^|\/)(?:test_write[^/]*|.*\.(?:tmp|bak|log))$/i.test(rel(f))));
