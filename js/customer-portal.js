@@ -227,6 +227,29 @@
     </section>`;
   }
 
+  function recoveryConfirmationPanel(offer) {
+    if (!offer) return '';
+    const decided = ['accepted','declined'].includes(String(offer.customer_decision || ''));
+    return `<section class="customer-portal-closeout" aria-label="Changed crew or schedule confirmation">
+      <header><div><span class="customer-portal-kicker">Scheduling change</span><h2>Review a proposed updated service time</h2></div>
+        <strong class="${offer.customer_decision === 'accepted' ? 'is-on':'is-off'}">${decided ? esc(offer.customer_decision) : 'Your response requested'}</strong></header>
+      <p>Our team has reviewed an alternative crew assignment or timing. Please confirm whether this revised service window works for you. The original quotation, payment and completed work records remain unchanged.</p>
+      <dl><div><dt>New start</dt><dd>${esc(dateTime(offer.scheduled_start))}</dd></div>
+        <div><dt>New end</dt><dd>${esc(dateTime(offer.scheduled_end))}</dd></div></dl>
+      ${decided ? `<p>We recorded your ${esc(offer.customer_decision)} response on ${esc(dateTime(offer.decided_at))}. Please contact us if anything changes.</p>` : `
+      <form id="customerPortalRecoveryForm" class="customer-portal-form">
+        <label>Your name<input name="customer_name" type="text" required minlength="2" maxlength="180" autocomplete="name"></label>
+        <label>Email<input name="customer_email" type="email" required maxlength="260" autocomplete="email"></label>
+        <input type="hidden" name="request_id" value="${esc(offer.request_id)}">
+        <input type="hidden" name="case_version" value="${esc(offer.case_version)}">
+        <input type="hidden" name="dispatch_id" value="${esc(offer.dispatch_id)}">
+        <div class="customer-portal-button-row"><button class="primary" type="submit" name="decision" value="accepted">Accept revised schedule</button>
+        <button class="secondary" type="submit" name="decision" value="declined">Decline and request follow-up</button></div>
+      </form>`}
+      <small>Submitting records an auditable customer response. Accepting this change does not itself send a message, charge a deposit, or authorize the crew to depart.</small>
+    </section>`;
+  }
+
   function portalNotice(message, type = 'info') {
     const el = byId('customerPortalStatus');
     if (!el) return;
@@ -274,6 +297,7 @@
       ${liveUpdateTimeline(liveUpdates)}
       ${executionProofTimeline(executionProofs)}
       ${closeoutPackagePanel(closeouts)}
+      ${recoveryConfirmationPanel(row.recovery_confirmation)}
       ${notificationPreferencePanel(notificationPreference)}
 
       <div class="customer-portal-layout">
@@ -351,6 +375,24 @@
   }
 
   function bindActions() {
+    const recoveryForm = byId('customerPortalRecoveryForm');
+    recoveryForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button=event.submitter || recoveryForm.querySelector('button[type="submit"]');
+      const data=Object.fromEntries(new FormData(recoveryForm).entries());
+      const decision=String(event.submitter?.value || '');
+      if (!['accepted','declined'].includes(decision)) return;
+      setButtonBusy(button,true,'Recording your decision…');
+      portalNotice('Verifying the current schedule and recording your decision…');
+      try {
+        const response=await call({action:'confirm_landscape_recovery',decision,
+          request_id:data.request_id,case_version:Number(data.case_version),dispatch_id:data.dispatch_id,
+          customer_name:data.customer_name,customer_email:data.customer_email});
+        if (!response?.ok || !response?.receipt?.receipt_id) throw new Error(response?.error || 'Your decision could not be recorded.');
+        render(response.portal);
+        portalNotice(decision==='accepted'?'Revised schedule accepted and recorded.':'Declined. Please contact the team to discuss the next option.','success');
+      } catch(error) {portalNotice(error?.message || 'Your decision could not be recorded. Refresh and try again.','error');setButtonBusy(button,false);}
+    });
     const accept = byId('customerPortalAcceptForm');
     accept?.addEventListener('submit', async (event) => {
       event.preventDefault();
