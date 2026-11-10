@@ -1,5 +1,17 @@
 # Next Steps and Sanity Check
 
+## YW 554 — Booking Review, Requote, Acceptance & Scheduling Proposals (2026-11-10)
+
+**Company application:** A verified landscaping company owner opens Settings → Landscaping → Booking Review, refreshes that company's original YW 552 queue, and sees customer preferences, original estimated subtotal, current decision version and up to ten source-backed decision audit entries. YW 552 requests stay immutable and other tenants are never enumerated. Ree/Jack's outer Sysop shell does not gain company decision authority.
+
+**Four deliberate owner actions:** Hold, requote draft, decline or approve a scheduling proposal. All actions require the YW 422 owner+Jobs permission gate, an exact 552 company/request pair, an idempotency UUID and an expected version. The append-only 554 decision audit records the action and result; a stale version or changed idempotency payload is rejected. A requote draft is not sent; it must have separately recorded customer agreement before any future approval. Declined and approved decisions cannot be silently overwritten.
+
+**Approval safeguards:** The original YW 421 landscaping service/Jobs-create gate and verified YW 422 CRM customer/property pair are mandatory. The company owner chooses a future time within a single Ontario date and acknowledges that they checked weather, crew and site-safety needs. The server rechecks the live YW 553 exact-town area, crew-minute plan, original YW 435 Dispatch and equipment readiness, and all other YW 554 approved proposal minutes under a company/date transaction lock. If the original evidence is UNKNOWN/HOLD, capacity is exhausted, service is OFF or any CRM link is unverified, no proposal is saved.
+
+**Truth boundary:** An `approved_pending_dispatch` decision is an *internal scheduling proposal*, not a reserved crew, customer-confirmed appointment, original work order, route, notification, invoice or payment. Actual canonical Jobs/Dispatch handoff with appropriate customer consent belongs to YW 555. This build creates no outbound Comms or Finance writes. Verify migration installation, independent two-company RLS, original owner workflow and 390/768/1440px acceptance separately. No sample client, employee or acceptance rows are seeded.
+
+**Next proposed build — YW 555: Approved Booking to Canonical Job & Crew Handoff.** Convert owner-approved proposals through existing secured Jobs/Dispatch once the customer agrees, with idempotency, no duplicate work orders, rechecked capacity and traceable rollback/recovery.
+
 ## YW 553 — Service Area, Crew Capacity & Availability Validation (2026-11-09)
 
 **Company application, not the Sysop shell:** In Settings → Landscaping → Service Area, Crew Capacity & Availability, the verified company owner can configure exact town/area coverage rules and a date-specific crew-minute planning budget. The private request selector reads only that owner's YW 552 customer requests. No global directory, customer list or employee assignment crosses a company boundary.
@@ -8,7 +20,7 @@
 
 **State and authority:** Results are HOLD, UNKNOWN or REVIEW (potential headroom). There is no AVAILABLE/CONFIRMED state; route and equipment release, fresh weather/site safety, crew attendance, quote acceptance, scheduling, notifications and payment remain separate owner workflows. The YW 553 review RPC asserts the original YW 422 owner+Jobs-read gate and uses the exact company in the 435 source. Neither the public 552 endpoint nor the master Sysop shell receives private crew, customer or route records. New tables have owner-only RLS; no anonymous table grant and no write permission to the original request, Dispatch, Jobs, Finance or Comms sources.
 
-**Runtime verification:** Review the additive SQL migration installation, original function deployment, two-tenant RLS, fresh owner area/capacity records and witnessed field acceptance separately. Source/main GREEN alone does not certify actual crew or weather availability.
+**Runtime verification (2026-11-10):** Supabase migration `yw_553_landscape_service_areas_capacity_advisory` installed successfully. Both owner-scoped tables, advisory RPC and RLS are present; anon table and RPC privileges denied. Company rules/plans remain empty. Independent two-owner sign-in, current area/crew/Dispatch data and witnessed field acceptance still HOLD. Source/main GREEN alone does not certify actual crew or weather availability.
 
 **Next proposed operational build — YW 554: Booking Review, Requote, Acceptance & Scheduling.** The verified company owner must deliberately accept or requote requests, check fresh YW 553 evidence, and use existing canonical scheduling authority; no automation should convert REVIEW into an appointment.
 
