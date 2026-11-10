@@ -1,0 +1,29 @@
+YW 555 — Original Jobs/Dispatch evidence and owner handoff
+
+**Source:** `RosevearCreations/yw`; YW platform shell, not Rosevear Landscaping.
+
+## Source-of-truth mapping
+
+| Evidence | Source | Independent condition |
+| --- | --- | --- |
+| Customer request | `ywi_landscape_booking_requests_552` | Immutable owner-company request |
+| Owner-approved proposal | `ywi_landscape_booking_decisions_554` | Exact `approved_pending_dispatch` version |
+| Availability | `ywi_rpc_landscape_availability_553` → original YW 435 | Exact area/dated capacity/Dispatch review |
+| Customer agreement | `estimates`, `estimate_quote_packages`, `customer_deposit_requests` | Original accepted quote, terms, accepted-by, paid required deposit |
+| Canonical Job | `work_orders`, `ywi_new_work_gate_receipts_421`, original conversion pointer | Exact company/customer/property/accepted estimate |
+| Crew/Dispatch | `dispatch_schedule_items`, `jobs`, `ywi_rpc_job_dispatch_preflight_434` | Original released Job, crew members, no conflict, matching slot |
+| New minimal owner journal | `ywi_landscape_canonical_handoffs_555`, `ywi_landscape_handoff_audit_555` | Owner-only RLS, exact version, unique source, idempotent |
+
+New owner UI reads only already verified company records and writes **only** through `ywi_rpc_landscape_canonical_handoff_555`. Direct public/anonymous tables, worker-wide writes, master-shell tenant access, outbound messages, payment captures, automatic crew assignments and synthetic signers are excluded.
+
+## First real adoption checklist
+
+1. Independently install and verify YW 554 and 555 migrations in approved order, with RLS and anon denials. The YW 554 migration was **not installed** when this feature was designed; do not infer installed state from source CI.
+2. Use a real verified landscaping company owner with Jobs-create permission; verify 421 service ON, 422 linked original CRM customer and property, actual 553 plan/area and original 435 resource evidence.
+3. Review approved 554 proposal; produce an original customer-accepted, internally approved Estimate/Quote in the normal original workflow, including deposit if required.
+4. Stage with `stage`; verify immutable 555 owner journal and one-use idempotency. Verify duplicate request/estimate/quote and foreign-company attempts fail.
+5. Use original Jobs to convert/create the customer/estimate-matched canonical job. Return to YW 555 with its original ID, then `link_job`.
+6. Use the original Jobs release and Dispatch interface to schedule and assign the actual original crew. Return to YW 555 to `verify_crew` only when the existing dispatch is fully evidenced and matches the proposed slot.
+7. Read the append-only journal and original source again before customer notification. The 555 receipt does **not** authorize messaging, Finance or site work.
+
+If any step is missing, stale, denied or uncertain, keep **HOLD**. The owner can refresh source evidence before a new action but cannot overwrite a completed handoff or silently change a source pair. Original records remain recoverable in their own workflows; 555 does not delete or roll them back.
