@@ -111,7 +111,34 @@ async function portalNotificationPreference(supabase:any, clientId:string | null
   };
 }
 
-function publicPackage(row:any, liveUpdates:any[] = [], notificationPreference:any = {}, executionProofs:any[] = [], closeouts:any[] = []) {
+// YW556 is optional until its approved database installation. Only show a
+// customer-safe replacement offered against this exact accepted quote token.
+async function portalRecoveryConfirmation(supabase:any, quotePackageId:string | null | undefined) {
+  if (!quotePackageId) return null;
+  const { data, error } = await supabase.from('ywi_landscape_recovery_cases_556')
+    .select('company_id,request_id,quote_package_id,case_version,replacement_dispatch_id,state')
+    .eq('quote_package_id', quotePackageId).eq('state','replacement_pending_customer').limit(1).maybeSingle();
+  if (error) {
+    // A release may be deployed before the separately approved SQL migration.
+    if (['42P01','PGRST205','PGRST116'].includes(String(error.code || ''))) return null;
+    throw error;
+  }
+  if (!data || !data.replacement_dispatch_id) return null;
+  const [dispatch, receipt] = await Promise.all([
+    supabase.from('dispatch_schedule_items').select('id,scheduled_start,scheduled_end,schedule_status')
+      .eq('id',data.replacement_dispatch_id).maybeSingle(),
+    supabase.from('ywi_landscape_customer_confirmations_556').select('decision,recorded_at,case_version')
+      .eq('company_id',data.company_id).eq('request_id',data.request_id).eq('case_version',data.case_version).maybeSingle()
+  ]);
+  if (dispatch.error || receipt.error || !dispatch.data || !['scheduled','dispatched'].includes(dispatch.data.schedule_status))
+    return null;
+  return { company_id:data.company_id, request_id:data.request_id, case_version:data.case_version,
+    dispatch_id:data.replacement_dispatch_id, scheduled_start:dispatch.data.scheduled_start,
+    scheduled_end:dispatch.data.scheduled_end, customer_decision:receipt.data?.decision || null,
+    decided_at:receipt.data?.recorded_at || null };
+}
+
+function publicPackage(row:any, liveUpdates:any[] = [], notificationPreference:any = {}, executionProofs:any[] = [], closeouts:any[] = [], recoveryConfirmation:any = null) {
   return {
     quote_package_id:row.quote_package_id, package_status:row.package_status, rendered_title:row.rendered_title,
     rendered_html:row.rendered_html, rendered_markdown:row.rendered_markdown, accepted_at:row.accepted_at,
@@ -123,6 +150,7 @@ function publicPackage(row:any, liveUpdates:any[] = [], notificationPreference:a
     live_updates: liveUpdates,
     execution_proofs: executionProofs,
     closeouts,
+    recovery_confirmation: recoveryConfirmation,
     notification_preferences: {
       live_work_update_email_opt_in: !!notificationPreference?.live_work_update_email_opt_in,
       consent_status: notificationPreference?.consent_status || 'unknown',
@@ -180,7 +208,32 @@ serve(async (req) => {
       const executionProofs = await portalExecutionProofs(supabase, pkg.work_order_id);
       const closeouts = await portalCloseoutPackages(supabase, pkg.work_order_id);
       const notificationPreference = await portalNotificationPreference(supabase, pkg.client_id);
-      return Response.json({ ok:true, portal:publicPackage(pkg, liveUpdates, notificationPreference, executionProofs, closeouts) }, { headers:corsHeaders });
+      const recoveryConfirmation = await portalRecoveryConfirmation(supabase, pkg.quote_package_id);
+      return Response.json({ ok:true, portal:publicPackage(pkg, liveUpdates, notificationPreference, executionProofs, closeouts, recoveryConfirmation) }, { headers:corsHeaders });
+    }
+
+    if (action === 'confirm_landscape_recovery') {
+      const decision=clean(body.decision,20);
+      const name=clean(body.customer_name,180);
+      const email=clean(body.customer_email,260).toLowerCase();
+      const offered=await portalRecoveryConfirmation(supabase,pkg.quote_package_id);
+      if (!offered || !['accepted','declined'].includes(decision) || name.length<2 || !validEmail(email) ||
+        offered.request_id!==clean(body.request_id,80) || offered.case_version!==Number(body.case_version) ||
+        offered.dispatch_id!==clean(body.dispatch_id,80))
+        throw new HttpError(409,'The current crew/schedule offer changed or customer details are incomplete. Refresh your portal.');
+      const receipt=await callRpc(supabase,'ywi_rpc_landscape_customer_confirm_556',{
+        p_public_token:token,p_company_id:offered.company_id,p_request_id:offered.request_id,
+        p_case_version:offered.case_version,p_dispatch_id:offered.dispatch_id,
+        p_decision:decision,p_customer_name:name,p_customer_email:email,
+        p_ip_hash:ipHash,p_user_agent:userAgent
+      });
+      const refreshed=await packageByToken(supabase,token);
+      const [liveUpdates,executionProofs,closeouts,notificationPreference,recoveryConfirmation]=await Promise.all([
+        portalLiveUpdates(supabase,refreshed.work_order_id),portalExecutionProofs(supabase,refreshed.work_order_id),
+        portalCloseoutPackages(supabase,refreshed.work_order_id),portalNotificationPreference(supabase,refreshed.client_id),
+        portalRecoveryConfirmation(supabase,refreshed.quote_package_id)
+      ]);
+      return Response.json({ok:true,receipt,portal:publicPackage(refreshed,liveUpdates,notificationPreference,executionProofs,closeouts,recoveryConfirmation)},{headers:corsHeaders});
     }
 
     if (action === 'accept_quote') {
