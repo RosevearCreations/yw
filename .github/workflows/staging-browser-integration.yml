@@ -255,6 +255,7 @@ jobs:
               npm run test:browser:company-booking-catalogue-551
               npm run test:browser:landscape-booking-552
               npm run test:browser:landscape-availability-553
+              npm run test:browser:landscape-booking-review-554
               ;;
             c)
               node scripts/build535-lane-c.mjs
@@ -528,6 +529,7 @@ jobs:
       - run: npm run test:company-booking-catalogue-551
       - run: npm run test:landscape-booking-552
       - run: npm run test:landscape-availability-553
+      - run: npm run test:landscape-booking-review-554
       - run: npm run test:new-work-company-gate-421
       - run: npm run test:cross-service-continuity-422
       - run: npm run test:shared-allocation-proof-423

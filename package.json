@@ -414,6 +414,8 @@
     "test:browser:landscape-booking-552": "playwright test --config=playwright.config.mjs tests/browser/landscape-booking-552.spec.mjs",
     "test:landscape-availability-553": "node scripts/landscape-availability-553-check.mjs",
     "test:browser:landscape-availability-553": "playwright test --config=playwright.config.mjs tests/browser/landscape-availability-553.spec.mjs",
+    "test:landscape-booking-review-554": "node scripts/landscape-booking-review-554-check.mjs",
+    "test:browser:landscape-booking-review-554": "playwright test --config=playwright.config.mjs tests/browser/landscape-booking-review-554.spec.mjs",
     "test:new-work-company-gate-421": "node scripts/new-work-company-gate-421-check.mjs",
     "test:browser:new-work-company-gate-421": "playwright test --config=playwright.config.mjs tests/browser/new-work-company-gate-421.spec.mjs",
     "test:cross-service-continuity-422": "node scripts/cross-service-continuity-422-check.mjs",
