@@ -170,6 +170,9 @@ begin
  if p_request_id is null or p_idempotency_key is null or p_action not in ('open','verify_replacement','close') or
   p_expected_version is null or p_expected_version not between 0 and 9999 or p_owner_attested is distinct from true then
    raise exception '556 owner input, version or attestation invalid'; end if;
+ -- Also serialize creation of the very first case, where no row exists yet
+ -- to acquire a FOR UPDATE lock. Version checks happen after this lock.
+ perform pg_advisory_xact_lock(hashtextextended('yw556:'||p_company_id::text||':'||p_request_id::text,0));
  v_hash:=md5(jsonb_build_object('action',p_action,'reason',p_reason,'note',p_note,
   'replacement',p_replacement_dispatch_id,'version',p_expected_version)::text);
  select * into v_repeat from public.ywi_landscape_recovery_audit_556 where company_id=p_company_id and idempotency_key=p_idempotency_key;

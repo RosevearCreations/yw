@@ -124,7 +124,7 @@
   async function act(action){if(busy||!$('owner556Attest').checked)return;
    const cid=company.value,rid=request.value,c=selectedCase(),chosen=selectedReplacement();
    if(!selectedHandoff()||!owned.some(x=>x.id===cid))return;
-   busy=true;controls();status.textContent=`Rechecking source and recording ${action}…`;
+   busy=true;controls();status.textContent=`Rechecking source and recording ${action}…`;let completed=false;
    try{const {id,sb}=await identity();if(id!==owner)throw Error('Owner identity changed.');
     const z=await sb.rpc('ywi_rpc_landscape_recovery_556',{
      p_company_id:cid,p_request_id:rid,p_action:action,p_idempotency_key:key(),p_expected_version:c?.case_version||0,
@@ -135,9 +135,10 @@
       z.data?.case_version!==(c?.case_version||0)+1||z.data?.authorizes_original_dispatch_mutation!==false)
       throw Error(z.error?.message||'Recovery result not verified; refresh and review the audit.');
     status.textContent=`Recorded ${z.data.state} version ${z.data.case_version}. Original Jobs/Dispatch were not edited.`;
-    busy=false;void refresh();
+    completed=true;
    }catch(e){status.textContent='HOLD / NO CHANGE VERIFIED: '+(e?.message||e)+' Refresh and inspect before retrying.';}
    finally{busy=false;controls();}
+   if(completed)await refresh();
   }
   company.addEventListener('change',()=>{clear();void refresh();});
   request.addEventListener('change',show);
