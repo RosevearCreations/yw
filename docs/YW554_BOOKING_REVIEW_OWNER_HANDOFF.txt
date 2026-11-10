@@ -1,0 +1,34 @@
+YW 554 — Booking Review, Requote, Acceptance & Scheduling Proposals
+===============================================================
+Product: Yard Workers, isolated company instance (Rosevear Landscaping is an ordinary sample tenant).
+Master shell: aggregate health/release oversight only; no customer/crew/booking mutation.
+
+Owner workflow
+1. Sign in as the genuine owner of a company whose landscaping module is enabled.
+2. Set its company service-area rules and date-specific crew minutes in YW 553.
+3. Configure its original YW 551 catalogue and 552 customer intake; request stays owner_review.
+4. Settings > Landscaping > Booking Review: refresh and select an original 552 request.
+5. Hold, decline, or save a requote draft with an owner explanation. No customer message is sent.
+6. For scheduling proposal: choose a future single-day time, check 553 review, select the
+   existing original CRM 422 customer/property pair, acknowledge site/safety review,
+   and approve. The server rechecks 421 Jobs-create/service ON, 422 linked CRM, 553
+   original Dispatch 435 and all already-approved proposal minutes before committing.
+7. An approved_pending_dispatch record is NOT a confirmed appointment or crew booking.
+   YW 555 must perform the independent canonical job/dispatch handoff after customer agreement.
+
+Security and data ownership
+- SQL: sql/landscape_booking_decisions_554.sql
+- Original 552 requests unchanged; protected 554 decision and immutable audit tables.
+- Anonymous/no-JWT access denied, owner-only RLS, read-only direct table grants,
+  server-side owner+Jobs checks and atomic replay-safe RPC ywi_rpc_landscape_decide_554.
+- No payment, Comms, original Jobs, Dispatch, route, fleet, attendance or inventory writes.
+- Requoted amounts are internal draft CAD cents, not a final quote or payment demand.
+- Pending proposals deduct owner-planned minutes only for subsequent 554 approvals;
+  they are not Dispatch reservations and may double-count until future job handoff reconciles them.
+
+Acceptance: source tests and hosted 390/768/1440px browser CI must pass; check exact dev/main
+SHA and Vercel static route. Production schema/advisors, real owner sign-in, second-tenant
+negative RLS, confirmed crew availability, customer consent and field safety are independent
+runtime gates. Missing proof remains HOLD; never mark source GREEN as owner-signed acceptance.
+
+Next: YW 555 — Approved Booking to Canonical Job & Crew Handoff.
