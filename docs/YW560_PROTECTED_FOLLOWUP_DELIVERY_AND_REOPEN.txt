@@ -1,0 +1,60 @@
+YW560 — Protected Customer Follow-Up Delivery Receipts, Reopen Exceptions
+& Verified Supervisor Closure Continuity
+
+RosevearCreations/yw company-owner workspace. Do not confuse this
+company-scoped UI with the Yard Workers platform Sysop/master shell.
+
+Source and dependency contract
+  - Existing YW553–559 SQL and YW422/434/435 original Jobs/Dispatch
+    authorities must be installed by the authorized Supabase DBA.
+  - sql/landscape_followup_continuity_560.sql creates two immutable
+    ledgers and three RPCs. This SQL is repository code: it is NOT proof
+    of a database migration installed in production.
+  - ywi_rpc_landscape_provider_report_560 is SECURITY INVOKER and
+    service_role ONLY, not callable by owner browser or anonymous users.
+    A protected Comms receiver must authenticate its real provider,
+    signature, issuer, public key pin, tenant, nonce, timestamp and
+    durable replay ledger BEFORE reporting a bounded receipt digest.
+    The imported provider claim is always MASTER_UNVERIFIED until a
+    separate independent master acceptance process verifies it.
+  - Provider report stores no email, phone, address, message body,
+    access token, customer name or private key. Delivered/failed/
+    recalled represent PROVIDER-REPORTED statuses, NOT proof that an
+    actual message reached its recipient.
+
+Owner flow
+  1. Select an owned company and original YW556 recovery case.
+  2. Review provider-reported receipt IDs, imported timestamps and
+     separate original YW556 reopen audit IDs.
+  3. The owner can explicitly reopen only a current closed_verified
+     original case with an original YW559 follow-up intent and unchanged
+     current Dispatch signature, reason, note and attestation.
+  4. The YW560 RPC invokes ONLY the original, version-checked YW556
+     owner 'open' action in one transaction; it records a new immutable
+     link to the actual 556 audit. No direct Jobs/Dispatch mutation,
+     assignment, customer acceptance or messaging occurs.
+  5. After reopen, do not claim supervisor continuation. Require a
+     NEW independently authenticated original 557 supervisor review
+     for the NEW current original recovery version. Subsequent customer
+     portal acceptance remains with the original 556 portal only.
+
+Live activation / explicit HOLD
+  - Supabase project inspection on YW559 was denied permission. Never
+    infer YW560 migration is applied or provider receiver installed.
+  - The existing production discovery manifest is deployment-bound
+    but unsigned: AWAITING_INDEPENDENT_SOURCE_SIGNER.
+  - MASTER368-YW-SOURCE-REFRESH requires original production SHA,
+    independently managed Ed25519 source signer and public-key pin,
+    fresh source-bound signed HEALTHY receipt, and durable replay evidence.
+    No private signer should be placed in source, issue, UI or logs.
+  - Until proven, connection=HOLD, master owner acceptance=HOLD,
+    actual customer delivery=HOLD, and no outbound messaging is enabled.
+
+Verification
+  npm run test:landscape-followup-continuity-560
+  npm run test:browser:landscape-followup-continuity-560
+  Existing comprehensive source/browser release gates chain these tests
+  alongside YW558/YW559 without introducing a new retained CI lane.
+
+Next conditional build: YW561 — Independent Provider Receipt Validation,
+Protected Reopen Case Supervision & Master Delivery-Acceptance Correlation.
