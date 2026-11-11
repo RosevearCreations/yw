@@ -1,0 +1,50 @@
+YW558 — Original Dispatch Supervisor Escalations, Customer Reconfirmation & Audit
+Source: RosevearCreations/yw. Feature progression: YW553–YW558.
+
+1. New table ywi_landscape_resolution_events_558 is an immutable, company-owner-
+   scoped ledger of independently authenticated supervisor escalation reviews and
+   customer-reconfirmation gate requests. The original scheduler, crew assignment,
+   customer response and message delivery are NEVER written by this ledger.
+2. Owner RPC ywi_rpc_landscape_resolution_558 enforces actual authenticated company
+   ownership, jobs-create permission, current recovery case version, current original
+   Dispatch signature, current original supervisor acknowledgement and idempotency.
+   Escalation_reviewed remains HOLD. Reconfirmation_requested only reports a
+   readiness intent after 434 original preflight, 553 capacity and 557 supervisor
+   review have succeeded and while the 556 customer decision is pending.
+3. Owner timeline ywi_rpc_landscape_audit_timeline_558 reads 556 case actions,
+   original supervisor 557 receipts, owner 558 receipts and REAL original token-
+   validated customer 556 responses, all filtered by company and case; no PII.
+4. Migration dependencies: install and verify 553,554,555,556,557,558 in order.
+   A GREEN repository build does not install these on production Supabase. Tenant
+   operation remains HOLD until they have been independently installed/tested.
+
+MASTER363-YW-SOURCE-CONVERGE — independent source-bound Ed25519 handoff
+
+  - Public discovery manifest: public/.well-known/rosevear-integration-manifest.json
+    (the tracked source_revision is the known base YW557 revision). During Vercel
+    production build on Git branch main, build-vercel-site writes the actual
+    VERCEL_GIT_COMMIT_SHA to deployed dist/.well-known manifest and health.json.
+    No valid Git deployment SHA -> null source_revision and explicit HOLD.
+    This avoids the impossible self-referential commit-hash-in-own-file problem.
+  - Independent custodian must already hold a real encrypted Ed25519 source key
+    outside this repository, plus an independently enrolled and authenticated
+    SHA256 fingerprint pin. Neither CI nor GitHub may create a substitute signer.
+  - After exact main deployment, independently GET deployed public manifest,
+    verify source_revision equals the production Git commit SHA, obtain its
+    SHA256 digest, and run on the ORIGINAL SECURE SOURCE HOST:
+      YWI_SOURCE_SIGNER_KEY_FILE=<private external file>
+      YWI_SOURCE_SIGNER_PASSPHRASE=<local operator secret>
+      YWI_TRUSTED_SOURCE_PIN_SHA256=<independently enrolled public pin>
+      node scripts/master363-yw-source-converge-558.mjs sign <40-hex main SHA> <64-hex deployed manifest SHA256>
+    Do not paste secrets into chat, shell history, tickets or repository.
+    It outputs only a source-bound signed JSON packet and verification summary.
+  - AI Data Platform Build364 independently verifies the signer enrollment PIN,
+    signature, source revision, manifest digest, release CI and freshness. The
+    public source proof packet alone does NOT verify original custodian identity,
+    production host, approval, runtime connectivity or owner acceptance.
+  - Until an actual independently authenticated source signer packet exists and
+    controller acceptance is proven: signer=HOLD; source health receipt=HOLD;
+    owner acceptance=HOLD; connection=DISCONNECTED/HOLD, even if code is GREEN.
+
+No private keys, bearer tokens, customer data or tenant business records
+belong in these public artifacts. Tenant boundary is platform_shell.

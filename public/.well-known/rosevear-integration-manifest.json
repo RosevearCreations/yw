@@ -1,11 +1,16 @@
 {
   "schema": "rosevear.integration.discovery.v1",
-  "manifest_version": "1.0.0",
+  "manifest_version": "1.1.0",
   "source_id": "yw",
   "source_app_id": "yard-workers",
   "source_role": "business_shell",
   "repository": "RosevearCreations/yw",
-  "source_revision": "028aee250857415b9b9035aaec50060757e377a5",
+  "source_revision": "cdc368e2f2773863595ff9cf6f35c1f02773eeaf",
+  "source_revision_binding": {
+    "production": "build_time_vercel_git_commit_sha",
+    "condition": "VERCEL_ENV=production AND VERCEL_GIT_COMMIT_REF=main",
+    "if_unavailable": "HOLD_UNVERIFIED_SOURCE_REVISION"
+  },
   "issuer": "yard-workers",
   "audience": "rosevear-master",
   "tenant_boundary": "platform_shell",

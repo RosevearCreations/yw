@@ -47,5 +47,5 @@ must(html,['landscape-availability-553.js'], 'HTML');
 must(help,['landscape-availability-553','YW 553'], 'Help');
 assert.ok(pkg.scripts['test:landscape-availability-553']&&pkg.scripts['test:browser:landscape-availability-553']);
 must(workflow,['npm run test:landscape-availability-553','npm run test:browser:landscape-availability-553'],'CI');
-must(gate,['220 browser suites','110 direct lane calls'],'release inventory');
+must(gate,['221 browser suites','111 direct lane calls'],'release inventory');
 console.log('YW 553 owner-only coverage/capacity, canonical 435, read-only HOLD and CI: PASS');
