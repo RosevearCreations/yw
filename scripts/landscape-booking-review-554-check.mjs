@@ -58,5 +58,5 @@ must(help,['landscape-booking-review-554','approved_pending_dispatch'],'help');
 assert.ok(pkg.scripts['test:landscape-booking-review-554']);
 assert.ok(pkg.scripts['test:browser:landscape-booking-review-554']);
 must(workflow,['npm run test:landscape-booking-review-554','npm run test:browser:landscape-booking-review-554'],'protected CI');
-must(release,['220 browser suites','110 direct lane calls'],'release browser suite accounting');
+must(release,['221 browser suites','111 direct lane calls'],'release browser suite accounting');
 console.log('YW554 company-owner, CRM/553/Dispatch boundary, atomic audit + browser CI: PASS');

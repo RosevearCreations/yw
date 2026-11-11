@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -56,8 +56,29 @@ const integrationDir = join(output, 'api', 'integration', 'v1');
 mkdirSync(integrationDir, { recursive: true });
 const environment = ['production', 'preview', 'development'].includes(process.env.VERCEL_ENV)
   ? process.env.VERCEL_ENV : 'unknown';
+const isProductionMain = process.env.VERCEL_ENV === 'production' &&
+  process.env.VERCEL_GIT_COMMIT_REF === 'main';
+const releaseSha = isProductionMain && /^[a-f0-9]{40}$/.test(process.env.VERCEL_GIT_COMMIT_SHA || '')
+  ? process.env.VERCEL_GIT_COMMIT_SHA : null;
+// A tracked manifest cannot embed its own final commit SHA. The deployed
+// manifest is pinned at build time to the Git-origin Vercel deployment SHA.
+// If the Git-derived SHA is absent, publish an explicit HOLD, never a guess.
+const discoveryPath = join(output, '.well-known', 'rosevear-integration-manifest.json');
+const manifest = JSON.parse(readFileSync(discoveryPath, 'utf8'));
+if (manifest.source_id !== 'yw' || manifest.repository !== 'RosevearCreations/yw' ||
+    manifest.tenant_boundary !== 'platform_shell') {
+  throw new Error('YW master source or platform-shell boundary invalid');
+}
+manifest.source_revision = releaseSha;
+manifest.source_revision_state = releaseSha ? 'DEPLOYMENT_BOUND_UNSIGNED' : 'HOLD_UNVERIFIED_SOURCE_REVISION';
+manifest.connection_state = 'DISCONNECTED / HOLD';
+manifest.signature = {algorithm:'Ed25519',key_id:null,value:null,
+  state:'AWAITING_INDEPENDENT_SOURCE_SIGNER'};
+writeFileSync(discoveryPath, JSON.stringify(manifest,null,2)+'\n');
 const common = { contract_version: '1', app_id: 'yard-workers', app_version: '471',
-  environment, connection_status: 'HOLD', events_enabled: false, commands_enabled: false };
+  environment, connection_status: 'HOLD', source_revision: releaseSha,
+  source_revision_state: releaseSha ? 'DEPLOYMENT_BOUND_UNSIGNED' : 'HOLD_UNVERIFIED_SOURCE_REVISION',
+  tenant_boundary: 'platform_shell', events_enabled: false, commands_enabled: false };
 const documents = {
   'health.json': { ...common, health: 'available', authenticated: false },
   'capabilities.json': { ...common, tenant_scope: 'required_before_connection',

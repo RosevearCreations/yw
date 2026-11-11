@@ -36,5 +36,5 @@ required(index,['landscape-dispatch-reconciliation-557.js'],'Index');
 required(workflow,['npm run test:landscape-dispatch-reconciliation-557',
  'npm run test:browser:landscape-dispatch-reconciliation-557'],'CI');
 assert.ok(pkg.scripts['test:landscape-dispatch-reconciliation-557']&&pkg.scripts['test:browser:landscape-dispatch-reconciliation-557']);
-required(release,['220 browser suites','110 direct lane calls',"lanes.includes('npm run test:browser:landscape-dispatch-reconciliation-557')"],'Release accounting');
+required(release,['221 browser suites','111 direct lane calls',"lanes.includes('npm run test:browser:landscape-dispatch-reconciliation-557')"],'Release accounting');
 console.log('YW557 original Dispatch capacity, age buckets, supervisor identity, source signatures, tenant isolation and CI: PASS');
