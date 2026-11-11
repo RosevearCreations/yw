@@ -143,7 +143,9 @@ create table if not exists public.ywi_landscape_reopen_supervision_561 (
  idempotency_key uuid not null,
  recorded_at timestamptz not null default now(),
  foreign key(company_id,request_id) references public.ywi_landscape_recovery_cases_556(company_id,request_id) on delete restrict,
- unique(company_id,request_id,reopened_version),unique(company_id,idempotency_key)
+ -- An open-case escalation and a later verified closure review are distinct
+ -- immutable decisions within the SAME original reopened recovery cycle.
+ unique(company_id,request_id,reopened_version,decision),unique(company_id,idempotency_key)
 );
 create index if not exists ywi_landscape_561_supervision_history on
  public.ywi_landscape_reopen_supervision_561(company_id,request_id,recorded_at desc);
@@ -203,7 +205,8 @@ begin
  end if;
  select * into v_decision from public.ywi_landscape_reopen_supervision_561
   where company_id=p_company_id and request_id=p_request_id
-   and reopened_version=v_ack_version;
+   and reopened_version=v_reopen_version
+  order by recorded_at desc,id desc limit 1;
  select coalesce(jsonb_agg(jsonb_build_object('receipt_id',v.id,
   'provider_state',v.provider_reported_state,'key_id',v.key_id,
   'verified_at',v.verified_at,'replay_committed',true,
@@ -221,9 +224,10 @@ begin
   'closure_source_verified',v_ready,
   'owner_decision',coalesce(v_decision.decision,'HOLD'),
   'owner_decision_receipt_id',v_decision.id,
-  'supervision_gate',case when v_decision.id is not null then 'RECORDED_SOURCE_ONLY'
+  'supervision_gate',case when v_decision.decision='continuity_reviewed' then 'RECORDED_SOURCE_ONLY'
    when v_ready then 'READY_OWNER_REVIEW'
    when v_link.id is null then 'HOLD_NO_ORIGINAL_REOPEN'
+   when v_decision.decision='exception_escalated' then 'RECORDED_ESCALATION_SOURCE_ONLY'
    else 'HOLD_ORIGINAL_SUPERVISOR_OR_CUSTOMER_RECONFIRMATION' end,
   'provider_signed_receipts',v_receipts,
   'provider_signature_validation','INDEPENDENT_ED25519_ONLY_WHEN_RECEIPT_PRESENT',
@@ -283,8 +287,8 @@ begin
   raise exception '561 only open original exceptions may be escalated'; end if;
  if exists(select 1 from public.ywi_landscape_reopen_supervision_561 x
   where x.company_id=p_company_id and x.request_id=p_request_id
-  and x.reopened_version=v_link.reopened_version) then
-  raise exception '561 original reopened version already decided'; end if;
+  and x.reopened_version=v_link.reopened_version and x.decision=p_decision) then
+  raise exception '561 original reopened version action already decided'; end if;
  v_ack_id:=nullif(v_review->>'original_supervisor_ack_id','')::uuid;
  insert into public.ywi_landscape_reopen_supervision_561
   (company_id,request_id,reopened_version,original_reopen_id,current_case_version,

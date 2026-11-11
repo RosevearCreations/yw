@@ -67,7 +67,8 @@
    const ready=action==='continuity_reviewed'&&review?.supervision_gate==='READY_OWNER_REVIEW'&&
     review?.case_state==='closed_verified'&&review?.closure_source_verified===true&&
     review?.fresh_original_supervisor_verified===true;
-   const escalate=action==='exception_escalated'&&review?.case_state==='exception_open';
+   const escalate=action==='exception_escalated'&&review?.case_state==='exception_open'&&
+    review?.owner_decision==='HOLD';
    $('owner561Decide').disabled=busy||(!ready&&!escalate)||
     review?.company_scope_only!==true||review?.read_only!==true||
     !Number.isInteger(review?.case_version)||!Number.isInteger(review?.reopened_version)||
