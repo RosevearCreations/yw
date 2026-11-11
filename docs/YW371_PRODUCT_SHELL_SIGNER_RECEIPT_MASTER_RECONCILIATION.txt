@@ -1,0 +1,155 @@
+YW371 — Yard Workers Product-Shell Identity Reconciliation, Independent
+Source Signer Enrollment Closure, Fresh Signed Health Receipt Admission &
+Three-Master Runtime Discrepancy Resolution
+
+Repository: RosevearCreations/yw
+Controller: AI Data Platform Build 370
+Controller production main:
+  6b3e68672894a4f90ef68fe26ec00bd8adc02aa1
+
+1. Product-shell identity reconciliation
+
+AI Data Build 370 independently observed YW560 production deployment
+dpl_5GPLC36MjUc8KUsyNS2zqQu7Nc8d and verified that its deployed manifest
+revision matched production main
+2c7234c975528a3a3ab76ca22829c8b4a541de97.
+
+That same deployed manifest reported:
+  source_role=business_shell
+  tenant_boundary=platform_shell
+
+The Master source contract requires the Yard Workers PRODUCT shell, not the
+Rosevear Landscaping child/business workspace.
+
+YW371 corrects the tracked discovery manifest to:
+  source_id=yw
+  source_app_id=yard-workers
+  source_role=platform_shell
+  tenant_boundary=platform_shell
+
+scripts/build-vercel-site.mjs now rejects a deployment if either source_role
+or tenant_boundary is not platform_shell. Production continues to bind
+source_revision only from the exact Vercel Git production/main commit SHA.
+
+No company ID, company owner identity, Rosevear Landscaping child record or
+tenant business data is introduced into the Master source identity.
+
+2. Independent signer enrollment closure boundary
+
+YW371 does NOT generate, import or store a source private key.
+
+The independent custodian must retain the existing external Ed25519 source
+key outside this repository. AI Data must independently enroll the public key
+fingerprint and correlate distinct pin, custody and witness evidence.
+
+server/yw371-source-closure.mjs requires:
+  - controller ENROLLED state for a bounded key ID;
+  - a valid public SPKI SHA-256 pin;
+  - independently verified custody;
+  - independently verified witness;
+  - separate custody and witness evidence references.
+
+Without those controller-owned facts:
+  signerState=HOLD
+  connection=HOLD
+  ownerAccepted=false
+
+3. Fresh signed HEALTHY receipt closure
+
+The existing protected source-signing path remains the authority:
+  scripts/master363-yw-source-converge-558.mjs sign-build364
+
+It must run only on the original authorized secure source custody host, with:
+  - external private key file;
+  - local passphrase;
+  - independently enrolled public pin;
+  - controller-recognized key ID;
+  - external independently observed real source health JSON;
+  - exact deployed production revision;
+  - exact deployed manifest SHA-256.
+
+YW371 does not infer HEALTHY from:
+  - repository GREEN;
+  - Vercel READY;
+  - static health.json;
+  - a synthetic unit test.
+
+The controller must independently ADMIT the source-bound receipt. The YW371
+reconciliation model requires exact sourceRevision and manifestRevision,
+matching trusted key ID, HEALTHY state, current observation age and
+controllerAdmission=ADMITTED.
+
+4. Durable replay
+
+Receipt closure also requires:
+  replay.state=COMMITTED
+  replay evidence URI
+  SHA-256 replay evidence digest
+
+No source-side text can self-declare controller replay acceptance.
+
+5. Three-Master runtime discrepancy boundary
+
+Current exact Master baselines:
+  AI Data Build 370 main
+    6b3e68672894a4f90ef68fe26ec00bd8adc02aa1
+
+  Rosevear AI Hub 309 main
+    0a94c72ee4a1ded1babeac68deeb981ad33835ef
+
+  Rosevear Comms Hub QL-417 main
+    6cd77dc4f5eb5f6c7a97d3155532a51e8e4c81f6
+
+AI Hub 309 still requires independent original Ree-host process/runtime
+witness, source one-TEST, signed receiver ACK, sampled uptime and controller
+owner decision.
+
+Comms QL-417 remains a protected discrepancy worklist. Original-host signed
+telemetry, durable replay admission, signed Comms ACK, owner decision
+continuity and uptime remain unresolved.
+
+Therefore code promotion of YW371 MUST NOT mark:
+  connection=CONNECTED
+  MASTERS_SYNCED=true
+  ownerAccepted=true
+
+6. Controller handoff
+
+After YW371 is promoted to production and the deployed manifest is
+independently re-observed, return this sanitized statement to AI Data:
+
+MASTER371-YW-PRODUCT-SHELL-RECONCILED |
+controller=ai-data-platform |
+source=yw |
+source-role=platform_shell |
+tenant-boundary=platform_shell |
+production-main=<exact YW371 production SHA> |
+deployed-manifest-revision=<independently observed exact YW371 SHA> |
+signer-enrollment=<VERIFIED only if controller independently enrolled it; else HOLD> |
+custody=<VERIFIED only if controller independently correlated it; else HOLD> |
+fresh-signed-health=<ADMITTED only if controller admitted exact current receipt; else HOLD> |
+durable-replay=<COMMITTED only if independently verified; else HOLD> |
+three-master-runtime=HOLD |
+connection=HOLD |
+owner-acceptance=HOLD
+
+Never include private keys, passphrases, raw telemetry, customer data or
+tenant records in that handoff.
+
+7. Verification
+
+Production build runs:
+  npm run test:yw371-source-closure
+
+The existing retained source lane also includes:
+  scripts/yw371-source-closure-check.mjs
+
+The verifier confirms:
+  - tracked source_role is platform_shell;
+  - production build rejects wrong product-shell identity;
+  - current unsigned signer/receipt state remains HOLD;
+  - simulated valid signer+receipt evidence can reach
+    READY_FOR_CONTROLLER_RECHECK;
+  - three-Master runtime HOLD still prevents connection/owner acceptance;
+  - no private key or environment-secret handling is added to the YW371
+    reconciliation module.

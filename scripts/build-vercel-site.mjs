@@ -66,8 +66,8 @@ const releaseSha = isProductionMain && /^[a-f0-9]{40}$/.test(process.env.VERCEL_
 const discoveryPath = join(output, '.well-known', 'rosevear-integration-manifest.json');
 const manifest = JSON.parse(readFileSync(discoveryPath, 'utf8'));
 if (manifest.source_id !== 'yw' || manifest.repository !== 'RosevearCreations/yw' ||
-    manifest.tenant_boundary !== 'platform_shell') {
-  throw new Error('YW master source or platform-shell boundary invalid');
+    manifest.source_role !== 'platform_shell' || manifest.tenant_boundary !== 'platform_shell') {
+  throw new Error('YW master product source identity or platform-shell boundary invalid');
 }
 manifest.source_revision = releaseSha;
 manifest.source_revision_state = releaseSha ? 'DEPLOYMENT_BOUND_UNSIGNED' : 'HOLD_UNVERIFIED_SOURCE_REVISION';

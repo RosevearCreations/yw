@@ -82,7 +82,7 @@ test('QL365D binds YW platform shell, immutable revision and full source reposit
   const manifest=JSON.parse(readFileSync(new URL('../public/.well-known/rosevear-integration-manifest.json',import.meta.url)));
   assert.equal(manifest.source_id,sourceId);
   assert.equal(manifest.source_app_id,'yard-workers');
-  assert.equal(manifest.source_role,'business_shell');
+  assert.equal(manifest.source_role,'platform_shell');
   assert.equal(manifest.tenant_boundary,'platform_shell');
   assert.equal(manifest.repository,QL364_REPOSITORY);
   assert.equal(manifest.audience,'rosevear-master');
