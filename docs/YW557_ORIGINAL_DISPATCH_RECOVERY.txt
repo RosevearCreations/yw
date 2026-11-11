@@ -1,0 +1,25 @@
+YW 557 — original Dispatch capacity, aging and supervisor review
+
+**Scope:** Yard Workers product shell and a specific owner company (e.g. Rosevear Landscaping). The original `work_orders` and `dispatch_schedule_items` remain authoritative. The Master Shell sees operational summaries only after independently verified source connections; no source ledger proves live Master Shell connectivity.
+
+## Deploy and prerequisites
+
+Apply the existing YW 421/422/434/435, 552, 553, 554, 555, and 556 migrations first; then review and apply `sql/landscape_dispatch_reconciliation_557.sql` to the *correct* Yard Workers Supabase project. No automatic live DDL is triggered by a GitHub/Vercel release. If any preceding migration or actual original source is missing, status stays `HOLD` and no acknowledgement is invented.
+
+An owner signs into Yard Workers, opens **Settings → Landscaping · Original Dispatch Capacity, Exception Aging & Supervisor Acknowledgements**, chooses their own company and current YW556 recovery case, and refreshes. The owner review compares the 553 advisory crew-minute plan with source-backed 435 allocated Dispatch minutes and shows aging at 24/48/72 hours. An unknown, stale, exhausted, restricted or unavailable original source is `HOLD`.
+
+An *independently authenticated person whose profile ID exactly matches the current original `dispatch_schedule_items.assigned_supervisor_profile_id`* opens **Crew → Original Dispatch · Supervisor Exception Review & Acknowledgement**, refreshes assignments, reviews original Dispatch, and records either a `reviewed` receipt or `escalated` note. This is append-only, bound to exact company, request, case version, Dispatch signature and one idempotency key. The source rechecks all of them; changes to crew/supervisor/time/status, recovery version or original record invalidate old receipts.
+
+## Acceptance and limitations
+
+- Company isolation is enforced by original `work_orders.company_id`, owner gate 422, and supervisor equality against the *current original Dispatch*.
+- No direct client writes to acknowledgement table; no anonymized or proxy receipt is accepted.
+- The signed-in owner cannot impersonate the assigned supervisor; staff without the original identity remain on `HOLD`.
+- **Reviewed** is only a supervisor audit receipt, not a customer response, crew reservation, safety release or scheduling approval; **Escalated** always leaves an owner-visible `HOLD`.
+- The original Dispatch workflow still owns crew reassignment. Existing YW556 customer acceptance/closure gate remains unchanged.
+- The 553 declared capacity number is advisory; even `ACKNOWLEDGED_REVIEW_ONLY` does not mean that Dispatch is cleared or available.
+- Every read is a new source check; stale/unavailable evidence fails closed. The owner should recheck after any crew change or customer response.
+
+## Verification
+
+Run `npm run test:landscape-dispatch-reconciliation-557` and `npm run test:browser:landscape-dispatch-reconciliation-557`; protected GitHub source checks and browser lanes remain mandatory. Recheck live RLS and active supervisor mapping after the migration in the tenant project. GitHub `main`/Vercel GREEN is a code-release status; it is not evidence that the Supabase database or real operating crews are ready.

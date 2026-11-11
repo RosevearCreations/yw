@@ -48,5 +48,5 @@ must(html,['landscape-recovery-556.js'], 'app index');
 must(help,['landscape-recovery-556','Original Dispatcher','service-role-only'], 'help');
 assert.ok(pkg.scripts['test:landscape-recovery-556']&&pkg.scripts['test:browser:landscape-recovery-556']);
 must(workflow,['npm run test:landscape-recovery-556','npm run test:browser:landscape-recovery-556'],'protected CI');
-must(release,['219 browser suites','109 direct lane calls'],'release accounting');
+must(release,['220 browser suites','110 direct lane calls'],'release accounting');
 console.log('YW556 original Dispatch authority, tenant boundary, version locks, customer receipts and CI: PASS');
