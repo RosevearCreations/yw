@@ -1,4 +1,4 @@
-# YW561 — Independent Provider Receipt Validation, Reopen Supervision and Master Correlation
+YW561 — Independent Provider Receipt Validation, Reopen Supervision and Master Correlation
 
 ## What changes
 
