@@ -4,7 +4,8 @@
  const validId=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
  const option=(value,label)=>{const node=document.createElement('option');node.value=value;node.textContent=label;return node;};
  const stamp=x=>x?new Date(x).toLocaleString('en-CA',{dateStyle:'medium',timeStyle:'short'}):'not recorded';
- const nonce=()=>crypto.randomUUID();
+ const nonce=()=>crypto.randomUUID?.()||Array.from(crypto.getRandomValues(new Uint8Array(16)),
+  x=>x.toString(16).padStart(2,'0')).join('').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/,'$1-$2-$3-$4-$5');
  async function identity(){
   const auth=window.YWI_AUTH?.getState?.(),sb=window.YWI_SB||window._sb;
   if(auth?.isAuthenticated!==true||!validId(auth.user?.id)||!sb?.auth?.getUser||!sb?.from||!sb?.rpc)
