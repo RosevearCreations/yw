@@ -27,7 +27,7 @@ async function setup(page,{width=390,role='owner',badTenant=false,stale=false,fa
      company_id:company,request_id:request,read_only:true,original_source_authority:true,
      dispatch_authorized:false,customer_confirmation_authorized:false,
      current_dispatch_id:dispatch,aging_band:'overdue_48h',recovery_age_minutes:3210,
-     case_version:2,case_state:'exception_open',status:'REVIEW_REQUIRED',
+     case_version:2,case_state:'exception_open',status:'HOLD',
      capacity:{schedule_state:'company_dispatch_verified',declared_crew_minutes:480,scheduled_minutes:420,remaining_minutes_advisory:60,capacity_state:'potential_headroom'},
      acknowledgement:null,reasons:['Current supervisor acknowledgement missing']}};
     if(name==='ywi_rpc_landscape_supervisor_queue_557')return {error:null,data:{
@@ -50,7 +50,7 @@ for(const width of [390,768,1440]){
   await expect(page.locator('#owner557Aging')).toContainText('overdue_48h');
   await expect(page.locator('#owner557Capacity')).toContainText('advisory headroom 60');
   await expect(page.locator('#owner557Supervisor')).toContainText('HOLD');
-  await expect(page.locator('#owner557Status')).toContainText('REVIEW_REQUIRED');
+  await expect(page.locator('#owner557Status')).toContainText('HOLD');
   expect(await page.evaluate(()=>window.__557Calls.every(c=>c.name==='ywi_rpc_landscape_recovery_review_557'))).toBe(true);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
  });

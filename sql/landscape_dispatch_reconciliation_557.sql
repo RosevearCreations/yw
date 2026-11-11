@@ -106,6 +106,8 @@ begin
    p_dispatch_id is distinct from coalesce(v_case.replacement_dispatch_id,v_case.original_dispatch_id) or
    v_dispatch.work_order_id is distinct from v_case.work_order_id or
    v_dispatch.assigned_supervisor_profile_id is distinct from v_user or
+   v_dispatch.schedule_status not in ('scheduled','dispatched') or
+   exists(select 1 from public.dispatch_schedule_items newer where newer.supersedes_dispatch_id=v_dispatch.id) or
    public.ywi_landscape_dispatch_signature_557(p_dispatch_id) is distinct from p_expected_dispatch_signature then
    raise exception '557 recorded receipt is now stale; refresh original Dispatch'; end if;
   return jsonb_build_object('status','RECORDED','receipt_id',v_existing.id,
@@ -123,7 +125,8 @@ begin
  if not found or v_dispatch.work_order_id is distinct from v_case.work_order_id or
   v_dispatch.assigned_supervisor_profile_id is distinct from v_user or
   v_dispatch.schedule_status not in ('scheduled','dispatched') or
-  v_dispatch.scheduled_end<=v_dispatch.scheduled_start then
+  v_dispatch.scheduled_end<=v_dispatch.scheduled_start or
+  exists(select 1 from public.dispatch_schedule_items newer where newer.supersedes_dispatch_id=v_dispatch.id) then
    raise exception '557 current original supervisor or Dispatch assignment invalid'; end if;
  v_signature:=public.ywi_landscape_dispatch_signature_557(p_dispatch_id);
  if v_signature is distinct from p_expected_dispatch_signature then
@@ -166,6 +169,11 @@ begin
   where w.id=v_case.work_order_id and w.company_id=p_company_id
    and w.id=v_dispatch.work_order_id) then
   raise exception '557 original company Dispatch lineage unavailable'; end if;
+ if v_dispatch.schedule_status not in ('scheduled','dispatched') or
+  v_dispatch.scheduled_end<=v_dispatch.scheduled_start or
+  exists(select 1 from public.dispatch_schedule_items newer where newer.supersedes_dispatch_id=v_dispatch.id) then
+  v_notes:=v_notes||jsonb_build_array('Current original Dispatch has been cancelled, superseded or its time window is invalid');
+ end if;
  v_signature:=public.ywi_landscape_dispatch_signature_557(v_dispatch.id);
  v_age_minutes:=greatest(0,floor(extract(epoch from(now()-v_case.updated_at))/60)::integer);
  v_age:=case when v_case.state='closed_verified' then 'closed'
@@ -184,7 +192,9 @@ begin
    coalesce((v_availability->>'missing_crew_assignment_count')::integer,0)>0 or
    coalesce((v_availability->>'not_ready_asset_count')::integer,0)>0 then
    v_notes:=v_notes||jsonb_build_array('Crew plan is exhausted, stale, incomplete or workability restricted');
-  else
+  elsif v_dispatch.schedule_status in ('scheduled','dispatched') and
+     v_dispatch.scheduled_end>v_dispatch.scheduled_start and
+     not exists(select 1 from public.dispatch_schedule_items newer where newer.supersedes_dispatch_id=v_dispatch.id) then
    v_state:='REVIEW_REQUIRED';
   end if;
  exception when others then
