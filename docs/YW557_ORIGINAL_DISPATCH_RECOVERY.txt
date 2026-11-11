@@ -1,4 +1,4 @@
-# YW 557 — original Dispatch capacity, aging and supervisor review
+YW 557 — original Dispatch capacity, aging and supervisor review
 
 **Scope:** Yard Workers product shell and a specific owner company (e.g. Rosevear Landscaping). The original `work_orders` and `dispatch_schedule_items` remain authoritative. The Master Shell sees operational summaries only after independently verified source connections; no source ledger proves live Master Shell connectivity.
 
