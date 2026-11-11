@@ -4,7 +4,7 @@
   "version": "2026.09.04",
   "type": "module",
   "scripts": {
-    "build:vercel": "node scripts/build-vercel-site.mjs",
+    "build:vercel": "node scripts/yw371-source-closure-check.mjs && node scripts/build-vercel-site.mjs",
     "test:vercel-static-output": "node scripts/vercel-static-output-check.mjs",
     "test:repo": "node scripts/repo-smoke-check.mjs",
     "test:comms-source": "node --test tests/ql335-shell-nonproduction.test.mjs tests/ql364-source-health.test.mjs",
@@ -422,7 +422,7 @@
     "test:browser:landscape-recovery-556": "playwright test --config=playwright.config.mjs tests/browser/landscape-recovery-556.spec.mjs",
     "test:landscape-dispatch-reconciliation-557": "node scripts/landscape-dispatch-reconciliation-557-check.mjs",
     "test:browser:landscape-dispatch-reconciliation-557": "playwright test --config=playwright.config.mjs tests/browser/landscape-dispatch-reconciliation-557.spec.mjs",
-    "test:landscape-supervisor-resolution-558": "node scripts/landscape-supervisor-resolution-558-check.mjs && node scripts/landscape-recovery-closure-559-check.mjs && node scripts/landscape-followup-continuity-560-check.mjs",
+    "test:landscape-supervisor-resolution-558": "node scripts/landscape-supervisor-resolution-558-check.mjs && node scripts/landscape-recovery-closure-559-check.mjs && node scripts/landscape-followup-continuity-560-check.mjs && node scripts/yw371-source-closure-check.mjs",
     "test:browser:landscape-supervisor-resolution-558": "playwright test --config=playwright.config.mjs tests/browser/landscape-supervisor-resolution-558.spec.mjs tests/browser/landscape-recovery-closure-559.spec.mjs tests/browser/landscape-followup-continuity-560.spec.mjs",
     "test:landscape-recovery-closure-559": "node scripts/landscape-recovery-closure-559-check.mjs",
     "test:browser:landscape-recovery-closure-559": "playwright test --config=playwright.config.mjs tests/browser/landscape-recovery-closure-559.spec.mjs",
@@ -533,7 +533,8 @@
     "test:browser:build526": "playwright test --config=playwright.config.mjs tests/browser/build526.spec.mjs",
     "test:browser:company-owner-session-491": "playwright test --config=playwright.config.mjs tests/browser/company-owner-session-491.spec.mjs",
     "test:rosevear-ql245-source-evidence-477": "node scripts/rosevear-ql245-source-evidence-477-check.mjs",
-    "test:browser:pms-owner-reviewer-followup-477": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-reviewer-followup-477.spec.mjs"
+    "test:browser:pms-owner-reviewer-followup-477": "playwright test --config=playwright.config.mjs tests/browser/pms-owner-reviewer-followup-477.spec.mjs",
+    "test:yw371-source-closure": "node scripts/yw371-source-closure-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
