@@ -63,5 +63,5 @@ must(help,['landscape-canonical-handoff-555','awaiting_original_job'], 'help');
 assert.ok(pkg.scripts['test:landscape-canonical-handoff-555']);
 assert.ok(pkg.scripts['test:browser:landscape-canonical-handoff-555']);
 must(workflow,['npm run test:landscape-canonical-handoff-555','npm run test:browser:landscape-canonical-handoff-555'],'protected CI');
-must(release,['220 browser suites','110 direct lane calls'],'release lane equivalence');
+must(release,['221 browser suites','111 direct lane calls'],'release lane equivalence');
 console.log('YW555 original Jobs/Dispatch agreement, owner isolation, idempotent audit and CI boundary: PASS');

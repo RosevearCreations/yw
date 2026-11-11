@@ -259,6 +259,7 @@ jobs:
               npm run test:browser:landscape-canonical-handoff-555
               npm run test:browser:landscape-recovery-556
               npm run test:browser:landscape-dispatch-reconciliation-557
+              npm run test:browser:landscape-supervisor-resolution-558
               ;;
             c)
               node scripts/build535-lane-c.mjs
@@ -536,6 +537,7 @@ jobs:
       - run: npm run test:landscape-canonical-handoff-555
       - run: npm run test:landscape-recovery-556
       - run: npm run test:landscape-dispatch-reconciliation-557
+      - run: npm run test:landscape-supervisor-resolution-558
       - run: npm run test:new-work-company-gate-421
       - run: npm run test:cross-service-continuity-422
       - run: npm run test:shared-allocation-proof-423

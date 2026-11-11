@@ -120,9 +120,9 @@ add('build535-lane-c-original-execution-contract',
   && !laneC.includes('npm run test:browser:'),
   'One runner must consume the exact 55-command manifest; no missing or duplicate source commands.');
 add('build529-535-browser-suite-equivalence',
-  (lanes.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 165
+  (lanes.match(/(?:npm run test:browser|npx playwright test)/g) || []).length === 166
   && (source.match(/(?:npm run test:browser|npx playwright test)/g) || []).length + retainedHotspotSuites + retainedTailSuites === 55
-  && 110 + laneCSuiteCount + 7 + retainedHotspotSuites + retainedTailSuites === 220
+  && 111 + laneCSuiteCount + 7 + retainedHotspotSuites + retainedTailSuites === 221
   && lanes.includes('npm run test:browser:company-booking-catalogue-551')
   && lanes.includes('npm run test:browser:landscape-booking-552')
   && lanes.includes('npm run test:browser:landscape-availability-553')
@@ -130,8 +130,9 @@ add('build529-535-browser-suite-equivalence',
   && lanes.includes('npm run test:browser:landscape-canonical-handoff-555')
   && lanes.includes('npm run test:browser:landscape-recovery-556')
   && lanes.includes('npm run test:browser:landscape-dispatch-reconciliation-557')
+  && lanes.includes('npm run test:browser:landscape-supervisor-resolution-558')
   && retainedHotspotSuites === 30 && retainedTailSuites === 18,
-  'All 220 browser suites remain accounted for: 110 direct lane calls (including YW 551–557), 55 verified lane-C specs, 7 source calls, 48 verified bundled source specs.');
+  'All 221 browser suites remain accounted for: 111 direct lane calls (including YW 551–558), 55 verified lane-C specs, 7 source calls, 48 verified bundled source specs.');
 add('build536-warm-source-browser-batch-equivalence',
   warmBatch20Suites === 3 && retainedHotspotSuites === 30 && retainedTailSuites === 18
   && 4 + warmBatch20Suites + retainedHotspotSuites + retainedTailSuites === 55,
