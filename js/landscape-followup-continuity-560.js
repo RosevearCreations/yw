@@ -4,7 +4,11 @@
  const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
  const opt=(id,caption)=>{const e=document.createElement('option');e.value=id;e.textContent=caption;return e;};
  const stamp=x=>x?new Date(x).toLocaleString('en-CA',{dateStyle:'medium',timeStyle:'short'}):'not recorded';
- const nonce=()=>crypto.randomUUID();
+ const nonce=()=>{if(crypto.randomUUID)return crypto.randomUUID();
+  const bytes=crypto.getRandomValues(new Uint8Array(16));
+  bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  return Array.from(bytes,n=>n.toString(16).padStart(2,'0')).join('')
+   .replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/,'$1-$2-$3-$4-$5');};
  async function source(){
   const state=window.YWI_AUTH?.getState?.(),sb=window.YWI_SB||window._sb;
   if(state?.isAuthenticated!==true||!uuid(state.user?.id)||!sb?.auth?.getUser||!sb?.rpc||!sb?.from)
