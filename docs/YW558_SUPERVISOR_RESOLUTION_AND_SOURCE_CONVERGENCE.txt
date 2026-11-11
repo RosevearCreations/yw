@@ -39,9 +39,39 @@ MASTER363-YW-SOURCE-CONVERGE — independent source-bound Ed25519 handoff
     Do not paste secrets into chat, shell history, tickets or repository.
     It outputs only a source-bound signed JSON packet and verification summary.
   - AI Data Platform Build364 independently verifies the signer enrollment PIN,
-    signature, source revision, manifest digest, release CI and freshness. The
-    public source proof packet alone does NOT verify original custodian identity,
-    production host, approval, runtime connectivity or owner acceptance.
+    signature, source revision, runtime evidence and freshness. The legacy
+    `sign` packet uses the source-side envelope and is NOT accepted as a Build364
+    convergence receipt. The public source proof packet alone does NOT verify
+    original custodian identity, production host, approval, runtime connectivity
+    or owner acceptance.
+
+  - Build364 exact receipt contract (after independent signer enrollment):
+    schema=rosevear.ai-data-platform.source-convergence-receipt.v1,
+    handoffToken=MASTER363-YW-SOURCE-CONVERGE, sourceId=yw,
+    sourceAppId=yard-workers, repository=RosevearCreations/yw,
+    sourceRevision=manifestRevision=health.revision=exact production main,
+    receiptVersion=1; health.state must be genuinely HEALTHY with fresh source
+    runtime identity and observedAt. The protected source host must create a
+    fresh out-of-repository JSON health observation containing:
+      {"manifestSha256":"<64-hex digest of deployed manifest>",
+       "manifestRevision":"<40-hex live source_revision>",
+       "health":{"state":"HEALTHY","revision":"<same source_revision>",
+                 "observedAt":"<fresh ISO timestamp>",
+                 "sourceRuntime":"<real verified source runtime>"}}
+    This observation must be obtained from actual independently checked source
+    runtime, not inferred from a GREEN build, static health file or deploy READY.
+    Then, on the ORIGINAL SECURE SOURCE HOST, with the independent public key
+    pin pre-enrolled on the controller side, set YWI_SOURCE_SIGNER_KEY_ID to
+    that enrolled public identifier and run:
+      node scripts/master363-yw-source-converge-558.mjs sign-build364 <production main SHA> <deployed manifest SHA256> <external verified observation JSON file>
+    Existing YWI_SOURCE_SIGNER_KEY_FILE, YWI_SOURCE_SIGNER_PASSPHRASE, and
+    YWI_TRUSTED_SOURCE_PIN_SHA256 are also required. Keep all secrets outside
+    source control and messages. Only its `receipt` should enter the Build364
+    `receipts.yw.receipt` intake; separately supply the independently enrolled
+    {keyId,publicKeyPem} to the Build364 `trustedSigners.yw` controller input.
+    The public key included in the source-side response cannot self-enroll.
+    Any nonmatching controller expected revision, missing master-runtime gate,
+    stale health evidence, or missing owner decision remains HOLD.
   - Until an actual independently authenticated source signer packet exists and
     controller acceptance is proven: signer=HOLD; source health receipt=HOLD;
     owner acceptance=HOLD; connection=DISCONNECTED/HOLD, even if code is GREEN.

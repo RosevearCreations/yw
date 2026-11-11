@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash,generateKeyPairSync} from 'node:crypto';
 import {sourcePayload,signSourcePayload,verifySourcePacket} from '../server/master363-yw-source-converge-558.mjs';
+import {BUILD364_SCHEMA,build364Payload,canonicalBuild364Payload,signBuild364Receipt,
+ verifyBuild364Receipt} from '../server/master363-yw-build364-receipt.mjs';
 const read=path=>fs.readFileSync(path,'utf8');
 const sql=read('sql/landscape_supervisor_resolution_558.sql');
 const ui=read('js/landscape-supervisor-resolution-558.js');
@@ -63,6 +65,42 @@ for(const tamper of [
 assert.throws(()=>verifySourcePacket(packet,{trustedPublicPin:pin,sourceRevision,manifestSha256,now:now+120000}),/MASTER363_YW_HOLD_RECEIPT_FRESHNESS/);
 assert.throws(()=>signSourcePayload({payload,encryptedPrivateKeyPem:pem,passphrase,
  expectedPublicPin:'f'.repeat(64)}),/MASTER363_YW_HOLD_SOURCE_PIN_MISMATCH/);
+// Controller Build364 exact schema/JSON ordering/standard base64. Synthetic test keys
+// explicitly prove only codec compatibility; they are never enrolled on a live host.
+const health={state:'HEALTHY',revision:sourceRevision,
+ observedAt:new Date(now-30000).toISOString(),sourceRuntime:'yw-test-fixture-runtime-only'};
+const b364Payload=build364Payload({sourceRevision,keyId:'synthetic-test-key-123',
+ health,nonce:'c'.repeat(64),now});
+assert.equal(b364Payload.schema,BUILD364_SCHEMA);
+assert.equal(canonicalBuild364Payload(b364Payload),JSON.stringify({
+ schema:BUILD364_SCHEMA,receiptVersion:1,handoffToken:'MASTER363-YW-SOURCE-CONVERGE',
+ sourceId:'yw',sourceAppId:'yard-workers',repository:'RosevearCreations/yw',
+ sourceRevision,manifestRevision:sourceRevision,keyId:'synthetic-test-key-123',
+ issuedAt:new Date(now).toISOString(),nonce:'c'.repeat(64),health}));
+const b364Receipt=signBuild364Receipt({payload:b364Payload,encryptedPrivateKeyPem:pem,
+ passphrase,expectedPublicPin:pin});
+const publicKeyPem=keys.publicKey.export({type:'spki',format:'pem'});
+assert.equal(verifyBuild364Receipt(b364Receipt,{trustedKeyId:'synthetic-test-key-123',
+ trustedPublicKeyPem:publicKeyPem,sourceRevision,now}).connection,'HOLD');
+for(const changed of [{sourceRevision:'f'.repeat(40)},
+ {manifestRevision:'f'.repeat(40)},
+ {health:{...health,sourceRuntime:'altered-runtime'}},
+ {signatureBase64:'A'.repeat(86)+'=='}]){
+ assert.throws(()=>verifyBuild364Receipt({...b364Receipt,...changed},
+  {trustedKeyId:'synthetic-test-key-123',trustedPublicKeyPem:publicKeyPem,sourceRevision,now}),
+ /MASTER363_YW_HOLD_/);
+}
+assert.throws(()=>verifyBuild364Receipt(b364Receipt,{trustedKeyId:'wrong-key',
+ trustedPublicKeyPem:publicKeyPem,sourceRevision,now}),/MASTER363_YW_HOLD_INDEPENDENT_SIGNER_ENROLLMENT/);
+assert.throws(()=>verifyBuild364Receipt(b364Receipt,{trustedKeyId:'synthetic-test-key-123',
+ trustedPublicKeyPem:publicKeyPem,sourceRevision,now:now+16*60*1000}),
+ /MASTER363_YW_HOLD_RECEIPT_FRESHNESS/);
+assert.throws(()=>build364Payload({sourceRevision,keyId:'synthetic-test-key-123',
+ health:{...health,state:'UNKNOWN'},nonce:'c'.repeat(64),now}),
+ /MASTER363_YW_HOLD_REAL_HEALTH_OBSERVATION_REQUIRED/);
+assert.throws(()=>build364Payload({sourceRevision,keyId:'synthetic-test-key-123',
+ health:{...health,sourceRuntime:'mock-service'},nonce:'c'.repeat(64),now}),
+ /MASTER363_YW_HOLD_RUNTIME_IDENTITY_REQUIRED/);
 const manifest=JSON.parse(read('public/.well-known/rosevear-integration-manifest.json'));
 assert.equal(manifest.source_id,'yw');assert.equal(manifest.tenant_boundary,'platform_shell');
 assert.equal(manifest.source_revision_binding.production,'build_time_vercel_git_commit_sha');
@@ -72,4 +110,4 @@ must(build,['VERCEL_GIT_COMMIT_SHA','VERCEL_GIT_COMMIT_REF','isProductionMain',
 assert.equal(manifest.signature.state,'AWAITING_INDEPENDENT_SOURCE_SIGNER');
 assert.equal(manifest.connection_state,'DISCONNECTED / HOLD');
 assert.ok(pkg.scripts['test:master363-yw-source-converge-558']);
-console.log('YW558 owner resolution, source-bound customer reconfirmation, timeline, offline signing and tenant isolation PASS');
+console.log('YW558 owner resolution, source-bound customer reconfirmation, timeline, Build364 receipt compatibility and tenant isolation PASS');
