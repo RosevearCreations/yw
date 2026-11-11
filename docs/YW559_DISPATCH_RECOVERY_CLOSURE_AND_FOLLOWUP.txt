@@ -1,0 +1,46 @@
+YW559 — Dispatch Recovery Closure, Customer Follow-Up Evidence & Supervisor Outcome Review
+
+Source: RosevearCreations/yw. Company owner workspace only. Existing YW553–558
+SQL and original YW422/434/435 Jobs and Dispatch authorities are prerequisites.
+
+1. Only the original YW556 owner recovery RPC can change a recovery case to
+   closed_verified, after the real token-validated YW556 customer portal acceptance.
+   This new module NEVER changes the original case, Job, Dispatch, crew, customer
+   response, quote, consent, notification or Comms Hub messaging.
+2. New immutable ywi_landscape_closure_evidence_559 captures owner review of a
+   fully closed case, subsequent original supervisor outcome review, and a
+   separate customer follow-up REQUEST intent. It is not evidence of a sent
+   message or a supervisor's independent post-close signature.
+3. Every owner write checks authenticated company owner + jobs-create permission,
+   current 556 closed case version, current original 557 Dispatch signature and
+   crew supervisor identity, 557 reviewed ACK for previous case version,
+   original 556 portal acceptance for that same version, immutable 556 close audit
+   for the current version, and prior 558 reconfirmation gate. It uses an
+   advisory transaction lock, unique idempotency key and expected version.
+4. Sequencing: closure_reviewed -> supervisor_outcome_reviewed ->
+   customer_followup_requested. Missing source, declined customer, reopened case,
+   stale/superseded Dispatch, altered crew signature or absent owner attestation
+   must fail closed. No synthetic acceptance or message delivery.
+5. Read-only review RPC returns IDs/timestamps and immutable YW559 audit sequence
+   with no customer name, email, IP, public token or company cross-tenant data.
+   UI has responsive cards and an accessible timeline; auth changes erase state.
+6. Original authenticated company owner is the only writer through RPC. Public/
+   anon table rights revoked, RLS enabled; no raw mutation exposed to browser.
+
+DATABASE INSTALLATION: This repository release DOES NOT install SQL onto
+production Supabase. The connected SQL account denied inspection, and previously
+required YW554–558 migrations have not been independently certified installed.
+Authorized database operator must verify and install 553,554,555,556,557,558,559
+in dependency order, then run a tenant-isolation and legitimate original-portal
+acceptance exercise before claiming the feature live. No production data was
+changed as part of this source-control-only release.
+
+AI DATA PLATFORM / MASTER: YW559 may report only source-code release GREEN and
+owner intent receipt availability AFTER successful SQL adoption. It cannot
+claim customer follow-up delivered, independently verified Comms Hub handoff,
+master signer enrollment, owner acceptance or CONNECTED without original
+source-held proof. A separate master/comms receiver must accept only authorized
+non-PII source-linked follow-up and return an independent delivery receipt.
+
+Proposed next build YW560: Protected Customer Follow-Up Delivery Receipts,
+Reopen Exceptions and Verified Supervisor Closure Continuity.
