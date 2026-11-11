@@ -86,7 +86,9 @@ test('QL365D binds YW platform shell, immutable revision and full source reposit
   assert.equal(manifest.tenant_boundary,'platform_shell');
   assert.equal(manifest.repository,QL364_REPOSITORY);
   assert.equal(manifest.audience,'rosevear-master');
-  assert.match(manifest.source_revision,/^[a-f0-9]{40}$/);
+  assert.equal(manifest.source_revision,null);
+  assert.equal(manifest.source_revision_state,'HOLD_UNVERIFIED_SOURCE_REVISION');
+  assert.equal(manifest.source_revision_binding.production,'build_time_vercel_git_commit_sha');
   assert.equal(manifest.signature.state,'AWAITING_INDEPENDENT_SOURCE_SIGNER');
   for(const wrong of [{sourceId:'icamp',repository},{sourceId,repository:'yw'}]){
     assert.equal((await handleQl364SourceHealth({request:request(intent()),
@@ -136,3 +138,4 @@ test('QL365D requires original owner decisions, exact source revision and one-us
   assert.equal((await handleQl364SourceHealth({request:request(extra),
     sourceId,repository,now,...privateAdapters()})).status,403);
 });
+
