@@ -61,7 +61,7 @@ for(const width of [390,768,1440]){
  test(`YW559 original closure proof and responsive owner review at ${width}px`,async({page})=>{
   await setup(page,{width});await choose(page);
   await expect(page.locator('#owner559Customer')).toContainText('accepted');
-  await expect(page.locator('#owner559Closure')).toContainText('SOURCE');
+  await expect(page.locator('#owner559Closure')).toContainText('ORIGINAL_CLOSURE_EVIDENCE_VERIFIED_READ_ONLY');
   await page.locator('#owner559Note').fill('Reviewed original close audit and customer acceptance with no new dispatch.');
   await page.locator('#owner559Attest').check();await page.locator('#owner559Record').click();
   await expect(page.locator('#owner559Result')).toContainText('CLOSURE_REVIEWED_SOURCE_LINKED');
