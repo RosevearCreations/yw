@@ -75,3 +75,6 @@ verify_jwt = false
 
 [functions.landscape-provider-verify-561]
 verify_jwt = false
+
+[functions.landscape-master-receipt-563]
+verify_jwt = false
