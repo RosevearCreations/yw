@@ -104,7 +104,7 @@ begin
    and char_length(custody_evidence_ref)>=10;
  if not found then raise exception '563 independent Master signer pin HOLD'; end if;
  select * into v_case from public.ywi_landscape_recovery_cases_556
-  where company_id=p_company_id and request_id=p_request_id;
+  where company_id=p_company_id and request_id=p_request_id for update;
  if not found or v_case.case_version<>p_case_version then
   raise exception '563 original case version mismatch'; end if;
  select * into v_source from public.ywi_landscape_provider_verified_561
@@ -244,10 +244,13 @@ begin
   'latest_owner_action',coalesce(v_prior.action,'HOLD'),
   'latest_owner_action_id',v_prior.id,
   'source_followup_gate',case
-   when v_prior.action='approve_source_followup_closure' then 'SOURCE_FOLLOWUP_CLOSED_MASTER_ACCEPTANCE_HOLD'
    when not v_pilot then 'HOLD_NO_SOURCE_OWNER_PILOT_APPROVAL'
    when v_ack.id is null then 'HOLD_NO_INDEPENDENT_MASTER_RECEIPT'
    when v_ack.comparison<>'MATCHED_RECEIPT_CLAIM' then 'DISCREPANCY_OWNER_TRIAGE_REQUIRED'
+   when v_prior.action='approve_source_followup_closure' and v_ready
+    then 'SOURCE_FOLLOWUP_CLOSED_MASTER_ACCEPTANCE_HOLD'
+   when v_prior.action='approve_source_followup_closure'
+    then 'SOURCE_CLOSURE_RECHECK_REQUIRED'
    when v_ready then 'READY_FOR_SOURCE_OWNER_FOLLOWUP_CLOSURE'
    else 'HOLD_STALE_MASTER_ACK_OR_ORIGINAL_CLOSURE' end,
   'recipient_delivery_independently_verified',false,'customer_message_sent',false,
@@ -313,8 +316,9 @@ begin
      ('HASH_MISMATCH','MASTER_DISCREPANCY','MASTER_REJECTED')) then
   raise exception '563 independently recorded discrepancy required'; end if;
  if p_action='request_master_recheck' and
-    v_review->>'latest_owner_action'='approve_source_followup_closure' then
-  raise exception '563 source follow-up already closed'; end if;
+    v_review->>'latest_owner_action'='approve_source_followup_closure' and
+    v_review->>'master_comparison'='MATCHED_RECEIPT_CLAIM' then
+  raise exception '563 source follow-up already closed with matching receipt'; end if;
  if exists(select 1 from public.ywi_landscape_followup_decisions_563 a
   where a.company_id=p_company_id and a.request_id=p_request_id and
    a.case_version=p_expected_case_version and
