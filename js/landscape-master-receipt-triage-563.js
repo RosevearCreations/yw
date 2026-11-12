@@ -46,7 +46,8 @@
    receipts.some(r=>r.id===v.provider_verified_receipt_id);
   const discrepancy=['HASH_MISMATCH','MASTER_DISCREPANCY','MASTER_REJECTED'];
   const allowed=action==='request_master_recheck'&&
-    v?.latest_owner_action!=='approve_source_followup_closure'||
+    (v?.latest_owner_action!=='approve_source_followup_closure'||
+     v?.master_comparison!=='MATCHED_RECEIPT_CLAIM')||
    action==='escalate_receipt_discrepancy'&&
     uuid(v?.master_observation_id)&&discrepancy.includes(v?.master_comparison)||
    action==='approve_source_followup_closure'&&v?.source_followup_closure_ready===true&&
