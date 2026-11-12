@@ -29,6 +29,8 @@ must(sql,[
  'unique(issuer,replay_nonce)',
  'unique(issuer,master_receipt_ref)',
  '563 conflicting Master signed nonce replay',
+ 'where company_id=p_company_id and request_id=p_request_id for update;',
+ 'SOURCE_CLOSURE_RECHECK_REQUIRED',
  "v_ack.verified_at>=now()-interval '24 hours'",
  "v_source->>'source_pilot_ready'='true'",
  'p_owner_attested is distinct from true',
