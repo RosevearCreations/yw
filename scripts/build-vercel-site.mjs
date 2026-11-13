@@ -21,6 +21,7 @@ const files = [
   'build526-triage.css',
   'build540-ci-slo.css',
   'build541-ci-custody.css',
+  'theme-futuristic-564.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',
