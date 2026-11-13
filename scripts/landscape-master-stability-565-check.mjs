@@ -27,6 +27,8 @@ must(sql,[
  "detected_at>=now()-interval '7 days'",
  "detected_at>=now()-interval '30 days'",
  'v_latest.verified_at>v_last_request.recorded_at',
+ "v_first_30<=now()-interval '29 days'",
+ "v_first_7<=now()-interval '6 days'",
  "'OPEN_SIGNED_ADMISSION_OR_DISCREPANCY'",
  "'STALE_INDEPENDENT_MASTER_RECEIPT'",
  "'THIRTY_DAY_OBSERVED_RECEIPT_SPAN'",
