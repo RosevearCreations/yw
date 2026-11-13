@@ -55,7 +55,9 @@ for(const width of [390,768,1440]){
 }
 test('YW567 drilldown hides unauthorized Sysop and hidden original module, exposes only curated entitlement',async({page})=>{
  await setup(page);
- const sysop=page.locator('#yw565Command .yw567-drilldown a[href="#sysop"]');
+ const system=page.locator('#yw565Command .yw565-command-card').last();
+ await system.locator('.yw567-drilldown summary').click();
+ const sysop=system.locator('.yw567-drilldown a[href="#sysop"]');
  await expect(sysop).toBeHidden();
  await page.evaluate(()=>{document.getElementById('workspace550SysopLink').hidden=false;});
  await expect(sysop).toBeVisible();
