@@ -74,7 +74,7 @@ must(guard,[
  "const expected=sources[route]",
  "'workspace550SysopLink'",
  "'workspace550CompanyLink'",
- 'a.getAttribute(\\'aria-disabled\\')',
+ "a.getAttribute('aria-disabled')",
  'e.preventDefault()',
  "document.addEventListener('ywi:auth-changed'",
  "document.addEventListener('yw:theme-changed'",
