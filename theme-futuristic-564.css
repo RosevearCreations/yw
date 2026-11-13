@@ -210,6 +210,8 @@ html[data-yw-theme="futuristic"] .yw550-metrics strong {
 /* The selector belongs to the shared app header and is available when signed in
    or signed out; switching does not alter data access or application roles. */
 .yw564-theme-control {
+  box-sizing:border-box;
+  max-width:100%;
   display:flex;
   align-items:center;
   gap:8px;
