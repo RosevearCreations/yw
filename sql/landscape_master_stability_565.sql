@@ -49,6 +49,8 @@ declare
  v_owner public.ywi_landscape_master_stability_reviews_565%rowtype;
  v_last_risk timestamptz;
  v_first_match timestamptz;
+ v_first_7 timestamptz;
+ v_first_30 timestamptz;
  v_last_match timestamptz;
  v_match24 bigint:=0;v_match7 bigint:=0;v_match30 bigint:=0;
  v_exception24 bigint:=0;v_exception7 bigint:=0;v_exception30 bigint:=0;
@@ -84,8 +86,11 @@ begin
  select count(*) filter(where verified_at>=now()-interval '24 hours'),
   count(*) filter(where verified_at>=now()-interval '7 days'),
   count(*) filter(where verified_at>=now()-interval '30 days'),
-  min(verified_at),max(verified_at)
- into v_match24,v_match7,v_match30,v_first_match,v_last_match
+  min(verified_at),
+  min(verified_at) filter(where verified_at>=now()-interval '7 days'),
+  min(verified_at) filter(where verified_at>=now()-interval '30 days'),
+  max(verified_at)
+ into v_match24,v_match7,v_match30,v_first_match,v_first_7,v_first_30,v_last_match
  from public.ywi_landscape_master_observations_563
  where company_id=p_company_id and request_id=p_request_id
   and case_version=v_case.case_version and
@@ -133,10 +138,10 @@ begin
    then 'OPEN_SIGNED_ADMISSION_OR_DISCREPANCY'
   when not v_fresh then 'STALE_INDEPENDENT_MASTER_RECEIPT'
   when not v_recovery then 'HOLD_NO_VERIFIED_RENEWAL_RECOVERY'
-  when v_first_match<=now()-interval '30 days' and v_match30>=2
+  when v_first_30<=now()-interval '29 days' and v_match30>=2
    and v_exception30=0 and v_discrepancy30=0
    then 'THIRTY_DAY_OBSERVED_RECEIPT_SPAN'
-  when v_first_match<=now()-interval '7 days' and v_match7>=2
+  when v_first_7<=now()-interval '6 days' and v_match7>=2
    and v_exception7=0 and v_discrepancy7=0
    then 'SEVEN_DAY_OBSERVED_RECEIPT_SPAN'
   else 'FRESH_SIGNED_SOURCE_RECOVERY_OBSERVED' end;
