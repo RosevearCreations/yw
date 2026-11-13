@@ -8,8 +8,7 @@
  const ROUTES=Object.freeze([
   ['#company','Company','▦'],['#sysop','Platform','◈'],
   ['#today','Jobs','▤'],['#finance','Finance','◫'],
-  ['#admin','Admin','◇'],['#it','I.T.','⌘'],
-  ['#toolbox','Safety','✚'],['#settings','Settings','⚙']
+  ['#admin','Admin','◇'],['#toolbox','Safety','✚'],['#settings','Settings','⚙']
  ]);
  const root=document.documentElement;
  function load(){
