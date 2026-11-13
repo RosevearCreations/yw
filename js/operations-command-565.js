@@ -12,10 +12,9 @@
    ['#finance','Finance','Invoices, accounting and costs']]},
   {name:'Management',tag:'MANAGE',links:[
    ['#admin','Management','Team and business management'],
-   ['#toolbox','Safety & tools','Shop and field readiness'],
-   ['#settings','Settings','Preferences and permissions']]},
+   ['#toolbox','Safety & tools','Shop and field readiness']]},
   {name:'System operations',tag:'SYSTEM',links:[
-   ['#it','I.T. dashboard','System visibility and diagnostics'],
+   ['#settings','System & settings','Existing settings and technical preferences'],
    ['#sysop','Platform Sysop','Only with separately verified platform authority']]}
  ];
  function isAuth(){return window.YWI_AUTH?.getState?.()?.isAuthenticated===true;}
