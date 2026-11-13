@@ -1,0 +1,58 @@
+/* YW567: opt-in Futuristic-only accessible drilldowns and source remediation. */
+html[data-yw-theme="futuristic"] .yw567-drilldown:not([hidden]) {
+ display:block;margin-top:14px;
+ border-top:1px solid rgba(169,164,214,.23);
+ padding-top:12px;
+}
+html[data-yw-theme="futuristic"] .yw567-drilldown summary {
+ cursor:pointer;min-height:44px;display:flex;align-items:center;
+ gap:9px;list-style:none;
+ font-size:.81rem;font-weight:750;color:#e8dcff;
+ border:1px solid rgba(170,140,225,.36);
+ border-radius:10px;padding:9px 11px;background:rgba(89,64,161,.15);
+}
+html[data-yw-theme="futuristic"] .yw567-drilldown summary::-webkit-details-marker {display:none;}
+html[data-yw-theme="futuristic"] .yw567-drilldown summary::before {
+ content:'+';font-size:1.08rem;font-weight:700;color:#bc9aff;
+}
+html[data-yw-theme="futuristic"] .yw567-drilldown[open] summary::before {content:'−';}
+html[data-yw-theme="futuristic"] .yw567-drilldown summary:is(:hover,:focus-visible) {
+ border-color:#bb9afa;background:rgba(108,79,177,.22);
+}
+html[data-yw-theme="futuristic"] .yw567-drilldown summary:focus-visible,
+html[data-yw-theme="futuristic"] .yw567-drilldown a:focus-visible {
+ outline:3px solid #d1a8ff;outline-offset:3px;
+}
+html[data-yw-theme="futuristic"] .yw567-drilldown-desc {
+ color:#b7c9e5;font-size:.74rem;line-height:1.45;margin:10px 0;
+}
+html[data-yw-theme="futuristic"] .yw567-drilldown-list {
+ list-style:none;padding:0;margin:0;display:grid;gap:7px;
+}
+html[data-yw-theme="futuristic"] .yw567-drilldown-list li[hidden] {display:none!important;}
+html[data-yw-theme="futuristic"] .yw567-drilldown-list a {
+ display:flex;align-items:center;min-height:44px;
+ padding:8px 12px;border-radius:9px;
+ color:#e8efff;text-decoration:none;font-size:.77rem;
+ border:1px solid rgba(117,145,190,.27);
+ background:rgba(18,36,64,.68);
+}
+html[data-yw-theme="futuristic"] .yw567-drilldown-list a[aria-current="page"] {
+ background:rgba(109,71,190,.33);border-color:#b58aff;
+}
+html[data-yw-theme="futuristic"] #owner567 .panel567 {
+ border:1px solid rgba(174,146,231,.3);
+ background:linear-gradient(140deg,rgba(21,33,59,.96),rgba(12,24,47,.94));
+ color:#dce9f8;
+}
+html[data-yw-theme="futuristic"] #owner567 .panel567 h3 {color:#efe7ff;}
+html[data-yw-theme="futuristic"] #owner567 :is(#owner567Reopen,#owner567Remediation) {
+ overflow-wrap:anywhere;line-height:1.6;
+}
+@media(max-width:760px){
+ html[data-yw-theme="futuristic"] .yw567-drilldown-list a {min-height:48px;}
+ html[data-yw-theme="futuristic"] #owner567 .panel567 {padding:13px;}
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-yw-theme="futuristic"] .yw567-drilldown * {transition:none!important;}
+}
