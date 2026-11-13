@@ -22,6 +22,7 @@ const files = [
   'build540-ci-slo.css',
   'build541-ci-custody.css',
   'theme-futuristic-564.css',
+  'theme-operations-command-565.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',
