@@ -57,6 +57,17 @@
   const command=$('yw565Command');if(!command)return;
   [...command.querySelectorAll('.yw565-command-card')].forEach(populate);
   refresh();
+  if(typeof MutationObserver==='function'){
+   const observer=new MutationObserver(refresh);
+   for(const id of ['workspace550SysopLink','workspace550CompanyLink']){
+    const el=$(id);
+    if(el)observer.observe(el,{attributes:true,
+     attributeFilter:['hidden','aria-disabled','style','data-disabled']});
+   }
+   const nav=document.querySelector('.app-header nav');
+   if(nav)observer.observe(nav,{subtree:true,attributes:true,
+    attributeFilter:['hidden','aria-disabled','style','data-disabled']});
+  }
   command.addEventListener('click',e=>{
    const link=e.target?.closest?.('a[data-yw567-route]');
    if(!link)return;
