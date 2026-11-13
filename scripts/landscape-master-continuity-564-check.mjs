@@ -89,7 +89,7 @@ must(css,[
 assert.ok(!/^\s*(?:body|html|:root)\s*\{/m.test(css),
  'YW564 must preserve global Standard blue selectors');
 must(html,['theme-futuristic-564.css','theme-switcher-564.js',
- 'landscape-master-continuity-564.js','data-yw-theme'], 'Shell');
+ 'landscape-master-continuity-564.js','document.documentElement.dataset.ywTheme'], 'Shell');
 must(pkg.scripts['test:landscape-supervisor-resolution-558'],
  ['landscape-master-continuity-564-check.mjs'],'Retained source checks');
 must(pkg.scripts['test:browser:landscape-supervisor-resolution-558'],
