@@ -1,0 +1,36 @@
+YW565 — Independent Cross-Plane SLA Recovery Effectiveness, Long-Horizon Receipt Stability & Unified Platform Operations Command Theme Rollout
+
+SOURCE REFERENCES
+YW564 source: SQL, Ed25519 signed observation YW563, owner original case YW556, owner pilot YW562, YW564 signed admission exception/SLA/renewal.
+UI reference: UI_Application_Recreation_Specification(10).pdf pages 5–6, 23–26. Design inspiration is the shared dark navy/violet command hierarchy, active navigation, KPI card grids, compact status regions, responsive desktop/tablet/mobile behavior and clear accessibility.
+No synthetic numbers from the generic maker-business screenshots are part of Yard Workers production.
+
+WHAT YW565 ADDS
+1. sql/landscape_master_stability_565.sql: original company owner-only immutable signed-source stability reviews with RLS, owner helpers, explicit case-version and exact signed Master receipt binding, conflicting idempotency-replay protection and no browser UPDATE/INSERT/DELETE on the review table. Protection remains fail-closed.
+2. Source read RPC ywi_rpc_landscape_master_stability_review_565 uses the existing YW564 original company continuity gate and ONLY genuinely independently admitted YW563 observations. It counts matched signed source claims, signed admission-rejection signals and independently signed discrepancies in the trailing 24 hours, 7 days and 30 days. It derives the source SLA from YW564 and only marks source recovery effective after a fresh matching signed Master claim following the original owner’s YW564 renewal request, with no newer signed risk and current original-source closure.
+3. Source classifications: HOLD_ORIGINAL_SOURCE_PILOT, HOLD_NO_INDEPENDENT_MASTER_RECEIPT, OPEN_SIGNED_ADMISSION_OR_DISCREPANCY, STALE_INDEPENDENT_MASTER_RECEIPT, HOLD_NO_VERIFIED_RENEWAL_RECOVERY, FRESH_SIGNED_SOURCE_RECOVERY_OBSERVED, SEVEN_DAY_OBSERVED_RECEIPT_SPAN, THIRTY_DAY_OBSERVED_RECEIPT_SPAN. The 7/30-day labels indicate sampled signed observations spanning that timeframe with no recorded within-window discrepancy, NOT continuous uptime or customer delivery evidence. Counts are source-record only.
+4. Owner decision RPC ywi_rpc_landscape_master_stability_decide_565: authenticated original company owner may request a fresh independently signed witness, escalate present receipt drift or attest a current source recovery review. Fresh witness requests are rate-limited per original case for 30 minutes. Reviews of the same exact observation cannot be reused. All actions are append-only, source-only and do not turn on a receiver or publish any Master owner acceptance.
+5. Original owner UI js/landscape-master-stability-565.js: exact company/case/signed receipt selector, protected current original source review, dynamic 24h/7d/30d cards, SLA status and explicit owner attestation. Fail-closed when predecessor schema missing, no verified source, stale auth, foreign company, duplicate review or mismatch. Unauthenticated, cross-tenant and released sessions never retain source evidence.
+6. Protected platform source summary ywi_rpc_landscape_master_stability_summary_565: service_role-only aggregate review/escalation counts without tenant/customer IDs and with explicit Master/connected flags false.
+
+UNIFIED OPERATIONS COMMAND THEME ROLLOUT — YARD WORKERS SCOPE
+- Standard · Blue remains the default and original stylesheet. Never replace or globally rewrite existing original CSS.
+- Futuristic · Violet remains owner-selectable through the existing YW564 Appearance control. YW565 adds scoped theme-operations-command-565.css and js/operations-command-565.js for consistent company, management and system navigation launch surfaces, refined violet headers, compact dark cards and focus states.
+- An authenticated session is required to show the command launcher. Platform Sysop navigation is shown ONLY if YW550 pre-existing curated verified Sysop link is visible. The visual shell is not an authorization system and never reads platform tenant information, enrolls a key, or issues a Master command.
+- Card navigation is functional and routed to existing Yard Workers hash routes; it does not fake KPIs. No counts are hard-coded. Mobile and tablet cards collapse under 1150px/760px; reduced-motion supported; focus-visible controls.
+- This release changes the Yard Workers codebase and its company/technical shell only. It does NOT change iCamp, AI Data Platform, Comms Hub or AI Hub. The design language is portable for later explicitly authorized cross-app work.
+
+KNOWN LIVE RUNTIME PREREQUISITES — HOLD
+As checked November 13, the connected YardWeasels Supabase project jmqvkgiqlimdhcofwkxr still did not contain original YW556 recovery cases, YW561 provider verified receipts, YW563 Master observations or YW564 Master ledgers. Commit these schema changes in Git but do not apply YW565 until the whole approved YW553–564 chain is installed in order, reviewed with RLS and independently witnessed original signer credentials. No fake signed receipt, "customer delivered", or Master CONNECTED assertions.
+
+ACCEPTANCE / PRODUCTION
+A. Authorized DBA validates predecessor migrations, creates new table/RLS owner read and RPCs, checks anon/foreign-user denial, service_role-only aggregate and browser no direct insert/update/delete. Verify original source counts with real signed receipts; 7/30-day spans are not availability SLAs.
+B. Original company owner inspects current provider receipt and signs exact one-time owner decision. Confirm conflicting replay, old signed observation, wrong company, stale current closure and signout all fail closed.
+C. Run npm run test:landscape-master-stability-565 and npm run test:browser:landscape-master-stability-565; both are retained in the protected YW558 source/browser lanes. Test 390, 768 and 1440 pixels. Standard stays unchanged; new command deck shown only under Futuristic/authenticated, Sysop link requires separate YW550 curated authorization.
+D. Promote protected branch to dev; run all checks and Vercel preview READY; promote reviewed dev to main; verify exact main GitHub CI, production Vercel READY and active production alias, then fast-forward dev to the exact main commit and inspect post-merge checks and release evidence.
+
+THREE-MASTER HANDOFF
+MASTER565-YW-SOURCE-STABILITY | source=yw | controller=ai-data-platform | source_role=platform_shell | tenant_boundary=platform_shell | visual_theme=STANDARD_BLUE_DEFAULT_FUTURISTIC_VIOLET_OPTION | signed_24h_7d_30d=SOURCE_ONLY_OBSERVATIONS | source_owner_review=SEPARATE_IMMUTABLE_GATE | independent_signed_master_renewal=HOLD_UNTIL_REAL_EVIDENCE | customer_delivery=UNVERIFIED | master_owner_acceptance=HOLD | connected=HOLD | tenant_export=NONE
+
+NEXT PROPOSED BUILD
+YW566 — Independent Source Stability Drift Forecasting, Owner Escalation Outcome Reconciliation & Cross-Module Command Center Navigation Acceptance.
