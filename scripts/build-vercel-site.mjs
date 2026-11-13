@@ -23,6 +23,7 @@ const files = [
   'build541-ci-custody.css',
   'theme-futuristic-564.css',
   'theme-operations-command-565.css',
+  'theme-navigation-acceptance-566.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',
