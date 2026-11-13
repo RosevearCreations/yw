@@ -16,7 +16,13 @@
  let epoch=0,busy=false,ownerId=null,companies=[],cases=[],receipts=[],review=null;
  const status=s=>{$('owner565Status').textContent=s;};
  const owns=id=>companies.some(c=>c.id===id&&c.owner_user_id===ownerId);
- function nonce(){return crypto.randomUUID();}
+ function nonce(){
+  if(typeof crypto.randomUUID==='function')return crypto.randomUUID();
+  const b=crypto.getRandomValues(new Uint8Array(16));
+  b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
+  return [...b].map(v=>v.toString(16).padStart(2,'0')).join('')
+   .replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/,'$1-$2-$3-$4-$5');
+ }
  function reset(){
   review=null;receipts=[];
   $('owner565Receipt').replaceChildren(opt('','Choose original signed receipt'));
