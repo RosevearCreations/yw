@@ -1,0 +1,35 @@
+/* YW566 navigation verification & source drift watch.
+ * New visual rules apply only to opt-in Futuristic. Standard Blue is untouched. */
+html[data-yw-theme="futuristic"] #yw566NavigationStatus {
+ margin:12px 0 0;padding:12px 13px;
+ border:1px solid rgba(137,164,211,.25);
+ border-radius:11px;background:rgba(17,36,61,.65);
+ color:#d0dff6;font-size:.76rem;line-height:1.5;
+}
+html[data-yw-theme="futuristic"] #owner566 .panel566 {
+ background:linear-gradient(140deg,rgba(24,34,63,.96),rgba(12,23,44,.94));
+ border:1px solid rgba(172,142,240,.29);
+ color:#d7e3f7;
+}
+html[data-yw-theme="futuristic"] #owner566 .panel566 h3 {
+ margin:0 0 9px;color:#f0e8ff;font-weight:760;
+}
+html[data-yw-theme="futuristic"] #owner566 #owner566Risk,
+html[data-yw-theme="futuristic"] #owner566 #owner566Escalation {
+ overflow-wrap:anywhere;line-height:1.6;
+}
+html[data-yw-theme="futuristic"] #owner566 button:focus-visible,
+html[data-yw-theme="futuristic"] #owner566 select:focus-visible {
+ outline:3px solid #d1a8ff;outline-offset:3px;
+}
+html[data-yw-theme="futuristic"] .yw565-command-link[hidden],
+html[data-yw-theme="futuristic"] .yw564-rail-link[hidden] {
+ display:none!important;
+}
+@media(max-width:760px){
+ html[data-yw-theme="futuristic"] #owner566 .panel566 {padding:13px;}
+ html[data-yw-theme="futuristic"] #yw566NavigationStatus{font-size:.73rem;}
+}
+@media(prefers-reduced-motion:reduce){
+ html[data-yw-theme="futuristic"] #owner566 *{transition:none!important;}
+}

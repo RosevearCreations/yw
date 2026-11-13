@@ -1,0 +1,32 @@
+YW566 — Independent Source Stability Drift Forecasting, Owner Escalation Outcome Reconciliation & Cross-Module Command Center Navigation Acceptance
+
+BASIS AND SCOPE
+YW565 production main SHA 6cea0a9a61696d7cf828b112a6b48c9300481e14. Uses original YW556 case, YW561 independently provider-signed receipt, YW562 company owner pilot, YW563 independently signed AI Data Platform Master observation, YW564 SLA/admission ledger, and YW565 24h/7d/30d source-only stability observations.
+
+YW566 IMPLEMENTATION
+1. sql/landscape_master_forecast_566.sql adds RLS-protected immutable original-owner escalation-outcome records and source-only deterministic watch. The source RPC calculates current recorded signed admission/receipt discrepancies from protected YW565 source windows, last signed Master observation, owner-specified escalation and inherited YW564 source SLA. The watch horizon is 24 hours. Classification is grounded in observed signed events, SLA breached/due soon, stale receipt, risk watch, or source stability watch. This is NOT a machine-learning probability, promised future failure time, independent uptime proof or customer-delivery receipt.
+2. Reconciliation is only allowed with exact previously owner-signed YW565 escalation, unchanged original case version and original YW561 provider receipt, a newer independently signed YW563 Master observation AFTER that escalation, YW565 actual source recovery gate still effective, no newer signed risk and an explicit current owner decision. The source-only outcome is SOURCE_RECOVERY_RECONCILED_MASTER_HOLD, never Master ACCEPTED or CONNECTED.
+3. Original-owner UI (js/landscape-master-forecast-566.js) permits explicit source-only followup request, recording an open original escalation, or reconciling genuinely signed source recovery. Exact company/case/receipt, signed observation, original escalation, 15–500 character reason and personal attestation are passed to the protected RPC. Idempotency is enforced, source case locked, foreign company/signout/stale records fail closed.
+4. Platform-shell aggregate RPC exposes ONLY source counts and explicit Master/connected/recipient evidence flags false; no company, customer or case IDs in exported payload.
+
+NAVIGATION ACCEPTANCE
+- js/command-navigation-acceptance-566.js checks the actual sections (company, today, finance, admin, toolbox, settings, sysop), original offered navigation anchors, and authenticated session before each command/rail shortcut is offered. Verified YW550 Sysop link remains mandatory for Sysop. A route hidden by original module remains hidden; stale clicked destination is blocked rather than pretending navigation succeeded.
+- The old #it destination is absent from the current original index.html; YW566 removes it from both command deck and rail. System operations uses real #settings and existing curated #sysop. There is no new generic I.T. module invented and no command Shell privilege bypass.
+- Existing Standard · Blue remains the original default, with no global CSS modifications. Futuristic · Violet remains opt-in and adds YW566 navigation acceptance status and styled source risk panels. 390px/768px/1440px verified routes, active link state, keyboard focus, accessible selected route and logout behavior are included. Navigation acceptance is not Master connection proof and is not a system or security audit certificate.
+
+PROTECTED DATABASE PREREQUISITES — LIVE HOLD
+The connected YardWeasels Supabase project jmqvkgiqlimdhcofwkxr, rechecked November 13, did NOT have YW556 original cases, YW561 verified receipts, YW563 signed observations, or YW565 stability reviews. Do not apply YW566 out of dependency order or claim production source runtime GREEN. Only an independently approved DBA may install YW553–565 in order and then YW566, after checking RLS and actual original source signing custody. Synthetic CI signatures and mock browser receipts are NOT live runtime evidence. Source owner actions remain unavailable until installed correctly.
+
+ACCEPTANCE AND RELEASE
+Run:
+ npm run test:landscape-master-forecast-566
+ npm run test:browser:landscape-master-forecast-566
+Both also run inside retained protected YW558 original-owner source and browser lanes. Test 390/768/1440px and hidden unauthorized sections. Verify no unsafe direct browser insert/update/delete, no tenant exports, and no synthetic Master-connected assertions.
+
+Promote reviewed feature PR → dev, require protected source and browser checks, exact Vercel preview READY, then reviewed dev → main PR and exact production Vercel deployment READY. Verify main GitHub Actions post-merge success, release-source-evidence/truth-summary and exact dev/main SHA convergence before code Production GREEN.
+
+SANITIZED THREE-MASTER HANDOFF
+MASTER566-YW-DRIFT-ESCALATION-NAV | source=yw | source_role=platform_shell | tenant_boundary=platform_shell | drift_forecast=RECORDED_SIGNED_SOURCE_WATCH_ONLY | owner_outcome=IMMUTABLE_SOURCE_ONLY | original_signed_receipts=HOLD_UNTIL_APPROVED_DB_CHAIN | customer_delivery=UNVERIFIED | master_owner_acceptance=HOLD | connected=HOLD | themes=STANDARD_BLUE_DEFAULT_FUTURISTIC_VIOLET_OPT_IN | navigation=REAL_DESTINATIONS_CURATED_SYSOP
+
+NEXT PROPOSED BUILD
+YW567 — Independent Escalation Reopen Monitoring, Source SLA Remediation Audit & Accessible Operations Command Drilldown.
