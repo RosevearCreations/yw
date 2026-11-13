@@ -65,7 +65,21 @@ serve(async req=>{
    p_canonical_sha256:verified.canonical_sha256,
    p_signature_sha256:verified.signature_sha256,
   });
-  if(observation.error||!observation.data||
+  if(observation.error){
+   // Only a fully verified and independently pinned signed observation can
+   // produce YW564 telemetry. Hash opaque identifiers; never log raw tokens,
+   // payloads, private signatures or original customer information.
+   await sb.rpc('ywi_rpc_landscape_master_replay_signal_564',{
+    p_company_id:p.company_id,p_request_id:p.request_id,
+    p_provider_verified_receipt_id:p.provider_verified_receipt_id,
+    p_issuer:p.issuer,p_key_id:p.key_id,
+    p_nonce_fingerprint:await sha256hex(new TextEncoder().encode(p.nonce)),
+    p_signature_sha256:verified.signature_sha256,
+    p_master_ref_fingerprint:await sha256hex(new TextEncoder().encode(p.master_receipt_ref)),
+   });
+   return fail(409);
+  }
+  if(!observation.data||
    observation.data.master_owner_accepted!==false||
    observation.data.customer_delivery_verified!==false||
    typeof observation.data.comparison!=='string')

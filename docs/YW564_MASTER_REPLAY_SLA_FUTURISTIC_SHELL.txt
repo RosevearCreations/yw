@@ -1,0 +1,43 @@
+YW564 — Protected Master Receipt Replay Monitoring, Original Company Resolution SLA & Independent Cross-Plane Evidence Renewal
+Plus: dual-theme Yard Workers Shell — Standard Blue and Futuristic Violet
+
+SOURCE DESIGN REFERENCE
+UI_Application_Recreation_Specification(10).pdf, section 11 (pages 25–26)
+and Admin Dashboard (pages 5–6), plus Settings/Appearance (pages 23–24).
+The supplied document is a blueprint for a generic maker-business application, NOT a direct list of Yard Workers landscaping modules or actual metrics. YW564 adapts its shared-shell visual language: deep navy cards, violet active rail, cool-blue informational accents, compact KPI/status regions, sticky header, responsive navigation, contrast/focus states, and desktop/tablet/mobile behavior. Existing Yard Workers roles, jobs, route, payroll, property operations, source permissions and reporting retain their current semantics.
+
+THEME MODES
+- Standard · Blue: current production CSS remains untouched as the default. No global CSS declarations in the new theme stylesheet alter Standard.
+- Futuristic · Violet: selected using the header's Appearance control. Applies scoped CSS design tokens, deep midnight surfaces, violet primary/focus accents, fine cool-blue borders, compact cards/navigation, status-color semantics, and authorized desktop command rail. Tablet/mobile retains the existing main menu; the extra desktop rail hides to avoid obscuring content. Respects reduced motion, keyboard focus, accessible labels, touch target sizing.
+- Preference: local UI-only localStorage key yw-theme-v1. No database, operator role or Master execution permission is affected by changing visual preference. Early header bootstrap restores selection before painting when available; localStorage failure defaults safely to Standard.
+- Desktop platform rail: shows only to authenticated users; Sysop shortcut remains hidden until the pre-existing curated Sysop verification link is visible. It is strictly a navigation shortcut, not authorization.
+- Company vs platform: YW550 verified company operations and platform Sysop statistics remain separate; the new theme does not expose cross-tenant records.
+- Future reuse: new token set is a starting design system for other shell modules, but this build changes Yard Workers only; it does not mutate iCamp or three-Master repositories.
+
+PROTECTED RUNTIME CONTRACT
+Requires existing authorized YW553–563 migrations, exact original YW561 signed provider report, YW562 source pilot owner decision, and YW563 independently signed AI Data Platform Master observation. At authoring, connected YardWeasels Supabase project jmqvkgiqlimdhcofwkxr did NOT have predecessor YW556, YW561 or YW562 tables. They must be installed in approved order by the original DBA with RLS/permissions and real signer custody; YW564 never assumes they exist.
+
+- sql/landscape_master_continuity_564.sql creates append-only hashed signed-admission exception ledger, RLS original company owner read, service-role-only replay-signal ingestion, per-company renewal request ledger and owner-gated decision RPCs.
+- supabase/functions/landscape-master-receipt-563/index.ts is extended: only AFTER verifying an ACTIVE independently pinned Ed25519 Master signer and the strict original canonical payload, and ONLY if YW563 protected admission rejects it, submit SHA-256 hashes of nonce/master receipt reference plus verified signature SHA-256 to protected YW564 replay telemetry. No bearer secrets, original signed payloads or credentials in the telemetry record. This records a protected signed ADMISSION REJECTION signal, NOT automatic proof of a malicious replay. Rejected/failed signature before verification must never be recorded as a verified Master signal.
+- ywi_rpc_landscape_master_continuity_review_564 performs original owner authentication and exact original company/case/source receipt binding, links signed YW563 observations, calculates signed replay/admission exception count and latest time, classifies MATCHED_INDEPENDENT_SOURCE_CLAIM / SIGNED_REPLAY_OR_ADMISSION_EXCEPTION / CROSS_PLANE_DISCREPANCY / MISSING_INDEPENDENT_MASTER_RECEIPT / ORIGINAL_CLOSURE_OR_STALE_RECEIPT_HOLD / SOURCE_PILOT_HOLD and computes derived SLA due dates from records (1h for signed admission exception, 4h for discrepancy, 24h for missing, stale or matched source), with WITHIN_TARGET / DUE_SOON / BREACHED / HOLD_NO_ORIGINAL_SOURCE.
+- ywi_rpc_landscape_master_renewal_decide_564 permits an authenticated original owner with explicit case version, signed receipt ID, exact Master observation ID, nonce and note/attestation to request_signed_cross_plane_renewal, acknowledge_resolution_sla_breach only when actually breached, or review_independently_renewed_source only when a NEW signed YW563 matching Master observation was verified after the owner request. All decisions are immutable and idempotency-protected; 30-minute renewal request anti-spam window. They never accept Master runtime, send customer messages, or prove independent customer delivery.
+- ywi_rpc_landscape_master_continuity_summary_564 is platform-shell aggregate-only, callable by service_role only, includes no tenant IDs or individual evidence.
+
+TESTING/INSTALLATION
+1. Apply all earlier original YW553–563 schema and verified owner helpers through approved DBA migration process; never start 564 if any dependency is absent.
+2. Apply YW564 SQL only after verifying original company/case tables and RLS. Verify anonymous/foreign-company owner is denied, original owner can only read own source, browser has no INSERT/UPDATE/DELETE on protected ledgers, and RPCs use exact current source version.
+3. Original independent signer must be enrolled via separate YW563 custody controls; protected receiver token remains server-only. Submit a real signed Ed25519 Master observation, observe distinct successful exact match and rejected admission status; distinguish protected telemetry from the external service's actual deliverability.
+4. Test stale/revoked signer, replay nonce, conflicting exact Master receipt ref, wrong case version, wrong company, canonical hash mismatch, original source closure HOLD. No test signature or simulated Master receipt should be persisted as live production proof.
+5. Owner opens Settings → Landscaping · Protected Master Replay, SLA & Evidence Renewal, selects owned company, original case and verified provider receipt, and requests recheck/acknowledges genuine SLA/reviews new independent evidence only when protected status permits. Signout clears evidence.
+6. Validate both theme modes at 390, 768 and 1440 px; standard default is unchanged, toggling and returning to Standard is reversible, Futuristic sidebar is absent on narrow screens, keyboard focus usable, and platform Sysop link remains hidden without curated verification.
+7. Run:
+   npm run test:landscape-master-continuity-564
+   npm run test:browser:landscape-master-continuity-564
+   Both are also included in protected test:landscape-supervisor-resolution-558 source/browser lanes.
+8. Protected dev PR checks, main promotion checks, exact main deployment READY, active production alias, post-merge source and browser checks, release evidence and dev/main reconciliation are mandatory before code Production GREEN. Do not bypass Vercel build quota or GitHub protections.
+
+SANITIZED THREE-MASTER HANDOFF
+MASTER564-YW-REPLAY-SLA-RENEWAL | controller=ai-data-platform | source=yw | source_role=platform_shell | tenant_boundary=platform_shell | code=GREEN_ONLY_WHEN_EXACT_MAIN_VERCEL_AND_CI_GREEN | independent_master_signer=HOLD_UNTIL_REAL_CUSTODY | signed_replay_monitoring=HOLD_UNTIL_REAL_ED25519_RUNTIME | original_company_sla=SOURCE_RECORDS_ONLY | renewal=NEW_EXACT_SIGNED_MASTER_OBSERVATION_REQUIRED | master_owner_acceptance=HOLD | customer_delivery=UNVERIFIED | connected=HOLD | tenant_export=NONE
+
+NEXT PROPOSED BUILD
+YW565 — Independent Cross-Plane SLA Recovery Effectiveness, Long-Horizon Receipt Stability & Unified Platform Operations Command Theme Rollout.
