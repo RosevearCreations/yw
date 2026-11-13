@@ -1,0 +1,357 @@
+/* YW564 FUTURISTIC — additional theme, never a replacement for Standard Blue.
+   Inspired by the supplied UI Application Recreation Specification, §11:
+   deep navy surfaces, violet active rail, cool-blue info, semantic status,
+   compact KPI panels, clear hierarchy and responsive navigation.
+   All new rules are scoped to the explicit theme data attribute. */
+
+html[data-yw-theme="futuristic"] {
+  color-scheme: dark;
+  --bg:#070b18;
+  --bg-soft:#0b1329;
+  --panel:#0e1a30;
+  --panel-2:#12203a;
+  --panel-3:#1a2c47;
+  --line:rgba(148,166,204,.23);
+  --line-strong:rgba(176,147,255,.48);
+  --text:#eef4ff;
+  --text-soft:#c2cde3;
+  --text-faint:#a8bad6;
+  --accent:#b58aff;
+  --accent-2:#5acaff;
+  --success:#42e1b0;
+  --warn:#ffcf6b;
+  --danger:#ff7a98;
+  --shadow:0 20px 56px rgba(0,0,0,.33);
+  --radius:16px;
+  --radius-sm:12px;
+  --radius-xs:9px;
+  --font:Inter,"Segoe UI Variable","Segoe UI",ui-sans-serif,system-ui,sans-serif;
+}
+html[data-yw-theme="futuristic"] body {
+  background:
+    radial-gradient(ellipse 66% 35% at 78% -8%,rgba(116,68,220,.17),transparent 75%),
+    radial-gradient(ellipse 54% 46% at -7% 64%,rgba(33,105,170,.12),transparent 72%),
+    linear-gradient(145deg,#070b18,#0a1326 52%,#08101e);
+  color:var(--text);
+  min-height:100vh;
+  letter-spacing:.006em;
+}
+html[data-yw-theme="futuristic"] body::before {
+  content:"";
+  pointer-events:none;
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  opacity:.1;
+  background-image:linear-gradient(rgba(155,135,210,.26) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(155,135,210,.22) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.7),transparent 76%);
+}
+html[data-yw-theme="futuristic"] .app-header {
+  background:linear-gradient(180deg,rgba(6,10,22,.97),rgba(9,16,34,.95));
+  border-bottom:1px solid rgba(156,111,249,.29);
+  box-shadow:0 9px 38px rgba(0,0,0,.22);
+  backdrop-filter:blur(20px) saturate(145%);
+}
+html[data-yw-theme="futuristic"] .app-header h1 {
+  margin-bottom:0;
+  font-size:clamp(1.08rem,1.7vw,1.48rem);
+  letter-spacing:.045em;
+  background:linear-gradient(96deg,#fff,#c5b1ff 62%,#72d6ff);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  font-weight:790;
+}
+html[data-yw-theme="futuristic"] .app-header .header-top {
+  gap:10px 18px;
+  align-items:center;
+}
+html[data-yw-theme="futuristic"] .app-header .header-session {
+  background:rgba(17,30,55,.78);
+  border:1px solid rgba(151,125,225,.25);
+}
+html[data-yw-theme="futuristic"] .main-menu-toggle {
+  background:rgba(18,31,52,.9);
+  border:1px solid var(--line);
+  color:var(--text);
+}
+html[data-yw-theme="futuristic"] .app-header nav a {
+  border-radius:10px;
+  padding:8px 12px;
+  border:1px solid rgba(144,160,199,.12);
+  background:rgba(21,32,54,.57);
+  color:#d6ddef;
+  font-size:.85rem;
+  font-weight:650;
+}
+html[data-yw-theme="futuristic"] .app-header nav a:is(:hover,:focus-visible) {
+  border-color:rgba(172,134,248,.55);
+  background:rgba(121,71,203,.17);
+  color:#fff;
+}
+html[data-yw-theme="futuristic"] .app-header nav a.active,
+html[data-yw-theme="futuristic"] .app-header nav a[aria-current="page"] {
+  background:linear-gradient(110deg,rgba(126,70,228,.29),rgba(70,89,202,.13));
+  border-color:rgba(181,138,255,.56);
+  box-shadow:inset 3px 0 0 #b58aff,0 0 20px rgba(125,81,229,.11);
+  color:#fff;
+}
+html[data-yw-theme="futuristic"] :is(.card,.auth-card,.card-lite,
+  .admin-hub-detail,.yw550-workspace-card,.yw550-metrics article,
+  .admin-panel-block,.admin-stat-card) {
+  background:linear-gradient(155deg,rgba(18,33,58,.95),rgba(10,20,39,.98));
+  border-color:rgba(147,163,202,.21);
+  box-shadow:0 16px 44px rgba(1,3,14,.25),inset 0 1px 0 rgba(220,228,255,.035);
+  border-radius:var(--radius);
+}
+html[data-yw-theme="futuristic"] .card.active {
+  border-top:1px solid rgba(188,137,255,.38);
+}
+html[data-yw-theme="futuristic"] :is(h2,h3) {
+  letter-spacing:.025em;
+}
+html[data-yw-theme="futuristic"] h2 {
+  color:#f4efff;
+  font-weight:760;
+}
+html[data-yw-theme="futuristic"] :is(.section-heading,.panel-heading) {
+  border-bottom:1px solid rgba(148,166,204,.12);
+  padding-bottom:11px;
+}
+html[data-yw-theme="futuristic"] :is(.admin-stat,
+  .stat-card,.metric-card,.kpi-card,.dash-stat,.ops-stat,.yw550-metrics article) {
+  border:1px solid rgba(147,163,202,.27);
+  border-radius:14px;
+  background:linear-gradient(145deg,rgba(18,29,55,.96),rgba(12,25,46,.88));
+  box-shadow:inset 0 1px 0 rgba(208,189,255,.06);
+}
+html[data-yw-theme="futuristic"] :is(.admin-stat,.stat-card,.kpi-card,.metric-card) strong {
+  color:#e7d8ff;
+  font-variant-numeric:tabular-nums;
+}
+html[data-yw-theme="futuristic"] button.primary,
+html[data-yw-theme="futuristic"] :is(input[type="submit"],.button-primary) {
+  color:#fff;
+  background:linear-gradient(118deg,#6d44c4,#7951da 64%,#4d75ce);
+  border:1px solid #9473f2;
+  border-radius:10px;
+  box-shadow:0 3px 16px rgba(103,66,188,.22),inset 0 1px 0 rgba(255,255,255,.12);
+}
+html[data-yw-theme="futuristic"] button.secondary,
+html[data-yw-theme="futuristic"] button:not(.primary):not(.secondary) {
+  color:#e0d8f4;
+  background:rgba(28,39,65,.66);
+  border:1px solid rgba(166,145,217,.3);
+  border-radius:10px;
+}
+html[data-yw-theme="futuristic"] button:is(:hover,:focus-visible):not(:disabled) {
+  border-color:#c6a6ff;
+  filter:brightness(1.065);
+}
+html[data-yw-theme="futuristic"] :is(input,select,textarea) {
+  accent-color:#b58aff;
+}
+html[data-yw-theme="futuristic"] :is(input[type="text"],input[type="email"],
+  input[type="password"],input[type="date"],input[type="time"],input[type="number"],
+  select,textarea) {
+  background:rgba(6,12,29,.75);
+  border-color:rgba(147,161,197,.32);
+  color:#eaf1ff;
+  border-radius:10px;
+}
+html[data-yw-theme="futuristic"] :is(input,select,textarea):focus-visible {
+  outline:2px solid #c9aeff;
+  outline-offset:2px;
+  border-color:#a985f9;
+  box-shadow:0 0 0 4px rgba(173,121,251,.15);
+}
+html[data-yw-theme="futuristic"] :is(a,button,[tabindex]):focus-visible {
+  outline:2px solid #d1b5ff;
+  outline-offset:3px;
+}
+html[data-yw-theme="futuristic"] :is(table,.admin-table) {
+  border-color:rgba(151,163,194,.2);
+}
+html[data-yw-theme="futuristic"] :is(th,thead th) {
+  color:#d5c6fa;
+  background:rgba(59,46,107,.28);
+  text-transform:none;
+}
+html[data-yw-theme="futuristic"] :is(td,th) {
+  border-bottom-color:rgba(149,163,199,.14);
+}
+html[data-yw-theme="futuristic"] :is(tr:hover td,.admin-table tr:hover td) {
+  background:rgba(130,93,206,.065);
+}
+html[data-yw-theme="futuristic"] :is(.notice,.alert,.status-card) {
+  border-radius:12px;
+}
+html[data-yw-theme="futuristic"] :is(.yw550-workspace-nav a,.module-section-nav a) {
+  background:rgba(18,31,53,.8);
+}
+html[data-yw-theme="futuristic"] .yw550-workspace-nav a[aria-current="page"] {
+  background:rgba(120,74,211,.24);
+  border-color:#b58aff;
+}
+html[data-yw-theme="futuristic"] .yw550-workspace-card {
+  border-top:2px solid rgba(179,126,250,.5);
+}
+html[data-yw-theme="futuristic"] .yw550-metrics {
+  gap:14px;
+}
+html[data-yw-theme="futuristic"] .yw550-metrics strong {
+  color:#e1d0ff;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+
+/* The selector belongs to the shared app header and is available when signed in
+   or signed out; switching does not alter data access or application roles. */
+.yw564-theme-control {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  padding:6px 10px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,184,.27);
+  background:rgba(10,18,37,.56);
+}
+.yw564-theme-label {
+  color:var(--text-soft,#d0d9ea);
+  font-size:.76rem;
+  letter-spacing:.065em;
+  text-transform:uppercase;
+  font-weight:750;
+}
+.yw564-theme-select {
+  font:inherit;
+  width:auto;
+  min-width:178px;
+  max-width:100%;
+  min-height:40px;
+  padding:8px 10px;
+  border-radius:9px;
+  border:1px solid rgba(148,163,184,.4);
+  background:#111c34;
+  color:#e8efff;
+}
+.yw564-theme-select:focus-visible {
+  outline:2px solid #b58aff;
+  outline-offset:2px;
+}
+.yw564-theme-status {
+  position:absolute;
+  width:1px;height:1px;
+  padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+html[data-yw-theme="futuristic"] .yw564-theme-control {
+  border-color:rgba(184,148,255,.48);
+  background:rgba(49,37,91,.28);
+}
+html[data-yw-theme="futuristic"] .yw564-theme-select {
+  border-color:rgba(184,148,255,.42);
+  color:#f6ecff;
+  background:#161830;
+}
+.yw564-side-rail[hidden],.yw564-side-rail a[hidden] {display:none!important;}
+.yw564-side-rail {display:none;}
+@media (min-width: 1120px) {
+  html[data-yw-theme="futuristic"] .yw564-side-rail:not([hidden]) {
+    display:flex;
+    flex-direction:column;
+    position:fixed;
+    top:clamp(200px,23vh,270px);
+    left:16px;
+    bottom:22px;
+    width:94px;
+    z-index:25;
+    padding:12px 8px;
+    gap:5px;
+    overflow-y:auto;
+    background:linear-gradient(175deg,rgba(18,24,47,.96),rgba(10,19,38,.96));
+    border:1px solid rgba(173,143,239,.37);
+    border-radius:20px;
+    box-shadow:0 18px 52px rgba(0,0,0,.35);
+    scrollbar-width:thin;
+  }
+  html[data-yw-theme="futuristic"] main.container,
+  html[data-yw-theme="futuristic"] .app-supporting-panels {
+    width:min(var(--max-width),calc(100% - 155px));
+    margin-left:max(136px, calc((100% - var(--max-width))/2));
+    margin-right:18px;
+  }
+}
+html[data-yw-theme="futuristic"] .yw564-rail-brand {
+  width:46px;
+  min-height:46px;
+  border-radius:14px;
+  margin:0 auto 10px;
+  display:grid;
+  place-items:center;
+  font-size:1.05rem;
+  font-weight:850;
+  letter-spacing:.09em;
+  background:linear-gradient(130deg,#482b98,#4337a0 62%,#1f86b0);
+  border:1px solid rgba(191,172,255,.58);
+  color:#fff;
+}
+html[data-yw-theme="futuristic"] .yw564-rail-link {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  min-height:61px;
+  gap:2px;
+  border-radius:12px;
+  border:1px solid transparent;
+  color:#b9c6df;
+  text-decoration:none;
+  padding:7px 3px;
+  transition:background .15s ease,border-color .15s ease;
+}
+html[data-yw-theme="futuristic"] .yw564-rail-link:is(:hover,:focus-visible) {
+  background:rgba(121,81,201,.22);
+  border-color:rgba(170,128,247,.4);
+  color:#fff;
+}
+html[data-yw-theme="futuristic"] .yw564-rail-link[aria-current="page"] {
+  color:#f5eeff;
+  background:linear-gradient(125deg,rgba(139,78,220,.35),rgba(61,56,145,.15));
+  border-color:rgba(173,131,250,.59);
+  box-shadow:inset 3px 0 0 #b58aff;
+}
+html[data-yw-theme="futuristic"] .yw564-rail-glyph {
+  font-size:1.35rem;
+  line-height:1.25;
+}
+html[data-yw-theme="futuristic"] .yw564-rail-text {
+  font-size:.69rem;
+  font-weight:650;
+}
+@media (max-width:1119px) {
+  html[data-yw-theme="futuristic"] .yw564-side-rail {display:none!important;}
+}
+@media (max-width:760px) {
+  .yw564-theme-control {width:100%;justify-content:flex-start;}
+  .yw564-theme-select{flex:1 1 170px;min-width:0;}
+  html[data-yw-theme="futuristic"] .app-header {padding:10px 12px;}
+  html[data-yw-theme="futuristic"] .container,
+  html[data-yw-theme="futuristic"] .app-supporting-panels {width:calc(100% - 24px);}
+  html[data-yw-theme="futuristic"] :is(.card,.auth-card) {padding:15px;}
+  html[data-yw-theme="futuristic"] .yw550-metrics {grid-template-columns:1fr;}
+  html[data-yw-theme="futuristic"] .app-header nav a {min-height:40px;}
+}
+@media (prefers-reduced-motion:reduce) {
+  html[data-yw-theme="futuristic"] *,
+  html[data-yw-theme="futuristic"] *::before,
+  html[data-yw-theme="futuristic"] *::after {
+    scroll-behavior:auto!important;
+    animation-duration:.01ms!important;
+    transition-duration:.01ms!important;
+  }
+}
