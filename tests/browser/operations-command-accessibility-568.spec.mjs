@@ -49,7 +49,7 @@ async function setup(page,width=390){
    from(table){
     if(table!=='ywi_companies')throw Error('No other data surface allowed');
     const q={select(){return q},eq(){return q},async limit(){
-     return {error:null,data:[{id:ids.company,owner_user_id:ids.user}]}};
+     return {error:null,data:[{id:ids.company,owner_user_id:ids.user}]};
     }};return q;
    },
    async rpc(name){
