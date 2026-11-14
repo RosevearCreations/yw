@@ -88,7 +88,7 @@ test('YW568 revoked route, changed theme, signout and selection invalidate prior
  await setup(page);
  await page.locator('#owner568Refresh').click();
  await expect(page.locator('#owner568Status')).toContainText('SOURCE_RESOLUTION_VERIFIED_MASTER_HOLD');
- await page.locator('#owner568Receipt').dispatchEvent('change');
+ await page.locator('#owner567Receipt').dispatchEvent('change');
  await expect(page.locator('#owner568Status')).toContainText('HOLD');
  await page.locator('#yw565Command li[hidden]').evaluate(el=>el.hidden=false);
  await page.locator('#owner568NavCheck').click();
