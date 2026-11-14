@@ -24,6 +24,7 @@ const files = [
   'theme-futuristic-564.css',
   'theme-operations-command-565.css',
   'theme-navigation-acceptance-566.css',
+  'theme-operations-drilldown-567.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',
