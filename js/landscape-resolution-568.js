@@ -98,6 +98,10 @@
     if(offered)checked++;
    }
   }
+  if(!failed&&checked===0){
+   el.textContent='HOLD — no authorized accessible module route is available to verify.';
+   return;
+  }
   el.textContent=failed?
    'ACCESSIBILITY REGRESSION HOLD — '+failed+' route/summary mismatches; no authorization implied.':
    'LOCAL NAVIGATION CHECK PASS — '+checked+' offered routes with native keyboard summaries; real module access remains role-gated.';
