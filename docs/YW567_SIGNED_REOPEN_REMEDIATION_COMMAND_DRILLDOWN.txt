@@ -1,0 +1,29 @@
+YW567 — Independent Escalation Reopen Monitoring, Source SLA Remediation Audit & Accessible Operations Command Drilldown
+
+PRODUCTION BASELINE
+YW566 exact main SHA: 434ab91bb7b2b4524a254a408d1f9c9e8492e8c3.
+Yard Workers admin shell: https://yw-alpha.vercel.app/#sysop
+Rosevear Landscaping company workspace: https://yw-alpha.vercel.app/#company
+Both are authenticated route entrypoints to the same application; neither link bypasses original company or independently curated platform Sysop authority.
+
+FUNCTIONS
+1. sql/landscape_master_remediation_567.sql — RLS-protected append-only owner evidence table. Original company owner can only read their own entries; writes occur ONLY through a narrowly scoped security-definer RPC after original owner identity, case version, exact provider-signed source receipt, independently signed Master source observation and explicit attestation. Case is row-locked; conflicting idempotency replays rejected. No customer messages, job/dispatch mutation, impersonation or Master receiver ON accepted.
+2. Source review RPC joins independent YW566 signed-source owner reconciliation to subsequent REAL YW563 Master observations, YW564 source SLA state and latest signed risk, plus original owner YW567 reopen/audit records. A new signed risk after reconciliation marks REOPEN_NEW_INDEPENDENT_SIGNED_RISK, breached original-company SLA demands remediation, stale independent receipt remains HOLD. After an original reopen, a newer signed matching Master observation, no later risk, current YW566 source recovery and non-breached SLA are necessary before an original owner can attest an audit. SOURCE_REMEDIATION_AUDITED_MASTER_HOLD never means continuous uptime, customer delivery, Master owner acceptance or CONNECTED.
+3. Original-owner UI js/landscape-master-remediation-567.js — owned company/case/receipt picker, current protected review, signed-reopen/independent remediation/SLA status, and one immutable owner attestation. Missing schema, wrong company, stale source or signout remain HOLD. Mobile/tablet/desktop acceptance: 390px/768px/1440px.
+4. Service-role-only YW567 platform-shell aggregate: counts of owner source reopen records, independently signed remediation audits and supervised rechecks, without tenant/customer case IDs or pretend production Master evidence.
+5. Accessible command drilldown js/operations-command-drilldown-567.js and theme-operations-drilldown-567.css. Futuristic · Violet now has native keyboard-operable details/summary for each company, management and system cluster, filtered in real-time against YW566 navigation acceptance and original YW550 Sysop authorization. Focus follows an accepted route to the original module heading. No invented statistics or unapproved routes. Standard · Blue remains untouched and the default.
+6. Branch cleanup: verify candidate source branches with GitHub ancestry against EXACT production main, mark merged heads only for cleanup in GitHub issue/manifest. Preserve dev/main and any diverged/unmerged branches. The current connected GitHub action list cannot delete branch refs, so never claim branch deletion without a verified delete result.
+
+RUNTIME HOLD AND DEPENDENCIES
+As rechecked November 13, the connected YardWeasels Supabase project jmqvkgiqlimdhcofwkxr still has NO YW556 recovery cases, YW561 signed receipts, YW563 signed Master observation table or YW566 original owner escalation table. Do NOT apply YW567 migration until DBA-approved YW553–566 predecessors are installed, RLS tested, and genuine original-owner/provider/master signer evidence is obtained. A Vercel release is code delivery only; the original signed runtime and Master receiver remain HOLD.
+
+RELEASE ACCEPTANCE
+npm run test:landscape-master-remediation-567
+npm run test:browser:landscape-master-remediation-567
+These are retained in protected YW558 source+browser lanes. Source check enforces source-only immutable RLS, exact attestation and typed source proof; browser exercises 390/768/1440 owner review, signed new risk versus missing evidence, and authenticated accessible command navigation with hidden Sysop/source modules. Require feature PR source/browser/security checks and exact READY preview, reviewed merge to dev, protected production dev→main PR success, exact main Vercel production READY + alias, post-merge GitHub release evidence and truth summary success, and dev/main SHA convergence before claiming code Production GREEN.
+
+THREE-MASTER SANITIZED HANDOFF
+MASTER567-YW-SOURCE-REMEDIATION-DRILLDOWN | source=yw | source_role=platform_shell | tenant_boundary=platform_shell | original_signed_risk_reopen=OWNER_SOURCE_ONLY | signed_remediation_audit=ORIGINAL_OWNER_AND_NEW_INDEPENDENT_MASTER_OBSERVATION_REQUIRED | next_source_audit=HOLD_UNTIL_REAL_DATA | customer_delivery=UNVERIFIED | master_owner_acceptance=HOLD | connected=HOLD | theme=STANDARD_BLUE_DEFAULT_FUTURISTIC_VIOLET_OPT_IN | admin_route=/#sysop | sample_company_route=/#company
+
+NEXT PROPOSED BUILD
+YW568 — Independent Remediation Recurrence Watch, Owner Sign-Off Evidence Retention & Operations Command Deep-Link Recovery Audit.
