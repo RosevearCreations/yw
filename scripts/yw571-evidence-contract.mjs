@@ -66,7 +66,8 @@ export function verifyDisposition571(envelope,trust,now=Date.now()){
   return fail('HOLD_DISPOSITION_SCOPE','Original source, tenant, signer, source revision, or authority boundary mismatch.');
  const observed=ms(payload.source_observed_at),issued=ms(payload.issued_at),expires=ms(payload.expires_at);
  if(!Number.isFinite(observed)||!Number.isFinite(issued)||!Number.isFinite(expires)||
-    issued>now+120000||observed>issued||issued-observed>24*3600000||
+    issued>now+120000||observed>issued||observed>now+120000||
+    now-observed>24*3600000||issued-observed>24*3600000||
     now-issued>24*3600000||expires<=now||expires-issued>24*3600000||
     issued<now-24*3600000)
   return fail('HOLD_EXPIRED_DISPOSITION','Signer, original-source observation, or bounded expiry is stale.');
