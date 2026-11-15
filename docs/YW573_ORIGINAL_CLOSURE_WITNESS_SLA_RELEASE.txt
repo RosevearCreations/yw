@@ -1,0 +1,38 @@
+YW573 — DURABLE ORIGINAL SOURCE DISPOSITION, INDEPENDENT TWO-WITNESS QUORUM & SIGNED SLA RENEWAL
+2026-11-15 | RosevearCreations/yw
+Base: main 498d336e21a09886f0be2db7401c2b880362dd0f (YW572 plus independently authorized Build407 Slave Shell banner).
+Known pre-feature dev 1ffc27b2e9bbf5eb55550742e5dadb48b3ef9ae3, whose index.html blob matches main's index.html exactly. Histories diverged; preserve both, reconcile by a protected feature→dev→main merge and non-force dev fast-forward. Never rewrite either branch or drop the banner.
+
+CODE IMPLEMENTED
+- scripts/yw573-disposition-ledger.mjs: genuine Node P-256 signature checks of original YW572 enrolled signed receipt, fully canonicalized identical witness payload, independent out-of-band owner and independent custodian pins. Witness receipts bind original owner company, case, provider verified receipt, audit, original observation, nonce and disposition, original registry hash, exact Git source revision. No self-enrolled signers or client-controlled closure verdict.
+- Four-hour maximum fresh witness validity; original YW571/YW572 source freshness, issuer revocation and audience/tenant checks remain mandatory. Missing/outdated/foreign/wrong-case/one-witness/shared-key/altered proof yields source HOLD.
+- Signed SLA renewal outcome verifies two distinctly signed original source observations with source nonce, observation ID, ordering, exact original scope and independently governed registry. Returns verified two-source observation continuity, NOT historical SLA-recovery rate or Master admission.
+- PostgresDisposition573 performs original *durable* YW572 source custody readback and atomic INSERT/ON CONFLICT DO NOTHING into private YW573 disposition ledger in a single server-only transaction, rolling back on ambiguity or replay. No browser/in-memory store may grant admission. No such live database admission is claimed.
+- docs/security/YW573_STAGING_ONLY_DISPOSITION_SCHEMA.sql is staging-only, NOT executed. Requires earlier YW556/561/563/566/567/572 migrations, backup and explicitly approved DBA/owner production migration.
+- js/source-witness-573.js is an original-owner read-only, RLS-verified source and 7-app authority HOLD panel. No key material, external dispatch, MASTER theme toggle or customer events.
+- Protected Node and Playwright 360/390/768/1024/1440 tests assert signer failures, source revival and replay, owner role/tenant boundaries, keyboard navigation, Standard/Futuristic theme isolation and Slave Shell label.
+
+SECURITY STATUS
+1 Authenticated source owner / tenant RLS from YW567 chain. 
+2 Independent two-witness P-256 quorum must be proven out-of-band and verified by server — NOT automatically enrolled.
+3 Postgres YW572 source custody and YW573 disposition ledger not installed by this source release; no durable runtime admission claim.
+4 Three Master ACKs / original-host receiver OFF/ON authority / customer delivery remain HOLD.
+5 Master apps' shared visual theme and external Devil n Dove/Rosie message ACKs require separate actual changes, exact production deployments and signed runtime proof, never derived from this YW deployment.
+
+CROSS-APP GOVERNANCE
+Order: ai-data-platform (Master) → rosevear-ai-hub (Master) → rosevear-comms-hub (Master) → iCamp (independent campground Slave PRODUCT shell) → YW (landscape Slave PRODUCT shell; Rosevear Landscaping tenant) → devilndove (internal company) → rosiedazzlers (internal company).
+Canonical desired Master theme is ONE common instrument-style theme, consistency test needed in each of THREE Master app deployments; source-only target is docs/integration/YW573_MASTER_SHELL_COMMS_HANDOFF.json. Do NOT claim these three apps visually match unless checked independently.
+YW production Build407 banner text 'SLAVE APPLICATION SHELL' verified in both divergent branches' identical index.html. iCamp banner needs independently verified iCamp release; YW must not modify that repo without its own protected promotion.
+Devil n Dove and Rosie Dazzlers need authenticated Comms & AI data service-to-service publisher/audience allowlists, independent signed event envelopes, nonce storage, tenant separation, revocation and actual ACK/delivery tests. Source packet alone does not connect them.
+Never share app secrets or transport signing keys in public GitHub source.
+
+RELEASE GATE
+- feature PR into dev: exact SHA Vercel preview READY, 4 GitHub source/auth/browser workflows success; verify merge includes both Build407 commits without conflict or code loss.
+- protected dev/main PR: exact dev preview READY, all checks success. Merge; verify main target production READY, alias yw-alpha.vercel.app exact main SHA, exact-main post-push source/3 browser/repo enforcement/release source evidence/release truth summary all green.
+- dev non-force fast-forward to exact main SHA after production green; compare both directions identical. Treat product CODE GREEN separately from real independent signed source/runtime CONNECTED HOLD.
+
+BRANCH CLEANUP
+Only dev and main should be retained as active branches. Before deleting any non-default branch, compare its unique commits against main AND dev; delete only fully merged/redundant refs. Keep unmerged original work safe and flag for owner. GitHub connector used here cannot delete branch refs; no false deletion claims. New YW573 feature branch is temporary until protected promotion is verified.
+
+NEXT PROPOSED: YW574 — Ordered YW556–573 Database Provenance, Staging-Only Migration Safety & Production Parity Ceremony.
+AFTER YW573: Proposed YW574–YW581 (eight numbered roadmap builds). Unknown true terminal total; no independently measured +10 percentage point improvement recorded.
