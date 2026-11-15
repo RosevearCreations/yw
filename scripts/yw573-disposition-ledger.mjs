@@ -108,8 +108,8 @@ export async function admitDisposition573(witness,source,registry,roots,trust,st
 }
 export class PostgresDisposition573{
  kind='postgres-disposition-unique-ledger-573';
- constructor(db){if(!db||typeof db.query!=='function'||typeof db.connect!=='function')
-   throw Error('Dedicated server-only transactional PostgreSQL driver required');this.db=db;}
+ constructor(db){if(!db||typeof db.connect!=='function')
+   throw Error('Dedicated server-only transactional PostgreSQL connection pool required');this.db=db;}
  async verifySourceAndClaimIfAbsent(r){
   const client=await this.db.connect();if(!client||typeof client.query!=='function'||typeof client.release!=='function')
    throw Error('Dedicated transactional PostgreSQL client missing');
