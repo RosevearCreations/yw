@@ -557,7 +557,8 @@
     "test:browser:source-assurance-570": "playwright test --config=playwright.config.mjs tests/browser/source-assurance-mobile-570.spec.mjs",
     "test:yw571:evidence": "node scripts/yw571-evidence-contract-check.mjs",
     "test:yw571:source": "node scripts/source-disposition-571-check.mjs",
-    "test:yw571:browser": "playwright test --config=playwright.config.mjs tests/browser/source-disposition-mobile-571.spec.mjs"
+    "test:yw571:browser": "playwright test --config=playwright.config.mjs tests/browser/source-disposition-mobile-571.spec.mjs",
+    "verify:yw571:evidence": "node scripts/yw571-verify-cli.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
