@@ -96,6 +96,15 @@ test('YW571 ordered seven-app handoff permits only explicit NOT_ATTESTED product
  const badTenant=packet();badTenant.apps[4].tenant_boundary='company';
  assert.equal(verifyHandoffShape571(badTenant).ok,false);
 });
+test('YW571 committed seven-app template is explicitly unattested, ordered and free of secrets',()=>{
+ const template=JSON.parse(fs.readFileSync('docs/integration/YW571_SEVEN_APP_UNATTESTED_TEMPLATE.json','utf8'));
+ const result=verifyHandoffShape571(template);
+ assert.equal(result.ok,true);
+ assert.equal(result.connected,false);
+ assert.equal(template.apps.length,7);
+ assert.equal(template.apps.every(a=>a.shared_secret_embedded===false),true);
+ assert.equal(template.apps[4].production_sha,'UNSET_AFTER_RELEASE');
+});
 test('YW571 protected gates contain independent signer and seven-app contract checks',()=>{
  const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
  const html=fs.readFileSync('index.html','utf8');
