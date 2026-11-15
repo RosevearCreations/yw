@@ -1,0 +1,40 @@
+YW572 — SEVEN-APP ZERO-TRUST ISSUER ENROLLMENT REGISTRY, ROTATION & REPLAY CUSTODY
+Date: 2026-11-15; repository RosevearCreations/yw.
+BASELINE: YW571 exact main/dev/production source 50cec6ac28c6cb3e36401d9629a18ac6ef51bf81.
+Feature branch: codex/yw572-issuer-registry-replay-custody-20261115.
+
+CODE IMPLEMENTED
+1) scripts/yw572-issuer-registry.mjs validates a seven-application registry listing exact app identity, role/tenant boundary, signer audience, issuer/key ID, P-256 public-key SPKI SHA-256 pins, bounded validity, rotation state, and explicit revocation.
+   - Registry is admitted only if exact canonical payload has TWO valid independent P-256 governance signatures, one owner and one custodian, verified against independently enrolled public-key fingerprints OUTSIDE the untrusted manifest.
+   - No app can replace a key under an existing key ID, share keys across apps, silently lose revoked key history, resurrect a rotated or revoked key, or have multiple simultaneously active keys under the same issuer.
+   - ACTIVE, GRACE and REVOKED status: a grace key may verify only original receipts issued no later than independently approved rotation and before max 48-hour grace expiration. A new active replacement must exist. Revoked, stale, foreign-audience, altered-tenant, cross-app or unpinned receipts fail closed.
+2) Source-only disposition integration: YW571 independently signed owner/case/provider receipt/source revision is reverified under exact enrolled YW registry key. A cryptographically valid receipt remains VERIFIED_CUSTODY_NOT_ADMITTED until an atomic DB claim succeeds; signature verification alone does NOT imply production receipt custody or Master ACK.
+3) Atomic replay custody: PostgresCustody572 sends parameterized INSERT into a private ywi_security_572.replay_custody table with ON CONFLICT DO NOTHING RETURNING digest. Unique app+tenant+nonce, app+tenant+disposition_id, app+tenant+payload_sha256 constraints prevent duplicate admission across signer rotation.
+   - Missing SQL authority, memory/browser store, write failure, ambiguous SQL result, and repeated nonce fail closed.
+   - The adapter is server-side only. Never expose DB connection/service_role secret or a privileged custody RPC to a browser. No claim of replay protection in production until a separately approved DB schema and actual server-only connection are verified.
+4) docs/security/YW572_STAGING_ONLY_REPLAY_REGISTRY_SCHEMA.sql is a non-executing staging-only design: a private schema, issuer registry, append-only replay ledger, forced RLS, revoked client privileges, three uniqueness constraints, no SECURITY DEFINER functions.
+   - NOT installed in Supabase staging or production by this code release.
+   - Do not apply before verified original YW556/YW561/YW563/YW566/YW567 migrations, fresh DB backup, independent DBA approval, schema/advisor and real anon/authenticated/privileged concurrent-insertion tests.
+5) js/source-security-572.js adds an authenticated owner RLS-protected read-only seven-app security review to existing Futuristic Operations Command. Standard Blue unchanged. No browser key enrollment, storage, admission, original source write, privileged cross-app transport or customer messaging.
+6) Protected source tests: scripts/yw572-issuer-registry-check.mjs and scripts/yw572-source-watch-check.mjs, integrated into test:landscape-supervisor-resolution-558. Protected Playwright viewport 360/390/768/1024/1440, issuer/custody HOLD, current original owner source, revoked routes, theme/logout in tests/browser/source-security-mobile-572.spec.mjs.
+
+ORDERED CROSS-APP SECURITY CONTRACT (NO EXTERNAL ACK CLAIM)
+1 ai-data-platform (Master) → 2 rosevear-ai-hub (Master) → 3 rosevear-comms-hub (Master) →
+4 iCamp (campground product shell) → 5 YW (landscape product shell, Rosevear Landscaping company as tenant) →
+6 devilndove (internal commerce company) → 7 rosiedazzlers (internal detailing company).
+Each app retains independent issuer, key ID/pin, audience, tenant boundary, secrets, production revision and revocation. A signed JSON shape cannot assert actual Comms delivery, independent Master CONNECTED, physical host OFF/ON, business payments, or other-app production acceptance.
+
+REQUIRED OWNER/CUSTODIAN ENROLLMENT (NOT AUTOMATED BY CODE)
+A. Independently verify the owner and custodian identities and out-of-band P-256 root public-key fingerprints, with separate witness IDs and recorded custody approval.
+B. Have each signer approve the exact same canonical registry payload, then validate both signatures against pinned root fingerprints.
+C. Verify every app's independently verified issuer key and audience; rotate by a new dual-signed version preserving prior revoked/grace history.
+D. Backup, dry-run and authorize private SQL only in an isolated staging DB. Independently run concurrent replay and tenant isolation tests before an owner/DBA-approved production migration.
+E. Admit only genuinely signed source-only receipts via protected backend and persistent atomic PostgreSQL unique ledger; store no private keys in the repository, Vercel frontend or GitHub Actions logs.
+
+PROTECTED RELEASE GATE
+Feature PR to dev: exact feature SHA Vercel READY preview, mandatory source/auth/browser workflows GREEN. Merge to dev, ensure exact dev SHA preview READY and protected dev→main PR checks GREEN. Merge to main, require production Vercel exact main SHA READY and live alias yw-alpha.vercel.app pointing at exact SHA; exact-main source/browser/enforcement/release-source-evidence/release-truth-summary success, non-force dev fast-forward and zero divergence.
+
+RELEASE TRUTH: CODE GREEN does not mean original issuer enrollment, authorized signed external receipts, real durable custody or cross-app CONNECTED. Runtime source/three-Master/SQL acceptance remain independently HOLD until genuine external proof.
+
+NEXT PROPOSED BUILD: YW573 — Durable Original Disposition Ledger, Independent Closure-Witness Quorum & Signed SLA Renewal Outcome Receipts.
+Remaining proposed queue AFTER YW572: YW573–YW581 = 9 numbered builds. The real terminal completion count remains unverified. The 10-percentage-point cross-module improvement target requires independent per-module baseline/denominator and owner acceptance, not assertions.
