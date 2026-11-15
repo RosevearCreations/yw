@@ -53,7 +53,7 @@ export function verifyRegistry572(manifest,independentRoots,now=Date.now()){
   roots.add(root.trusted_spki_sha256);
  }
  if(approvals.some(a=>!roles.includes(a.role)))return failure('HOLD_GOVERNANCE_ROLE','Unexpected governance approval role.');
- const keyIds=new Set(),pins=new Set(),seenApps=new Set();
+ const keyIds=new Set(),pins=new Set(),seenApps=new Set(),activePerIssuer=new Set();
  for(const issuer of payload.issuers){
   const role=appRole.get(issuer.app_id);
   if(!role||issuer.app_role!==role||!id.test(issuer.issuer_id||'')||
@@ -66,6 +66,11 @@ export function verifyRegistry572(manifest,independentRoots,now=Date.now()){
   if(keyIds.has(scoped)||pins.has(issuer.spki_sha256))
    return failure('HOLD_DUPLICATE_ISSUER','Registry repeats issuer key or shares a public key across applications.');
   keyIds.add(scoped);pins.add(issuer.spki_sha256);seenApps.add(issuer.app_id);
+  if(issuer.status==='active'){
+   const activeScope=issuer.app_id+'|'+issuer.issuer_id;
+   if(activePerIssuer.has(activeScope))return failure('HOLD_MULTIPLE_ACTIVE_KEYS','One independently enrolled active key per application issuer is allowed.');
+   activePerIssuer.add(activeScope);
+  }
   const validFrom=date(issuer.valid_from),validUntil=date(issuer.valid_until);
   const rotated=issuer.rotated_at==null?NaN:date(issuer.rotated_at);
   const grace=issuer.grace_until==null?NaN:date(issuer.grace_until);
@@ -96,6 +101,9 @@ export function verifyRotation572(previous,next,roots,now=Date.now()){
  for(const [identity,old] of before){
   const current=after.get(identity);
   if(!current)return failure('HOLD_KEY_HISTORY','Key history may not disappear without a revoked record.');
+  if(!eq(old.spki_sha256,current.spki_sha256)||old.audience!==current.audience||
+      old.app_role!==current.app_role||old.tenant_boundary!==current.tenant_boundary)
+   return failure('HOLD_KEY_ID_REASSIGNMENT','Existing enrolled key ID, audience and tenant roles cannot be silently replaced.');
   if(old.status==='revoked'&&current.status!=='revoked')
    return failure('HOLD_KEY_RESURRECTION','Revoked key cannot return.');
   if(old.status==='grace'&&current.status==='active')
@@ -103,6 +111,12 @@ export function verifyRotation572(previous,next,roots,now=Date.now()){
   if(old.status==='active'&&current.status==='grace'&&
      date(current.rotated_at)<date(next.payload.issued_at)-120000)
    return failure('HOLD_ROTATION_BACKDATED','Grace admission cannot predate independently approved rotation.');
+ }
+ for(const old of previous.payload.issuers.filter(x=>x.status==='active')){
+  const current=after.get(old.app_id+'|'+old.issuer_id+'|'+old.key_id);
+  if(current?.status==='grace'&&!next.payload.issuers.some(x=>x.app_id===old.app_id&&
+     x.issuer_id===old.issuer_id&&x.key_id!==old.key_id&&x.status==='active'))
+   return failure('HOLD_ROTATION_NO_REPLACEMENT','Grace key needs a distinct newly approved active replacement.');
  }
  return {ok:true,code:'ROTATION_GOVERNANCE_VERIFIED_NO_KEY_ENROLLMENT',
   registry_sha256:b.registry_sha256,master_connected:false,closure_authorized:false,customer_delivery_verified:false};
