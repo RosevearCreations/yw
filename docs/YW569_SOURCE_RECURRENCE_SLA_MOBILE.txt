@@ -1,0 +1,30 @@
+YW569 — Original-Source Resolution Recurrence Retention, Signed SLA Recovery Outcome Trend Assurance & Mobile Drilldown Continuity
+Date: 2026-11-14
+Repository: RosevearCreations/yw
+Starting identical dev/main source: 9864dcae46d56ca3152d4614c3cb27898515dc63 (YW568 GREEN).
+Protected feature branch: codex/yw569-recurrence-sla-mobile-20261114
+
+EVIDENCE AND RUNTIME SCOPE
+- The authenticated original company owner selects their original company, case, and provider-verified signed receipt.
+- YW569 reads the existing YW567 append-only owner remediation audit table via owner-scoped RLS, up to 101 entries. No new tables, migrations, writes, browser persistence, or third-party notifications.
+- YW569 also obtains a fresh YW567 signed original-source RPC review and reuses the YW568 independent source classifier. An observed source recovery requires the latest original owner audit anchor to match the independent source observation, with independent observation after reopen and before audit, and a currently within-target source SLA.
+- Every retained ledger item must match company, case, provider receipt, case version and signed-in owner. The parser refuses missing/foreign row IDs, future/unsorted timestamps, reused idempotency keys, truncated history above 100 rows and a missing source reopen/audit referenced by the current signed review.
+- Summary shows exact original owner action counts (reopens in 7/30/90 days, audited and supervised recheck actions in 30 days), current independent SLA state and a bounded original action timeline. Repeated reopen actions in 30 days raise review. It NEVER invents a historical SLA recovery percentage, continuous uptime, Master CONNECTED, customer delivery or operator acceptance.
+- Source HOLD is never overridden by favorable older rows; no data is persisted locally. Changing original case/receipt or signing out invalidates and clears the review.
+- Missing prior migrations, owner database access, signer receipt, or independent Master observation remains HOLD; schema was not applied in this build.
+
+MOBILE AND ACCESS
+- Existing Standard Blue remains unchanged and default; the Futuristic Operations Command remains opt-in.
+- Native <details>/<summary> provides a keyboard-accessible action history without notes/PII. Mobile/desktop route continuity checks rely on existing original YW566 role-authorized route validator and YW568 accessible navigation evaluator; they grant no new privileges.
+- Playwright 390/768/1440 regression covers original evidence, repeated reopening, source SLA regression, theme switch, unauthorized routes, scope change and signout.
+
+PROTECTED CHECKS
+- Source: scripts/source-recurrence-569-check.mjs added to test:landscape-supervisor-resolution-558.
+- Browser: tests/browser/source-recurrence-mobile-569.spec.mjs added to test:browser:landscape-supervisor-resolution-558.
+- Both retained under canonical parallel GitHub Actions source/staging workflow.
+- Vercel exact-SHA READY preview and mandatory GitHub Actions feature gates required before dev merge.
+- Protected dev→main PR, all current branch/source/browser/security checks and approvals, exact resulting main Vercel production READY, yw-alpha.vercel.app live alias pointing to same SHA, exact-main release evidence and dev/main SHA reconciliation required before declaring code Production GREEN.
+- No bypass of protected branches, production service-role exposure, staging/production migration boundary, or owner-attested runtime authority.
+
+NEXT PROPOSED BUILD
+YW570 — Independent Long-Horizon Recurrence Exception Closure, Original SLA Recovery Evidence Aging Alerts & Multi-Device Navigation Stability.
