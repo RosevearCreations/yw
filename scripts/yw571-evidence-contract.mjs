@@ -11,6 +11,7 @@ export const APPS_571=Object.freeze([
 ]);
 const reUUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const reSHA=/^[a-f0-9]{64}$/;
+const reGitSHA=/^[a-f0-9]{40}$/;
 const hex=s=>typeof s==='string'&&reSHA.test(s);
 const uuid=s=>typeof s==='string'&&reUUID.test(s);
 const ms=s=>typeof s==='string'&&s.length<64&&Number.isFinite(Date.parse(s))?Date.parse(s):NaN;
@@ -46,7 +47,7 @@ export function verifyDisposition571(envelope,trust,now=Date.now()){
  const {payload,signature_base64,public_key_pem}=envelope;
  if(!payload||typeof payload!=='object'||typeof signature_base64!=='string'||typeof public_key_pem!=='string')
   return fail('HOLD_MISSING_SIGNED_RECEIPT','Original signed payload and independent public key required.');
- if(!hex(trust.trusted_spki_sha256)||!hex(trust.source_sha256)||!hex(trust.main_sha256)||!uuid(trust.company_id)||
+ if(!hex(trust.trusted_spki_sha256)||!hex(trust.source_sha256)||!reGitSHA.test(trust.main_sha256)||!uuid(trust.company_id)||
     !uuid(trust.request_id)||!uuid(trust.provider_receipt_id)||!uuid(trust.owner_audit_id)||
     !uuid(trust.master_observation_id)||typeof trust.issuer!=='string'||!trust.issuer)
   return fail('HOLD_UNTRUSTED_SIGNER','An externally enrolled issuer key pin and original source scope are required.');
