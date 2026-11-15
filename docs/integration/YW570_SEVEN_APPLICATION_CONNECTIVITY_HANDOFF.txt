@@ -1,0 +1,25 @@
+ROSEVEAR SEVEN-APPLICATION CONNECTIVITY HANDOFF — YW570 SOURCE CONTRACT
+Compiled 2026-11-14. Evidence authority: RosevearCreations/yw GitHub main/source + exact public Vercel production deployment once YW570 promoted. This is an inter-application handoff, NOT a signed cross-app ACK or declaration that any application is CONNECTED.
+
+MANDATORY PASS-DOWN ORDER (do not reorder)
+01 ai-data-platform — top-tier intelligence/data governance Master. Ingest only canonical PRODUCT shell identity source_role=platform_shell, tenant_boundary=platform_shell and exact Git-origin release source revision. Independently verify signer enrollment, signed real health, product revision, custody/replay, no tenant business authority.
+02 rosevear-ai-hub — physical receiver/runtime and witness Master. The original host receiver stays OFF until original authentic signer/operator/owner authorization and independent signed OFF/ON authority are verified. YW site readiness cannot change physical receiver state.
+03 rosevear-comms-hub — communications/operations Master. A genuine signed receipt, protected durable replay and independently accepted Master ACK are required; never convert an app preview, HTTP response, fixture or source-only SLA status into a Comms ACK or customer delivery.
+04 iCamp — separate full campground SaaS PRODUCT shell, with Camp Rosevear only as a tenant. Verify its own source signer and tenant boundary. Never cross-associate YW original company/case/provider IDs or clone YW credentials into iCamp.
+05 Yard Workers / YW — full landscape SaaS PRODUCT shell (Rosevear Landscaping is a company/tenant, NOT the global PRODUCT identity). Canonical production link https://yw-alpha.vercel.app ; owner authenticated company #company; role-gated operations #sysop. Supabase production project jmqvkgiqlimdhcofwkxr. Deployment Git SHA must be read from exact main READY alias and attached to this handoff after promotion.
+   - YW570 closure review reports current owner-ledger/independent signed observation (24h max, 18h warning), original SLA deadline/within-target and 90-day reopen actions.
+   - THIS EVIDENCE IS READ ONLY and NOT a Master connection, continuous uptime, authenticated customer delivery, production schema provenance, or independent signed health receipt.
+   - The repository master source contract still sets connection_state=DISCONNECTED / HOLD, source_revision_state=DEPLOYMENT_BOUND_UNSIGNED when build SHA is pinned, and authenticated=false. Do not overstate source status from Vercel READY.
+   - Original YW556, YW561, YW563, YW566 prerequisite database/schema and genuine source signer/witness remain to be independently verified by owners.
+06 devilndove — separate internal company commerce/social application (NOT a Product-Shell tenant of YW by default). Its production/runtime, credential, checkout, customer, media and Master integration states need independent exact-SHA proof; YW can supply only this source-governance packet.
+07 rosiedazzlers — separate internal mobile-detailing company commerce/booking application (NOT a YW customer or a shared provider under this contract). Booking/customer data, media and third-party delivery status require independent app acceptance; YW code release conveys no Rosie runtime credentials or acknowledgement.
+
+HANDOFF PACKET FIELDS FOR EVERY APP
+ app_id, role, exact repository main SHA, production deployment ID, live alias and exact SHA readback, signed evidence signer_key_id, signed health source/observed_at and revision, custodian independent acceptance, tenant_boundary, durable_replay_state, three_master_ack_state, original_host_receiver_state, source_sla_state, customer_delivery_authority, next owner action, human approval evidence.
+Treat unavailable fields as UNKNOWN/HOLD. Never invent, synthesize, or copy signing secrets between repos and never present a static deployment as original real signed health.
+
+HANDOFF MESSAGE TO COPY IN SEQUENCE
+YW570 has a GitHub-protected source-only original-owner recurrence/SLA-aging review and multi-device navigation feature. Its PRODUCT shell is source_role=platform_shell and tenant_boundary=platform_shell; the Rosevear Landscaping company remains a tenant. On YW570 exact-main Vercel READY and GitHub post-release all-green, code Production can be GREEN. Original independent signer, original host physical state, Master CONNECTED, company owner final acceptance, customer delivery and missing original database prerequisites remain HOLD. Next required actions: verify migrations and signer/witness provenance independently, then pass individually signed/current evidence AI Data → AI Hub → Comms Hub → iCamp → YW → Devil n Dove → Rosie Dazzlers. Do not skip evidence authority boundaries.
+
+NEXT BUILD: YW571 — Independent Signed Recurrence Closure Disposition Receipts, Source SLA Aging Renewal Effectiveness & Seven-Application Handoff Evidence Continuity.
+QUEUE: exactly 1 successor explicitly proposed, unknown total after YW571.
