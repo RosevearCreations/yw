@@ -52,7 +52,8 @@
   if(auditRow&&source.remediation_audit_current===true){
    if(!uuid(auditRow.anchor_master_observation_id)||
     auditRow.anchor_master_observation_id!==source.master_observation_id||
-    (reopenRow&&timestamp(auditRow.recorded_at)<=timestamp(reopenRow.recorded_at)))
+    (reopenRow&&timestamp(auditRow.recorded_at)<=timestamp(reopenRow.recorded_at))||
+    timestamp(source.master_observation_verified_at)>timestamp(auditRow.recorded_at))
     return hold('Current owner audit is not anchored to the independent post-reopen observation.');
   }
   const count=(action,days)=>events.filter(e=>e.action===action&&inDays(e.at,now,days)).length;
