@@ -1,0 +1,29 @@
+YW570 — Independent Long-Horizon Recurrence Exception Closure, Original SLA Recovery Evidence Aging Alerts & Multi-Device Navigation Stability
+Date: 2026-11-14. Repo: RosevearCreations/yw.
+Baseline: YW569 exact dev/main production SHA d990db54d1906a1354ce7c6efe375008b1d278e0.
+Feature branch: codex/yw570-recurrence-aging-mobile-20261114.
+
+SOURCE-ONLY SCOPE AND AUTHORITY
+- Uses a fresh original YW567 signed source readback and the owner-RLS-protected append-only original remediation ledger, bounded to 101 items for strict 100-item completeness. All company/case/provider receipt/case-version/owner validation is inherited from YW569, and independent signed source closure evaluation from YW568.
+- Original signed independent source observation older than 24 hours or fresh owner readback older than five minutes cannot establish closure review. At 18–24 hours, YW570 reports SIGNED_EVIDENCE_AGING without claiming the proof has expired. Exact signed source deadline within four hours generates SLA_DEADLINE_APPROACHING; an already passed source deadline generates SLA_RECOVERY_EVIDENCE_HOLD even if an older source status said WITHIN_TARGET.
+- Counts multiple original owner reopen actions within 90 days as an actionable LONG_HORIZON_REOPEN_PATTERN. A missing owner remediation audit newer than the last original reopen remains RECURRENCE_EXCEPTION_OPEN.
+- RECURRENCE_CLOSURE_REVIEW_READY_MASTER_HOLD requires a genuine current owner remediation audit after all retained reopen actions, the same independently verified observation, original within-target SLA, and source-only trust chain. This is a *human review cue*, not a source closure mutation, automatic owner acceptance, Master CONNECTED, customer notification, or historical recovery-rate claim.
+- Original source HOLD, signed risk, foreign tenant, altered case, duplicate idempotency, unauthorized actor, incomplete 100-item window and changed sign-in override any prior favorable history. There is no new Supabase SQL migration, database mutation, receiver ON or browser storage.
+- Initial static site deployment/source checks do not prove original operational source telemetry, durable signed replay, real independent signer registration or three-Master agreement. Unmet YW556/YW561/YW563/YW566 prerequisite migrations remain to be independently reconciled in required order.
+
+MULTI-DEVICE
+- Standard Blue remains default and unchanged. Futuristic command remains opt-in. Native accessible <details>/<summary> supports keyboard users.
+- Checks delegate to existing YW569→YW568→YW566 original permission-gated command navigation and validate offered routes vs hidden state, never invent a new role. Signout, company/case/receipt changes and theme switch clear current retained private evidence.
+- New source tests scripts/source-assurance-570-check.mjs and Playwright tests/browser/source-assurance-mobile-570.spec.mjs cover 360/390/768/1024/1440 px, signout, revoked role, source expiry, SLA due, reopen after audit and original owner provenance. Both are inserted into the protected YW558 source and browser lanes.
+
+RELEASE SEQUENCE
+1. Protected feature PR into dev: four required Auth/source/browser workflows success and exact-SHA Vercel READY preview.
+2. Merge reviewed feature to dev; verify dev exact Git preview READY.
+3. Protected dev/main promotion PR, all checks/pass/reviews, merge.
+4. Verify Vercel target production READY for exact main SHA and live yw-alpha.vercel.app alias; exact-main push repository-enforcement, all browser lanes, source checks, release-source-evidence and release-truth-summary all success.
+5. Fast-forward dev to exact main SHA without force and verify no ahead/behind; classify static site Production GREEN separately from original signed runtime CONNECTED HOLD.
+
+NEXT PROPOSED BUILD
+YW571 — Independent Signed Recurrence Closure Disposition Receipts, Source SLA Aging Renewal Effectiveness & Seven-Application Handoff Evidence Continuity.
+QUEUE
+One explicitly proposed successor YW571. No finite post-YW571 backlog or total remaining queue limit has been authenticated; never invent build count.
