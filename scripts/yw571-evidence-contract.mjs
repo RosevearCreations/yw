@@ -52,7 +52,7 @@ export function verifyDisposition571(envelope,trust,now=Date.now()){
   return fail('HOLD_UNTRUSTED_SIGNER','An externally enrolled issuer key pin and original source scope are required.');
  const version='yw571.disposition.v1',allowed=['RETAIN_HOLD','REOPEN_REQUIRED','SOURCE_ONLY_REVIEWED'];
  if(payload.contract_version!==version||payload.source_app!=='YW'||payload.issuer!==trust.issuer||
-   !allowed.includes(payload.disposition)||!uuid(payload.disposition_id)||
+   !allowed.includes(payload.disposition)||!uuid(payload.disposition_id)||!uuid(payload.nonce)||
    !uuid(payload.company_id)||payload.company_id!==trust.company_id||
    payload.request_id!==trust.request_id||payload.provider_verified_receipt_id!==trust.provider_receipt_id||
    !Number.isSafeInteger(payload.case_version)||payload.case_version<1||
@@ -109,5 +109,26 @@ export function verifyHandoffShape571(packet){
   return fail('HOLD_YW_PRODUCT_BOUNDARY','YW PRODUCT shell revision and tenant boundary required.');
  return {ok:true,code:'SOURCE_HANDOFF_SHAPE_VALID_NOT_CONNECTED',
   message:'Order and security/tenant boundaries match. This packet is NOT an independently signed seven-app ACK.',
+  connected:false,closure_authorized:false,customer_delivery_verified:false};
+}
+
+export function verifyRenewalPair571(previous,current,priorTrust,currentTrust,now=Date.now()){
+ const before=verifyDisposition571(previous,priorTrust,now);
+ const after=verifyDisposition571(current,currentTrust,now);
+ if(!before.ok||!after.ok)
+  return fail('HOLD_RENEWAL_SOURCE_NOT_SIGNED','Both independent source observations require verified P-256 signatures and registered issuer pins.');
+ const a=previous.payload,b=current.payload;
+ const prev=ms(a.source_observed_at),next=ms(b.source_observed_at);
+ if(a.disposition_id===b.disposition_id||a.nonce===b.nonce||
+  !Number.isFinite(prev)||!Number.isFinite(next)||next-prev<60000||
+  a.master_observation_id===b.master_observation_id||
+  a.company_id!==b.company_id||a.request_id!==b.request_id||
+  a.provider_verified_receipt_id!==b.provider_verified_receipt_id||
+  a.source_revision!==b.source_revision||a.canonical_sha256!==b.canonical_sha256||
+  b.disposition!=='SOURCE_ONLY_REVIEWED')
+  return fail('HOLD_RENEWAL_CHAIN','Two distinct ordered original signed observations, receipt nonces and identical source scope are mandatory.');
+ return {ok:true,code:'TWO_SIGNED_SOURCE_OBSERVATIONS_VERIFIED_MASTER_HOLD',
+  message:'Two ordered signed source observations verified against separately enrolled trust pins. This does not prove historical SLA recovery effectiveness, customer delivery, durable replay admission or Master CONNECTED.',
+  delta_minutes:Math.floor((next-prev)/60000),historical_recovery_rate:null,
   connected:false,closure_authorized:false,customer_delivery_verified:false};
 }
