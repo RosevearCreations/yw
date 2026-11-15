@@ -1,0 +1,45 @@
+YW571 — Independent Signed Recurrence Closure Disposition Receipts, Source SLA Aging Renewal Effectiveness & Seven-Application Handoff Evidence Continuity
+Date: 2026-11-15. Repository: RosevearCreations/yw.
+Baseline: exact verified YW570 dev/main/production SHA 86ee251cc1a7623692132c3b7057ab1bde6f2701.
+Feature branch: codex/yw571-signed-disposition-security-handoff-20261115.
+
+IMPLEMENTED IN YW571
+1) Independently pinned signer security:
+   - scripts/yw571-evidence-contract.mjs canonicalizes signed source-only disposition receipts and uses genuine P-256 / SHA-256 signature verification via Node crypto.
+   - A trusted issuer public-key SPKI SHA-256 fingerprint must come from a separate independent owner/custodian enrollment. Never trust a public key presented only inside the receipt. No private keys or secrets belong in this repository.
+   - Receipts bind YW PRODUCT, exact canonical SHA-256 source hash, exact production SHA, owner/case/receipt/audit/observation identifiers, issuer and tenant, explicit source-only action, nonce, issue/observed/expiry times (24-hour maximum), and false Master/closure/delivery authority.
+   - Replays are not globally prevented by a stateless verifier: independently sourced, durable nonce/idempotency admission ledger is STILL REQUIRED before any production decision. This build only verifies signature and two-receipt uniqueness/order within a presented pair.
+   - Original independent signing keys/identity were NOT enrolled by this code release. Test keys are deliberately ephemeral fixtures, not real owner acceptance. No SOURCE CONNECTED claim.
+
+2) Two-observation original-source renewal review:
+   - verifyRenewalPair571 independently validates previous+new original signed reviewer observation receipts, requires two distinct observation IDs, disposition IDs and nonces, exact source/company/tenant binding, and temporal order.
+   - Classification TWO_SIGNED_SOURCE_OBSERVATIONS_VERIFIED_MASTER_HOLD proves cryptographic source-only continuity if real external data is supplied. It does NOT prove customer delivery, production SLA effectiveness percentage, persistent replay admission or Master CONNECTED.
+   - Owner-facing js/source-disposition-571.js never accepts a browser-provided signer flag, writes to Supabase, self-enrolls issuer keys or claims that one signed observation establishes historical renewal effectiveness.
+   - Authenticated owner, owner-scoped Supabase RLS, bounded original YW567 history and the YW568→569→570 source classifier all must pass; SLA aging and deadlines remain fail-closed.
+
+3) Seven-application interop and security:
+   - scripts/yw571-evidence-contract.mjs verifies canonical order: ai-data-platform → rosevear-ai-hub → rosevear-comms-hub → iCamp → YW → devilndove → rosiedazzlers.
+   - docs/integration/YW571_SEVEN_APP_UNATTESTED_TEMPLATE.json is an intentionally unconnected shape, NOT proof that seven apps received an ACK.
+   - Explicit control tiers:
+     T1 authenticated identity/role and tenant RLS;
+     T2 independently pinned signing issuer and exact-source 24-hour freshness;
+     T3 durable idempotency/replay custody, independent witnesses, signed three-Master ACK/owner gate;
+     T4 customer delivery consent, payments, financially privileged decisions and incident closure;
+     T5 continuous mobile/offline/a11y/performance and audit/disaster recovery monitors.
+   - YW PRODUCT source_role=platform_shell and tenant_boundary=platform_shell, Rosevear Landscaping is a tenant. iCamp a distinct SaaS, Camp Rosevear tenant. Devil n Dove and Rosie Dazzlers are separate internal companies. No cross-app public credential, shared master key or fabricated app ack.
+   - External three-Master authority and YW original signed runtime states remain HOLD. Missing approved YW556/YW561/YW563/YW566 database prerequisites require separate owner/DBA verification and ordered migration authority.
+
+4) Operator verification, tests and devices:
+   - node scripts/yw571-verify-cli.mjs disposition <private signed receipt.json> <separately trusted owner pin.json>
+   - node scripts/yw571-verify-cli.mjs renewal <old signed.json> <new signed.json> <old separately trusted pin.json> <new separately trusted pin.json>
+   - node scripts/yw571-verify-cli.mjs handoff-shape docs/integration/YW571_SEVEN_APP_UNATTESTED_TEMPLATE.json
+   - PASS from handoff-shape only means contract shape; it is explicitly NOT a network exchange/ACK. Do not place receipt PII, private keys or trust material in repo/GitHub discussions/chat.
+   - Protected source lane includes scripts/yw571-evidence-contract-check.mjs and scripts/source-disposition-571-check.mjs. Protected browser lane includes tests/browser/source-disposition-mobile-571.spec.mjs, 360/390/768/1024/1440, signout, revoked route, source SLA breach, aging and all seven app labels. Standard Blue remains default and Futuristic opt-in.
+
+RELEASE TRUTH SEPARATION
+- CODE Production GREEN requires protected feature PR checks and exact feature preview READY, dev merge, protected dev→main PR checks, exact main Vercel production READY plus live alias SHA readback, post-push repository enforcement / browser / source / release-source-evidence / release-truth-summary success, and dev/main SHA equality.
+- SOURCE/MASTER CONNECTED remains HOLD until genuine original signer enrollment, independent witnesses, durable admission and ACK, current private host authoritative state, approved owner acceptance and missing DB prerequisites are independently confirmed.
+- No production SQL mutation, secrets, receiver ON, original provider write or app-to-app HTTP message is performed by YW571. Code unit tests cannot substitute real runtime continuity.
+
+NEXT PROPOSED BUILD: YW572 — Seven-App Zero-Trust Issuer Enrollment Registry, Signed Envelope Key Rotation & Independent Replay-Custody Admission.
+BACKLOG: Detailed YW572–YW581 roadmap in docs/YW571_10_BUILD_SECURITY_COMPLETION_ROADMAP.txt. These are 10 newly proposed, NOT completed or scheduled builds. A total terminal-build count and per-module verified completion baselines are unavailable; don't invent percentages.
