@@ -78,4 +78,18 @@ test('YW573 enforces seven-app exact trust boundary and browser source-only UI',
  assert.match(scripts.at(-1),/YW572Security\?\.check/);
  assert.match(scripts.at(-1),/ywi_rpc_landscape_master_remediation_review_567/);
 });
+test('YW573 ordered Master themes, two slave labels and company transport remain source-only and unverified',()=>{
+ const packet=JSON.parse(fs.readFileSync('docs/integration/YW573_MASTER_SHELL_COMMS_HANDOFF.json','utf8'));
+ assert.equal(packet.status,'UNATTESTED');
+ assert.deepEqual(packet.sequence.map(q=>q.app),
+ ['ai-data-platform','rosevear-ai-hub','rosevear-comms-hub','iCamp','YW','devilndove','rosiedazzlers']);
+ const master=packet.sequence.slice(0,3);
+ assert.equal(new Set(master.map(q=>q.desired_common_theme)).size,1);
+ assert.equal(master.every(q=>q.live_theme_verified===false&&q.master_ack==='HOLD'),true);
+ assert.equal(packet.sequence[3].required_shell_marker,'SLAVE APPLICATION SHELL');
+ assert.equal(packet.sequence[4].source_shell_marker_verified,true);
+ assert.equal(packet.sequence[5].comms_transport,'UNATTESTED');
+ assert.equal(packet.sequence[6].comms_transport,'UNATTESTED');
+ assert.equal(packet.service_message_requirements.actual_transport_performed,false);
+});
 console.log('YW573 signed original disposition witness HOLD, owner RLS, seven-app shell and source-only UI PASS');
