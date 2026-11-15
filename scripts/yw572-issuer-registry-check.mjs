@@ -22,7 +22,7 @@ const appBoundary=role=>role==='master'?'master':role==='platform_shell'?'platfo
 const issuers=()=>APPS_571.map(([name,role],i)=>{
  const kp=issuerKeys.get(name),pem=kp.publicKey.export({type:'spki',format:'pem'});
  return {app_id:name,app_role:role,tenant_boundary:appBoundary(role),
-  issuer_id:name==='YW'?'yw-original-owner':name+'-source-issuer',
+  issuer_id:name==='YW'?'yw-original-owner':name.toLowerCase()+'-source-issuer',
   key_id:name==='YW'?'yw-key-v1':name.toLowerCase()+'-key-v1',
   audience:name==='YW'?'rosevear:yw:source-review':'rosevear:'+name.toLowerCase()+':handoff',
   public_key_pem:pem,spki_sha256:fingerprint571(pem),status:'active',
@@ -59,7 +59,7 @@ const disposition=(overrides={},privateKey=issuerKeys.get('YW').privateKey)=> {
 };
 test('YW572 two independent pinned governance roots enroll complete seven-app source registry',()=>{
  const r=verifyRegistry572(base(),roots,now);
- assert.equal(r.ok,true);assert.equal(r.code,'TWO_WITNESS_REGISTRY_VERIFIED_MASTER_HOLD');
+ assert.equal(r.ok,true,r.code+' — '+r.reason);assert.equal(r.code,'TWO_WITNESS_REGISTRY_VERIFIED_MASTER_HOLD');
  assert.equal(r.master_connected,false);
  assert.match(r.registry_sha256,/^[a-f0-9]{64}$/);
  assert.equal(base().payload.issuers.length,7);
@@ -83,7 +83,7 @@ test('YW572 rejects unilateral ownership, self-pins, altered app, duplicate key,
 });
 test('YW572 exact-key source disposition is verified but not admitted without PostgreSQL custody',()=>{
  const r=verifyEnvelope572(disposition(),base(),roots,trust,now);
- assert.equal(r.ok,true);assert.equal(r.code,'PINNED_ENVELOPE_VERIFIED_CUSTODY_NOT_ADMITTED');
+ assert.equal(r.ok,true,r.code+' — '+r.reason);assert.equal(r.code,'PINNED_ENVELOPE_VERIFIED_CUSTODY_NOT_ADMITTED');
  assert.equal(r.master_connected,false);
  assert.equal(r.original_tenant_id,trust.company_id);
  assert.equal(verifyEnvelope572(disposition({audience:'rosevear:other:source-review'}),base(),roots,trust,now).ok,false);
@@ -103,7 +103,7 @@ const nextGeneration=()=>{
 test('YW572 approves rotation only with second independent quorum and distinct replacement',()=>{
  const {manifest}=nextGeneration();
  const ok=verifyRotation572(base(),manifest,roots,now);
- assert.equal(ok.ok,true);assert.equal(ok.master_connected,false);
+ assert.equal(ok.ok,true,ok.code+' — '+ok.reason);assert.equal(ok.master_connected,false);
  assert.equal(verifyEnvelope572(disposition(),manifest,roots,trust,now).ok,false,
   'old generation envelope is replay denied because registry_version is signed');
  const grace=disposition({registry_version:2});
