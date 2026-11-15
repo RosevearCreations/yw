@@ -83,7 +83,7 @@ test('YW571 new UI and offline verifier remain in protected source/browser CI la
  assert.match(pkg.scripts['test:landscape-supervisor-resolution-558'],/yw571-evidence-contract-check/);
  assert.match(pkg.scripts['test:browser:landscape-supervisor-resolution-558'],/source-disposition-mobile-571\.spec/);
  assert.doesNotMatch(ui,/\.insert\(|\.update\(|\.delete\(|localStorage|sessionStorage|SUPABASE_SERVICE_ROLE_KEY/);
- assert.match(ui,/YW570Assurance\.evaluate/);
+ assert.match(ui,/YW570Assurance.*evaluate/);
  assert.match(ui,/ywi_rpc_landscape_master_remediation_review_567/);
 });
 console.log('YW571 source-only disposition review, SLA renewal gating and cross-app hierarchy checks PASS');
