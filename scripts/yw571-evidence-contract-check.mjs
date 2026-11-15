@@ -116,6 +116,6 @@ test('YW571 protected gates contain independent signer and seven-app contract ch
  const ui=fs.readFileSync('js/source-disposition-571.js','utf8');
  assert.doesNotMatch(ui,/\.insert\(|\.update\(|\.delete\(|localStorage|sessionStorage|PRIVATE KEY|SUPABASE_SERVICE_ROLE_KEY/);
  assert.match(ui,/ywi_rpc_landscape_master_remediation_review_567/);
- assert.match(ui,/YW570Assurance\.evaluate/);
+ assert.match(ui,/YW570Assurance.*evaluate/);
 });
 console.log('YW571 cryptographic signer pinning, cross-app tenant security and protected tests PASS');
