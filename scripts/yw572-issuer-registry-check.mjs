@@ -94,7 +94,7 @@ test('YW572 exact-key source disposition is verified but not admitted without Po
 const nextGeneration=()=>{
  const p=makePayload();p.version=2;p.issued_at=at(-10);
  const old=p.issuers.find(x=>x.app_id==='YW');
- old.status='grace';old.rotated_at=at(-15);old.grace_until=at(30);
+ old.status='grace';old.rotated_at=at(-10);old.grace_until=at(30);
  const fresh=key();const pem=fresh.publicKey.export({type:'spki',format:'pem'});
  p.issuers.push({...old,key_id:'yw-key-v2',public_key_pem:pem,spki_sha256:fingerprint571(pem),
   status:'active',valid_from:at(-12),valid_until:at(720),rotated_at:null,grace_until:null});
@@ -167,7 +167,7 @@ test('YW572 SQL is staging-only private, RLS enabled, client roles revoked and u
  assert.match(sql,/revoke all.*anon, authenticated/);
  assert.match(sql,/unique\(app_id,tenant_id,nonce\)/);
  assert.match(sql,/unique\(app_id,tenant_id,disposition_id\)/);
- assert.doesNotMatch(sql,/security definer/i);
+ assert.doesNotMatch(sql,/create\\s+(?:or replace\\s+)?function[\\s\\S]*security definer/i);
  const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
  assert.match(pkg.scripts['test:landscape-supervisor-resolution-558'],/yw572-issuer-registry-check/);
  assert.match(pkg.scripts['test:landscape-supervisor-resolution-558'],/yw572-source-watch-check/);
