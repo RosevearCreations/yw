@@ -48,6 +48,7 @@ test('YW571 rejects self-selected issuer, changed payload, cross-tenant, stale/e
   verifyDisposition571(envelope({...payload(),disposition:'CLOSE'}),trust,now),
   verifyDisposition571(envelope({...payload(),expires_at:at(2)}),trust,now),
   verifyDisposition571(envelope({...payload(),source_observed_at:at(28)}),trust,now),
+  verifyDisposition571(envelope({...payload(),source_observed_at:at(25)}),trust,now),
   verifyDisposition571({...good,signature_base64:'aW52YWxpZA=='},trust,now),
   verifyDisposition571(good,{...trust,trusted_spki_sha256:'f'.repeat(64)},now),
   verifyDisposition571(good,{...trust,issuer:'unknown'},now)
