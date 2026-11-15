@@ -35,7 +35,7 @@ async function setup(page,width=390){
    recipient_delivery_independently_verified:false,
    source_reconciliation_id:reconciled,source_reopen_id:reopen,
    latest_source_remediation_audit_id:audit,source_reopened_at:t(2),
-   master_observation_id:observation,master_observation_verified_at:t(0.5),
+   master_observation_id:observation,master_observation_verified_at:t(1.5),
    source_receipt_stale:false,signed_risk_after_reconciliation:false,
    source_sla_breached:false,source_sla_state:'WITHIN_TARGET',
    remediation_audit_current:true,independent_source_remediation_ready:false,
