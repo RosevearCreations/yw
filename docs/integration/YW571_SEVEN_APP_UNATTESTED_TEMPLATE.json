@@ -1,0 +1,75 @@
+{
+  "contract_version": "rosevear.handoff.v1",
+  "description": "UNATTESTED ordered source-only template. Replace exact source revision after independently verified production; do not treat as network ACK.",
+  "transport_state": "NOT_CONNECTED_BY_THIS_PACKET",
+  "master_connected": false,
+  "customer_delivery_verified": false,
+  "security_model": {
+    "tier1": "Authenticated role + tenant-scoped RLS",
+    "tier2": "Independently enrolled P-256 signer and 24-hour signed freshness",
+    "tier3": "Durable replay, two witness custody and three-Master owner acceptance",
+    "tier4": "Customer delivery, payments and privileged operations separately authorized"
+  },
+  "apps": [
+    {
+      "id": "ai-data-platform",
+      "role": "master",
+      "receipt_state": "NOT_ATTESTED",
+      "master_ack_state": "HOLD",
+      "customer_delivery_verified": false,
+      "shared_secret_embedded": false
+    },
+    {
+      "id": "rosevear-ai-hub",
+      "role": "master",
+      "receipt_state": "NOT_ATTESTED",
+      "master_ack_state": "HOLD",
+      "customer_delivery_verified": false,
+      "shared_secret_embedded": false
+    },
+    {
+      "id": "rosevear-comms-hub",
+      "role": "master",
+      "receipt_state": "NOT_ATTESTED",
+      "master_ack_state": "HOLD",
+      "customer_delivery_verified": false,
+      "shared_secret_embedded": false
+    },
+    {
+      "id": "iCamp",
+      "role": "platform_shell",
+      "receipt_state": "NOT_ATTESTED",
+      "master_ack_state": "HOLD",
+      "customer_delivery_verified": false,
+      "shared_secret_embedded": false
+    },
+    {
+      "id": "YW",
+      "role": "platform_shell",
+      "receipt_state": "NOT_ATTESTED",
+      "master_ack_state": "HOLD",
+      "customer_delivery_verified": false,
+      "shared_secret_embedded": false,
+      "source_role": "platform_shell",
+      "tenant_boundary": "platform_shell",
+      "master_connected": false,
+      "production_sha": "UNSET_AFTER_RELEASE"
+    },
+    {
+      "id": "devilndove",
+      "role": "internal_company",
+      "receipt_state": "NOT_ATTESTED",
+      "master_ack_state": "HOLD",
+      "customer_delivery_verified": false,
+      "shared_secret_embedded": false
+    },
+    {
+      "id": "rosiedazzlers",
+      "role": "internal_company",
+      "receipt_state": "NOT_ATTESTED",
+      "master_ack_state": "HOLD",
+      "customer_delivery_verified": false,
+      "shared_secret_embedded": false
+    }
+  ]
+}
