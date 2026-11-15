@@ -1,0 +1,58 @@
+YARD WORKERS / ROSEVEAR — PROPOSED CROSS-APP SECURITY AND FUNCTIONAL ADVANCEMENT PROGRAM
+Drafted with YW571. State: 10 PROPOSED BUILDS, none implemented by this roadmap.
+Purpose: advance broad functional and security coverage across YW and facilitate safe seven-app handoffs without falsely claiming percentage progress.
+
+METRICS AND TEN-PERCENT REQUEST
+A verified baseline for module completion % and a known finite terminal queue do not exist. Do not declare an already achieved +10 percentage-point completion increase "in every aspect." The program targets a minimum +10 percentage points per tracked module against a documented accepted baseline, only if source, tests, production and original provider acceptance support the numbers. Each future build must record original baseline denominator, actual covered features, remaining defects and owner validation. Report NO_BASELINE, not invented completion.
+
+COVERAGE SCORECARD — BASELINE UNKNOWN, PROPOSED TARGET +10 PERCENTAGE POINTS EACH AFTER AUDIT
+Identity/security; I.T./Admin shell; CRM & customer portal; quotes/booking/catalogue; dispatch/route/mobile offline; scheduling/workforce; HR, payroll & time; finance/invoicing/accounting/tax; supplies/equipment/fleet/inventory; job quality/evidence/closeout; automation/communications/notifications; SEO/storefront/advertising/social; analytics/data platform/Master connectivity; user experience/mobile/tablet/desktop/accessibility; resilience/backup/DR/observability. Each category must have distinct acceptance metrics, owner approval and authentic production readbacks.
+
+ORDERED SEVEN-APP MASTER/SHELL/COMPANY BOUNDARIES
+1 ai-data-platform — authoritative Master data/governance topology; no unverified consumer admission.
+2 rosevear-ai-hub — independent original host Master witness, physical OFF/ON safety boundary.
+3 rosevear-comms-hub — protected communications, owner authorization, idempotent signed ACK.
+4 iCamp — separate campground operator SaaS, Camp Rosevear is a tenant, no YW data access.
+5 YW — landscaping SaaS PRODUCT shell, Rosevear Landscaping a tenant; source_role=platform_shell.
+6 devilndove — separate commerce and media company, no implicit YW customer/tenant identity.
+7 rosiedazzlers — separate auto-detailing company, no implicit YW booking/worker data.
+No app copies keys, accepts unsigned roles, bypasses RLS, asserts delivery from HTTP 200, or trusts static deployment as signed health. Transport and acknowledgments are OFF/HOLD until genuine authority.
+
+TIERED SECURITY CONSENSUS FOR ALL TEN BUILDS
+Tier 1: authenticated device/session, immutable tenant and role authorization, RLS, bounded access tokens, deny by default.
+Tier 2: independently enrolled asymmetric issuer keys and exact signed issuer/audience/scope, source revision, key pin and 24-hour freshness; key rotation/grace/expiry with revocation.
+Tier 3: durable replay/idempotency, custody ledger, independent second witness, source hash and branch provenance, audit nonrepudiation.
+Tier 4: owner/supervisor consent, finance and customer delivery authority, source-only vs Master CONNECTED separation, privileged command gate.
+Tier 5: cross-device/offline protection, retention/privacy, security monitoring, signed backup/restore and disaster-recovery acceptance.
+
+TEN SEQUENTIAL BUILD PROPOSALS (DEPENDENCIES AND ACCEPTANCE CRITERIA)
+YW572 — Seven-App Zero-Trust Issuer Enrollment Registry, Signed Envelope Key Rotation & Independent Replay-Custody Admission.
+- Design and implement independently accepted signer public-key registry, key ID and owner two-person enrollment, issuer/audience/tenant binding and grace/expiry. Add non-production replay/duplicate nonce storage with RLS and mandatory explicit migration gate, not to production until DBA review. Tests: stolen/revoked/foreign/reused/old-key rejection, seven-app read-only compatibility. Distinct owner+reviewer approval.
+YW573 — Durable Original Disposition Ledger, Independent Closure-Witness Quorum & Signed SLA Renewal Outcome Receipts.
+- Authenticated original signed disposition storage with server-side source-only receipts, two-witness verification and no auto-master acceptance. Dual signed observation renewal pair, idempotent closure review vs owner approval separated. Replay, stale and backdated tests.
+YW574 — Ordered YW556–573 Database Provenance, Staging-Only Migration Safety & Production Parity Ceremony.
+- Discover current live Supabase history and missing YW556/YW561/YW563/YW566 ancestors. Backup, schema checksum comparison, tenant/RLS audit, non-production dry run, rollback; require DBA owner authorization before any production mutation. Test grants, SECURITY DEFINER execute permissions, no out-of-order migration.
+YW575 — Unified Product/Company Role Segregation, Admin HR Identity Review & Cross-Device Session Revocation.
+- Define operator/crew/supervisor/company owner/platform Sysop roles; protect hiring/payroll/HR/health attachments. Device revocation, MFA attestation and joined permissions, leak-proof analytics. Independent seven-app least-privilege mapping, do not share auth service-role credentials.
+YW576 — Signed Booking→Quote→Crew→Job Route Orchestration With iCamp/Comms Boundaries.
+- Improve conversion, scheduling and customer portal with authenticated work order provenance, route optimization, offline queue safe retries, Crew and Supervisor split. iCamp is no-data-merge separate shell; Comms sends only allowlisted consented notifications. Retry chaos and conflict tests.
+YW577 — Financial Custody: Quote→Invoice→Payments→Payroll/Tax, Audit and Provider Reconciliation.
+- Add signed idempotency reconciliation across job cost/time, inventory, invoice, payments/refunds, payroll and GST/HST, with accounting owner approval. No secrets in frontend, Stripe key/mode separation, test vs live isolation, financial double posting prevention.
+YW578 — Field Equipment/Inventory/Fleet/QC Evidence Chain, Offline Retention and Recovery.
+- QR equipment inspections, consumable usage, maintenance scheduling, job photo/audit evidence, supervisor signoff, offline retention TTL and eventual consistency. No unauthorized cross-company photo sharing; signed source references.
+YW579 — Seven-App Consent-Safe Communications, Social/Customer Follow-Up and Delivery Receipts.
+- Comms Hub as operational transport: email/SMS consent, template provenance, rate limits, no duplicate recipient sends, authenticated webhook verify, signed recipient delivery and no delivery claim from send attempts. Devil n Dove and Rosie remain separate account namespaces.
+YW580 — Unified Shell Security Observability, Accessibility, Performance and Regression Chaos Gates.
+- Cross-device 320–1920 px, WCAG keyboard/contrast, responsive navigation, SLO aging and alert acknowledgments, supply/finance security smoke, offline and cache fault injection. Fail-closed cross-app health dashboard; explicit unknown/stale statuses.
+YW581 — Seven-App Independent Three-Master Ceremony, Signed Owner Acceptance, Recovery Drill and Completion Scorecard.
+- End-to-end real source signer/witness, master ACK, original host OFF/ON authority, version pin, DR restore rehearsal, per-module acceptance scorecard and verified improvement calculations. Never promote connected claims absent all original physical and signed owner proofs.
+
+RELEASE REQUIREMENTS FOR EVERY YW572–YW581
+1. Preserve protected feature→dev→main sequence, GitHub source/security/browser checks and exact SHA Vercel READY/production alias.
+2. Reconcile dev and main to identical exact SHA without force; retain production exact-main release evidence and normalized seven-app handoff packet.
+3. Preserve at least two real original independent authorities before signed operational status. No self-issued fake proofs or fixture writes to production.
+4. Unmerged/non-default branches preserved until audited. Existing merged branches handled only per owner policy.
+5. Every build reports implemented features, explicit HOLDs, planned next build, and remaining proposed queue count without asserting full app % from unmeasured denominators.
+
+AS OF THIS ROADMAP
+Proposed next: YW572. Proposed numbered sequence: YW572, YW573, YW574, YW575, YW576, YW577, YW578, YW579, YW580, YW581 (10 total). These are roadmap proposals, not completed builds or automatically scheduled executions. A finite ultimate queue beyond YW581 is not established.
