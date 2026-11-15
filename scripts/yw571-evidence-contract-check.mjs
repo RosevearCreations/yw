@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateKeyPairSync,sign} from 'node:crypto';
 import fs from 'node:fs';
-import {APPS_571,canonical571,sha256Text,fingerprint571,verifyDisposition571,verifyHandoffShape571}
+import {APPS_571,canonical571,sha256Text,fingerprint571,verifyDisposition571,verifyHandoffShape571,verifyRenewalPair571}
  from './yw571-evidence-contract.mjs';
 const uuid=n=>n.toString(16).padStart(8,'0')+'-1111-4111-8111-111111111111';
 const now=Date.parse('2026-11-15T02:00:00Z');
@@ -16,7 +16,7 @@ const trust={
 };
 const payload=()=>({
  contract_version:'yw571.disposition.v1',source_app:'YW',
- issuer:trust.issuer,disposition:'SOURCE_ONLY_REVIEWED',disposition_id:uuid(6),
+ issuer:trust.issuer,disposition:'SOURCE_ONLY_REVIEWED',disposition_id:uuid(6),nonce:uuid(9),
  company_id:trust.company_id,request_id:trust.request_id,
  provider_verified_receipt_id:trust.provider_receipt_id,case_version:5,
  owner_audit_id:trust.owner_audit_id,master_observation_id:trust.master_observation_id,
@@ -53,6 +53,20 @@ test('YW571 rejects self-selected issuer, changed payload, cross-tenant, stale/e
   verifyDisposition571(good,{...trust,issuer:'unknown'},now)
  ];
  for(const c of cases)assert.equal(c.ok,false,c.code);
+});
+test('YW571 second signed renewal observation needs new nonce, independent observation ID and correct ordering',()=>{
+ const prior=payload();
+ const newer={...payload(),disposition_id:uuid(19),nonce:uuid(20),
+  master_observation_id:uuid(21),source_observed_at:at(0.5),issued_at:at(0.25),expires_at:at(-3)};
+ const trustNew={...trust,master_observation_id:uuid(21)};
+ const good=verifyRenewalPair571(envelope(prior),envelope(newer),trust,trustNew,now);
+ assert.equal(good.ok,true);
+ assert.equal(good.code,'TWO_SIGNED_SOURCE_OBSERVATIONS_VERIFIED_MASTER_HOLD');
+ assert.equal(good.historical_recovery_rate,null);
+ assert.equal(good.connected,false);
+ assert.equal(verifyRenewalPair571(envelope(prior),envelope(prior),trust,trust,now).ok,false);
+ assert.equal(verifyRenewalPair571(envelope(newer),envelope(prior),trustNew,trust,now).ok,false);
+ assert.equal(verifyRenewalPair571(envelope(prior),envelope({...newer,nonce:prior.nonce}),trust,trustNew,now).ok,false);
 });
 test('YW571 canonical signable JSON rejects unsafe shapes, malformed keys and inconsistent digests',()=>{
  assert.equal(canonical571({b:[true,null],a:1}), '{"a":1,"b":[true,null]}');
