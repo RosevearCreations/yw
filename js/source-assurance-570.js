@@ -156,6 +156,7 @@
   const parent=$('owner569');
   if(parent&&!$('owner570')){
    const panel=document.createElement('section');panel.id='owner570';panel.className='panel567';
+   panel.style.minWidth='0';panel.style.maxWidth='100%';panel.style.overflowWrap='anywhere';
    const h=document.createElement('h3');h.textContent='YW570 · Recurrence closure review & SLA aging';
    const note=document.createElement('p');
    note.textContent='Read-only long-horizon source evidence; review readiness is not closure approval, Master CONNECTED or customer delivery.';
@@ -183,6 +184,7 @@
    button.className='secondary';button.id='owner570NavCheck';
    button.textContent='Verify mobile command navigation stability';
    const p=document.createElement('p');p.id='owner570MobileStatus';
+   p.style.minWidth='0';p.style.maxWidth='100%';p.style.overflowWrap='anywhere';
    p.setAttribute('role','status');p.setAttribute('aria-live','polite');
    p.textContent='HOLD — mobile route continuity not independently checked.';
    root.append(button,p);button.addEventListener('click',navigation);
