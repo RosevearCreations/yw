@@ -62,7 +62,7 @@
     "test:staging": "node scripts/staging-runtime-authority-preflight.mjs && node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-acceptance": "node scripts/staging-acceptance-control-plane-check.mjs && node scripts/staging-runtime-authority-preflight.mjs && node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-scenarios": "node scripts/staging-scenario-catalog-check.mjs",
-    "test:staging-environment-guard": "node scripts/staging-environment-guard-check.mjs && node scripts/staging-runtime-authority-preflight-check.mjs && node scripts/yw574-migration-provenance-check.mjs",
+    "test:staging-environment-guard": "node scripts/staging-environment-guard-check.mjs && node scripts/staging-runtime-authority-preflight-check.mjs",
     "test:yw574-migration-provenance": "node scripts/yw574-migration-provenance-check.mjs",
     "test:staging-runtime-schema": "node scripts/staging-runtime-schema-authority-check.mjs",
     "test:current-schema-staging-runbook": "node scripts/current-schema-staging-runbook-authority-check.mjs",
