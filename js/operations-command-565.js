@@ -19,7 +19,7 @@
  ];
  function isAuth(){return window.YWI_AUTH?.getState?.()?.isAuthenticated===true;}
  function isPlatform(){const a=$('workspace550SysopLink');return !!(a&&!a.hidden);}
- function visible(){return ['futuristic','angular'].includes(root.dataset.ywTheme)&&isAuth()&&location.hash!=='#sysop';}
+ function visible(){return (root.dataset.ywTheme==='futuristic'||root.dataset.ywTheme==='angular')&&isAuth()&&location.hash!=='#sysop';}
  function labelFor(anchor){
   for(const group of groups)for(const link of group.links)
    if(link[0]===anchor)return link[1];
