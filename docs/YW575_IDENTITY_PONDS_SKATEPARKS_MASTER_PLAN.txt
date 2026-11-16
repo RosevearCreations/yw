@@ -33,7 +33,7 @@ temporary closure, independently approved reopening, warranties and reserve budg
 Initial screen estimates concept footprint only and holds all acceptance until originals are verified.
 
 ## Naming migration
-The new public-facing workspace, help and README display Yard Workers. The historic Yard Weasels brand
+The new public-facing workspace, help and README display Yard Workers. The historic retired legacy brand brand
 still appears in old source comments, security fixture strings, original production database names and
 the existing verified domain 'yardweasels.ca'. This is a backward-compatibility exception, NOT completed
 global eradication. Do not rewrite git history, production project reference, foreign key, service URL,
