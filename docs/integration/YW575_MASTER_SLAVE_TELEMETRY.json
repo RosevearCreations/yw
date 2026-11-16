@@ -1,0 +1,74 @@
+{
+  "schema": "rosevear.yw575.master-slave-telemetry.v1",
+  "protocol": "1.1",
+  "supportedPeerProtocols": [
+    "1.0",
+    "1.1"
+  ],
+  "product": "YW",
+  "status": "SOURCE_CONTRACT_ONLY",
+  "masters": [
+    "ai-data-platform",
+    "rosevear-ai-hub",
+    "rosevear-comms-hub"
+  ],
+  "slaveShells": [
+    "YW",
+    "iCamp"
+  ],
+  "dashboardOwner": "ai-data-platform",
+  "displayTheme": "rosevear-master-instrument.v1",
+  "slaves": {
+    "YW": {
+      "role": "slave_application_shell",
+      "healthKeys": [
+        "deploy_sha",
+        "live_alias",
+        "api_errors",
+        "p95_latency_ms",
+        "auth_failure_rate",
+        "queue_lag_seconds",
+        "db_schema_drift",
+        "ops_critical_alerts",
+        "last_signed_heartbeat"
+      ],
+      "truth": "UNATTESTED"
+    },
+    "iCamp": {
+      "role": "slave_application_shell",
+      "healthKeys": [
+        "deploy_sha",
+        "live_alias",
+        "reservation_holds",
+        "availability_errors",
+        "payment_webhook_lag",
+        "db_schema_drift",
+        "ops_critical_alerts",
+        "last_signed_heartbeat"
+      ],
+      "truth": "UNATTESTED"
+    }
+  },
+  "boundaries": {
+    "sourceSignedRequired": true,
+    "tenantIsolated": true,
+    "roleFiltered": true,
+    "consentRequired": true,
+    "missingPeer": "DEPENDENT_CAPABILITY_HOLD",
+    "independentRelease": true,
+    "rawSecretSync": false,
+    "readOnlyMasterTelemetry": true,
+    "homeAutomationCommandsEnabled": false,
+    "physicalReceiverAuthority": "HOLD"
+  },
+  "nextCapabilities": [
+    "signed health and event ingestion",
+    "per-app service maps",
+    "historical performance time series",
+    "incident escalation",
+    "alert acknowledgement and audit",
+    "Home Assistant telemetry adapter under owner authorization",
+    "MQTT allowlisted sensors and automation controls with safety interlocks",
+    "dark/futuristic Master dashboards"
+  ]
+}

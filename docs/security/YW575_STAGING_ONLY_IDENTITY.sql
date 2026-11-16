@@ -1,0 +1,21 @@
+-- YW575 SCHEMA REVIEW DRAFT — NOT APPLIED. This is NOT an executable migration.
+-- Requires an isolated YW staging project, owner/DBA review and trusted
+-- provider-session lookup. Do not run this file against production.
+-- Proposed separate private data domains:
+--   private_yw_identity.company_hr_grants
+--     (company_id, user_id, capability, active, expires_at, grant_revision)
+--   private_yw_identity.session_revoke_requests
+--     (request_id, company_id, subject_user_id, actor_user_id,
+--      reviewer_user_id, approved_at, provider_status, audited_at)
+--   private_yw_identity.session_custody
+--     (company_id, user_id, session_id, source_revision, revoked_at)
+-- Requirements:
+--   FORCE ROW LEVEL SECURITY, dedicated server role, no public/anon grants,
+--   no SECURITY DEFINER public RPC, no browser service_role key.
+--   Tenant/company FOREIGN KEYS, immutable audit receipts, replay uniqueness,
+--   MFA + independent reviewer for privileged revocation, no self-approval.
+--   Server read auth.sessions by session_id for sensitive actions; refresh
+--   token invalidation alone does not expire existing access JWT immediately.
+--   Tests: cross-company actor/subject, stale grant, forged user_metadata,
+--   revoked or replayed session, wrong reviewer, expired receipt, race and rollback.
+-- This file performs zero writes by design.
