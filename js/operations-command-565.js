@@ -69,7 +69,9 @@
  }
  function refresh(){
   const el=$('yw565Command');if(!el)return;
-  el.hidden=!visible();if(el.hidden)return;
+  el.hidden=!visible();
+  // Keep the selected route synchronized even when the entire tenant command
+  // is intentionally hidden while the dedicated Sysop platform shell is open.
   const hash=location.hash||'#company';
   const loc=$('yw565CommandLocation');if(loc)loc.textContent='WORKSPACE: '+labelFor(hash).toUpperCase();
   for(const link of el.querySelectorAll('.yw565-command-link')){
