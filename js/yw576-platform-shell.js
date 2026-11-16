@@ -14,6 +14,7 @@ function sync(){
  const platform=active();
  root.dataset.ywSurface=platform?'platform':signed?'tenant':'guest';
  const region=$('yw576Platform');if(region)region.hidden=!platform;
+ const switcher=$('yw576SwitchCompany');if(switcher)switcher.hidden=!platform||!(window.YWIDualWorkspace?.snapshot?.().ownedCompanies>0);
  const band=document.querySelector('.slave-shell-banner');
  if(band){band.dataset.controlPlane=platform?'sysop':'tenant';}
  const surface=$('yw576SurfaceMode');if(surface)surface.textContent=platform?'PLATFORM CONTROL PLANE':'TENANT APPLICATION';
@@ -60,6 +61,12 @@ function build(){
    '. Owner/DBA must approve a genuine new tenant, secure owner invitation, site domain and provider-confirmed plan. No changes submitted.';
  });
  panel.append(form);
+ const switchCompany=node('button','Switch to my owned company workspace');switchCompany.type='button';switchCompany.className='secondary';switchCompany.id='yw576SwitchCompany';
+ switchCompany.addEventListener('click',()=>{
+  if(!active()||!(window.YWIDualWorkspace?.snapshot?.().ownedCompanies>0))return;
+  window.YWIRouter?.showSection?.('company');
+ });
+ panel.append(switchCompany);
  const footer=node('p','Platform management is not a tenant workspace. To open an owned company’s Jobs, Crew or Finance, explicitly switch to Company workspace after ownership verification.');
  footer.className='yw576-platform-foot';panel.append(footer);
  section.insertBefore(panel,host);

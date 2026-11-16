@@ -9,6 +9,7 @@ assert.ok(theme.includes("angular:'Angular · Steel & Copper'"));
 assert.ok(command.includes("location.hash!=='#sysop'"));
 assert.ok(platform.includes("window.YWIDualWorkspace?.isSysopVerified?.()===true"));
 assert.ok(platform.includes('not yet connected')&&platform.includes('No changes submitted'));
+assert.ok(platform.includes('yw576SwitchCompany')&&platform.includes("showSection?.('company')"));
 assert.ok(platform.includes("node('p','Company provisioning, subscriptions and system readiness."));
 assert.ok(style.includes('html[data-yw-surface="platform"] #mainNav'));
 assert.ok(style.includes('html[data-yw-surface="platform"] #moduleSectionNav'));
