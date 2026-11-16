@@ -92,6 +92,7 @@ test('Ponds and Skateparks appear beside seven company services, not in the plat
  await expect(page.locator('[data-pms443-specialty]')).toHaveCount(2);
  await page.locator('[data-pms443-specialty="ponds"]').click();
  expect(await page.evaluate(()=>window.__routes)).toEqual(['ponds']);
+ await page.setViewportSize({width:390,height:844});
  await page.locator('#pms443Mobile').selectOption('skateparks');
  expect(await page.evaluate(()=>window.__routes)).toEqual(['ponds','skateparks']);
  expect(await page.evaluate(()=>window.__writes)).toEqual([]);
