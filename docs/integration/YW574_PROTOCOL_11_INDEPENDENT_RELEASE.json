@@ -1,0 +1,88 @@
+{
+  "schema": "rosevear.yw574.independent-release-and-provenance.v1",
+  "application": "YW",
+  "build": 574,
+  "provenanceScope": "source-only",
+  "orderedOriginalMigrations": [
+    556,
+    557,
+    558,
+    559,
+    560,
+    561,
+    562,
+    563,
+    564,
+    565,
+    566,
+    567
+  ],
+  "sourceOnlyBuilds": [
+    568,
+    569,
+    570,
+    571
+  ],
+  "designOnlyUnapplied": [
+    572,
+    573
+  ],
+  "productionDbMigrationExecuted": false,
+  "stagingDbMigrationExecuted": false,
+  "stagingProjectRegistered": false,
+  "backupRestoreEvidenceVerified": false,
+  "productionSchemaParityVerified": false,
+  "signedOwnerCustodianCeremonyVerified": false,
+  "protocol": {
+    "current": "1.1",
+    "supportsPeers": [
+      "1.0",
+      "1.1"
+    ],
+    "additiveOnly": true,
+    "unknownCapabilitiesFailClosed": true,
+    "breakingChangesRequireMajorBump": true,
+    "peerNegotiationRequired": true,
+    "lockstepReleaseRequired": false,
+    "unrelatedLocalOperationsContinueWhenPeerUnavailable": true,
+    "dependentCapabilityHOLDOnPeerUnavailable": true,
+    "rawSecretSync": false,
+    "directPeerDbSync": false,
+    "automaticPeerDeployment": false
+  },
+  "appSequence": [
+    "ai-data-platform",
+    "rosevear-ai-hub",
+    "rosevear-comms-hub",
+    "iCamp",
+    "YW",
+    "devilndove",
+    "rosiedazzlers"
+  ],
+  "appBoundaries": {
+    "masters": [
+      "ai-data-platform",
+      "rosevear-ai-hub",
+      "rosevear-comms-hub"
+    ],
+    "slaveProductShells": [
+      "iCamp",
+      "YW"
+    ],
+    "internalCompanies": [
+      "devilndove",
+      "rosiedazzlers"
+    ]
+  },
+  "crossAppAuthority": {
+    "exactAudienceRequired": true,
+    "tenantAndWorkspaceIsolationRequired": true,
+    "explicitConsentRequired": true,
+    "perAppSignerRequired": true,
+    "durableNonceAndAckRequired": true,
+    "masterAckStatus": "HOLD",
+    "realTransportProven": false,
+    "localDbWriteAuthorityTransferred": false,
+    "originalHostAuthorityTransferred": false
+  }
+}
