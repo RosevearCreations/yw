@@ -1,0 +1,31 @@
+YW576 — Yard Workers monthly-subscription platform, sample tenant and signed cross-service route
+2026-11-16 / Source-only release. This file is a design and independently testable verifier, NOT a live permission or company-provisioning authority.
+
+PLATFORM (YW main Shell / Sysop)
+- Verified curated membership via original ywi_is_platform_administrator_489 RPC is necessary. Ree/Jack individual accounts are eligible only when enrolled; user display name or company owner is not permission.
+- Show company directory and aggregate module counts, platform health/readiness, onboarding requests, subscription administration and per-tenant feature flags only after real server-authorized source enrollment. NO jobs, employee names, payroll, invoices, margins, customer addresses, service properties or full company operation records on Sysop.
+- New company sites require a separate privileged provisioning endpoint that verifies Sysop membership on server, reserves tenant ID/domain, assigns owner, provisions scoped RLS and roles, chooses subscription with verified payment-provider state, creates company-specific public site and records audit + rollback. YW576 offers a client-side draft for review, not a real DB write or paid subscription.
+- Company site manager should later include tenant status, active modules, quota/usage, subscription aging, help desk, incident acknowledgements, and anonymized health signals. Never proxy arbitrary company record access.
+- Main/platform view hides company navigation and private panels. Client-only visual isolation is not server authorization; all tenant originals still enforce RLS and owner grants.
+
+TENANT (Rosevear Landscaping)
+- Rosevear Landscaping is a demonstration / pilot landscaping company. It is not the Sysop, master software or test-only UI mock; once a real company/owner is enrolled it has the same full company-level CRM, Quotes, Jobs, Dispatch, Crew, HR, Finance, Equipment, Ponds, Skateparks, and customer service functions as paid tenants.
+- No cross-company data via platform session. Company ownership must be independently verified from original ywi_companies and current auth session.
+- Product shell has two clear scopes: Platform SaaS Control Plane versus Tenant Company Workspace. Visual mode is not a grant of role authority.
+
+SIGNED BOOKING / QUOTE / JOB / CREW / ROUTE
+- Canonical implementation order from YW552–555 originals is approved booking, actually customer-accepted original quote, original canonical Job, verified crew Dispatch, then workability and route recheck. Skipping actual Job creation to send a crew violates source custody.
+- scripts/yw576-signed-route.mjs is a source-only P-256 verifier; each stage requires independently server-verified matching source, enrollment key/capability, tenant/customer/property identity, revision, time window, nonce and previous-source SHA256.
+- No original provider JWT/DB signing is forged in this build. The script cannot make records original and does not send notifications, create Jobs, assign employees or take payment. It reports verified SHAPE only when the supplied trusted originals are verified.
+- iCamp may request a consented capability without linking private reservations across tenants. Rosevear Comms Hub sends messages only after verified owner/recipient consent, signed outbox and actual durable ACK. 1.0 peers remain compatible with additive 1.1; unrelated app updates do not require all seven apps to deploy.
+- Physical master receiver, signed Master ACK, private Supabase migrations, server-side company provisioning and genuine payment settlements stay HOLD pending owner/DBA/operator authority.
+
+THEME
+- Original Standard · Blue preserved.
+- Futuristic · Violet gains harder edges and a geometric command feel.
+- Angular · Steel & Copper includes sharp bevels, technical hatch patterns and SVG-like faceted vector shapes built as CSS. Theme selection never changes data scope.
+- Source-only UI changes do not alter iCamp or three Master repos.
+
+RELEASE
+- Feature→dev PR with all required GitHub browser/source/auth tests, exact Vercel READY; independently protected dev→main reviewed PR with same evidence; live production READY matching exact main SHA, all postpush source/three-browser/repository/release evidence truth success, non-force dev/main equality.
+- Production SQL / billing / provisioning live acceptance is separate and requires isolated staging and reviewed live credentials; never simulate service completion.
