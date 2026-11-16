@@ -1,0 +1,57 @@
+{
+  "schema": "rosevear.yw576.booking-quote-crew-route.v1",
+  "protocol": "1.1",
+  "supportedPeers": [
+    "1.0",
+    "1.1"
+  ],
+  "platform": "YW",
+  "companyTenant": "Rosevear Landscaping (sample tenant if verified in registry)",
+  "sequence": [
+    "booking_approved",
+    "quote_customer_accepted",
+    "canonical_job_created",
+    "crew_dispatch_verified",
+    "route_workability_rechecked"
+  ],
+  "ownerAuthority": "original verified company owner",
+  "requires": [
+    "original enrolled per-capability P256 issuer",
+    "signed source revisions",
+    "company/customer/property equality",
+    "no replay/nonce reuse",
+    "original source status",
+    "verified original safe dispatch",
+    "consent-bound cross-app handoff"
+  ],
+  "integration": {
+    "iCamp": {
+      "direction": "capability-scoped request only",
+      "signedAck": "HOLD",
+      "rawDataCopy": false
+    },
+    "commsHub": {
+      "direction": "owner-consented signed outbox only",
+      "deliveryAck": "HOLD",
+      "rawDataCopy": false
+    },
+    "masters": {
+      "status": "NOT_VERIFIED_CONNECTED",
+      "releaseLockstep": false
+    }
+  },
+  "platformControlPlane": {
+    "sysopAuthority": "curated ywi_is_platform_administrator_489",
+    "companyProvisioning": "BACKEND_APPROVAL_REQUIRED",
+    "subscriptionBilling": "PROVIDER_VERIFICATION_REQUIRED",
+    "tenantPII": "FORBIDDEN"
+  },
+  "operation": {
+    "sourceVerifierOnly": true,
+    "dbMigrationExecuted": false,
+    "dispatchTriggered": false,
+    "chargeCaptured": false,
+    "messageSent": false,
+    "companySiteCreated": false
+  }
+}

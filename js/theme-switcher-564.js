@@ -4,7 +4,7 @@
 (() => {
  'use strict';
  const KEY='yw-theme-v1';
- const THEMES=Object.freeze({standard:'Standard · Blue',futuristic:'Futuristic · Violet'});
+ const THEMES=Object.freeze({standard:'Standard · Blue',futuristic:'Futuristic · Violet',angular:'Angular · Steel & Copper'});
  const ROUTES=Object.freeze([
   ['#company','Company','▦'],['#sysop','Platform','◈'],
   ['#today','Jobs','▤'],['#finance','Finance','◫'],
@@ -12,7 +12,7 @@
  ]);
  const root=document.documentElement;
  function load(){
-  try{return localStorage.getItem(KEY)==='futuristic'?'futuristic':'standard';}
+  try{const value=localStorage.getItem(KEY);return Object.hasOwn(THEMES,value)?value:'standard';}
   catch{return 'standard';}
  }
  function setTheme(name,persist=true){
@@ -41,7 +41,7 @@
  function refreshRail(){
   const rail=document.getElementById('yw564Rail');
   if(!rail)return;
-  const shown=authorized()&&root.dataset.ywTheme==='futuristic';
+  const shown=authorized()&&['futuristic','angular'].includes(root.dataset.ywTheme)&&location.hash!=='#sysop';
   rail.hidden=!shown;
   const sysop=document.getElementById('workspace550SysopLink');
   for(const a of rail.querySelectorAll('a')){
