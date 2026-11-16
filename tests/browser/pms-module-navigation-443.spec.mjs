@@ -10,7 +10,9 @@ async function setup(page,options={}){
  await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>.pms443-desktop{display:grid;gap:5px;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr))}.pms443-mobile-label{display:none}@media(max-width:600px){.pms443-desktop{display:none}.pms443-mobile-label{display:grid}}</style></head><body style="margin:8px"><div id="admin"><details id="owner424"><summary>Lawn</summary></details><details id="owner450Snow"><summary>Snow Removal</summary></details><details id="owner450Plow"><summary>Snow Plowing</summary></details><details id="owner451Septic"><summary>Septic</summary></details><details id="owner451Arbor"><summary>Tree Care</summary></details></div></body></html>');
  await page.evaluate(({response,options,company,ownerId,companyAdminTest})=>{
   window.__calls=[];window.__writes=[];window.__signedOut=!!options.signedOut;
-  window.YWISecurity={canViewModule:(module,role)=>module==='jobs'&&role==='admin'&&!options.noJobs};
+  window.YWISecurity={canViewModule:(module,role)=>module==='jobs'&&role==='admin'&&!options.noJobs,
+   canViewSection:(section)=>['ponds','skateparks'].includes(section)&&!options.noJobs&&!options.signedOut};
+  window.__routes=[];window.YWIRouter={showSection:(route)=>window.__routes.push(route)};
   window.YWI_AUTH={getState:()=>({isAuthenticated:!window.__signedOut,user:{id:ownerId},role:'admin'})};
   const ok=data=>({data,error:null});
   window.YWI_SB={auth:{getUser:async()=>ok({user:{id:options.badSession?'wrong':ownerId}})},
@@ -37,7 +39,8 @@ test('Yard Rosevear seven-switch owner tenant displays matching mobile options, 
  expect(await page.locator('[data-pms443-service]').evaluateAll(xs=>xs.map(x=>x.dataset.pms443Service)))
   .toEqual(['landscape','snow_removal','septic']);
  expect(await page.locator('#pms443Mobile option').evaluateAll(xs=>xs.slice(1).map(x=>x.value)))
-  .toEqual(['landscape','snow_removal','septic']);
+  .toEqual(['landscape','snow_removal','septic','ponds','skateparks']);
+ await expect(page.locator('[data-pms443-specialty]')).toHaveCount(2);
  await expect(page.locator('#pms443History')).toContainText('Historical access retained');
  await expect(page.locator('#pms443Planned')).toContainText('Planned service and business modules');
  expect(await page.evaluate(()=>window.__writes)).toEqual([]);
@@ -57,7 +60,8 @@ test('desktop has exactly enabled service buttons, retaining original entry poin
 test('all services OFF yields no actionable navigation and preserves historical reads',async({page})=>{
  await setup(page,{allOff:true});
  await expect(page.locator('[data-pms443-service]')).toHaveCount(0);
- await expect(page.locator('#pms443Mobile option')).toHaveCount(1);
+ await expect(page.locator('#pms443Mobile option')).toHaveCount(3);
+ await expect(page.locator('[data-pms443-specialty]')).toHaveCount(2);
  await expect(page.locator('#pms443History')).toContainText('authorized Jobs and audit screens');
 });
 test('foreign tenant, absent owner, missing Jobs permission, denied RPC and session mismatch fail closed',async({page})=>{
@@ -65,6 +69,7 @@ test('foreign tenant, absent owner, missing Jobs permission, denied RPC and sess
   await setup(page,options);
   await expect(page.locator('#pms443Status')).toContainText('WITHHELD');
   await expect(page.locator('[data-pms443-service]')).toHaveCount(0);
+  await expect(page.locator('[data-pms443-specialty]')).toHaveCount(0);
  }
 });
 test('no live company: synthetic fixture is not silently promoted to a real tenant',async({page})=>{
@@ -79,4 +84,15 @@ test('signout invalidates rendered navigation and any later read',async({page})=
  await expect(page.locator('[data-pms443-service]')).toHaveCount(0);
  await page.locator('#pms443Refresh').click();
  await expect(page.locator('#pms443Status')).toContainText('WITHHELD');
+});
+
+
+test('Ponds and Skateparks appear beside seven company services, not in the platform menu',async({page})=>{
+ await setup(page,{desktop:true});
+ await expect(page.locator('[data-pms443-specialty]')).toHaveCount(2);
+ await page.locator('[data-pms443-specialty="ponds"]').click();
+ expect(await page.evaluate(()=>window.__routes)).toEqual(['ponds']);
+ await page.locator('#pms443Mobile').selectOption('skateparks');
+ expect(await page.evaluate(()=>window.__routes)).toEqual(['ponds','skateparks']);
+ expect(await page.evaluate(()=>window.__writes)).toEqual([]);
 });

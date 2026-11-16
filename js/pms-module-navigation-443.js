@@ -12,6 +12,13 @@ const modules=Object.freeze([
  {key:'septic',label:'Septic Services',target:'owner451Septic'},
  {key:'arboriculture',label:'Arboriculture & Tree Care',target:'owner451Arbor'}
 ]);
+// Pond and Skatepark workspaces are separate tenant planning tools, NOT two more
+// server-side enabled-service switches. Preserve the seven authoritative 420/443
+// company entitlement rows until an independently approved migration exists.
+const specialties=Object.freeze([
+ {key:'ponds',label:'Custom Ponds · Design, Build & Maintenance (planning)',route:'ponds'},
+ {key:'skateparks',label:'Skateparks · Design, Build & Maintenance (planning)',route:'skateparks'}
+]);
 const planned=Object.freeze(['Hardscaping','Fencing & Decks','Commercial Property Inspections',
  'Advanced CRM Automation']);
 const uuid=s=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
@@ -34,7 +41,7 @@ function inspect(source,{companyId,now=Date.now(),jobsAllowed=false}={}){
   disabled:modules.filter(m=>!enabled.has(m.key)).map(m=>m.key),
   historicalRead:true,newWorkAllowed:false,tenantScoped:true};
 }
-window.YWI443=Object.freeze({keys,modules,planned,inspect});
+window.YWI443=Object.freeze({keys,modules,specialties,planned,inspect});
 const element=(tag,value)=>{const e=document.createElement(tag);if(value!==undefined)e.textContent=String(value);return e;};
 function mount(){const root=document.getElementById('admin');if(!root||document.getElementById('pms443'))return;
  const panel=element('details');panel.id='pms443';panel.className='admin-hub-detail';
@@ -43,7 +50,7 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
  panel.style.cssText='min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere';
  panel.append(element('summary','443 · Property Maintenance System · Company Module Navigator'));
  const body=element('div');body.className='admin-panel-block';
- body.append(element('p','Choose an owned company to see only its enabled service entry points. Desktop and mobile show the same seven-service entitlements. This is navigation, not permission to create work. Existing authorized historical reviews remain available when an offering is OFF.'));
+ body.append(element('p','Choose an owned company to see its enabled Lawn, Snow, Septic and other services, plus Custom Ponds and Skatepark planning workspaces in this same menu. Desktop and mobile retain the original seven verified service-entitlement switches. Pond/Skatepark planning is not a service entitlement, a booking or permission to create work.'));
  const help=element('a','ⓘ Module navigation Help');help.href='/help.html#pms-tenant-module-navigation-443';body.append(help);
  const row=element('div');row.className='pms443-toolbar';
  const label=element('label','Verified owner company');const company=element('select');company.id='pms443Company';
@@ -87,7 +94,20 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
  function companyOptions(rows){const prior=company.value;company.replaceChildren();const placeholder=element('option','Choose owner company');placeholder.value='';company.append(placeholder);
   for(const item of rows){const opt=element('option',item.name);opt.value=item.id;company.append(opt);}
   if(rows.some(r=>r.id===prior))company.value=prior;else if(rows.length===1)company.value=rows[0].id;}
- function go(key){if(review?.state!=='verified_navigation_only'||!review.services.some(s=>s.key===key))return;
+ function go(key){
+  if(review?.state!=='verified_navigation_only')return;
+  const specialty=specialties.find(s=>s.key===key);
+  if(specialty){
+   const a=window.YWI_AUTH?.getState?.()||{};
+   if(a.isAuthenticated!==true||!uuid(a.user?.id)||a.user.id!==identity||
+      review.companyId!==company.value||!roster.some(c=>c.id===company.value)||
+      window.YWISecurity?.canViewSection?.(specialty.route,a.role)!==true){
+    status.textContent='WITHHELD: verify ownership of this landscaping company before opening specialty planning.';return;
+   }
+   window.YWIRouter?.showSection?.(specialty.route);
+   return;
+  }
+  if(!review.services.some(s=>s.key===key))return;
   const target=modules.find(m=>m.key===key);
   const section=document.getElementById(target?.target)||
     (key==='landscape'?document.getElementById('owner424'):null);
@@ -105,7 +125,15 @@ function mount(){const root=document.getElementById('admin');if(!root||document.
   for(const service of value.services){const button=element('button',service.label);button.type='button';button.className='secondary';
    button.dataset.pms443Service=service.key;button.onclick=()=>go(service.key);desktop.append(button);
    const opt=element('option',service.label);opt.value=service.key;mobile.append(opt);}
-  if(!value.services.length)desktop.append(element('p','All services are OFF for this company.'));
+  if(!value.services.length)desktop.append(element('p','All production service switches are OFF for this company.'));
+  // Same company service navigator and mobile selector as Lawn, Snow and Septic;
+  // each item is explicitly labelled planning-only, never an enabled offering.
+  for(const item of specialties){
+   const button=element('button',item.label);button.type='button';
+   button.className='secondary';button.dataset.pms443Specialty=item.key;
+   button.onclick=()=>go(item.key);desktop.append(button);
+   const option=element('option',item.label);option.value=item.key;mobile.append(option);
+  }
   archived.replaceChildren();archived.append(element('strong','Historical access retained: '),
    document.createTextNode('authorized Jobs and audit screens still follow their existing roles and server checks; the module switch does not delete records.'));
  }

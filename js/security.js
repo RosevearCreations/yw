@@ -174,7 +174,7 @@
     if (id === 'ponds' || id === 'skateparks') {
       const a = window.YWI_AUTH?.getState?.() || {};
       const w = window.YWIDualWorkspace?.snapshot?.() || {};
-      return a.isAuthenticated === true && (w.ownedCompanies > 0 || window.YWIDualWorkspace?.isSysopVerified?.() === true);
+      return a.isAuthenticated === true && w.ownedCompanies > 0;
     }
     if (id === 'me' || id === 'settings') return true;
     const moduleKey = getModuleForSection(id);
