@@ -171,6 +171,11 @@
     const id = String(sectionId || '').trim();
     if (id === 'sysop') return window.YWIDualWorkspace?.isSysopVerified?.() === true;
     if (id === 'company') return window.YWI_AUTH?.getState?.()?.isAuthenticated === true;
+    if (id === 'ponds' || id === 'skateparks') {
+      const a = window.YWI_AUTH?.getState?.() || {};
+      const w = window.YWIDualWorkspace?.snapshot?.() || {};
+      return a.isAuthenticated === true && (w.ownedCompanies > 0 || window.YWIDualWorkspace?.isSysopVerified?.() === true);
+    }
     if (id === 'me' || id === 'settings') return true;
     const moduleKey = getModuleForSection(id);
     if (moduleKey) return canViewModule(moduleKey, role, getRequiredModuleAccess(id));
