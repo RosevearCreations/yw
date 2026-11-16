@@ -1,0 +1,70 @@
+{
+  "contract_version": "rosevear.yw573.cross-app-governance.v1",
+  "purpose": "Source-only shared contract; not a live service connection, not verified Master theme or ACK",
+  "status": "UNATTESTED",
+  "sequence": [
+    {
+      "app": "ai-data-platform",
+      "role": "master",
+      "desired_common_theme": "instrument-unified",
+      "live_theme_verified": false,
+      "master_ack": "HOLD"
+    },
+    {
+      "app": "rosevear-ai-hub",
+      "role": "master",
+      "desired_common_theme": "instrument-unified",
+      "live_theme_verified": false,
+      "original_host_authority": "HOLD",
+      "master_ack": "HOLD"
+    },
+    {
+      "app": "rosevear-comms-hub",
+      "role": "master",
+      "desired_common_theme": "instrument-unified",
+      "live_theme_verified": false,
+      "master_ack": "HOLD"
+    },
+    {
+      "app": "iCamp",
+      "role": "slave_product_shell",
+      "own_theme_allowed": true,
+      "required_shell_marker": "SLAVE APPLICATION SHELL",
+      "live_shell_marker_verified": false,
+      "master_ack": "HOLD"
+    },
+    {
+      "app": "YW",
+      "role": "slave_product_shell",
+      "own_theme_allowed": true,
+      "required_shell_marker": "SLAVE APPLICATION SHELL",
+      "source_shell_marker_verified": true,
+      "master_ack": "HOLD"
+    },
+    {
+      "app": "devilndove",
+      "role": "internal_company",
+      "comms_transport": "UNATTESTED",
+      "master_signer_enrolled": false,
+      "delivery_verified": false
+    },
+    {
+      "app": "rosiedazzlers",
+      "role": "internal_company",
+      "comms_transport": "UNATTESTED",
+      "master_signer_enrolled": false,
+      "delivery_verified": false
+    }
+  ],
+  "service_message_requirements": {
+    "issuer_enrolled_out_of_band": true,
+    "tenant_isolated": true,
+    "exact_audience_required": true,
+    "nonce_replay_custody_required": true,
+    "durable_ack_required": true,
+    "publisher_permissions_required": true,
+    "source_only_status": "HOLD",
+    "actual_transport_performed": false
+  },
+  "production_verification": "Requires separate exact-SHA deployment, runtime theme inspection and independently signed acknowledgments for other apps"
+}

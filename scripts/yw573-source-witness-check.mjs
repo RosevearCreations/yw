@@ -1,0 +1,95 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const files=['js/landscape-resolution-568.js','js/source-recurrence-569.js',
+ 'js/source-assurance-570.js','js/source-disposition-571.js','js/source-security-572.js','js/source-witness-573.js'];
+const scripts=files.map(path=>fs.readFileSync(path,'utf8'));
+const window={addEventListener(){}},document={readyState:'loading',addEventListener(){}};
+new vm.Script(scripts.at(-1),{filename:files.at(-1)});
+vm.runInNewContext(scripts.join('\n'),{window,document,Date});
+const check=window.YW573Witness.check;
+const id=n=>n.toString(16).padStart(8,'0')+'-1111-4111-8111-111111111111';
+const owner=id(1),company=id(2),request=id(3),receipt=id(4),
+ reconciled=id(5),reopened=id(6),audit=id(7),observed=id(8);
+const now=Date.parse('2026-11-15T14:00:00Z'),when=h=>new Date(now-h*3600000).toISOString();
+const scope={company,request,receipt};
+const source=()=>({
+ company_id:company,request_id:request,provider_verified_receipt_id:receipt,
+ case_version:5,canonical_sha256:'a'.repeat(64),
+ company_scope_only:true,read_only:true,source_only_not_continuous_uptime:true,
+ master_owner_acceptance:false,master_connected:false,
+ customer_message_sent:false,recipient_delivery_independently_verified:false,
+ source_reconciliation_id:reconciled,source_reopen_id:reopened,
+ latest_source_remediation_audit_id:audit,source_reopened_at:when(3),
+ master_observation_id:observed,master_observation_verified_at:when(2),
+ source_receipt_stale:false,signed_risk_after_reconciliation:false,
+ source_sla_breached:false,source_sla_state:'WITHIN_TARGET',
+ source_sla_due_at:when(-6),remediation_audit_current:true,
+ independent_source_remediation_ready:false,
+ remediation_classification:'SOURCE_REMEDIATION_AUDITED_MASTER_HOLD',
+ checked_at:when(0.01)
+});
+const entry=(n,action,ago,extra={})=>({
+ id:id(n),idempotency_key:id(n+100),company_id:company,request_id:request,
+ provider_verified_receipt_id:receipt,case_version:5,owner_user_id:owner,
+ action,recorded_at:when(ago),...extra
+});
+const rows=()=>[
+ entry(7,'audit_signed_source_remediation',1,{anchor_master_observation_id:observed}),
+ entry(6,'record_signed_source_reopen',3),
+ entry(10,'record_signed_source_reopen',72),
+ entry(11,'request_supervised_remediation_recheck',80)
+];
+test('YW573 original owner source review cannot auto-sign witnesses or admit disposition custody',()=>{
+ const result=check(source(),scope,rows(),owner,now);
+ assert.equal(result.code,'SOURCE_READBACK_VERIFIED_WITNESS_QUORUM_PENDING_MASTER_HOLD');
+ assert.equal(result.signed_witnesses_admitted,0);
+ assert.equal(result.original_dispositions_durably_custodied,0);
+ assert.equal(result.disposition_admission,'NOT_AUTHORIZED');
+ assert.equal(result.sla_outcome,'NOT_ESTABLISHED');
+ assert.equal(result.master_connected,false);
+ assert.equal(result.customer_delivery_verified,false);
+ assert.equal(result.app_count,7);
+});
+test('YW573 denies stale source, unauthorized owner, foreign tenant, and current SLA risk',()=>{
+ const cases=[
+  check({...source(),checked_at:when(2)},scope,rows(),owner,now),
+  check({...source(),source_sla_breached:true},scope,rows(),owner,now),
+  check({...source(),master_connected:true},scope,rows(),owner,now),
+  check(source(),{...scope,company:id(19)},rows(),owner,now),
+  check(source(),scope,rows().map((x,i)=>i===0?{...x,owner_user_id:id(19)}:x),owner,now),
+  check(source(),scope,[],owner,now)
+ ];
+ for(const result of cases)assert.notEqual(result.code,'SOURCE_READBACK_VERIFIED_WITNESS_QUORUM_PENDING_MASTER_HOLD');
+});
+test('YW573 enforces seven-app exact trust boundary and browser source-only UI',()=>{
+ assert.deepEqual(Array.from(window.YW573Witness.apps,x=>x[0]),
+  ['ai-data-platform','rosevear-ai-hub','rosevear-comms-hub','iCamp',
+   'YW','devilndove','rosiedazzlers']);
+ const html=fs.readFileSync('index.html','utf8');
+ const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
+ assert.match(html,/js\/source-witness-573\.js/);
+ assert.match(html,/SLAVE APPLICATION SHELL/);
+ assert.match(pkg.scripts['test:landscape-supervisor-resolution-558'],/yw573-disposition-ledger-check/);
+ assert.match(pkg.scripts['test:landscape-supervisor-resolution-558'],/yw573-source-witness-check/);
+ assert.match(pkg.scripts['test:browser:landscape-supervisor-resolution-558'],/source-disposition-mobile-573\.spec/);
+ assert.doesNotMatch(scripts.at(-1),/\.insert\(|\.update\(|\.delete\(|localStorage|sessionStorage|SERVICE_ROLE|PRIVATE KEY|crypto\.subtle/);
+ assert.match(scripts.at(-1),/YW572Security\?\.check/);
+ assert.match(scripts.at(-1),/ywi_rpc_landscape_master_remediation_review_567/);
+});
+test('YW573 ordered Master themes, two slave labels and company transport remain source-only and unverified',()=>{
+ const packet=JSON.parse(fs.readFileSync('docs/integration/YW573_MASTER_SHELL_COMMS_HANDOFF.json','utf8'));
+ assert.equal(packet.status,'UNATTESTED');
+ assert.deepEqual(packet.sequence.map(q=>q.app),
+ ['ai-data-platform','rosevear-ai-hub','rosevear-comms-hub','iCamp','YW','devilndove','rosiedazzlers']);
+ const master=packet.sequence.slice(0,3);
+ assert.equal(new Set(master.map(q=>q.desired_common_theme)).size,1);
+ assert.equal(master.every(q=>q.live_theme_verified===false&&q.master_ack==='HOLD'),true);
+ assert.equal(packet.sequence[3].required_shell_marker,'SLAVE APPLICATION SHELL');
+ assert.equal(packet.sequence[4].source_shell_marker_verified,true);
+ assert.equal(packet.sequence[5].comms_transport,'UNATTESTED');
+ assert.equal(packet.sequence[6].comms_transport,'UNATTESTED');
+ assert.equal(packet.service_message_requirements.actual_transport_performed,false);
+});
+console.log('YW573 signed original disposition witness HOLD, owner RLS, seven-app shell and source-only UI PASS');
