@@ -19,7 +19,7 @@
  ];
  function isAuth(){return window.YWI_AUTH?.getState?.()?.isAuthenticated===true;}
  function isPlatform(){const a=$('workspace550SysopLink');return !!(a&&!a.hidden);}
- function visible(){return root.dataset.ywTheme==='futuristic'&&isAuth();}
+ function visible(){return (root.dataset.ywTheme==='futuristic'||root.dataset.ywTheme==='angular')&&isAuth()&&location.hash!=='#sysop';}
  function labelFor(anchor){
   for(const group of groups)for(const link of group.links)
    if(link[0]===anchor)return link[1];
@@ -69,7 +69,9 @@
  }
  function refresh(){
   const el=$('yw565Command');if(!el)return;
-  el.hidden=!visible();if(el.hidden)return;
+  el.hidden=!visible();
+  // Keep the selected route synchronized even when the entire tenant command
+  // is intentionally hidden while the dedicated Sysop platform shell is open.
   const hash=location.hash||'#company';
   const loc=$('yw565CommandLocation');if(loc)loc.textContent='WORKSPACE: '+labelFor(hash).toUpperCase();
   for(const link of el.querySelectorAll('.yw565-command-link')){

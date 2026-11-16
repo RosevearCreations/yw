@@ -37,7 +37,7 @@
     const grid=element('div');grid.className='yw550-workspace-grid';
     for(const c of state.companyRows){
       const card=element('article');card.className='yw550-workspace-card';card.dataset.companyId=c.id;
-      card.append(element('h3',c.name),element('p','Verified owner workspace. Customer jobs, pricing, crews and contracts stay in this company’s existing permission-controlled modules.'));
+      card.append(element('h3',c.name),element('p',c.name==='Rosevear Landscaping'?'Sample tenant company · the same full Jobs, Crew, CRM, Finance and field modules as a paying landscaping company. Sample status never grants Sysop rights.':'Verified tenant company · Jobs, Crew, Finance, CRM and contracts stay inside its own permission-controlled workspace.'));
       const actions=element('div');actions.className='yw550-workspace-actions';
       actions.append(button('Open jobs','today'),button('Company service settings','settings'));
       card.appendChild(actions);grid.appendChild(card);
@@ -62,7 +62,7 @@
     host.appendChild(metrics);
     host.appendChild(element('p','Platform statistics only. This workspace cannot open another company’s customer records, crew jobs, invoices or property details. Contract statistics require separately verified company-scoped aggregation; none are inferred from service counts.'));
     const controls=element('div');controls.className='yw550-workspace-actions';
-    controls.append(button('Open I.T. diagnostics','it'),button('Open elevated help','settings'));
+    controls.append(button('Refresh platform overview','sysop'));
     host.appendChild(controls);
     if(!companies.length){host.appendChild(element('p','No registered companies returned.'));return;}
     const table=element('table');table.className='yw550-company-stats';

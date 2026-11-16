@@ -50,7 +50,7 @@
    if(!yes)link.removeAttribute('title');
   }
   const command=$('yw565Command');
-  if(command&&root.dataset.ywTheme==='futuristic'&&auth()){
+  if(command&&['futuristic','angular'].includes(root.dataset.ywTheme)&&auth()){
    let line=$('yw566NavigationStatus');
    if(!line){
     line=document.createElement('p');

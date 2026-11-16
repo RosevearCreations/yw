@@ -1,0 +1,91 @@
+/* YW576 angular engineering palette — presentation only; no authority. */
+html[data-yw-theme="angular"]{
+ --yw576-copper:#e2a368;--yw576-steel:#a9c9dc;
+ --yw576-ink:#081521;--yw576-line:rgba(120,201,232,.42);
+ color-scheme:dark;
+ background:#06111d;
+}
+html[data-yw-theme="angular"] body{
+ background:radial-gradient(ellipse at 84% 14%,rgba(25,75,102,.19),transparent 48%),
+  repeating-linear-gradient(90deg,transparent 0 47px,rgba(118,179,215,.045) 48px),
+  repeating-linear-gradient(0deg,transparent 0 47px,rgba(118,179,215,.045) 48px),#071522;
+}
+html[data-yw-theme="angular"] .app-header,
+html[data-yw-theme="angular"] #sysop .card,
+html[data-yw-theme="angular"] .yw550-workspace-card{
+ border-color:var(--yw576-line)!important;border-radius:2px!important;
+ box-shadow:inset 0 0 0 1px rgba(8,34,50,.5),0 14px 36px rgba(0,0,0,.2);
+}
+html[data-yw-theme="angular"] .card,
+html[data-yw-theme="angular"] .admin-panel-block,
+html[data-yw-theme="angular"] .yw565-command-card{
+ border-radius:2px!important;
+}
+html[data-yw-theme="angular"] button,
+html[data-yw-theme="angular"] .secondary,
+html[data-yw-theme="angular"] .primary{
+ border-radius:2px!important;
+}
+html[data-yw-theme="angular"] button:focus-visible,
+html[data-yw-theme="angular"] a:focus-visible{outline:3px solid var(--yw576-copper);outline-offset:3px}
+html[data-yw-theme="angular"] .slave-shell-banner{
+ border-radius:0!important;box-shadow:inset 4px 0 var(--yw576-copper);
+ border-color:rgba(226,163,104,.56);background:linear-gradient(112deg,#0e2535,#162537 55%,#061a2a);
+}
+.yw576-platform{padding:clamp(8px,2vw,20px);margin:10px 0 18px;
+ background:linear-gradient(145deg,rgba(9,29,44,.98),rgba(5,15,27,.98));
+ border:1px solid rgba(115,199,233,.42);border-radius:3px;min-width:0}
+.yw576-platform-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(140px,235px);
+ align-items:center;gap:18px;min-height:190px;margin:0 0 20px;
+ padding:clamp(18px,3vw,30px);overflow:hidden;position:relative;
+ clip-path:polygon(0 0,97% 0,100% 22px,100% 100%,0 100%);
+ background:linear-gradient(121deg,#102d41 0%,#112437 48%,#122335 100%);
+ border-left:4px solid #dca36e;}
+.yw576-platform-hero::before{content:"";position:absolute;inset:0;
+ background:repeating-linear-gradient(135deg,transparent 0 25px,rgba(112,178,208,.045) 25px 26px);pointer-events:none}
+.yw576-platform-hero >div{position:relative;min-width:0}
+.yw576-platform-hero h2{font-size:clamp(1.75rem,4vw,2.8rem);
+ text-transform:uppercase;letter-spacing:.035em;margin:4px 0;color:#f3f8fd}
+.yw576-platform-hero p{max-width:650px;color:#d5e6ef;line-height:1.55}
+.yw576-platform-hero >div >p:first-child{color:#f2bc80;font-weight:800;letter-spacing:.16em;font-size:.77rem}
+.yw576-platform-hero svg{width:100%;max-width:240px;max-height:160px;color:#8bdbf3;filter:drop-shadow(0 0 12px rgba(76,174,202,.2))}
+.yw576-mode{color:#b6d8e8;font-size:.78rem;letter-spacing:.13em;font-weight:750;margin:0 0 14px}
+.yw576-overview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.yw576-overview-card{position:relative;min-width:0;padding:22px 18px;
+ border:1px solid #38596d;border-radius:0;background:linear-gradient(155deg,#152b3c,#0e1b2c);
+ clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,0 100%);
+ box-shadow:inset 3px 0 rgba(220,163,110,.8)}
+.yw576-overview-card::after{content:"";position:absolute;top:4px;right:14px;width:28px;height:28px;
+ background:linear-gradient(135deg,transparent 46%,rgba(147,223,242,.35) 48%,transparent 52%);
+ pointer-events:none}
+.yw576-overview-card span{display:block;font-size:.74rem;letter-spacing:.12em;font-weight:800;color:#dcb07e;margin-bottom:8px}
+.yw576-overview-card strong{display:block;color:#f1f7fc;font-size:1.04rem}
+.yw576-overview-card p{font-size:.9rem;line-height:1.5;color:#c4d9e7;margin:10px 0 0}
+.yw576-provision-draft,.yw576-company-journey{padding:22px;margin:18px 0 0;
+ background:rgba(15,34,50,.8);border:1px solid rgba(121,200,232,.37);border-left:4px solid #dca36e;border-radius:2px}
+.yw576-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:12px 0}
+.yw576-form-grid label{display:block;min-width:0;font-weight:650}
+.yw576-form-grid input,.yw576-form-grid select{display:block;width:100%;max-width:100%;box-sizing:border-box;min-height:44px;margin-top:5px}
+.yw576-provision-result,.yw576-platform-foot{overflow-wrap:anywhere;line-height:1.5;color:#c4d8e5}
+.yw576-company-journey li{margin:8px 0}
+html[data-yw-surface="platform"] #mainNav,
+html[data-yw-surface="platform"] #moduleSectionNav,
+html[data-yw-surface="platform"] #mobileQuickNav,
+html[data-yw-surface="platform"] #mainMenuToggle,
+html[data-yw-surface="platform"] #yw564Rail,
+html[data-yw-surface="platform"] #yw565Command,
+html[data-yw-surface="platform"] .app-supporting-panels,
+html[data-yw-surface="platform"] #workspace550CompanyLink,
+html[data-yw-surface="platform"] #workspace575Ponds,
+html[data-yw-surface="platform"] #workspace575Skateparks,
+html[data-yw-surface="platform"] #headerSettingsLink{display:none!important}
+html[data-yw-surface="platform"] #workspace550Nav{display:flex!important}
+html[data-yw-surface="platform"] #sysop{border-radius:2px!important}
+html[data-yw-surface="platform"] .slave-shell-banner{border-radius:2px}
+@media(max-width:760px){.yw576-overview-grid{grid-template-columns:1fr}
+ .yw576-platform-hero{grid-template-columns:1fr}
+ .yw576-platform-hero svg{max-width:150px;justify-self:end}
+ .yw576-form-grid{grid-template-columns:1fr}
+ .yw576-platform{padding:10px}
+}
+@media(prefers-reduced-motion:reduce){.yw576-platform *,html[data-yw-theme="angular"] *{transition:none!important;animation:none!important}}
