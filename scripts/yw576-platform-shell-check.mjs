@@ -13,6 +13,7 @@ assert.ok(platform.includes('yw576SwitchCompany')&&platform.includes("showSectio
 assert.ok(platform.includes("node('p','Company provisioning, subscriptions and system readiness."));
 assert.ok(style.includes('html[data-yw-surface="platform"] #mainNav'));
 assert.ok(style.includes('html[data-yw-surface="platform"] #moduleSectionNav'));
+assert.ok(style.includes('html[data-yw-surface="platform"] #mobileQuickNav'));
 assert.ok(style.includes('html[data-yw-surface="platform"] .app-supporting-panels'));
 for(const r of ['#workspace550CompanyLink','#workspace575Ponds','#workspace575Skateparks']){
  assert.ok(style.includes(r),'Tenant link must stay outside the Platform shell: '+r);}
