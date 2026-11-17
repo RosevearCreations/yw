@@ -1,0 +1,63 @@
+{
+  "schema": "rosevear.yw578.financial-activation-review.v1",
+  "protocol": "1.1",
+  "supportedPeers": [
+    "1.0",
+    "1.1"
+  ],
+  "application": "Yard Workers",
+  "scope": "tenant_company_finance",
+  "sampleTenant": "Rosevear Landscaping",
+  "state": "SOURCE_ONLY_NOT_AUTHORIZED_FOR_LIVE_ACTIVATION",
+  "stages": [
+    "provider_settlement",
+    "private_payroll",
+    "tax_remittance",
+    "independent_close"
+  ],
+  "controls": {
+    "custody": "Original YW577 seven-stage P-256 chain, tenant/customer/invoice/period bound",
+    "settlement": "Original provider authenticated API plus independent bank, exact CAD net, refund/dispute reject",
+    "payroll": "Verified private company HR timesheets and separate approver; no personal payroll data in SaaS Sysop",
+    "taxation": "Jurisdiction/date rate evidence, exact taxable basis, independent approval; CRA submission separate",
+    "close": "Balanced GL, separate independent accountant, locked period and auditable original sources",
+    "approvals": "P-256 independent actor keys, separated roles, 15-minute freshness, chained hash, nonce replay checks",
+    "ledger": "Durable source replay ledger and independently attested isolated staging required; browser flags do not grant authority"
+  },
+  "mutations": {
+    "capture": false,
+    "refund": false,
+    "bankTransfer": false,
+    "invoicePosting": false,
+    "payrollExecution": false,
+    "taxFiling": false,
+    "periodClose": false,
+    "outboundNotifications": false
+  },
+  "dependencies": {
+    "stagingProjectVerified": false,
+    "productionSchemaParity": false,
+    "providerEnrolled": false,
+    "bankFeedVerified": false,
+    "ownerDBAApproval": false,
+    "payrollApprovalAuthority": false,
+    "taxRateOfficialSource": false,
+    "independentAccountant": false,
+    "durableReplayRegistry": false
+  },
+  "crossApp": {
+    "masterAck": "HOLD",
+    "commsAck": "HOLD",
+    "icampAck": "HOLD",
+    "autoDeployPeers": false
+  },
+  "acceptance": [
+    "signed original custody and replay denials",
+    "provider/bank authenticated settlement checks",
+    "segregated approvers and private payroll boundary",
+    "tax source basis mismatch and false filing rejection",
+    "locked balanced independent close",
+    "no cross-tenant Sysop visibility",
+    "production mutation remains off"
+  ]
+}

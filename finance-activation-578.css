@@ -1,0 +1,22 @@
+/* YW578 angular finance readiness, non-authoritative company-only presentation. */
+.yw578{margin:16px 0;padding:clamp(14px,2vw,26px);background:#0c1a28;
+ border:1px solid #659bb7;border-top:4px solid #e4a36f;color:#f1f8ff;min-width:0}
+.yw578-head{padding:16px 18px 20px;background:linear-gradient(125deg,#193d54,#142a3f 70%,#4d3540);
+ clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,0 100%)}
+.yw578-head p:first-child{letter-spacing:.12em;text-transform:uppercase;color:#fbd1ad;font-size:.8rem;font-weight:800}
+.yw578-head h3{font-size:clamp(1.25rem,2.5vw,1.9rem);text-transform:uppercase;color:#fff;margin:7px 0}
+.yw578-head p{color:#e0ecf7;line-height:1.55}
+.yw578-hold{margin:12px 0;padding:14px;border-left:4px solid #f4be80;color:#fff0da;
+ background:#40352f;font-weight:800;line-height:1.55;overflow-wrap:anywhere}
+.yw578-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.yw578-card{background:#162e40;border:1px solid #547b95;padding:16px;
+ min-width:0;overflow-wrap:anywhere;border-radius:1px}
+.yw578-card span{color:#fbd5b2;font-size:.8rem;letter-spacing:.1em;font-weight:800}
+.yw578-card h4{color:white;font-size:1.13rem;margin:9px 0}
+.yw578-card p{color:#e0eef8;line-height:1.5}
+.yw578-proof{padding:9px 0;border-top:1px solid #5d8295}
+.yw578-card strong{display:block;color:#ffd1aa;margin-top:12px;font-size:.92rem}
+.yw578-foot{color:#dceaf6;line-height:1.65}
+html[data-yw-surface="platform"] #yw578Readiness{display:none!important}
+@media(max-width:800px){.yw578-grid{grid-template-columns:1fr}.yw578{padding:12px}}
+@media(prefers-reduced-motion:reduce){.yw578 *{transition:none!important;animation:none!important}}
