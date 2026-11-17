@@ -6,13 +6,13 @@ const byId=id=>document.getElementById(id);
 const txt=(tag,text)=>{const e=document.createElement(tag);e.textContent=text;return e;};
 const permitted=()=>{
  const a=window.YWI_AUTH?.getState?.()||{},w=window.YWIDualWorkspace?.snapshot?.()||{};
- return a.isAuthenticated===true&&(w.ownedCompanies>0||window.YWIDualWorkspace?.isSysopVerified?.()===true);
+ return a.isAuthenticated===true&&w.ownedCompanies>0;
 };
 function render(key){
  const spec=registry.get(key),host=byId(key==='ponds'?'yw575PondWorkspace':'yw575SkateWorkspace');
  if(!spec||!host)return;
  host.replaceChildren();
- if(!permitted()){host.append(txt('p','This workspace requires verified company ownership or separately enrolled platform authority. Sign in and refresh verification.'));return;}
+ if(!permitted()){host.append(txt('p','These landscaping service-planning modules require a verified company-owner workspace. Sysop access alone does not grant company access.'));return;}
  const summary=txt('p','Planning workspace · no data saved, no approved drawings, no service order and no inspection certification.');
  summary.className='notice';host.append(summary);
  const card=txt('section','');card.className='admin-panel-block';card.append(txt('h3',spec.title));
