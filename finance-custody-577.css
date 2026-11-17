@@ -1,0 +1,33 @@
+/* YW577 sharp-edged company finance review. Presentation only. */
+.yw577{margin:14px 0;padding:clamp(12px,2vw,24px);background:linear-gradient(130deg,#0d2539,#071624);
+ border:1px solid rgba(133,195,223,.53);border-radius:2px;color:#ecf5ff;min-width:0}
+.yw577-header{display:grid;grid-template-columns:minmax(0,1fr) 260px;align-items:center;gap:16px;
+ padding:20px;background:linear-gradient(114deg,#153b51,#0e2437 66%,#202b3c);
+ border-left:4px solid #e8ac75;clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,0 100%)}
+.yw577-header>div{min-width:0}
+.yw577-header p:first-child{font-weight:800;letter-spacing:.13em;color:#eac49e;font-size:.77rem}
+.yw577-header h3{color:#f3f9ff;text-transform:uppercase;font-size:clamp(1.25rem,2.5vw,1.9rem);line-height:1.23;margin:5px 0}
+.yw577-header p{line-height:1.55;color:#d4e4f4;margin:7px 0}
+.yw577-header svg{max-width:260px;width:100%;height:133px;color:#8bd5f2;filter:drop-shadow(0 0 9px rgba(80,180,219,.22))}
+.yw577-warning{border-left:4px solid #f0be82;background:rgba(217,160,96,.14);
+ color:#ffe5c8;font-weight:750;padding:13px;margin:13px 0;line-height:1.5;overflow-wrap:anywhere}
+.yw577-layout{display:grid;grid-template-columns:minmax(230px,1fr) minmax(0,1.22fr);gap:12px}
+.yw577-steps{display:grid;gap:7px;min-width:0}
+.yw577-stage{border:1px solid rgba(114,181,215,.4);border-left:4px solid transparent;
+ background:#173247;color:#eaf6ff;text-align:left;min-height:44px;padding:11px;
+ font-weight:650;cursor:pointer;border-radius:1px!important;overflow-wrap:anywhere}
+.yw577-stage[aria-pressed="true"]{border-left-color:#f0ba7b;background:#284657;color:#fff}
+.yw577-stage:focus-visible{outline:3px solid #f5bd74;outline-offset:2px}
+.yw577-detail{border:1px solid rgba(118,184,214,.38);background:#10283b;
+ padding:20px;min-width:0;overflow-wrap:anywhere}
+.yw577-detail>p:first-child{color:#bed8eb;font-size:.77rem;font-weight:800;letter-spacing:.11em}
+.yw577-detail h4{color:#fff;font-size:1.14rem;margin:12px 0}
+.yw577-detail p{line-height:1.6;color:#d9e6f4}
+.yw577-detail-state{color:#f6d09d!important;font-weight:750}
+.yw577>p:last-child{font-size:.89rem;color:#d3e2f1;line-height:1.5;margin:17px 0 3px}
+html[data-yw-surface="platform"] #yw577Custody{display:none!important}
+@media(max-width:800px){.yw577-header{grid-template-columns:1fr}
+ .yw577-header svg{max-width:180px;max-height:100px;justify-self:end}
+ .yw577-layout{grid-template-columns:1fr}
+ .yw577{padding:12px}}
+@media(prefers-reduced-motion:reduce){.yw577 *{transition:none!important;animation:none!important}}

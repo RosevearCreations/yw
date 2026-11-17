@@ -1,0 +1,22 @@
+YW577 — FINANCIAL CUSTODY: QUOTE → INVOICE → PAYMENTS → PAYROLL/TAX, AUDIT & RECONCILIATION
+2026-11-16 / source-only deliverable; no false money or remittance claims.
+
+Existing original Finance system: js/finance-ui.js (Finance source-review, posting controls), js/owner-invoice-receivable-439.js (owner-only candidate/AR lineage), js/pms-payroll-446.js (private payroll planning), js/pms-accounting-447.js (owner-controlled private accounting). Keep these as the original systems; do not build a second independent payment ledger. Live production database has ar_invoices, bank reconciliation, payroll and close structures verified by a read-only catalog query. This does NOT establish latest migration parity or authorization for new writes.
+
+YW577 adds scripts/yw577-financial-custody.mjs:
+- Seven original staged sources: customer-accepted quote, posted matching invoice,
+provider-settled original charge, bank-matched deposit, private payroll review,
+tax/remittance review, and independent locked period-close review.
+- Require separately enrolled original P-256 signers, exact stage capabilities, tenant/customer/invoice equality, revision, freshness, issuer key, nonce, source digest hash and chain; replay durable storage needed externally.
+- Reject CAD cents mismatches, tax-ratio rounding inconsistent with original jurisdiction/date rate, unbalanced original posting, partial/unsettled/disputed/refunded provider charge, bank fees/net discrepancy, payroll privacy and tax filing claims, or missing independent close approval.
+- Passing synthetic tests or a source-only verifier is NOT provider/bank/CRA confirmation and cannot execute money movement, payroll, tax filing, posting, or customer notification.
+
+The company-only js/yw577-finance-custody-ui.js lives inside the existing Finance route. It is a read-only walkthrough of original evidence requirements, always showing UNKNOWN/HOLD for unconnected provider evidence. It requires authenticated Finance permission and verified owned-company workspace, not a Platform Sysop assertion. The company-specific existing Finance/Accounting modules remain authoritative for their real data and RLS. No tenant bank, staff pay, customer balances or invoices may appear in the platform SaaS shell.
+
+Staging/authority HOLD:
+- No independently reviewed YW staging project, production migration provenance/backup/restore receipt or signed owner+DBA go-ahead.
+- No live registered provider source, independent bank feeds, signed tax-rate reference, payroll execution, original receipt replay ledger, independent accountant close approval, or authenticated cross-app ACK.
+- Historical names/domains have compatibility exceptions; do not rewrite active project identities without validated migration.
+- Protocol 1.1 supports existing 1.0 peers; unrelated 7-app releases remain independent.
+
+Feature→dev requires all auth/source/3 browser lanes and exact feature Vercel preview READY. Protected dev→main requires independent exact HEAD preview and all workflows. Production is GREEN only when main Vercel READY exact alias SHA, all main push source/browser/repo/release evidence/truth SUCCESS and dev/main identical non-force. This does NOT mark live financial execution as authorized.
