@@ -36,6 +36,8 @@ export function evaluateActivationReadiness578({
     !Array.isArray(sources)||sources.length!==4||!issuers||
     typeof issuers!=='object'||Array.isArray(issuers)||
     !Array.isArray(usedNonces)) return blocked('','Four independent finance reviews and sources required');
+ if(!custody||typeof custody!=='object'||Array.isArray(custody))
+  return blocked('custody','Original signed YW577 custody packet required');
  const original=verifyFinancialCustody577(custody,now);
  if(original.state!=='ORIGINAL_EVIDENCE_SHAPE_REVIEW_ONLY'||original.companyId!==companyId||
     original.invoiceId!==invoiceId||custody?.customerId!==customerId||
