@@ -1,0 +1,126 @@
+{
+  "schema": "rosevear.yw580.service-workflow-blueprints.v1",
+  "protocol": "1.1",
+  "supportedPeers": [
+    "1.0",
+    "1.1"
+  ],
+  "sourceStatus": "MIGRATION_NOT_APPLIED",
+  "application": "Yard Workers",
+  "scope": "tenant_company",
+  "tiers": {
+    "workspace": 1,
+    "services": 2,
+    "tools": 3
+  },
+  "sharedFunctions": [
+    "Safety/OHSA",
+    "Finance",
+    "Jobs",
+    "Admin"
+  ],
+  "modules": [
+    {
+      "key": "landscape",
+      "label": "Lawn & Grounds",
+      "registry": "YW443"
+    },
+    {
+      "key": "snow_removal",
+      "label": "Snow Removal",
+      "registry": "YW443"
+    },
+    {
+      "key": "snow_plowing",
+      "label": "Snow Plowing",
+      "registry": "YW443"
+    },
+    {
+      "key": "septic",
+      "label": "Septic Services",
+      "registry": "YW443"
+    },
+    {
+      "key": "arboriculture",
+      "label": "Arboriculture / Tree Care",
+      "registry": "YW443"
+    },
+    {
+      "key": "construction",
+      "label": "Construction",
+      "registry": "YW443"
+    },
+    {
+      "key": "water_parks",
+      "label": "Aquatic Facilities",
+      "registry": "YW443"
+    },
+    {
+      "key": "ponds",
+      "label": "Custom Ponds",
+      "registry": "YW580 staged migration, disabled by default"
+    },
+    {
+      "key": "skateparks",
+      "label": "Skateparks",
+      "registry": "YW580 staged migration, disabled by default"
+    }
+  ],
+  "entitlementPolicy": {
+    "displayCatalogWithoutOwner": true,
+    "enabledStateRequiresVerifiedOwnerAndFreshRPC": true,
+    "unverifiedModuleActions": "READ_ONLY_BLUEPRINT_PREVIEW",
+    "legacySevenEnabledSource": "YW443 owner-asserted registry",
+    "specialtyTwoEnabledSource": "ywi_rpc_specialty_entitlements_580; staged only",
+    "directClientWriteGrant": false,
+    "originalNewWorkGate421Unchanged": true,
+    "productionSchemaMigrationApplied": false
+  },
+  "crossModuleEvents": {
+    "mode": "CONTRACT_ONLY",
+    "sourceKeys": [
+      "company_id",
+      "customer_id",
+      "property_id",
+      "job_id",
+      "service_key",
+      "source_id",
+      "source_revision",
+      "original_source_digest",
+      "consent_verified",
+      "retention_checked"
+    ],
+    "originEvents": [
+      "estimate_review",
+      "job_authorized",
+      "schedule_review",
+      "resource_allocation",
+      "photo_evidence",
+      "job_completion",
+      "maintenance_review",
+      "invoice_review",
+      "accounting_review"
+    ],
+    "controls": [
+      "original P-256 source signature",
+      "source and actor ids",
+      "monotonic source revision",
+      "SHA-256 evidence digest",
+      "tenant/customer/property/job immutability",
+      "idempotency and replay denial",
+      "consent and retention review"
+    ],
+    "persistedEvents": false,
+    "automatedDownstreamEffects": false,
+    "realPhotoUploads": false
+  },
+  "stagedSQL": "sql/yw580_specialty_entitlements_STAGING_ONLY.sql",
+  "financialExecutionEnabled": false,
+  "payrollExecutionEnabled": false,
+  "taxFilingEnabled": false,
+  "fullWorkflowWriteEnabled": false,
+  "originalProviderAcceptance": false,
+  "masterAck": "HOLD",
+  "commsAck": "HOLD",
+  "sampleTenant": "Rosevear Landscaping"
+}
