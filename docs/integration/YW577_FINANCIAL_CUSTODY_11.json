@@ -1,0 +1,67 @@
+{
+  "schema": "rosevear.yw577.financial-original-custody.v1",
+  "protocol": "1.1",
+  "supportedPeers": [
+    "1.0",
+    "1.1"
+  ],
+  "sourceRole": "tenant_company_finance",
+  "application": "Yard Workers",
+  "sampleTenant": "Rosevear Landscaping",
+  "state": "SOURCE_ONLY_NOT_LIVE_FINANCIAL_AUTHORITY",
+  "steps": [
+    "quote_accepted",
+    "invoice_posted",
+    "payment_settled",
+    "bank_reconciled",
+    "private_payroll_reviewed",
+    "tax_remittance_reviewed",
+    "period_close_reviewed"
+  ],
+  "controls": {
+    "currency": "CAD",
+    "money": "safe integer cents only",
+    "tax": "original jurisdiction/date approved rate, no global tax constant",
+    "refunds": "require independent original credit note/chargeback review, not auto-PASS",
+    "provider": "original API authenticated settlement not webhook or HTTP success",
+    "bank": "independent source matching captured minus fees",
+    "payroll": "company-private HR scopes, not pay run",
+    "taxReview": "not CRA filing proof",
+    "GL": "balanced posting plus locked period independent review",
+    "signing": "per stage P256 signature, enrollment, tenant/invoice, original revisions, nonce and digest chain",
+    "replay": "durable server ledger required in addition to shape verifier"
+  },
+  "boundaries": {
+    "tenant_isolation": true,
+    "sysop_access_to_tenant_finance": false,
+    "private_hr": true,
+    "master_connected": "HOLD",
+    "comms_ack": "HOLD",
+    "icamp_ack": "HOLD",
+    "independent_releases": true
+  },
+  "mutations": {
+    "invoice_created": false,
+    "invoice_posted": false,
+    "provider_payment_captured": false,
+    "bank_transfer": false,
+    "payroll_executed": false,
+    "tax_filed": false,
+    "posting_authorized": false
+  },
+  "staging": {
+    "separate_yw_staging_verified": false,
+    "production_db_migrated": false,
+    "backup_restoration_verified": false,
+    "db_owner_signoff": false
+  },
+  "acceptance": [
+    "signature/tenant/replay and source recency",
+    "invoice quote tax exact cents",
+    "provider refund/dispute rejection",
+    "bank net provider fee arithmetic",
+    "private payroll + tax original rate",
+    "independent locked period",
+    "withhold false provider/CRA claims"
+  ]
+}
