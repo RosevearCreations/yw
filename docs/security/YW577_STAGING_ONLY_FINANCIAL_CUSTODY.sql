@@ -1,0 +1,24 @@
+-- YW577 STAGING DESIGN ONLY — NEVER APPLY IN PRODUCTION.
+-- This document is deliberately comments, NOT executable DDL/DML.
+-- An isolated YW staging project, historical migration checksums, signed
+-- backup/restore receipt and DBA/owner approval must precede any schema change.
+-- Proposed tenant-private source custody domains:
+-- private_yw_finance.finance_original_receipts(company_id, invoice_id, stage,
+--   original_revision, signed_hash, previous_hash, nonce UNIQUE, issuer_key_id)
+-- private_yw_finance.provider_settlements(company_id, external_event_id UNIQUE,
+--   captured_cents, fee_cents, settled_at, refund_or_dispute_state)
+-- private_yw_finance.bank_match_receipts(company_id, event_id, source_hash,
+--   matched_net_cents, bank_original_verified_at)
+-- private_yw_finance.payroll_review_refs(company_id, period_id,
+--   company_private_hr_source, reviewer_id) -- never public or Sysop-readable
+-- private_yw_finance.tax_period_reviews(company_id, period_id,
+--   jurisdiction, effective_date, rate_source_ref, tax_basis_cents)
+-- private_yw_finance.period_close_reviews(company_id, period_id, balanced_gl,
+--   independent_reviewer_id, locked_at)
+-- Mandatory RLS: default deny by company, no public/anon grants, no raw employee
+-- pay or bank details to product Sysop, no user_metadata grants, no direct
+-- browser privileged secret; server-only bounded RPC, immutable audit, idempotent
+-- provider handling and historical rollback.
+-- Negative tests: cross-tenant finance, revoked actor, duplicate provider event,
+-- chargeback/refund, partial payment, stale signing key, bank mismatch, tax
+-- rounding/rate drift, payroll privacy leak, unauthorized period close, restore.
