@@ -27,6 +27,7 @@ const files = [
   'theme-operations-drilldown-567.css',
   'theme-angular-576.css',
   'theme-tiers-579.css',
+  'theme-modules-580.css',
   'finance-pilot-579.css',
   'finance-custody-577.css',
   'finance-activation-578.css',
@@ -37,6 +38,8 @@ const files = [
   'sitemap.xml',
   'server-worker.js',
 ];
+// js/yw580-module-catalog.js, js/yw580-workflow-blueprints.js and
+// js/yw580-specialty-settings.js are copied through the public js/ directory.
 const directories = ['js', 'icons'];
 
 if (existsSync(output)) {
