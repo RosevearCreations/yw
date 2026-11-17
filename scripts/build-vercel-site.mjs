@@ -26,6 +26,8 @@ const files = [
   'theme-navigation-acceptance-566.css',
   'theme-operations-drilldown-567.css',
   'theme-angular-576.css',
+  'theme-tiers-579.css',
+  'finance-pilot-579.css',
   'finance-custody-577.css',
   'finance-activation-578.css',
   'it-readiness.css',

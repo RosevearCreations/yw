@@ -26,7 +26,7 @@
   <script>
     try {
       document.documentElement.dataset.ywTheme =
-        ['standard', 'futuristic', 'angular'].includes(localStorage.getItem('yw-theme-v1')) ? localStorage.getItem('yw-theme-v1') : 'standard';
+        ['standard', 'futuristic', 'angular', 'forest', 'gilded'].includes(localStorage.getItem('yw-theme-v1')) ? localStorage.getItem('yw-theme-v1') : 'standard';
     } catch (_) {
       document.documentElement.dataset.ywTheme = 'standard';
     }
@@ -50,6 +50,8 @@
   <link rel="stylesheet" href="/theme-navigation-acceptance-566.css?v=20261113b566" />
   <link rel="stylesheet" href="/theme-operations-drilldown-567.css?v=20261113b567" />
   <link rel="stylesheet" href="/theme-angular-576.css?v=20261116b576" />
+  <link rel="stylesheet" href="/theme-tiers-579.css?v=20261117b579" />
+  <link rel="stylesheet" href="/finance-pilot-579.css?v=20261117b579" />
   <link rel="stylesheet" href="/finance-custody-577.css?v=20261116b577" />
   <link rel="stylesheet" href="/finance-activation-578.css?v=20261117b578" />
 
@@ -200,29 +202,47 @@
       </div>
     </div>
 
-    <button
-      id="mainMenuToggle"
-      class="main-menu-toggle"
-      type="button"
-      aria-controls="mainNav"
-      aria-expanded="false"
-    >
-      <span class="main-menu-toggle-label">Menu</span>
-      <span id="mainMenuCurrent" class="main-menu-current">Toolbox Talk</span>
-      <span class="main-menu-icon" aria-hidden="true"></span>
-    </button>
-
-    <nav id="mainNav" class="main-nav module-nav" aria-label="Main application modules">
-      <a href="#toolbox" class="active" data-module="safety">Safety / OHSA</a>
-      <a href="#finance" data-module="finance">Finance</a>
-      <a href="#today" data-module="jobs">Jobs</a>
-      <a href="#admin" data-module="admin">Admin</a>
-    </nav>
-    <nav id="workspace550Nav" class="yw550-workspace-nav" aria-label="Choose platform or landscaping workspace" hidden>
-      <a href="#company" id="workspace550CompanyLink">Landscaping company workspace</a>
-      <a href="#sysop" id="workspace550SysopLink" hidden>Ree / Jack · Sysop monitoring</a>
-    </nav>
-    <nav id="moduleSectionNav" class="module-section-nav" aria-label="Current module screens"></nav>
+    <div id="yw579TierHost" aria-label="Yard Workers three-tier workspace and module navigation">
+      <div id="yw579WorkspaceTier" class="yw579-tier yw579-tier-workspace">
+        <div class="yw579-tier-caption"><span>01</span> Workspace</div>
+        <div class="yw579-tier-content">
+          <nav id="workspace550Nav" class="yw550-workspace-nav" aria-label="Choose platform or landscaping workspace" hidden>
+            <a href="#company" id="workspace550CompanyLink">Landscaping company workspace</a>
+            <a href="#sysop" id="workspace550SysopLink" hidden>Ree / Jack · Sysop monitoring</a>
+          </nav>
+          <label id="yw579CompanyLabel" hidden>Owned company
+            <select id="yw579CompanySelect" aria-label="Choose a verified owner company"></select>
+          </label>
+          <button id="yw579RefreshServices" class="secondary" type="button">Verify services</button>
+        </div>
+      </div>
+      <div id="yw579ModuleTier" class="yw579-tier yw579-tier-modules">
+        <div class="yw579-tier-caption"><span>02</span> Company modules</div>
+        <div class="yw579-tier-content">
+          <button id="mainMenuToggle" class="main-menu-toggle" type="button" aria-controls="mainNav" aria-expanded="false">
+            <span class="main-menu-toggle-label">Modules</span>
+            <span id="mainMenuCurrent" class="main-menu-current">Toolbox Talk</span>
+            <span class="main-menu-icon" aria-hidden="true"></span>
+          </button>
+          <nav id="mainNav" class="main-nav module-nav" aria-label="Permissioned company business modules">
+            <a href="#toolbox" class="active" data-module="safety">Safety / OHSA</a>
+            <a href="#finance" data-module="finance">Finance</a>
+            <a href="#today" data-module="jobs">Jobs</a>
+            <a href="#admin" data-module="admin">Admin</a>
+          </nav>
+          <nav id="yw579ServiceNav" aria-label="Verified enabled landscaping services" hidden></nav>
+          <nav id="yw579PlanningNav" aria-label="Company specialty planning tools, not active services" hidden></nav>
+          <p id="yw579ServiceStatus" role="status" aria-live="polite">Company service modules require independent ownership and registry verification.</p>
+        </div>
+      </div>
+      <div id="yw579ToolsTier" class="yw579-tier yw579-tier-tools">
+        <div class="yw579-tier-caption"><span>03</span> Module tools</div>
+        <div class="yw579-tier-content">
+          <nav id="moduleSectionNav" class="module-section-nav" aria-label="Current business module tools"></nav>
+          <nav id="yw579ServiceTools" aria-label="Current landscaping service tools" hidden></nav>
+        </div>
+      </div>
+    </div>
   </header>
   <div class="slave-shell-banner" role="status" aria-label="Application shell classification">
     <strong>SLAVE APPLICATION SHELL</strong>
@@ -702,5 +722,7 @@
   <script src="/js/yw576-company-journey.js?v=20261116b576"></script>
   <script src="/js/yw577-finance-custody-ui.js?v=20261116b577"></script>
   <script src="/js/yw578-activation-readiness-ui.js?v=20261117b578"></script>
+  <script src="/js/yw579-tiered-navigation.js?v=20261117b579"></script>
+  <script src="/js/yw579-finance-pilot-ui.js?v=20261117b579"></script>
 </body>
 </html>

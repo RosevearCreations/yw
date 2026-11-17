@@ -1,0 +1,115 @@
+/* YW579: one authentic workspace → business/service module → tools hierarchy.
+   Read-only presentation; RLS, Auth and the original seven-service RPC remain authoritative. */
+html { --yw579-edge:#83bfff;--yw579-secondary:#bfa6ff;--yw579-panel:#0c1b2e;
+ --yw579-panel2:#17283c;--yw579-ink:#edf5ff;--yw579-line:rgba(115,160,206,.48); }
+html[data-yw-theme="futuristic"]{--yw579-edge:#bc93ff;--yw579-secondary:#77d9ff;--yw579-panel:#0c1026;--yw579-panel2:#1b1d40;--yw579-line:rgba(178,144,244,.5)}
+html[data-yw-theme="angular"]{--yw579-edge:#f3b77d;--yw579-secondary:#7be2f3;--yw579-panel:#081928;--yw579-panel2:#173247;--yw579-line:rgba(123,200,231,.48)}
+html[data-yw-theme="forest"]{--yw579-edge:#78e1b2;--yw579-secondary:#c1d787;--yw579-panel:#071c1e;--yw579-panel2:#123532;--yw579-line:rgba(117,218,175,.43)}
+html[data-yw-theme="gilded"]{--yw579-edge:#f0c47e;--yw579-secondary:#b8c9db;--yw579-panel:#1a1820;--yw579-panel2:#29222b;--yw579-line:rgba(234,186,118,.48)}
+body:has(#yw579TierHost) .yw564-side-rail{display:none!important}
+.app-header:has(#yw579TierHost){position:relative;top:auto;box-shadow:0 12px 33px rgba(0,0,0,.2);padding:12px clamp(12px,2.4vw,34px);background:#080f1d}
+.app-header:has(#yw579TierHost) .header-top{max-width:1500px;margin:0 auto 8px;min-width:0}
+.app-header:has(#yw579TierHost) h1{font-size:clamp(1.06rem,1.5vw,1.42rem);margin:0}
+#yw579TierHost{display:grid;gap:6px;margin:0 auto;max-width:1500px;min-width:0}
+.yw579-tier{position:relative;display:grid;grid-template-columns:minmax(100px,146px) minmax(0,1fr);
+ gap:8px;align-items:center;min-height:49px;padding:7px clamp(9px,1.5vw,16px);
+ box-sizing:border-box;background:linear-gradient(110deg,var(--yw579-panel) 5%,var(--yw579-panel2));
+ border:1px solid var(--yw579-line);border-left:4px solid var(--yw579-edge);
+ clip-path:polygon(0 0,calc(100% - 13px) 0,100% 13px,100% 100%,0 100%);
+ isolation:isolate;overflow:hidden;min-width:0}
+.yw579-tier::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+ background:url("/icons/yw579-angle-mesh.svg") center / cover no-repeat;opacity:.42}
+.yw579-tier::after{content:"";position:absolute;right:8%;top:-30px;width:160px;height:110px;
+ background:linear-gradient(130deg,transparent 25%,var(--yw579-edge) 25% 26%,transparent 26% 54%,var(--yw579-secondary) 54% 55%,transparent 55%);
+ opacity:.17;transform:skew(-23deg);z-index:-1;pointer-events:none}
+.yw579-tier-caption{font-size:.76rem;font-weight:850;line-height:1.3;letter-spacing:.1em;
+ text-transform:uppercase;color:var(--yw579-edge);padding-right:8px}
+.yw579-tier-caption span{font-weight:950;font-size:.93rem;margin-right:8px;color:var(--yw579-secondary)}
+.yw579-tier-content{display:flex;flex-wrap:wrap;align-items:center;gap:6px 9px;min-width:0}
+.app-header #yw579TierHost nav{margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.app-header #yw579TierHost nav[hidden]{display:none!important}
+.app-header #yw579TierHost nav a,
+.app-header #yw579TierHost nav button{display:inline-flex;align-items:center;justify-content:center;
+ font-size:.8rem;font-weight:720;line-height:1.2;padding:9px 12px;min-height:38px;
+ border-radius:2px!important;white-space:normal;text-align:center;max-width:100%;
+ color:#f2f6ff;background:rgba(19,36,58,.93);border:1px solid var(--yw579-line);box-shadow:none;
+ overflow-wrap:anywhere}
+.app-header #yw579TierHost nav a[hidden],
+.app-header #yw579TierHost nav button[hidden]{display:none!important}
+.app-header #yw579TierHost nav :is(a,button):hover{background:rgba(65,83,113,.7);border-color:var(--yw579-edge);color:white}
+.app-header #yw579TierHost nav :is(a,button):focus-visible{outline:3px solid var(--yw579-edge);outline-offset:2px}
+.app-header #yw579TierHost nav :is(a.active,a[aria-current="page"],button[aria-pressed="true"]){
+ background:linear-gradient(120deg,rgba(55,75,115,.96),rgba(34,44,71,.92));
+ border-color:var(--yw579-edge);box-shadow:inset 3px 0 0 var(--yw579-secondary);color:#fff}
+#yw579WorkspaceTier .yw550-workspace-nav{order:0}
+#yw579ModuleTier .main-nav{order:0}
+#yw579ServiceNav{order:1}
+#yw579PlanningNav{order:2}
+#yw579ServiceNav:not([hidden]){border-left:1px solid var(--yw579-line);padding-left:12px!important}
+.app-header #yw579TierHost .yw579-planning{border-style:dashed;opacity:.86}
+#yw579CompanyLabel{display:flex;flex-direction:row;align-items:center;gap:6px;font-size:.78rem;color:var(--yw579-ink)}
+#yw579CompanyLabel[hidden]{display:none!important}
+#yw579CompanySelect{min-width:125px;max-width:220px;width:auto;min-height:38px;padding:5px 9px;
+ background:#0f2234;color:#f3f8ff;border:1px solid var(--yw579-line);border-radius:2px}
+#yw579RefreshServices{min-height:38px;padding:6px 11px;background:transparent;color:var(--yw579-edge);
+ border:1px solid var(--yw579-line);border-radius:2px}
+#yw579ServiceStatus{margin:0;color:#d9e7f5;font-size:.73rem;line-height:1.3;overflow-wrap:anywhere;
+ max-width:380px}
+#yw579ServiceStatus[hidden]{display:none!important}
+#yw579ToolsTier .module-section-nav{max-width:none;padding:0;margin:0;min-width:0}
+#yw579ToolsTier .module-section-nav a{min-height:35px}
+html[data-yw579-service] #moduleSectionNav{display:none!important}
+#yw579ServiceTools[hidden]{display:none!important}
+#yw579ModuleTier .main-menu-toggle{display:none}
+html[data-yw-surface="platform"] #yw579ModuleTier,
+html[data-yw-surface="platform"] #yw579ToolsTier,
+html[data-yw-surface="platform"] #yw579CompanyLabel,
+html[data-yw-surface="platform"] #yw579ServiceStatus,
+html[data-yw-surface="platform"] #yw579RefreshServices{display:none!important}
+body[data-authenticated="false"] #yw579TierHost{display:none!important}
+/* Vivid opt-in theme palettes; Standard Blue and all business data remain unchanged. */
+html[data-yw-theme="forest"] body{
+ background:radial-gradient(ellipse at 13% 4%,rgba(17,92,73,.22),transparent 50%),
+ radial-gradient(ellipse at 87% 22%,rgba(91,134,57,.16),transparent 55%),
+ repeating-linear-gradient(138deg,transparent 0 92px,rgba(68,138,107,.04) 92px 93px),#061416;
+ --accent:#63dbaa;--line:rgba(120,210,175,.24);--text:#edf9f3;--text-soft:#bcd7cd;--text-faint:#a4bfb3}
+html[data-yw-theme="gilded"] body{
+ background:radial-gradient(ellipse at 84% 4%,rgba(167,104,28,.19),transparent 44%),
+ radial-gradient(ellipse at 10% 28%,rgba(115,83,110,.12),transparent 55%),
+ repeating-linear-gradient(138deg,transparent 0 98px,rgba(229,178,112,.035) 98px 99px),#15131b;
+ --accent:#e9bc75;--line:rgba(229,183,126,.25);--text:#f9f1e6;--text-soft:#e0d0be;--text-faint:#baa896}
+html[data-yw-theme="forest"] .app-header,
+html[data-yw-theme="gilded"] .app-header{border-color:var(--yw579-line);background:linear-gradient(112deg,var(--yw579-panel),var(--yw579-panel2))!important}
+html[data-yw-theme="forest"] :is(.card,.auth-card,.yw565-command-card),
+html[data-yw-theme="gilded"] :is(.card,.auth-card,.yw565-command-card){
+ background:linear-gradient(146deg,var(--yw579-panel2),var(--yw579-panel));
+ border-color:var(--yw579-line);box-shadow:0 10px 34px rgba(0,0,0,.18)}
+html[data-yw-theme="forest"] :is(button,a):focus-visible,
+html[data-yw-theme="gilded"] :is(button,a):focus-visible{outline:3px solid var(--yw579-edge);outline-offset:2px}
+html[data-yw-theme="forest"] :is(button.primary,button.secondary),
+html[data-yw-theme="gilded"] :is(button.primary,button.secondary){border-radius:3px}
+html[data-yw-theme="forest"] .slave-shell-banner,
+html[data-yw-theme="gilded"] .slave-shell-banner{border-left:4px solid var(--yw579-edge);
+ background:linear-gradient(110deg,var(--yw579-panel2),var(--yw579-panel))}
+@media(max-width:900px){
+ .yw579-tier{grid-template-columns:110px minmax(0,1fr);gap:6px}
+ #yw579ServiceStatus{max-width:100%}
+ .app-header #yw579TierHost nav :is(a,button){padding:8px 10px}
+}
+@media(max-width:759px){
+ .app-header:has(#yw579TierHost){position:relative;padding:8px 10px}
+ .yw579-tier{grid-template-columns:1fr;padding:8px 10px;gap:5px}
+ .yw579-tier-caption{font-size:.69rem}
+ .yw579-tier-content{display:flex;gap:6px;overflow-x:auto;flex-wrap:wrap;max-width:100%}
+ .app-header #yw579TierHost nav{max-width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+ .app-header #yw579TierHost nav a,
+ .app-header #yw579TierHost nav button{white-space:nowrap;font-size:.77rem;min-height:38px}
+ #yw579ModuleTier .main-menu-toggle{display:flex;min-height:36px;margin:0;max-width:220px}
+ #yw579ModuleTier .main-nav{display:none!important}
+ .app-header.is-menu-open #yw579ModuleTier .main-nav{display:flex!important}
+ #yw579ServiceNav:not([hidden]){border-left:0;padding-left:0!important}
+ #yw579RefreshServices{min-height:35px}
+ #yw579CompanyLabel{flex-wrap:wrap}
+ #yw579CompanySelect{max-width:100%}
+}
+@media(prefers-reduced-motion:reduce){#yw579TierHost *,#yw579TierHost *::before,#yw579TierHost *::after{transition:none!important;animation:none!important}}

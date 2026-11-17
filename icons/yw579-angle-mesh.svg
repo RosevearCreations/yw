@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="260" viewBox="0 0 1600 260" preserveAspectRatio="xMidYMid slice">
+ <defs>
+  <linearGradient id="f" x1="0" x2="1" y1="0" y2="1">
+   <stop stop-color="#3ac4e4" stop-opacity=".26"/>
+   <stop offset=".46" stop-color="#b889ed" stop-opacity=".16"/>
+   <stop offset="1" stop-color="#f7c16f" stop-opacity=".26"/>
+  </linearGradient>
+  <linearGradient id="s" x1="0" x2="1"><stop stop-color="#79d8f6" stop-opacity=".6"/><stop offset=".55" stop-color="#d5a5f6" stop-opacity=".34"/><stop offset="1" stop-color="#eaba70" stop-opacity=".55"/></linearGradient>
+ </defs>
+ <path d="M-60 246 170 -32 312 -32 90 260ZM247 260 480 -34 589 -34 365 260ZM700 260 935 -28 1053 -28 831 260ZM1210 260 1430 -30 1552 -30 1334 260Z" fill="url(#f)"/>
+ <path d="M-30 208 220 -20M190 258 440 -20M610 258 855 -20M915 258 1160 -20M1270 260 1520 -20M0 50h1600M0 188h1600" stroke="url(#s)" stroke-width="2" fill="none"/>
+ <path d="M0 96h1600M0 236h1600M80 0v260M565 0v260M1140 0v260" stroke="#63a6ce" stroke-opacity=".14" stroke-width="1" stroke-dasharray="7 10" fill="none"/>
+ <path d="m230 160 40-44 40 44-40 44Zm870-104 36-36 36 36-36 36Z" stroke="#f1ba7a" stroke-opacity=".34" fill="none" stroke-width="2"/>
+</svg>
