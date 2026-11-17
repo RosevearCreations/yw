@@ -15,8 +15,12 @@ assert.ok(style.includes('html[data-yw-surface="platform"] #mainNav'));
 assert.ok(style.includes('html[data-yw-surface="platform"] #moduleSectionNav'));
 assert.ok(style.includes('html[data-yw-surface="platform"] #mobileQuickNav'));
 assert.ok(style.includes('html[data-yw-surface="platform"] .app-supporting-panels'));
-for(const r of ['#workspace550CompanyLink','#workspace575Ponds','#workspace575Skateparks']){
- assert.ok(style.includes(r),'Tenant link must stay outside the Platform shell: '+r);}
+assert.ok(style.includes('#workspace550CompanyLink'),'Company workspace entry stays distinct from Sysop control plane');
+for(const oldId of ['workspace575Ponds','workspace575Skateparks'])
+ assert.ok(!html.includes('id="'+oldId+'"'),'Specialty module shortcut must not appear in the Platform/Company workspace chooser');
+const services=r('js/pms-module-navigation-443.js');
+assert.ok(services.includes("route:'ponds'")&&services.includes("route:'skateparks'"),
+ 'Specialty planning belongs in the company service-module navigator');
 assert.ok(style.includes('clip-path:polygon')&&style.includes('grid-template-columns'));
 assert.ok(workspace.includes("sb.rpc('ywi_is_platform_administrator_489')"));
 assert.ok(workspace.includes("sb.rpc('ywi_platform_company_directory_489')"));

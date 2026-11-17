@@ -116,6 +116,27 @@ function panel(){
      });
      card.appendChild(toggle);grid.appendChild(card);
     }
+    // Both specialty screens are company-level planning workspaces, not a
+    // claimed row in the seven-service entitlement registry.
+    for(const specialty of [
+      {key:'ponds',label:'Custom Ponds · Design, Build & Maintenance',route:'ponds'},
+      {key:'skateparks',label:'Skateparks · Design, Build & Maintenance',route:'skateparks'}
+    ]){
+     const card=el('article');card.dataset.owner420Specialty=specialty.key;
+     card.style.cssText='padding:10px;border:1px solid #64748b;border-radius:8px;min-width:0;overflow-wrap:anywhere';
+     card.appendChild(el('strong',specialty.label));
+     card.appendChild(el('p','Planning workspace only · no service entitlement or enabled/disabled switch.'));
+     const open=el('button','Open planning module');open.type='button';open.className='secondary';
+     open.addEventListener('click',()=>{
+      if(!context||context.uid!==window.YWI_AUTH?.getState?.()?.user?.id||
+        !window.YWIDualWorkspace?.snapshot?.().ownedCompanies||
+        window.YWISecurity?.canViewSection?.(specialty.route,window.YWI_AUTH?.getState?.()?.role)!==true){
+       notice('WITHHELD: verified landscaping company ownership required.');return;
+      }
+      window.YWIRouter?.showSection?.(specialty.route);
+     });
+     card.appendChild(open);grid.appendChild(card);
+    }
     wrap.appendChild(grid);
     wrap.appendChild(el('p','Latest audit entries (up to 25; older entries retained server-side):'));
     const log=el('ul');log.dataset.owner420Audit=m.company.id;
