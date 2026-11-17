@@ -1,0 +1,33 @@
+YW578 — FINANCIAL OPERATIONS ACTIVATION READINESS
+Source-only build, November 2026. Protected promotion to main must not be
+confused with actual financial execution authorization.
+
+Built atop existing YW577 original signed seven-stage chain:
+- Validate four additional P-256 role-separated reviews: authentic provider and
+  bank settlement, company-private payroll, current rate/basis tax review,
+  and independently audited period close.
+- Check exact tenant/customer/invoice/period, source revision/digest, freshness,
+  audience, issuer enrollment and expiration, replay nonces, signature and hash chain.
+- Require independent provider and bank source evidence, no refund/dispute,
+  approved private timesheets, original tax jurisdiction/date, balanced period.
+- Even a cryptographically valid *caller-provided* packet returns REVIEW ONLY.
+  Actual provider, bank, registry, RLS and CRA verification must occur on trusted
+  service infrastructure with separately enrolled original sources.
+- Full rejected cases include swapped tenant, foreign source, stale/replayed
+  approver, unauthorized role, mismatched invoice, payout fee, tampered key,
+  duplicate auditor, false tax filing and false payroll execution.
+- Company Finance UI shows four HOLD steps and next actions; no browser writes,
+  no transactions, no private employee/bank amounts. Sysop stays segregated.
+- Use existing Finance, private PMS Payroll 446 and Accounting 447, and
+  original Finance provider/bank audit workspaces; NEVER create a second ledger.
+
+DEPLOYMENT HOLD: dedicated isolated YW staging runtime, exact schema parity,
+DBA/owner signoff, provider/bank enrollment, official current jurisdiction tax
+source, independently approved accountant, durable nonce ledger, external peer
+acknowledgements. No Production SQL, provider charges, payroll, CRA filings or
+bank transfers in this source build. Never claim external acceptance from tests.
+
+Protocol 1.1 backward-compatible with 1.0. No seven-application lockstep.
+Release GREEN requires protected exact main workflow success, production READY
+alias at the same SHA, source/browser/repository/evidence/truth PASS, and
+fast-forward dev/main equality. Finance activation still remains HOLD.

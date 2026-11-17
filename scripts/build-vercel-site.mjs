@@ -27,6 +27,7 @@ const files = [
   'theme-operations-drilldown-567.css',
   'theme-angular-576.css',
   'finance-custody-577.css',
+  'finance-activation-578.css',
   'it-readiness.css',
   'favicon.ico',
   'manifest.json',
