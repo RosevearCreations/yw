@@ -1,0 +1,129 @@
+{
+  "schema": "rosevear.yw579.landscaping-tiered-tenant-service-model.v1",
+  "application": "Yard Workers SaaS",
+  "sampleTenant": "Rosevear Landscaping",
+  "protocol": "1.1",
+  "supportedPeers": [
+    "1.0",
+    "1.1"
+  ],
+  "tiers": [
+    {
+      "ordinal": 1,
+      "kind": "workspace",
+      "source": "YW550 curated Sysop registry and RLS-owned companies",
+      "items": [
+        "owned landscaping company",
+        "verified platform Sysop"
+      ],
+      "isolation": "Sysop cannot browse tenant financial, HR, client or job records"
+    },
+    {
+      "ordinal": 2,
+      "kind": "modules",
+      "source": "YW160 permissioned functional modules + YW443 original seven-service owner registry",
+      "functions": [
+        "Safety/OHSA",
+        "Finance",
+        "Jobs",
+        "Admin"
+      ],
+      "entitlements": [
+        "landscape",
+        "construction",
+        "water_parks",
+        "snow_removal",
+        "snow_plowing",
+        "septic",
+        "arboriculture"
+      ],
+      "planningOnly": [
+        "ponds",
+        "skateparks"
+      ],
+      "unverifiedState": "HOLD; never display synthetic ON services"
+    },
+    {
+      "ordinal": 3,
+      "kind": "tools",
+      "source": "existing original module and service workspaces",
+      "shared": [
+        "customers and properties",
+        "quotes and work orders",
+        "jobs and dispatch",
+        "crew and payroll",
+        "materials and equipment",
+        "safety and photo evidence",
+        "financial reconciliation",
+        "maintenance and contracts"
+      ],
+      "serviceSpecificOriginals": [
+        "owner449",
+        "owner452Construction",
+        "owner426",
+        "owner450Snow",
+        "owner450Plow",
+        "owner451Septic",
+        "owner451Arbor"
+      ],
+      "rights": "independently inherited original section permissions; no service chip grants write authority"
+    }
+  ],
+  "crossModuleContract": {
+    "sourceOfTruth": "original CRM/Jobs/Dispatch/Materials/Payroll/Finance/Maintenance storage; no duplicate tenant ledger",
+    "bindingKeys": [
+      "company_id",
+      "customer_id",
+      "property_id",
+      "job_id",
+      "service_module_key",
+      "source_revision"
+    ],
+    "futureEvents": [
+      "service.quote.accepted",
+      "service.job.created",
+      "service.dispatch.approved",
+      "service.photo-evidence.recorded",
+      "service.material.consumed",
+      "service.labour.approved",
+      "service.maintenance.due",
+      "finance.invoice.posted",
+      "finance.provider.settled"
+    ],
+    "eventState": "DESIGN_ONLY_NO_NEW_EVENT_BUS",
+    "safeguards": [
+      "tenant isolation",
+      "consent-aware communications",
+      "source signatures",
+      "idempotency",
+      "source revision consistency",
+      "independent finance owner release",
+      "no seven-app lockstep"
+    ]
+  },
+  "financialPilot": {
+    "state": "STAGING_REVIEW_PACKET_ONLY_NOT_LIVE_ACTIVATION",
+    "areas": [
+      "provider sandbox enrollment",
+      "original independent bank reconciliation",
+      "isolated staging schema+backup/restore",
+      "owner DBA accountant P-256 review"
+    ],
+    "liveProviderConnectionVerified": false,
+    "stagingSignedAcceptance": false,
+    "providerCharges": false,
+    "bankMovement": false,
+    "payrollExecution": false,
+    "taxFiling": false,
+    "GLPosting": false,
+    "externalAcknowledgement": false
+  },
+  "themeOptions": [
+    "Standard Blue",
+    "Futuristic Violet",
+    "Angular Steel/Copper",
+    "Forest Green",
+    "Antique Gold"
+  ],
+  "graphics": "authored public SVG angular-mesh background"
+}

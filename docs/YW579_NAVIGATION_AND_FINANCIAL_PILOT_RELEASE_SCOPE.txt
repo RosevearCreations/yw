@@ -1,0 +1,41 @@
+YW579 — TIERS FIRST / ORIGINAL FINANCE PILOT SAFE BOUNDARY
+2026-11-17. Source-only additive build based on YW578.
+Landing UX requirements driven by owner screenshots:
+1. Uppermost identity-authorized WORKSPACE: company tenant vs independently curated Sysop.
+2. Next COMPANY MODULES: Safety/OHSA, Finance, Jobs, Admin, PLUS all seven service
+   entitlements enabled for the selected RLS-owned company. OFF services never
+   appear as active. Ponds and Skateparks are separately labeled PLANNING ONLY,
+   never fake enabled service switches or billable products.
+3. Lower TOOLS: current module screens; within selected service, existing company
+   service setup, customer/jobs, scheduling, crew, equipment/materials, safety/
+   evidence, finance and settings subject to each original permission.
+Reuses YW443 authoritative ywi_rpc_pms_navigation_443 and YW550 owner/RLS
+identity. No invented company or self-asserted Sysop access. A missing/foreign,
+stale, duplicate or disabled service fail-closes to HOLD. Changing identity,
+workspace or service selection clears prior tenant navigation. One tenant
+never sees another tenant service badges, finance, bank or employee data.
+Ponds and Skateparks remain planning-only (YW575), no new entitlements/SQL.
+
+Presentation: sharp angled public SVG mesh behind three compact tiers, opt-in
+Forest Green and Antique Gold themes alongside Standard Blue/Futuristic Violet/
+Angular Steel-Copper. User theme selection changes presentation only. Native
+desktop/mobile routing and original module loading remain intact.
+
+Overlap architecture (DESIGN): shared customer/property/job IDs connect service-
+specific requirements and shared scheduling, quote, photos, materials, safety,
+crew/payroll, invoice/payment, maintenance and audit. No parallel SQL ledger,
+unverified new RPC, speculative subscription, or automatic peer deployment.
+
+YW579 FINANCE: source-only original provider SANDBOX enrollment, independent
+settlement net/fee/refund/dispute check, isolated staging with schema parity
+and backup/restore, plus distinct P-256 owner/DBA/accountant approval reviews.
+No genuine external provider, bank or CRA connection is established by
+signed fixture, screenshot, GitHub or Vercel source tests. All capture, bank
+movement, posting, payroll, CRA filing, close and outbound sends stay OFF.
+Staging-proof may be skipped until a separate actual staging project and
+independent owner/DBA approvals exist. No production SQL or provider action.
+
+Release requires four PR workflows PASS, exact preview READY, reviewed merge
+to protected main, production READY live alias at exact main SHA, all main
+push source/browser/repository/release-evidence/truth checks SUCCESS, non-force
+dev/main identical. Live financial activation remains distinct HOLD.

@@ -4,7 +4,7 @@
 (() => {
  'use strict';
  const KEY='yw-theme-v1';
- const THEMES=Object.freeze({standard:'Standard · Blue',futuristic:'Futuristic · Violet',angular:'Angular · Steel & Copper'});
+ const THEMES=Object.freeze({standard:'Standard · Blue',futuristic:'Futuristic · Violet',angular:'Angular · Steel & Copper',forest:'Forest · Green',gilded:'Antique · Gold'});
  const ROUTES=Object.freeze([
   ['#company','Company','▦'],['#sysop','Platform','◈'],
   ['#today','Jobs','▤'],['#finance','Finance','◫'],
