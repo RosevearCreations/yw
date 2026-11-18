@@ -120,4 +120,14 @@ for(const x of ['ywi_rpc_company_customers_422','ywi_rpc_customer_history_422',
  assert.ok(ui.includes(x),x);
 assert.ok(!/\\.insert\\(|\\.upsert\\(|\\.delete\\(|\\.getPublicUrl\\(/.test(ui));
 assert.equal(SERVICE_KEYS_582.length,9);
+const sql=source('sql/yw582_photo_integrity_retention_STAGING_ONLY.sql');
+for(const clause of [
+ 'public.ywi_582_photo_integrity_receipts','public.ywi_582_retention_reviews',
+ 'enable row level security','delete_authorized boolean not null default false',
+ 'verified_match boolean not null check',
+ 'before update or delete','ywi_582_guard_append_only'
+]){
+ assert.ok(sql.toLowerCase().includes(clause.toLowerCase()),'missing staged ledger protection: '+clause);
+}
+assert.ok(!/grant\\s+(insert|update|delete)[^;]*to\\s+authenticated/i.test(sql));
 console.log('YW582 source PASS: 9 service keys, cryptographic two-witness staging review, original 422 owner-bound job usability, actual byte-hash checks, legal hold and retention review, '+fails+' negative cases; no production activation');
