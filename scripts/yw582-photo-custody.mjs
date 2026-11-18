@@ -56,7 +56,7 @@ export function inspectStagingReview582(packet,{
  if(!measured||measured.project_ref!==p.project_ref||
     measured.source_revision!==p.source_revision||
     measured.migration_digest!==p.migration_digest||
-    measured.schema_parity!==true||measured.isolated_project===true!==true||
+    measured.schema_parity!==true||measured.isolated_project!==true||
     measured.backup_restore_proven!==true||
     measured.production_unmodified!==true||
     measured.bucket_private!==true||
