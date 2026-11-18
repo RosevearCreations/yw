@@ -50,7 +50,7 @@ const $=id=>document.getElementById(id);
 function status(s){const n=$('yw581Status');if(n)n.textContent=s;}
 function clear(){
  epoch++;current=null;const host=$('yw581Rows');host?.replaceChildren();
- const form=$('yw581Upload');if(form)form.hidden=true;
+ const form=$('yw581Upload');if(form){form.reset();form.hidden=true;}
  status('HOLD: original company and independent staging acceptance have not been verified.');
 }
 function render(){
