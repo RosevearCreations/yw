@@ -98,6 +98,13 @@ begin
   v_job:=split_part(p_path,'/',2)::uuid;
  exception when invalid_text_representation then return false;
  end;
+ -- Storage INSERT must obey the ORIGINAL 422 owner and Jobs-create rights.
+ -- A deactivated Jobs permission cannot leave a private orphan object.
+ begin
+  perform public.ywi_422_assert_owner(v_company);
+  perform public.ywi_422_assert_jobs_create();
+ exception when others then return false;
+ end;
  select w.service_module_key into v_service from public.work_orders w
   join public.ywi_companies c on c.id=w.company_id and c.owner_user_id=auth.uid()
   join public.ywi_company_site_links_422 s
