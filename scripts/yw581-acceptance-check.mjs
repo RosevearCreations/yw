@@ -43,7 +43,7 @@ deny('financial enabled',x=>x.financial_activation_authorized=true);
 deny('messaging enabled',x=>x.customer_messaging_authorized=true);
 deny('false file hash witness',x=>x.digest_independently_verified=true);
 deny('missing service',x=>x.services.pop());
-deny('duplicate service',x=>x.services[7].key='ponds');
+deny('duplicate service',x=>x.services[8].key='ponds');
 deny('unexpected service',x=>x.services[3].key='forex');
 deny('string entitlement',x=>x.services[0].enabled='true');
 deny('inconsistent registry',x=>x.services[0].registry_present='yes');
