@@ -181,6 +181,8 @@ function mount(){
  window.addEventListener('hashchange',()=>{if(isPlatform())clear();});
 }
 window.YW581Acceptance=Object.freeze({keys:KEYS,inspect,verify,clear,
+ canEvidenceService:key=>allowed()&&current?.state==='OWNER_STAGING_REVIEW_ONLY'&&
+  current.rows.some(r=>r.key===key&&r.readyForEvidence),
  snapshot:()=>({state:current?.state||'HOLD',accepted:current?.accepted||0,productionActivation:false})});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();

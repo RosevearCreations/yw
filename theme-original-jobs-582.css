@@ -1,0 +1,20 @@
+/* YW582 original-job selection: compact, high-contrast and mobile-safe. */
+#yw582Picker.yw582-picker{
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));
+ align-items:end;gap:10px;margin:14px 0;padding:14px;
+ border:1px solid rgba(149,161,182,.42);border-radius:10px;
+ background:rgba(18,31,55,.88);color:#f4f7fc;min-width:0;
+}
+#yw582Picker h3,#yw582Picker p{grid-column:1/-1;margin:0;color:#f5f7fc}
+#yw582Picker p{font-size:.86rem;color:#dee6f2;line-height:1.5}
+#yw582Picker label{display:flex;flex-direction:column;gap:5px;
+ font-weight:650;font-size:.84rem;color:#f5f7fc;min-width:0}
+#yw582Picker select{width:100%;min-width:0;max-width:100%;height:auto;min-height:42px;
+ padding:9px 30px 9px 10px;background:#f7fafc;color:#162338;
+ border:1px solid #b8c6d6;border-radius:7px;box-sizing:border-box}
+#yw582Picker select:focus-visible,#yw582Picker button:focus-visible{
+ outline:3px solid #efb54a;outline-offset:2px}
+#yw582Picker button{min-height:42px}
+#yw581Upload input[readonly]{background:#e1ebf3;color:#142333;cursor:not-allowed}
+@media(max-width:560px){#yw582Picker{grid-template-columns:1fr;padding:12px}}
+@media(prefers-reduced-motion:reduce){#yw582Picker *{scroll-behavior:auto;transition:none}}
