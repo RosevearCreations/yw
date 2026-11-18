@@ -1,0 +1,71 @@
+YW582 — INDEPENDENT STAGING REVIEW, PHOTO INTEGRITY & RETENTION, ORIGINAL-JOB UX
+2026-11-18 | SOURCE IMPLEMENTATION ONLY | LIVE DATABASE ACCEPTANCE HOLD
+
+SOURCE BASELINE
+YW581 protected main/dev e5c4f0878d170f6d40f97f14aa235d2041ee47a8.
+Production Vercel alias yw-alpha.vercel.app READY on source baseline.
+YardWeasels Supabase project discovered by connected account is not identified as
+an isolated staging project. Read-only catalog query confirmed original 420
+company/service tables exist; 581 acceptance/photo and 582 integrity/review
+tables are ABSENT. Do not run YW580/581/582 candidate scripts there.
+
+NEW SOURCE DELIVERABLES
+* scripts/yw582-photo-custody.mjs validates two separately pinned P-256
+  signer REVIEW statements of exact non-production project, source/migration
+  digest, schema/isolation/restore negative-test claims, all 9 services, expiry.
+  It does not read a live database or assert that the signing parties ran tests.
+  All trust roots must be independently pinned out of band. No embedded keys.
+* The same offline verifier examines supplied private photo FILE BYTES and
+  computes the exact SHA-256, checks image signature, size, original company/job
+  path, consent, service, and matches original reported digest. It never reads
+  Supabase by itself, authenticates a worker or writes a server receipt.
+* Retention planner classifies expired records as human REVIEW candidates only
+  if integrity evidence exists and there is no legal hold or dispute. No
+  automatic deletion, notification or production data change.
+* SQL source candidate sql/yw582_photo_integrity_retention_STAGING_ONLY.sql
+  has owner-read RLS, no authenticated writes, append-only integrity and
+  retention-review ledgers. Requires independently verified staging signoff,
+  database migration history, content hashing worker custody and security audit.
+* js/yw582-original-job-picker.js and responsive theme-original-jobs-582.css
+  use the original owner-bound YW422 customer roster + canonical customer
+  history to select existing client/property/work_order. Supports 9 keys but
+  filters to the currently accepted/ON 581 service. Never creates, alters,
+  reassigns, charges or emails. On authentication or tenant change the prior
+  IDs are cleared. Server-side 581 owner/Jobs/consent checks still decide uploads.
+* js/yw581-staging-acceptance.js exports only a read-only current service
+  acceptance query; there is no new authority or mutation command.
+* .github/workflows/yw582-photo-custody.yml and
+  scripts/yw582-photo-custody-check.mjs enforce fail-closed behavior.
+
+CRITICAL ORIGINAL-SOURCE MISMATCH DISCOVERED
+420 registration SQL accepts SIX legacy services and the 443 read RPC requires
+SIX; however js/pms-module-navigation-443.js advertises an expected SEVEN
+including arboriculture. This original-source parity mismatch requires
+isolated staging DB/schema and UI reconciliation before seven original modules
+can be claimed live. YW580 renders nine Tier-2 module identities but this is
+not a blanket server entitlement or operational certification. Ponds/
+Skateparks are original YW580 default OFF staging-only candidates. Leave
+all unsupported activation states visibly OFF/HOLD, not a fabricated GREEN.
+
+PRE-ACCEPTANCE GATES
+- Independently identify dedicated NON-PRODUCTION Supabase project ref, pinned
+  production project deny, and verify verified source/digest/provenance.
+- Apply 420/421/422/443 repairs and 580/581/582 scripts only after DBA/owner
+  reviews, staging backup/restore and full RLS tenant isolation tests. No
+  automatic production migrations.
+- Independently verify storage object bytes, actual owner/job links,
+  SHA-256 and signed custodian audit receipts; no client-reported hash suffices.
+- Authenticate private bucket reads and purpose-limited retention custody.
+  Apply legal-hold/dispute and separate reviewer signoff before real deletion.
+- Execute responsive desktop/tablet/mobile browser tests for real original
+  customer/property/job selection and stale role and tenant changes.
+- Keep service billing, payroll, CRA filing, automated outreach and new work
+  outside staging activation; finance remains separately HOLD.
+- All source premerge GH checks and Vercel preview READY; protected dev/main
+  merge and exact SHA live production Vercel READY; main post-push release
+  source/truth/browser/repository checks PASS; dev/main non-force identical.
+  SOURCE GREEN is NOT LIVE DATA GREEN.
+
+NEXT PROPOSED BUILD
+YW583 — Original Six/Seven-to-Nine Service Schema Parity Repair,
+Independent Staging Custodian Enrollment & Real Photo/Job Pilot Acceptance.
