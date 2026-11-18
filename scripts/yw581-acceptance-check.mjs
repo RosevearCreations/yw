@@ -68,6 +68,7 @@ const parts=[
  "'job_documentation'","consent_recorded boolean not null",
  'p_consent is distinct from true','retained_until',
  'ywi_rpc_staging_acceptance_581','production_activation_authorized',
+ 'sp.enabled is true','svc.enabled is true',
  "'new_work_authorized',false","'digest_independently_verified',false"
 ];
 for(const item of parts)assert.ok(sql.includes(item),'Missing staging protection: '+item);
