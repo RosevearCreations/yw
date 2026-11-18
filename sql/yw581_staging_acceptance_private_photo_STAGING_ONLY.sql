@@ -107,6 +107,16 @@ begin
    on l.company_id=s.company_id and l.client_id=s.client_id
   where w.id=v_job and w.company_id=v_company;
  if v_service is null then return false; end if;
+ -- Staging acceptance does not override an OFF company entitlement.
+ if v_service in ('ponds','skateparks') then
+  if not exists(select 1 from public.ywi_company_specialty_modules_580 sp
+    where sp.company_id=v_company and sp.module_key=v_service
+      and sp.enabled is true) then return false; end if;
+ else
+  if not exists(select 1 from public.ywi_company_service_modules svc
+    where svc.company_id=v_company and svc.module_key=v_service
+      and svc.enabled is true) then return false; end if;
+ end if;
  return exists(select 1 from public.ywi_581_service_acceptance a
   where a.company_id=v_company and a.service_key=v_service
    and a.environment='staging' and a.accepted_at<=statement_timestamp()
