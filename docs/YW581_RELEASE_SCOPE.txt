@@ -1,0 +1,70 @@
+YW581 — NINE-SERVICE STAGING ACCEPTANCE, ORIGINAL LINKAGE AND PRIVATE PHOTO EVIDENCE
+Date: 2026-11-17
+Status: SOURCE IMPLEMENTED / STAGING NOT ATTESTED / PRODUCTION DATABASE UNCHANGED
+
+BASELINE
+YW580 production/dev same commit fc2bdc3915f1ee67d97d679ddc2ce14f35552919.
+Nine company Tier-2 services persist:
+Lawn & Grounds, Snow Removal, Snow Plowing, Septic, Arboriculture,
+Construction, Aquatic Facilities, Custom Ponds, Skateparks.
+The seven original 420/443 flags and the two YW580 default-OFF specialty flags
+remain independent. Selecting a module never creates an order or authorizes a payment.
+
+YW581 SOURCE DELIVERABLES
+1. SQL staging candidate sql/yw581_staging_acceptance_private_photo_STAGING_ONLY.sql.
+   Nine service acceptance rows require a recorded real owner witness,
+   separately identified reviewer, source SHA, migration and staging-isolation
+   digest, bounded expiry, and a signed-acceptance reference. These fields are
+   evidence pointers only: they do NOT themselves cryptographically verify signatures.
+   The table is RLS owner-readable, with no authenticated write grant or UI to
+   self-issue acceptance. No acceptance row is seeded.
+2. Original identity relations: company ywi_companies; original clients,
+   client_sites and work_orders; original 422 company-client/site link tables,
+   original 422 Jobs and owner authorization. Foreign company/customer/site/job
+   combinations fail before any immutable job-photo metadata record is inserted.
+3. Private Supabase Storage bucket ywi-private-job-photos-581, JPG/PNG/WebP,
+   max 10 MB, no upsert, public=false. Storage INSERT is restricted to original
+   company-owned job and unexpired independently recorded staging acceptance.
+   Read/update/delete is not granted by this candidate.
+4. Immutable photo metadata with original job identity, consent purpose, bounded
+   retention, unique request replay guard, SHA-256 reported by the browser.
+   The SHA is NOT independently checked against stored bytes. This is clearly
+   represented as false in the receipt/snapshot. Storage object and metadata
+   record may require manual reconciliation after a partial failure.
+5. Owner-only YW581 panel with read-only nine-module staging status, and a
+   private optional staged photo uploader requiring original UUIDs and explicit
+   documentation consent. It cannot grant a service entitlement, enable Jobs
+   creation, post finance, or send a customer message.
+
+ACTIVATION & ENVIRONMENT BOUNDARY
+- This is a source-only additive SQL candidate. NOT applied to production.
+- Verify the actual Supabase project ID/URL belongs to an isolated staging
+  project; no production schema, data, auth, billing or storage migrations.
+- Review predecessor SQL migration provenance YW420/421/422/443 and YW580:
+  authoritative seven-service YW443 RPC and arboriculture consistency require
+  independent testing, not a UI-local assertion.
+- Independently test: current owner vs foreign company, revoked user, denied Jobs,
+  inactive client/site, mismatched site/customer, foreign/unscoped work order,
+  missing/expired acceptance, duplicate request and object path, retention
+  boundaries, image size/type, direct Data API table writes, bucket public access,
+  upload upsert, cross-tenant listing, consent denial, stale session and orphan.
+- Verify owner and separate staging DBA/service custodian approvals, matching
+  source/migration SHA, signed evidence and test results before staging enrollment.
+- Mark acceptance GREEN only for the independently verified staging boundary.
+  Production activation is a SEPARATE change: backup/restore test, independent
+  approved migration, verified source-linked new-work safeguards, storage hash
+  worker, signed read access, retention purger, audit and approval authority.
+- No service or production financial activation through YW581. No automatic
+  customer messaging, no uploads on page load, no cross-app deployment needed.
+
+RELEASE GATE
+Feature PR into dev: exact-head source, security and 3 browser lanes success
+plus exact Vercel preview READY. Promote dev -> protected main only after review
+and verified green. Verify main Vercel production READY live yw-alpha.vercel.app
+with exact commit, post-push source/browser/release checks and non-force dev/main
+SHA equality. Source release GREEN does NOT imply runtime staging migration or
+genuine independent acceptance. Do not fabricate tenant data or credential proofs.
+
+NEXT PROPOSED
+YW582 — Independent Staging Migration Witness, Photo Object Hash/Retention
+Worker and Original-Job Browser Usability Acceptance (proposal, not scheduled).
