@@ -5,7 +5,7 @@ const uuid=n=>n.toString(16).padStart(8,'0')+'-1111-4111-8111-111111111111';
 const company=uuid(2),outside=uuid(3),id=uuid(4),now='2026-11-19T16:30:00.000Z';
 const ui=readFileSync('js/yw584-tenant-support-site-editor.js','utf8');
 new vm.Script(ui,{filename:'yw584-tenant-support-site-editor.js'});
-const win={addEventListener(){}};const doc={readyState:'loading',addEventListener(){}};
+const win={addEventListener(){}};const doc={readyState:'loading',addEventListener(){},getElementById(){return null}};
 vm.runInNewContext(ui,{window:win,document:doc,location:{hash:''}});
 const api=win.YW584CompanySupport;
 assert.ok(api?.inspectPlatform&&api?.inspectSite&&api?.inspectCases&&api?.inspectOfferings);
