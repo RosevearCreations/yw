@@ -502,9 +502,9 @@ Yard Workers is one of six source applications coordinated by the separate Rosev
 
 Follow the protected **feature → dev → main** release path and exact-commit checks. No additional active Markdown file is added to this repository by this handoff.
 
-## AI Data Platform Build 423 — signed Sysop telemetry source
+## AI Data Platform — signed Sysop telemetry source
 
-YW exposes the read-only `GET /internal/rosevear/sysop/telemetry/v1` source endpoint for the AI Data Platform seven-application Sysop view. It requires server-side `ROSEVEAR_SYSOP_TELEMETRY_READ_TOKEN`, `ROSEVEAR_SYSOP_TELEMETRY_PRIVATE_KEY_PEM` and the exact deployed source commit.
+YW exposes the read-only `GET /internal/rosevear/sysop/telemetry/v1` source endpoint for the current AI Data Platform seven-application Sysop view. It requires server-side `ROSEVEAR_SYSOP_TELEMETRY_READ_TOKEN`, `ROSEVEAR_SYSOP_TELEMETRY_PRIVATE_KEY_PEM` and the exact deployed source commit.
 
 Only non-sensitive aggregate fields may cross this boundary. Tenant, company, client, job, worker, location, photo, payroll and invoice data remain inside YW. Unknown counters are `null`, not inferred zeroes. YW may report process heartbeat/restart observations but cannot claim the original Windows host boot event. The envelope authorizes no job, payment, message, reboot, recovery or configuration action.
 
