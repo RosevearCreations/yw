@@ -32,7 +32,7 @@ with r as (
  exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
   where n.nspname='public' and p.proname='ywi_rpc_pms_navigation_443'
    and pg_get_functiondef(p.oid) like '%arboriculture%'
-   and pg_get_functiondef(p.oid) like '%v_count <> 7%'
+   and pg_get_functiondef(p.oid) like '%v_count<>7%'
   ) as navigation_requires_seven
 )
 select 'YW583_LIVE_READ_ONLY'::text as audit_source,
