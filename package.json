@@ -4,7 +4,7 @@
   "version": "2026.09.04",
   "type": "module",
   "scripts": {
-    "build:vercel": "node scripts/yw371-source-closure-check.mjs && node scripts/build-vercel-site.mjs",
+    "build:vercel": "node --test tests/sysop-telemetry-v1.test.mjs && node scripts/yw371-source-closure-check.mjs && node scripts/build-vercel-site.mjs",
     "test:vercel-static-output": "node scripts/vercel-static-output-check.mjs",
     "test:repo": "node scripts/repo-smoke-check.mjs",
     "test:comms-source": "node --test tests/ql335-shell-nonproduction.test.mjs tests/ql364-source-health.test.mjs",

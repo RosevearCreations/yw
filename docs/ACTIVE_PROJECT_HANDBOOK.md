@@ -501,3 +501,11 @@ Yard Workers is one of six source applications coordinated by the separate Rosev
 - Return only genuine original nonsecret owner-status JSON and public immutable source/CI references when actually available. Never put personal identities, client records, key-store paths, private signing keys, tokens, IP addresses, witness challenges or production tenant secrets in GitHub/chat. Successful software CI is independent of integration acceptance.
 
 Follow the protected **feature → dev → main** release path and exact-commit checks. No additional active Markdown file is added to this repository by this handoff.
+
+## AI Data Platform — signed Sysop telemetry source
+
+YW exposes the read-only `GET /internal/rosevear/sysop/telemetry/v1` source endpoint for the current AI Data Platform seven-application Sysop view. It requires server-side `ROSEVEAR_SYSOP_TELEMETRY_READ_TOKEN`, `ROSEVEAR_SYSOP_TELEMETRY_PRIVATE_KEY_PEM` and the exact deployed source commit.
+
+Only non-sensitive aggregate fields may cross this boundary. Tenant, company, client, job, worker, location, photo, payroll and invoice data remain inside YW. Unknown counters are `null`, not inferred zeroes. YW may report process heartbeat/restart observations but cannot claim the original Windows host boot event. The envelope authorizes no job, payment, message, reboot, recovery or configuration action.
+
+Missing signer/token/source enrollment remains `NOT_ENROLLED` / HOLD. Coordination remains tracked in issue #846.
