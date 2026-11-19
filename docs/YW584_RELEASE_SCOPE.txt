@@ -1,0 +1,104 @@
+YW584 — YARD WORKERS FULL SAAS, LANDSCAPING TENANT SELF-SERVICE & IT SUPPORT
+Scope date: 2026-11-19 | Source candidate only. No production DB DDL or customer enrollment.
+
+FULL PRODUCT MODEL (DO NOT CONFLATE)
+A. YW vendor/platform Sysop (Rosevear vendor only):
+  tenant provisioning and identity, billing/customer support, platform incidents,
+  lockouts, performance/error budgets, traffic, uptime/reboots, deployment/rollback,
+  backup/restore, security/audit, SLA complaint queues and verified telemetry.
+  Never opens customer work orders or manipulates tenant finances by default.
+B. Subscriber landscaping company owner/manager:
+  complete CRM/customer/property, quoting, nine service areas, estimates,
+  scheduling/route/weather, crew/HR/safety, original jobs/photos, suppliers/
+  tools/equipment, invoices/accounting/payroll/tax, reports, local IT, site
+  settings, approved rentals, events, add-ons, support cases and maintenance.
+  Every mutation binds to original independently verified company ownership.
+C. Company external customer:
+  tenant branded site, secure account/booking and job status, quotes, opt-in
+  images, invoices/receipts, support requests, rental/event reservations, account
+  recovery and accessibility on desktop/tablet/mobile. THIS PORTAL IS NOT BUILT
+  END-TO-END OR PILOT-ACCEPTED; do not conflate static Yard Workers marketing page
+  with a tenant's genuine branded customer self-service website.
+D. 3 Masters + 4 apps:
+  AI Data Platform = analytics/health source; Comms Hub = audited operator
+  communication and acknowledgement; Rosevear AI Hub = original host heartbeat,
+  boot/reboot/workers; YW, Rosie, iCamp, Devil n Dove = business applications.
+  Signed source contracts are not live receiver enrollment or durable ACK.
+
+VERIFIED BASELINE
+Repo RosevearCreations/yw dev/main initially matched protected
+ce71023647331572a2ccbbeeff0b0578e6110237 (YW583) with production Vercel
+READY. Supabase YardWeasels original company registry has 1 owner company,
+seven original service switches (all OFF) including YW451 arboriculture; no
+YW580 specialty, YW581 photo, YW582 custody schema. No independent YW staging
+project or original private bucket readback known at source review. Preserve
+historical migrations. No live customer portal/full SaaS billing attested.
+
+NEW YW584 SOURCE DELIVERABLES
+1. sql/yw584_tenant_support_site_drafts_STAGING_ONLY.sql:
+ - independently owner-scoped site draft with slug/display/headline/description/
+   theme; publication_state hardlocked to draft; no public route/publish;
+ - independently owner-scoped event, rental, add-on drafts; no public purchase,
+   booking, provider payment or service activation;
+ - complaint, access-lockout, performance, traffic and local maintenance case
+   intake with immutable open status; tenant owner alone reads private details;
+ - private Sysop RPC uses original server-side ywi_is_platform_administrator_489
+   and returns aggregate case counts only; no tenant details or mutation;
+ - RLS, limited column write grants, immutable identities, no anon grants,
+   bounded fields, original company FK and no tenant cross access.
+2. js/yw584-tenant-support-site-editor.js + theme-support-584.css:
+ - responsive company owner editor, forms, site drafts, rental/add-on/events,
+   support intake and readback; rechecks auth.getUser + original company RLS,
+   verifies tenant on all result records and clears on auth/company switch;
+ - separate platform Sysop diagnostics/complaint aggregate panel; never
+   calls company-specific RPCs in Sysop mode and never impersonates a tenant;
+ - interface expressly says NOT ENROLLED until staging-only database migrates;
+   no fake saves/public site, no claim of live stats/reboots or automatic fixes.
+3. scripts/yw584-staging-pilot.mjs:
+ - expected exact non-production ref, source revision, migration history incl
+   original 420/421/422/451 and gated 580/581/582/584; RLS negative tests,
+   backup/restore and original job/consent/private photo worker receipts;
+ - local byte hash and signed-review-source evidence can only produce
+   REVIEW_REQUIRED, not real acceptance; false/missing evidence returns HOLD.
+4. scripts/yw584-staging-pilot-check.mjs,
+   scripts/yw584-company-support-check.mjs,
+   .github/workflows/yw584-tenant-security.yml: explicit fail-closed CI.
+5. docs/YW584_RELEASE_SCOPE.txt: durable source of truth and acceptance gates.
+
+STAGING COST/BLOCKER
+Connected YW Supabase project: jmqvkgiqlimdhcofwkxr, linked project owner.
+No existing development branches. Attempt to create
+yw584-independent-staging returned a mandatory cost confirmation requirement.
+Official connected Supabase quoted USD 0.01344 per hour, plus usage if any.
+No approval for this nonzero charge has been provided. DO NOT call confirm_cost,
+create the branch or apply production migrations without explicit cost consent.
+This blocks genuine independent migration/photo-pilot and live company editing.
+
+ACCEPTANCE DEFINITION — FULL PRODUCT AT 100%
+Vendor: independent real Sysop production IT dashboard with traffic/errors,
+tenant provisioning/billing, lockout response, complaints with SLA, role-based
+escalation, performance metrics, security operations, original-host reboot,
+backup/restore, real peer receipts and incident remediation execution.
+Landscaping tenant: end-to-end service workflow from customer booking to field
+completion and financial settlement, verified 9 service entitlements, live
+private job photo custody, completed worker and owner device pilots, maintenance,
+event/rental/add-on publishing to tenant-facing branded site with approvals.
+External customer: real tenant-specific site and self-service sign-up/login,
+quotes/booking, media, job progress, account recovery, invoices/receipts,
+consent, events, rentals, accessible mobile/desktop/tablet.
+Each must have source+DB+negative tenant isolation+real field/runtime records+
+evidence and independent owner acceptance; production GREEN is not any of these.
+
+RELEASE SCOPE GATES
+1. Exact feature SHA security + browser a/b/c + full source + Vercel READY.
+2. feature → dev protected source checks; dev → protected main PR.
+3. Exact-main Vercel READY at alias yw-alpha.vercel.app, post-release security,
+   browser/source/release-evidence/truth/repository and non-force dev=main.
+4. Database migrations NOT performed: paid staging branch requires separate
+   cost approval, independent tenant/source verification and restore witness.
+5. 5–10% completion rule means 5–10% of precisely weighted outstanding
+   *accepted feature backlog*, not synthetic overall percentage growth. YW584
+   source-only cannot claim any live staging/pilot acceptance points.
+NEXT proposed YW585 — Independently Funded Staging Enrollment, Owner-Signed
+580–584 Migration Replay, Original Photo/Job Live Pilot, Tenant Site Support
+and Public Customer Portal Vertical Slice.
