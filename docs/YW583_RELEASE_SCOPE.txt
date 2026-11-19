@@ -1,0 +1,92 @@
+YW583 — HISTORIC SIX→SEVEN REGISTRY SOURCE-OF-TRUTH, INDEPENDENT STAGING PILOT CONTRACT & SYSOP HANDOFF
+Audit initiated 2026-11-18 (Toronto) | Non-destructive | Source implementation, not new live pilot.
+Owner authority: Yard Workers multi-tenant SaaS. Rosevear Landscaping is a sample tenant.
+Protected PR feature -> dev -> main; source GREEN != customer acceptance.
+
+CRITICAL RECONCILIATION (CORRECTION TO YW582 REPORT)
+Original migrations 420/421/443 rightly have SIX historical services, then
+sql/pms_septic_arboriculture_451.sql explicitly expands the actual registry,
+audit check, seed trigger, original Jobs/new-work guard and read-only navigation
+RPC to SEVEN, while retaining all old switch values and initializing arboriculture
+OFF. Do not rewrite numbered historical SQL, reapply migration 451, or falsely
+describe the current DB as six-only. Migration 451 is the authority in source.
+Connected YardWeasels Supabase read-only 2026-11-18 local review:
+  companies=1, registry rows=7, arboriculture rows=1, enabled=0.
+  Registry and audit checks contain arboriculture; seed/421 Jobs/443 RPC
+  contain arboriculture; navigation has exactly seven.
+  No verified YW580 specialty table, YW581 acceptance/photo tables, YW582
+  integrity/retention tables in connected project. None has been created by YW583.
+Staging project: no dedicated Yard Workers non-production project identified
+among connected Supabase project listings. Refuse production fallback.
+
+DELIVERABLES
+- sql/yw583_live_seven_service_AUDIT_READ_ONLY.sql: source-linked, privacy-
+  minimizing, real current-schema registry/specialty photo catalog verification,
+  no tenant names, user IDs, writes or photo content.
+- scripts/yw583-parity-pilot.mjs: six→seven historical provenance validator,
+  safely interpreted real readback and independent staging pilot fail-closed
+  evidence inspection. Full nine Tier 2 identities: seven original + two 580
+  specialty keys (default OFF pending verified staging SQL).
+- scripts/yw583-parity-pilot-check.mjs, .github/workflows/yw583-parity-pilot.yml:
+  positive + 22 negative isolation/perms/staging/source cases.
+- Cross-repo communication tracked in existing issues:
+  ai-data-platform #1001, rosevear-comms-hub #967, rosevear-ai-hub #825,
+  yw #846, iCamp #645, rosiedazzlers #1136, devilndove-site #970.
+  All seven hosts received a source-specific YW583 comment. This is real
+  GitHub issue communication, not a deployed, cryptographically acknowledged
+  peer transport.
+
+SYSOP TELEMETRY 3 MASTERS + 4 SLAVES
+- Preserve AIDP Build 423 concurrent source/producer changes; never force dev
+  over main, or overwrite new peer source. Review and reconcile both commits.
+- Required signed aggregate read-only contract: schema
+  rosevear.sysop.statistics.v1, GET /internal/rosevear/sysop/telemetry/v1,
+  signed nonce, exact source sha, TTL, tenant-free aggregates only, real
+  authorization, registered receiver trust pin, authenticated delivery ACK.
+- Coverage targets: uptime, route/request counts, error counts, job success/
+  failure, queue depth, latency p95, active sessions where actually available;
+  original-host witnessed Windows reboot/Task Scheduler/service restart/health.
+  Serverless cold start NEVER means Windows reboot.
+- If genuine independent counter/reboot evidence absent, field is null; never
+  fabricated test values, default GREEN, or hidden failure. Operator/Comms
+  authority remains separately consent- and role-gated; no auto-send/funds.
+- No new credentials or recipient activation by YW583 source.
+
+INDEPENDENT STAGING / REAL PHOTO JOB PILOT CHECKLIST (BLOCKED)
+1. Designate a genuinely separate Yard Workers Supabase staging project; have
+   owner + DBA verify its immutable project ID and NOT production ID.
+2. Independently verify latest migrations 420→421→422→443→451 and
+   follow-up 580→581→582 with schema parity, RLS tenant isolation, backup
+   recovery, full media type/size/bucket-private verification.
+3. Test existing original company/client/site/job with authorized owner and
+   denied foreign client/job/disabled Jobs; no invented data or owner impersonation.
+4. Exercise truly private object upload, server-side byte SHA-256 readback,
+   independent receipt signatures, consent, role revocation, replay, orphan
+   reconciliation, expiration, legal hold/dispute and independent retention review.
+5. Verify original customer/property/job picker on real desktop, tablet and phone,
+   with screen reader, contrast and keyboard/touch navigation.
+6. Independent owner/DBA/second reviewer and full release/audit acceptance for
+   staging. Production separate backup/restore, migration, approval & pilot gate.
+Finance posting/settlements/payroll/tax/advertising/automatic customer messages
+remain OFF without their separate live provider authority and consent evidence.
+
+SCORECARD POLICY
+- The earlier 26-score percentages were examples, not historical facts. Create
+  new independent estimates using source, flow coverage, tests, runtime evidence,
+  owner acceptance. Keep operational readiness separate from code maturity.
+- For each future numbered build, scope a coherent package aimed at 5–10% of
+  the remaining weighted *accepted feature backlog*. Record before/after
+  denominator and which evidence-accepted tests earned points; consolidate
+  fragments. Never claim 5–10 percentage points if acceptance did not occur.
+- Do not mark historical migration improvements as newly completed YW583 work.
+
+RELEASE GATES
+Exact feature SHA source, new YW583 CI, existing YW581/582 security, browser
+three lanes, Vercel preview READY; merge to dev; re-run exact dev; merge to
+protected main; verify exact production sha live alias yw-alpha.vercel.app,
+release-source/truth/repo/browser checks, and non-force dev/main equality.
+No production DB DDL or credential enrollment in this release.
+
+NEXT PROPOSED
+YW584 — Separate Supabase Staging Project Enrollment, Migration Replay and
+Independent Original Job/Photo Upload Readback Ceremony, with signed witnesses.
