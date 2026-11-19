@@ -29,6 +29,7 @@ const files = [
   'theme-tiers-579.css',
   'theme-modules-580.css',
   'theme-original-jobs-582.css',
+  'theme-support-584.css',
   'finance-pilot-579.css',
   'finance-custody-577.css',
   'finance-activation-578.css',
