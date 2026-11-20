@@ -1,0 +1,128 @@
+YW586 — AUTHENTICATED ORIGINAL-CUSTOMER ENROLLMENT, TENANT PUBLICATION
+        PRIVATE REVIEW, AND EPHEMERAL POSTGRES RLS/JOB/PHOTO REHEARSAL
+2026-11-19 local | Controlled source release | NO paid staging / production DDL
+
+BASELINE
+YW585 main/dev eqaul on 8b5438c5d921c0508d9db064915a35404a5345ad.
+Live Vercel yw-alpha.vercel.app READY. YW585 /customer.html provides
+local planning sheet only and is not an authenticated booking channel.
+
+NEW MEANINGFUL SOURCE/UX
+1. public/customer-account.html, public/customer-account-586.css and
+   public/customer-account-586.js add a responsive existing-user sign-in
+   and current Supabase auth.getUser verification (not public signup).
+   Browser session is memory-only, no automatic persistence/refresh,
+   no sign-up, no invitation, no payment, no job/photo reads.
+   Customer company labels require independently RLS-scoped active
+   YW585 ORIGINAL YW422 membership and the company-scoped minimal
+   ywi_585_customer_portal_scope RPC. Any missing staging table,
+   cross-company source, stale scope or sign-out -> clear and HOLD.
+   public/customer.html now links this guarded private entry.
+2. js/yw586-website-publication-preview.js and
+   theme-publication-586.css add a true company-owner-only preview
+   from the ORIGINAL YW584 private site-draft table and verified
+   YW550/YW579 user/owner authority. Preview renders TEXT ONLY with
+   no HTML injection; computes SHA-256 review digest of selected
+   content and provides a four-item local publication-review checklist.
+   Even a completed checklist is LOCAL_REVIEW_NOT_APPROVAL, with
+   NO live publishing, DNS update, search indexing or rental checkout.
+3. sql/yw586_enrollment_publication_reviews_STAGING_ONLY.sql adds
+   owner- and independently reviewed proposed customer enrollment and
+   site-publication ledgers, append-only, owner-only RLS SELECT,
+   NO authenticated INSERT/UPDATE/DELETE, NO public signup/publish
+   authority. Status 'approved_for_staging_only' cannot be interpreted
+   as a production approval or customer membership activation.
+   Same original YW585 company/client and YW584 site-draft FKs.
+4. sql/yw586_zero_cost_synthetic_rls_rehearsal.sql runs only against
+   a disposable postgres:17-alpine GitHub Actions service. Creates
+   two synthetic tenants, distinct original links and memberships,
+   jobs, private photo consent/integrity and owner website drafts,
+   applies real PostgreSQL RLS and checks cross-tenant, orphan
+   job, off-service creation, private/nonconsented photo, unrelated
+   actor, owner website isolation and revoked customer. Ends ROLLBACK;
+   credentials synthetic and not Supabase. This is real Postgres RLS
+   semantics in fixtures, NOT a replay of the real YW580–586 SQL.
+5. scripts/yw586-zero-cost-enrollment-check.mjs, plus separate
+   .github/workflows/yw586-original-customer-security.yml,
+   tests/browser/yw586-auth-customer-publication.spec.mjs:
+   source, serverless/credential/funds guards, real Chrome
+   login-guard/UI and preview flows, independent SQL fixture.
+   Existing exact 221-suite protected source/browser lane preserved.
+   No intentionally weakening release checks.
+6. docs/YW586_RELEASE_SCOPE.txt is the persistent truth.
+
+LIVE PRODUCTION DATABASE FACTS (READ ONLY)
+Connected Supabase YardWeasels project jmqvkgiqlimdhcofwkxr checked
+2026-11-19 local:
+- public.ywi_584_company_site_drafts: ABSENT.
+- public.ywi_585_customer_memberships and request_drafts: ABSENT.
+- public.ywi_586_customer_enrollment_reviews and
+  site_publication_reviews: ABSENT.
+- public.ywi_581_job_photo_evidence and
+  ywi_582_photo_integrity_receipts: ABSENT.
+No staging-only migration was applied to production. Source code
+deployed does not imply real customer membership, photo storage
+or public tenant publication. Zero-cost instruction prevents
+provisioning previously quoted paid staging branch without approval.
+
+NON-PRODUCTION EVIDENCE POLICY
+- CI GitHub Postgres container consumes standard already-in-use
+  Actions capacity but is NOT a separately paid Supabase project.
+  It uses only fake fixtures and always rolls back. Repo accounts
+  may separately bill Action minutes subject to their plan; no
+  claim of universal $0 cloud compute cost.
+- Postgres fixture's app.actor_id is a trusted-only synthetic test
+  variable, NOT a real Supabase JWT claim. Actual auth.uid()/RLS
+  and storage.oid replays must be verified on a real isolated
+  non-production database before pilot acceptance.
+- Real login uses existing auth provider; no membership means
+  no customer data exposed. The UI cannot override database RLS.
+- No live customer, Job, photo, bucket, site publication, company
+  permission, financial posting, email, iCamp/Comms/AIDP authority
+  or Windows original-host reboot state has changed.
+
+REQUIRED ACCEPTANCE FOR THE NEXT STAGING/PRODUCTION CEREMONIES
+A. Independently identify zero-additional-cost local isolated
+   Supabase-compatible project or obtain separate explicit approval
+   of billable staging; verify project ID is NOT production.
+B. Apply the reviewed 580->586 schema candidate in isolated staging
+   with migrations/backup/rollback and genuine RLS auth claims.
+C. Enroll original CRM customers by separate owner/independent
+   identity reviews; test revoked/foreign user, company property
+   and original job controls, and customer-only approved scopes.
+D. Independently read actual private photo bytes + SHA256,
+   prove consent/retention/cross-tenant denial and trusted
+   storage worker receipt. No public buckets.
+E. Owner confirms actual company website + privacy/domain;
+   independent reviewer verifies SHA256 digest and signed
+   source; publish via explicit separately authorized deployment.
+F. Test truly live mobile/tablet/desktop customer journeys:
+   verified login, booking/quote, scheduling, support, job photos,
+   finance/payroll/invoice safety/consent and tenant audit.
+G. Recheck 3 Masters + 4 slaves signed real telemetry ACK and
+   original Windows host reboot evidence separately before
+   advertising any live 7-way federation.
+
+BUILD COMPLETENESS ACCOUNTING
+YW584 estimated business readiness (not audit): platform vendor Shell
+~45%, tenant landscaping application ~55%, external customer portal
+~8%; weighted business readiness ~41%.
+YW585 adds customer planning and RLS source only. YW586 adds guarded
+existing-user login, owner preview and ephemeral Postgres RLS rehearsal,
+but NOT accepted live customer records. Do not award an arbitrary
+5–10 percentage-point overall readiness lift. Future coherent builds
+should target accepting 5–10% of the remaining WEIGHTED work backlog
+per build and document before/after proof with no double counting.
+
+RELEASE TRUTH
+Feature source -> protected dev -> protected main. Each exact SHA
+must pass YW586 source/Postgres/browser, earlier YW581–585 security,
+source-checks, 3 legacy browser lanes and Vercel READY preview.
+After main merge verify live yw-alpha.vercel.app exact SHA READY,
+post-main full checks, release-source/truth/repository evidence,
+non-force dev=main. Protected main SOURCE GREEN can coexist with
+staging/customer enrollment LIVE HOLD.
+
+NEXT PROPOSED BUILD
+YW587 — Original CRM Customer Recovery, Owner-Signed Publishing
+Approval & Authenticated Private Job Timeline Staging Acceptance.

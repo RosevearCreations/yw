@@ -1,0 +1,85 @@
+name: YW586 original customer enrollment and independent website review
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  yw586-source-security:
+    name: YW586 original CRM enrollment, site publication and private scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Verify 2-person review, protected site and existing customer denial
+        run: node scripts/yw586-zero-cost-enrollment-check.mjs
+
+  yw586-ephemeral-postgres:
+    name: YW586 isolated PostgreSQL synthetic RLS and private job-photo rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: yw586_fixture
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ephemeral-synthetic-fixture-only
+        options: >-
+          --health-cmd "pg_isready -U postgres -d yw586_fixture"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Execute isolated SQL RLS/Job/Photo fixtures and automatic rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ job.services.postgres.id }}"
+          docker exec -i "${{ job.services.postgres.id }}" psql \
+            -U postgres -d yw586_fixture -v ON_ERROR_STOP=1 \
+            < sql/yw586_zero_cost_synthetic_rls_rehearsal.sql
+
+  yw586-auth-browser:
+    name: YW586 existing customer login and private website preview browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install reviewed browser dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install pinned Chromium without mutating host APT
+        shell: bash
+        run: |
+          set -euo pipefail
+          install_ok=false
+          for attempt in 1 2 3; do
+            if timeout --kill-after=10s 150s npx playwright install chromium; then
+              install_ok=true
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then sleep 10; fi
+          done
+          test "$install_ok" = true
+      - name: Browser proof of private sign-in, no cross-company leakage and owner-only preview
+        run: npx playwright test --config=playwright.config.mjs tests/browser/yw586-auth-customer-publication.spec.mjs
