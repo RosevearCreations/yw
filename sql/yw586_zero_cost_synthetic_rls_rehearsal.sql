@@ -74,6 +74,9 @@ insert into yw586_fixture.sites values
  ('a0000000-0000-4000-8000-000000000001','Company A private draft','draft'),
  ('b0000000-0000-4000-8000-000000000002','Company B private draft','draft');
 
+alter table yw586_fixture.original_links enable row level security;
+alter table yw586_fixture.services enable row level security;
+alter table yw586_fixture.companies enable row level security;
 alter table yw586_fixture.memberships enable row level security;
 alter table yw586_fixture.jobs enable row level security;
 alter table yw586_fixture.photos enable row level security;
@@ -81,12 +84,30 @@ alter table yw586_fixture.drafts enable row level security;
 alter table yw586_fixture.sites enable row level security;
 -- Table owner is postgres. Non-owner roles never receive BYPASSRLS.
 revoke all on all tables in schema yw586_fixture from public,yw586_customer,yw586_owner;
+grant select on yw586_fixture.original_links,yw586_fixture.services to yw586_customer;
+grant select on yw586_fixture.companies to yw586_owner;
 grant select on yw586_fixture.memberships,yw586_fixture.jobs,
  yw586_fixture.photos to yw586_customer;
 grant select on yw586_fixture.sites to yw586_owner;
 grant insert(id,company_id,client_id,service_key,summary) on yw586_fixture.drafts to yw586_customer;
 grant select on yw586_fixture.drafts to yw586_customer;
 
+create policy original_customer_site_links on yw586_fixture.original_links
+ for select to yw586_customer using(
+  exists(select 1 from yw586_fixture.memberships m
+   where m.company_id=original_links.company_id and m.client_id=original_links.client_id
+    and m.actor_id=nullif(current_setting('app.actor_id',true),'')::uuid and m.state='active')
+);
+create policy customer_enabled_services on yw586_fixture.services
+ for select to yw586_customer using(
+  exists(select 1 from yw586_fixture.memberships m
+   where m.company_id=services.company_id
+    and m.actor_id=nullif(current_setting('app.actor_id',true),'')::uuid and m.state='active')
+);
+create policy owner_company_registry on yw586_fixture.companies
+ for select to yw586_owner using(
+  owner_user_id=nullif(current_setting('app.actor_id',true),'')::uuid
+);
 create policy customer_active_membership on yw586_fixture.memberships
  for select to yw586_customer using(
   actor_id=nullif(current_setting('app.actor_id',true),'')::uuid and state='active'
