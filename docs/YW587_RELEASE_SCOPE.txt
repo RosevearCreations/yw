@@ -1,0 +1,109 @@
+YW587 — ORIGINAL CUSTOMER RECOVERY / OWNER-SIGNED PUBLICATION /
+       ROSEVEAR LANDSCAPING MISSING-PHOTO PRODUCT SHELL REHEARSAL
+2026-11-20 • source and real CRM test seed • no live photo or paid staging
+
+BASELINE
+- Protected YW main and dev before branch: 0681809271428de7aea94ea83ca6a0dc9abacd0c,
+  which includes AIDP Build 428 canonical telemetry route and YW586.
+- Vercel production yw-alpha.vercel.app exact main READY at inspected baseline.
+- Test source documents: Rosevear Source of Value Expanded, pages 15-20
+  (YW01–25, especially YW01, YW04, YW09/10, YW21–25) and pages 33-39
+  (FC01–10 / Canadian tax), plus Yard Workers and iCamp Shell Review pp. 2-3
+  and pp. 6-7 for crew -> dispatcher -> Shell -> back-to-tenant loop.
+
+AUTHORIZED TEST TENANT DATA (REAL PROD ORIGINAL CRM, NO TRANSACTIONS)
+- Connected Supabase project: jmqvkgiqlimdhcofwkxr (existing production).
+- Company Rosevear Landscaping ID 03bcf48e-a4f5-4427-9aba-b0f91f39b16b.
+- Owner: independently read from ywi_companies; no new Auth user.
+- Test synthetic client: 58700000-0000-4587-8587-000000000001;
+  code YW587-ROSEVEAR-DEMO-001, explicit TEST ONLY, no real PII.
+- Test synthetic property: 58700000-0000-4587-8587-000000000002;
+  code YW587-DEMO-LOT, no real address.
+- BOTH ywi_company_client_links_422 and ywi_company_site_links_422
+  created within one SQL transaction and confirmed one linked row each.
+- ZERO work_orders, ZERO enabled original service entitlements after seed.
+  No quote, booking, payments, invoices, employee, photo, customer notice,
+  merchant authorization or actual dispatcher action generated.
+- Future removal requires owner-approved relation-aware cleanup of only
+  these test UUIDs and links after checking dependent records.
+
+SOURCE IMPROVEMENTS
+1. js/yw587-photo-incident-engine.js:
+   strict append-only nine-step consented, private, same-job/same-photo
+   technical recovery and operational metrics with independent actor
+   distinction (crew, dispatcher, Shell, trusted storage); redacted Shell
+   receipt includes source, window, attempts, anonymous device count,
+   last valid sample, no customer data or financial fields; no fake
+   signed durable Master ACK. Replays/new attachment or duplicate photo,
+   missing SHA bytes/storage proof, foreign tenant and premature closure
+   hold.
+2. js/yw587-rosevear-synthetic-case.js:
+   the real original-company/test-client/test-property references and
+   synthetic-only job + attachment. Synthetic fake bytes digest
+   779344be...72c59177; job does NOT exist in production. No real
+   device, storage bucket or customer consent event took place.
+3. js/yw587-shell-case-workspace.js and theme-shell-photo-587.css:
+   actual responsive read-only Shell and landscaping-owner UI panels,
+   server revalidate current user AND original Sysop/admin or company
+   owner before showing synthetic case; 9-step case and redacted
+   metrics; live state held unknown. No privileged writes, photos,
+   tenant financials, customer list or background telemetry.
+4. js/yw587-original-customer-recovery.js, public/customer-account.html:
+   existing original customer identity recovery reviewed by owner AND
+   independent person, verified 422 linkage and consent, revocation,
+   expiry; no self-serve account takeover via email, no automated
+   signup/reset. Customer-readable recovery guide and explicit HOLD.
+   Original-job timeline source contract denies foreign site/client,
+   sensitive photo URLs and financial details, requires server readback.
+5. scripts/yw587-signed-publication.mjs:
+   P-256 ECDSA verify both independently pre-pinned owner and reviewer
+   public keys against exact SHA-256 canonical approval, original
+   reviewed site slug/domain/source/expiry; denies stale, mismatched,
+   self-review/foreign source and replay. Signed SOURCE REVIEW is
+   NOT a public deployment or DNS mutation and never grants finance.
+6. sql/yw587_customer_recovery_signed_publishing_photo_support_STAGING_ONLY.sql:
+   proposed immutable owner-only RLS review/incident ledgers,
+   references original 422/584/585/586 and work_order; no authenticated
+   writes to reviews, no public customer enrollment, photo bytes,
+   direct shell tenant access or public publication. UNAPPLIED.
+7. scripts/yw587-missing-photo-owner-signature-check.mjs,
+   tests/browser/yw587-shell-photo-support.spec.mjs,
+   .github/workflows/yw587-shell-photo-recovery.yml:
+   positive 9-state flow + many negative scopes, signature cryptographic
+   two-signer tests, browser mobile/desktop/tablet and unauthorized
+   Sysop/owner tests; independent real Postgres fixture (YW586)
+   tests two synthetic tenants and RLS denial, ROLLBACK. Tests are
+   a rehearsal, not live original-client/photo evidence.
+8. docs/YW587_FOUR_APP_SOURCE_VALUE_SHELL_GAP_REVIEW.txt:
+   grounded four-app prioritization, independent finance and tenant
+   boundaries, Shell support ownership, ordered next releases.
+
+ACCEPTANCE AND DEPENDENCIES
+- YW587 production *source* can be GREEN after protected promotion.
+- Live original photo is HOLD: missing YW581/582 production tables;
+  original test tenant has NO job, NO enabled service, NO private storage
+  receipt, NO true device/dispatcher confirmation. The simulated photo
+  hash is intentionally fake and never a real storage SHA receipt.
+- Live signed 3 Masters / 4 Slaves topology and reboots remain HOLD
+  without source-side verified sig/replay/ack and original host signals.
+- Tenant finance remains intact; Shell redacted counts only.
+- Without independently activated original customer membership (YW585
+  database remains absent), real account recovery cannot occur.
+- Owner-signed source review does not publish a live website;
+  independent source key registry, domain owner and publication review
+  still required.
+
+PRODUCTION CODE RELEASE GATES
+feature -> protected dev -> protected main, exact source+YW581–587 security,
+3 legacy browser lanes, full source suite, source-pinned Vercel preview READY,
+production alias READY at exact main, post-main source/3-browser/release-source/
+release-truth/repository evidence PASS, non-force dev/main same SHA.
+Do not equate source pass and live business acceptance.
+
+NEXT PROPOSED
+YW588 — Genuine Rosevear Landscaping Original Job / Private Photo Pilot,
+Isolated Storage Receipt and Dispatcher-Confirmed Technical Incident Closure.
+Run a manually approved test work order ONLY after enabling exactly the
+authorized service entitlement and verifying original tenant role/RLS,
+with no customer billing or public submission. Another operator/tenant
+must witness real device/private bucket hashes before certifying.

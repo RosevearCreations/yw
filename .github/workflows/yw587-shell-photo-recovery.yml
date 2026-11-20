@@ -1,0 +1,85 @@
+name: YW587 owner recovery, signed publication and original photo Shell loop
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  yw587-contract:
+    name: YW587 owner recovery, P256 approval and nine-stage photo support security
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Reject foreign tenant/crew/dispatcher/storage, forged owner signatures and unverified recovery
+        run: node scripts/yw587-missing-photo-owner-signature-check.mjs
+
+  yw587-disposable-original-rls:
+    name: YW587 isolated two-company original client/job/photo RLS and revocation
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: yw587_fixture
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ephemeral-test-tenant-only
+        options: >-
+          --health-cmd "pg_isready -U postgres -d yw587_fixture"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Run original YW586 cross-company/consent/orphan-photo fixture in real Postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ job.services.postgres.id }}"
+          docker exec -i "${{ job.services.postgres.id }}" psql \
+            -U postgres -d yw587_fixture -v ON_ERROR_STOP=1 \
+            < sql/yw586_zero_cost_synthetic_rls_rehearsal.sql
+
+  yw587-shell-browser:
+    name: YW587 real Shell/landscaper missing-photo browser acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install existing reviewed lockfile dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install pinned Chromium without host APT mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          install_ok=false
+          for attempt in 1 2 3; do
+            if timeout --kill-after=10s 150s npx playwright install chromium; then
+              install_ok=true
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then sleep 10; fi
+          done
+          test "$install_ok" = true
+      - name: Browser proof of verified platform operator/tenant and no leaked photo/customer data
+        run: npx playwright test --config=playwright.config.mjs tests/browser/yw587-shell-photo-support.spec.mjs
