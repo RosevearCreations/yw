@@ -118,7 +118,7 @@ test('YW586 owner preview opens only after true original owner-bound draft and c
  await expect(page.locator('#yw586PreviewBody')).toContainText('Owner Private Landscaping');
  await expect(page.locator('#yw586PreviewBody')).toContainText('NOT PUBLISHED');
  await expect(page.locator('#yw586PreviewBody')).toContainText('SHA-256 review digest');
- await page.locator('[data-yw586-check]').check();
+ for(const item of await page.locator('[data-yw586-check]').all()) await item.check();
  await page.getByRole('button',{name:'Check local review readiness'}).click();
  await expect(page.locator('#yw586PreviewStatus')).toContainText('STILL PRIVATE');
  await page.evaluate(()=>document.dispatchEvent(new Event('ywi:auth-changed')));
