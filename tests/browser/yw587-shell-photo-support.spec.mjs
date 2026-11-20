@@ -41,7 +41,7 @@ for(const width of [390,768,1440]){
   await page.setViewportSize({width,height:860});await mount(page,{sysop:true});
   await page.locator('#yw587ShellPanel summary').click();
   await page.locator('#yw587ShellPanel button').click();
-  await expect(page.locator('#yw587ShellStatus')).toContainText('rehearsal');
+  await expect(page.locator('#yw587ShellStatus')).toContainText('Synthetic support cycle PASS');
   await expect(page.locator('#yw587ShellOutput .yw587-timeline li')).toHaveCount(9);
   await expect(page.locator('#yw587ShellOutput')).toContainText('Dispatcher: job and invoice count unchanged');
   await expect(page.locator('#yw587ShellOutput')).toContainText('REHEARSAL PASS is NOT production acceptance');
