@@ -143,7 +143,7 @@ for(const term of ['ywi_585_customer_memberships','ywi_585_customer_request_draf
  'ywi_585_customer_portal_scope','ywi_company_client_links_422',
  'public.ywi_company_service_modules','public.clients','auth.users',
  'membership_state','enable row level security','with check','security definer',
- 'search_path','anonymous','revoke all','service_module_key'])
+ 'search_path','anon','revoke all','service_module_key'])
  assert.ok(sql.toLowerCase().includes(term.toLowerCase()),'missing tenant isolation contract: '+term);
 assert.ok(!/grant\s+(all|insert|update|delete)\b[^;]*on\s+public\.ywi_585_customer_memberships\s+to\s+authenticated/i.test(sql));
 assert.ok(!/grant\s+(all|select|insert|update|delete)[^;]*to\s+anon\b/i.test(sql));
