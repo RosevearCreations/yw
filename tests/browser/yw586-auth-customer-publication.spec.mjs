@@ -71,11 +71,6 @@ test('YW586 verified original member reveals company label only, never jobs/phot
  await page.locator('#yw586-email').fill('already@example.com');
  await page.locator('#yw586-password').fill('synthetic_test_password');
  await page.getByRole('button',{name:'Verify my account'}).click();
- console.log('YW586 valid member browser diag',await page.evaluate(({scopeMember,actor})=>({
-  calls:window.__calls,
-  status:document.querySelector('#yw586-account-status')?.textContent,
-  inspected:window.YW586CustomerAccount?.inspectMemberships?.([scopeMember],actor)
- }),{scopeMember:member,actor}));
  await expect(page.locator('#yw586-company-list')).toContainText('Verified Landscaping Original');
  await expect(page.locator('#yw586-account-status')).toContainText('Read-only company scope');
  const calls=await page.evaluate(()=>window.__calls);
