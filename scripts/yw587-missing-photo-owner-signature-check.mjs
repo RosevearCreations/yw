@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
-import {createRequire} from 'node:module';
+import vm from 'node:vm';
 import {createHash,generateKeyPairSync,sign as signP256} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {inspectPublicationApproval587,publicationCanonical587} from './yw587-signed-publication.mjs';
-const require=createRequire(import.meta.url);
-const engine=require('../js/yw587-photo-incident-engine.js');
-const fake=require('../js/yw587-rosevear-synthetic-case.js');
-const recovery=require('../js/yw587-original-customer-recovery.js');
+const loadBrowserScript=(path,globalName)=>{
+ const window={};
+ vm.runInNewContext(readFileSync(path,'utf8'),{window},{filename:path});
+ return window[globalName];
+};
+const engine=loadBrowserScript('js/yw587-photo-incident-engine.js','YW587PhotoSupport');
+const fake=loadBrowserScript('js/yw587-rosevear-synthetic-case.js','YW587RosevearFixture');
+const recovery=loadBrowserScript('js/yw587-original-customer-recovery.js','YW587OriginalCustomer');
 const uuid=n=>'58700000-0000-4587-8587-'+String(n).padStart(12,'0');
 let rejects=0,passed=0;
 const deny=(reason,x)=>{assert.equal(x.state,'HOLD',reason);rejects++;};
