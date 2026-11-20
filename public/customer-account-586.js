@@ -70,7 +70,7 @@
  }
  async function signIn(e){
   e.preventDefault();if(state.busy)return;
-  clear({signOut:true});state.busy=true;
+  clear({signOut:false});state.busy=true;
   const run=state.epoch,button=$('yw586-login');
   if(button)button.disabled=true;
   status('Verifying existing account and original CRM membership…');
