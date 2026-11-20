@@ -31,6 +31,7 @@ const files = [
   'theme-original-jobs-582.css',
   'theme-support-584.css',
   'theme-publication-586.css',
+  'theme-shell-photo-587.css',
   'finance-pilot-579.css',
   'finance-custody-577.css',
   'finance-activation-578.css',
