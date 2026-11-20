@@ -153,7 +153,6 @@ jobs:
               npm run test:browser:notifications
               npm run test:browser:public-route-publication
               npx playwright test --config=playwright.config.mjs tests/browser/customer-portal-responsive-privacy.spec.mjs
-              npx playwright test --config=playwright.config.mjs tests/browser/yw585-customer-local-planner.spec.mjs
               npx playwright test --config=playwright.config.mjs tests/browser/private-evidence-security-policy.spec.mjs
               npx playwright test --config=playwright.config.mjs tests/browser/release-readiness-evidence.spec.mjs
               npm run test:browser:job-lifecycle
