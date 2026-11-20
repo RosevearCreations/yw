@@ -1,0 +1,112 @@
+YW585 — ZERO-COST CUSTOMER PORTAL FOUNDATION, ORIGINAL CUSTOMER MEMBERSHIP
+         AND INDEPENDENT STAGING PHOTO/JOB ACCEPTANCE GATES
+2026-11-19 | SOURCE WORK | NO NEW PAID SUPABASE RESOURCES
+
+OWNER DIRECTION / COST
+The trailing “0” is treated conservatively as ZERO authorization for paid
+staging. NO Supabase branch creation, confirm_cost, payment approval or runtime
+SQL migration has been executed. Prior YW584 staging branch quote was
+US$0.01344/hour plus usage. Do not incur it without a separate clear owner
+authorization. Local-only or already funded isolated test setups may be
+considered later, but cannot substitute for independently measured evidence.
+
+PRODUCT BOUNDARIES
+I. YW vendor-level platform Shell: tenant provisioning, billing, incident and
+ complaint/lockout, uptime, traffic/errors/latency, backup restore, aggregate
+ source-verified Sysop telemetry, read-only cross-company health; NEVER tenant
+ customer/finance access by virtue of platform role alone.
+II. Subscriber landscaping business: privately owner-scoped site customizations,
+ add-ons/rentals/events drafts; original clients, properties, work orders,
+ estimates, nine-category menu, crew, safety, inventory, payroll/invoicing/
+ accounting/tax, private photos and complaints. Migrations 580/581/582/584
+ are not currently independently enrolled.
+III. External customer: new public, responsive YW585 customer planning entry
+ point; verifiable branded company publication and original CRM-linked
+ authenticated account are NOT live. No quote transmission, email, booking,
+ photo upload, reservation, external rental, invoice or account recovery yet.
+
+REAL SOURCE DELIVERABLES
+* public/customer.html, public/customer-585.css, public/customer-585.js:
+  accessible standalone /customer.html with nine visible service areas:
+  seven original categories, two marked planning-only specialties.
+  Responsive customer journey, service scope/season/frequency planner, locally
+  prepared printable/copyable sheet, no network call, cookie, storage, analytics,
+  payment or photo. Clear NOT SUBMITTED and NOT BOOKED state; no personal
+  fields. Link added to index.html header navigation. Public assets are
+  deployed through existing scripts/build-vercel-site.mjs public/ copy.
+  robots noindex while tenant publication/consent/identity incomplete.
+* sql/yw585_original_customer_portal_STAGING_ONLY.sql:
+  independent server-custodian-provisioned auth.users membership constrained
+  to ORIGINAL YW422 company/client link, active membership must be separately
+  verified, customer RLS reads only own membership, no customer/anon membership
+  writes or public enrollment. Separate private draft request rows use
+  original 420 service ON and original membership, not a Job or booking.
+  Read-only RPC ywi_585_customer_portal_scope returns minimal company name,
+  original client ID and enabled count only to validated member, NEVER
+  original job/photos/financial records or company owner/Sysop authority.
+  Source proposal ONLY — no production or test database migration applied.
+* scripts/yw585-customer-contract.mjs:
+  source-packet scope validator and original-member/draft guards, strict
+  non-production project/pilot source binding; even a positive self-reported
+  staging packet remains REVIEW_REQUIRED and CANNOT authorize live access.
+* scripts/yw585-customer-contract-check.mjs, GitHub YW585 security workflow:
+  44 negative cases, no network/private disclosure, no accidental tenant
+  enrollment, customer/tenant mismatch, disabled module, expired pilot and
+  paid branch denial.
+* docs/YW585_RELEASE_SCOPE.txt: durable release/go-live truth.
+
+ACCEPTANCE HOLD / NO FALSE GREEN
+- The independently verified YW584 company source has one company, SEVEN
+  original service rows including arboriculture and all OFF. Historic 420/443
+  six-service DDL is superseded by authoritative 451 seven-service migration.
+- Connected Supabase project jmqvkgiqlimdhcofwkxr historically lacked
+  YW580 specialty, YW581 private bucket/photo, YW582 custody and YW584
+  tenant support tables. Source does not mean deployed database.
+- Exact project staging source SHA, owner/DBA reviewed isolated staging,
+  backup restore, original customer/site/job RLS negative tests, real private
+  photo bytes and independent server-side SHA digest, legal retention,
+  signing and first end-to-end external customer activation are NOT verified.
+- Browser planning IS a useful public page but is not a tenant-branded
+  published customer account/appointment scheduler; do not call it either.
+- 3 Masters / 4 slaves telemetry source/issue contracts do not prove real
+  signed durable receiver ACK, original-host uptime or reboot evidence.
+- No new production storage, endpoint token, live customer data, account
+  enrollment, payment or customer-facing contact automation introduced.
+
+REQUIRED FUTURE LIVE ACCEPTANCE
+1. Separate cost-approved or zero-cost proven isolated local staging with
+   immutable project fingerprint, source migration lineage 420→451 then
+   580→585; verify old data/tenant isolation and rollback.
+2. Real independently verified customer Auth user mapped by trusted owner
+   custodian to original 422 company/client; deny forged memberships and all
+   cross-tenant links; no anonymous customer data.
+3. Verified company publishes approved brand/site after content review; live
+   service entitlements separately ON by company owner, never silently.
+4. Independently prove customer can see ONLY own original properties,
+   approved quotes/job progress and consented private photos via server
+   authorization. Confirm revocation and legal retention.
+5. Authorized booking/invoice/rental/event/contact journeys tested on
+   desktop/tablet/mobile incl accessible recovery, financial provenance,
+   complaints, lockout and independently measured Sysop telemetry.
+6. Separately signed live evidence/owner and DBA approval required before
+   claiming customer service or photo pilot operational.
+
+RELEASE GATES
+Feature->dev via reviewed PR, exact SHA security+source+three browser lanes,
+READY exact Vercel preview; dev->protected main via reviewed PR with full
+source gates; live production alias exact SHA READY; post-main browser/source/
+release truth/repository evidence PASS; dev non-force equals main. SOURCE GREEN
+must never be described as live customer/financial/photo acceptance.
+
+SCORECARD
+YW584 three-weighted business readiness model: platform Shell ~45%,
+landscaping tenant operations ~55%, external customer portal ~8%,
+overall planning ~41%; YW585 adds live accessible planning UI and
+independently tested source protections only. Pending independent customer
+acceptance, do NOT award automatic +5–10 percentage-point completion.
+For future coherent builds aim 5–10% of weighted REMAINING accepted backlog,
+with exact before/after and test receipts, not superficial tiny changes.
+
+NEXT PROPOSED BUILD
+YW586 — Authenticated Original-Customer Enrollment, Tenant Website
+Publication Review and Zero-Cost Isolated RLS/Job/Photo Pilot Rehearsal.
