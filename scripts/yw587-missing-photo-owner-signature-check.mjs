@@ -158,9 +158,10 @@ for(const p of ['js/yw587-photo-incident-engine.js','js/yw587-rosevear-synthetic
 ok(index.includes('theme-shell-photo-587.css')&&build.includes("'theme-shell-photo-587.css'"),'theme included in deploy');
 const ui=txt('js/yw587-shell-case-workspace.js');
 for(const s of ['ywi_is_platform_administrator_489','ywi_companies',
- 'auth.getUser','tenantCaseAccepted','Shell','yw584Sysop','yw584Tenant'])ok(ui.includes(s),'role guard '+s);
+ 'auth.getUser','Shell','yw584Sysop','yw584Tenant'])ok(ui.includes(s),'role guard '+s);
 for(const bad of ['.insert(','.upsert(','.update(','.delete(','.storage.from(','.signUp(','.sendEmail('])
  ok(!ui.includes(bad),'no unauthorized write '+bad);
+ok(txt('js/yw587-photo-incident-engine.js').includes('tenantCaseAccepted'),'dispatcher closure evidence is checked');
 const publish=txt('scripts/yw587-signed-publication.mjs');
 ok(!publish.includes('writeFileSync')&&!publish.includes('fetch('),'signed review never auto-publishes');
 console.log('YW587 PASS: nine-stage missing-photo flow, original company/job/photo receipts, redacted Shell, independent recovery and two pinned P256 signatures; '+rejects+' negative guards, '+passed+' assertions');
