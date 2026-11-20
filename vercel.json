@@ -3,7 +3,8 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/api/integration/v1/health", "destination": "/api/integration/v1/health.json" },
-    { "source": "/api/integration/v1/capabilities", "destination": "/api/integration/v1/capabilities.json" }
+    { "source": "/api/integration/v1/capabilities", "destination": "/api/integration/v1/capabilities.json" },
+    { "source": "/internal/rosevear/sysop/telemetry/v1", "destination": "/api/internal/rosevear/sysop/telemetry/v1" }
   ],
   "headers": [
     { "source": "/api/integration/v1/(.*)", "headers": [
