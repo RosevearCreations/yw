@@ -70,13 +70,15 @@
  }
  async function signIn(e){
   e.preventDefault();if(state.busy)return;
+  // Capture credentials before clearing the visible password and prior
+  // company state. Never persist the password beyond this in-flight call.
+  const email=$('yw586-email')?.value.trim()||'';
+  const pass=$('yw586-password')?.value||'';
   clear({signOut:false});state.busy=true;
   const run=state.epoch,button=$('yw586-login');
   if(button)button.disabled=true;
   status('Verifying existing account and original CRM membership…');
   try{
-   const email=$('yw586-email')?.value.trim()||'';
-   const pass=$('yw586-password')?.value||'';
    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||pass.length<8||pass.length>256)
     throw Error('Valid existing email and password required');
    const sb=client();
