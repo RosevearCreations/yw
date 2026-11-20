@@ -74,7 +74,7 @@ SOURCE IMPROVEMENTS
    Sysop/owner tests; independent real Postgres fixture (YW586)
    tests two synthetic tenants and RLS denial, ROLLBACK. Tests are
    a rehearsal, not live original-client/photo evidence.
-8. docs/YW587_FOUR_APP_SOURCE_VALUE_SHELL_GAP_REVIEW.md:
+8. docs/YW587_FOUR_APP_SOURCE_VALUE_SHELL_GAP_REVIEW.txt:
    grounded four-app prioritization, independent finance and tenant
    boundaries, Shell support ownership, ordered next releases.
 
