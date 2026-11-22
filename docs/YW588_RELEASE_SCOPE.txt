@@ -1,0 +1,62 @@
+YW588 — ORIGINAL JOB / PRIVATE PHOTO / DISPATCHER CASE
+Source release scope — 2026-11-22
+Target tenant: Rosevear Landscaping only. No real customer data added.
+Platform Admin Shell: https://yw-alpha.vercel.app/admin-shell.html
+Direct verified Sysop route: https://yw-alpha.vercel.app/#sysop
+
+EXTERNAL LIVE BASELINE (read-only checked)
+- Original company: 03bcf48e-a4f5-4427-9aba-b0f91f39b16b.
+- Existing TEST ONLY original 422 client/site: 587...0001/0002.
+- Original TEST client work orders: 0.
+- Enabled company service modules: 0.
+- Storage bucket ywi-private-job-photos-581: 0.
+- YW581 original photo evidence table: absent.
+- Original private photo storage objects: 0.
+- No original field-photo bytes, signed worker hash, crew device witness,
+  dispatcher acknowledgement or original support-case closure exists.
+- These are HOLD gates, NOT a test pass. No SQL changes were applied.
+
+IMPLEMENTED SOURCE FEATURES
+1. Original authenticated owner readback from real ywi_companies and
+   ywi_rpc_customer_history_422. Fails closed on unlinked original job,
+   owner mismatch, missing RLS, false service, foreign tenant and any error.
+   Never creates a work order, customer, photo, bill or notification.
+2. YW588 evidence classifier checks exactly one original tenant/job/photo,
+   private bucket and consent, independent server-read SHA-256, original
+   crew device, separate dispatcher, unchanged invoices and redacted Shell.
+   This is a SOURCE-LEVEL review and cannot self-certify live closure.
+3. Original job readback UI in landscaper tenant; metadata-only checks of
+   independently provisioned YW581/YW582 ledger if present. No file links,
+   unsafe job mutation, upload or direct browser approvals.
+4. Rosevear product Shell control requires original platform membership
+   plus separately governed ywi_rpc_shell_photo_summary_588 redacted RPC.
+   Does not query original tenant customer or finance tables.
+5. Dedicated static /admin-shell.html entry redirects to #sysop; original
+   authentication and platform permission boundary remains in place.
+6. sql/yw588_original_job_private_photo_dispatcher_STAGING_ONLY.sql defines
+   immutable approved test case, dependent original 422/581/582/587 FKs,
+   separate signers/crew/dispatcher/support, retained source evidence,
+   no finance/notification and redacted RPC. UNAPPLIED; demands independent
+   trusted INSERT cross-join validation before activation.
+7. Node and Playwright checks for negative cases/roles/phones/tablet/desktop.
+
+NOT DELIVERED AS LIVE ACCEPTANCE
+- No production database migration, paid staging branch, new Auth user,
+  service enablement, work order, attachment, bucket, private original photo,
+  true signed worker receipt, crew-device operation, independent dispatcher
+  or support closure. No Master receiver durable ACK asserted.
+- Independently observed original device and authorized DBA/tenant approvals
+  required before any live closure declaration; do not auto-advance.
+- Browser predicates MUST NOT replace backend source/custody signatures.
+- No tenant/customer accounting data crosses into Rosevear Sysop Shell.
+
+RELEASE GATE
+feature PR -> protected dev -> protected main, source+browser workflows,
+main GitHub checks, source SHA pinned Vercel production READY, exact alias
+and nonforce dev/main SHA reconciliation.
+Main source GREEN does not mean live photo pilot operational GREEN.
+
+NEXT SUGGESTED YW589
+Original witnessed private photo upload and server-side byte verification
+with authenticated crew and dispatcher, irreversible scoped retention controls,
+independent DBA-approved service entitlement and tenant-only reconciliation.
