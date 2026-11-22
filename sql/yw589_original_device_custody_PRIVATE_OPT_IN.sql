@@ -98,10 +98,12 @@ create policy yw589_authorization_owner on public.ywi_589_pilot_authorizations
 create policy yw589_staff_owner on public.ywi_589_pilot_staff
  for select to authenticated using(exists(select 1 from public.ywi_companies c
   where c.id=company_id and c.owner_user_id=(select auth.uid())));
-create policy yw589_photo_owner_or_uploader on public.ywi_589_photo_receipts
- for select to authenticated using(uploaded_by=(select auth.uid()) or exists(
+create policy yw589_photo_owner_only on public.ywi_589_photo_receipts
+ for select to authenticated using(exists(
  select 1 from public.ywi_companies c
  where c.id=company_id and c.owner_user_id=(select auth.uid())));
+-- Even a former uploader cannot keep direct metadata rights after crew
+-- authorization expires. Active crews use authenticated Edge reads only.
 create policy yw589_cert_owner on public.ywi_589_dispatcher_certifications
  for select to authenticated using(exists(select 1 from public.ywi_companies c
   where c.id=company_id and c.owner_user_id=(select auth.uid())));
