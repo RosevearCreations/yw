@@ -166,9 +166,9 @@
   confirmButton.type='button';confirmButton.id='yw589Confirm';
   confirmButton.addEventListener('click',confirm);form.append(confirmButton);
   section.append(form);
-  const status=el('p','HOLD · original authorization and device evidence required.');
-  status.id='yw589Status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
-  section.append(status);const out=el('div');out.id='yw589Outcome';section.append(out);
+  const statusEl=el('p','HOLD · original authorization and device evidence required.');
+  statusEl.id='yw589Status';statusEl.setAttribute('role','status');statusEl.setAttribute('aria-live','polite');
+  section.append(statusEl);const out=el('div');out.id='yw589Outcome';section.append(out);
   host.append(section);reset();
  }
  for(const ev of ['ywi:auth-changed','ywi:workspace-authority-changed',
