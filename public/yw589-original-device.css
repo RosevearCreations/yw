@@ -1,0 +1,13 @@
+/* YW589 original device private capture, responsive, distinct from platform shell */
+.yw589-pilot{margin:1.25rem 0;padding:1rem;border:1px solid #7187aa;border-radius:14px;background:rgba(22,53,93,.08);max-width:100%;overflow-wrap:anywhere}
+.yw589-pilot h3{font-size:1.1rem;line-height:1.3}
+.yw589-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:.8rem;align-items:end}
+.yw589-form label{display:flex;flex-direction:column;gap:.25rem;min-width:0}
+.yw589-form label:has(input[type=checkbox]){flex-direction:row;align-items:flex-start;gap:.5rem;grid-column:1/-1}
+.yw589-form input[type=text],.yw589-form input[type=file]{width:100%;min-width:0}
+.yw589-form button{min-height:2.75rem;white-space:normal;overflow-wrap:anywhere}
+#yw589PhotoPreview{max-width:100%;max-height:22rem;object-fit:contain;border:1px solid #738aa9;border-radius:10px}
+#yw589PhotoPreview[hidden]{display:none}
+#yw589Status{font-weight:600;line-height:1.5;word-break:break-word}
+#yw589Outcome p{margin:.3rem 0}
+@media(max-width:640px){.yw589-pilot{padding:.65rem}.yw589-form{grid-template-columns:1fr}.yw589-form button{width:100%}}
