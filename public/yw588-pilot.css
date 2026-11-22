@@ -1,0 +1,8 @@
+/* YW588 restricted technical/tenant pilot acceptance surfaces */
+.yw588-pilot{margin:1rem 0;padding:1rem;border:1px solid rgba(119,156,200,.52);border-radius:12px;max-width:100%;overflow-wrap:anywhere}
+.yw588-pilot>summary{cursor:pointer;font-weight:700;font-size:1rem}
+.yw588-pilot>p{line-height:1.55}
+.yw588-pilot button{max-width:100%;white-space:normal}
+#yw588ShellResult,#yw588TenantResult{margin-top:.75rem;border-top:1px solid rgba(119,156,200,.38)}
+#yw588ShellStatus,#yw588TenantStatus{font-weight:600}
+@media(max-width:560px){.yw588-pilot{padding:.65rem}.yw588-pilot button{width:100%}}
