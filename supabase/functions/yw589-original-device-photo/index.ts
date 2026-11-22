@@ -129,11 +129,13 @@ async function perform(action,data,actor,file){
    customerDetailsIncluded:false,privatePhotoIncluded:false,tenantFinanceIncluded:false,
    masterDurableAckVerified:false,liveFieldCertified:false};
  }
- if(!['readiness','capture','status','confirm'].includes(action))throw deny('UNKNOWN_ACTION');
+ if(!['readiness','capture','status','review','confirm'].includes(action))throw deny('UNKNOWN_ACTION');
  const jobId=String(data?.jobId||'');
- await guard(action==='confirm'?'dispatcher':'crew',actor,jobId);
+ if(action==='status'){
+  try{await guard('crew',actor,jobId);}catch(_){await guard('dispatcher',actor,jobId);}
+ }else await guard(action==='confirm'||action==='review'?'dispatcher':'crew',actor,jobId);
  const receipts=await select('ywi_589_photo_receipts',
- 'id,request_id,company_id,work_order_id,uploaded_by,stored_bucket,object_key,observed_sha256,byte_count,server_download_hash_match',
+ 'id,request_id,company_id,work_order_id,uploaded_by,stored_bucket,object_key,content_type,observed_sha256,byte_count,server_download_hash_match',
  {company_id:COMPANY,work_order_id:jobId},2);
  if(action==='readiness'){
   return output('ORIGINAL_DEVICE_CAPTURE_AUTHORIZED',{
@@ -148,6 +150,17 @@ async function perform(action,data,actor,file){
    'DISPATCHER_CERTIFICATION_CAPTURED_EXTERNAL_WITNESS_PENDING':'PRIVATE_BYTES_INDEPENDENTLY_VERIFIED_DISPATCHER_PENDING',{
    approvedJobId:jobId,photoCount:receipts.length,dispatcherSigned:certifications.length===1,
    serverVerifiedHash:receipts[0].server_download_hash_match===true});
+ }
+ if(action==='review'){
+  const photo=receipts[0];
+  if(receipts.length!==1||!uuid(data?.photoId)||photo?.id!==data.photoId||
+     photo.uploaded_by===actor.userId)throw deny('DISPATCHER_PRIVATE_REVIEW_HOLD');
+  const bytes=await storedFile(photo.object_key);
+  if(await digest(bytes)!==photo.observed_sha256||bytes.byteLength!==photo.byte_count)
+   throw deny('DISPATCHER_PRIVATE_REVIEW_HASH_MISMATCH');
+  return new Response(bytes,{status:200,headers:{
+   'Content-Type':photo.content_type,'Cache-Control':'no-store, max-age=0',
+   'X-Content-Type-Options':'nosniff'}});
  }
  if(action==='capture'){
   const requestId=String(data?.requestId||'');
@@ -241,6 +254,8 @@ Deno.serve(async req=>{
     consent:form.get('consent')==='true',consentScope:form.get('consentScope')};
   }else{data=await req.json();action=data?.action;}
   const result=await perform(action,data,actor,file);
+  if(result instanceof Response)return new Response(result.body,{
+   status:result.status,headers:{...common,'Content-Type':result.headers.get('Content-Type')||'application/octet-stream'}});
   return send(result);
  }catch(err){
   const code=typeof err?.code==='string'?err.code:'DEPENDENCY_OR_AUTHORITY_HOLD';
