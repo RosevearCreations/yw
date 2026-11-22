@@ -34,6 +34,7 @@ async function pageFor(page,{shell=false,owner=false,deny=false}={}){
 for(const width of [390,768,1440]){
  test('YW588 original owner live-record HOLD without real work order '+width,async({page})=>{
   await page.setViewportSize({width,height:900});await pageFor(page,{owner:true});
+  await page.locator('#yw584Tenant > summary').click();
   await page.locator('#yw588TenantPanel summary').click();
   await page.locator('#yw588TenantPanel button').click();
   await expect(page.locator('#yw588TenantStatus')).toContainText('Original test work order not yet authorized');
@@ -45,7 +46,8 @@ for(const width of [390,768,1440]){
 }
 test('YW588 unapproved tenant cannot inspect client or job',async({page})=>{
  await pageFor(page,{owner:false});
- await page.locator('#yw588TenantPanel summary').click();
+ await page.locator('#yw584Tenant > summary').click();
+  await page.locator('#yw588TenantPanel summary').click();
  await page.locator('#yw588TenantPanel button').click();
  await expect(page.locator('#yw588TenantStatus')).toContainText('HOLD');
  await expect(page.locator('#yw588TenantResult')).toBeEmpty();
