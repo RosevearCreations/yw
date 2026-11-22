@@ -154,7 +154,7 @@ for(const forbidden of ['.from(\'invoices\').insert','work_orders\').insert','jo
  assert.ok(!code.includes(forbidden),'forbidden direct finance/public/customer mutation '+forbidden);
 for(const expected of ['file instanceof File','matchMagic','downloadedHash!==sourceHash',
  'if(receipts.length!==1','pilot_staff','job_invoice_postings','Deno.serve',
- 'INDEPENDENT_WITNESS_PENDING','x-upsert'])
+ 'EXTERNAL_WITNESS_PENDING','x-upsert'])
  assert.ok(code.includes(expected),'critical backend enforcement '+expected);
 for(const expected of ['enable row level security','false,10485760',
  'approved boolean not null default false','enabled boolean not null default false',
