@@ -13,16 +13,17 @@ const C='03bcf48e-a4f5-4427-9aba-b0f91f39b16b',CL='58700000-0000-4587-8587-00000
 const S='58700000-0000-4587-8587-000000000002';
 const owner=uuid(1),reviewer=uuid(2),crew=uuid(3),dispatcher=uuid(4),sysop=uuid(5),job=uuid(6),reqId=uuid(7);
 let user=crew,allowed=false,serviceOn=true,amount=0,posted=false;
+const now=Date.now(),approvedAt=new Date(now-300000).toISOString(),expiresAt=new Date(now+2*86400000).toISOString();
 const storage=new Map(),photos=[],signoffs=[],events=[];
 const fakeRows={
  profiles:()=>[owner,reviewer,crew,dispatcher,sysop].map(id=>({id,role:id===sysop?'admin':'employee',is_active:true})),
  ywi_589_pilot_authorizations:()=>allowed?[{company_id:C,client_id:CL,client_site_id:S,
   owner_user_id:owner,independent_reviewer_id:reviewer,approved:true,
-  approved_at:'2026-11-22T15:00:00Z',expires_at:'2026-11-29T15:00:00Z'}]:[],
+  approved_at:approvedAt,expires_at:expiresAt}]:[],
  ywi_companies:()=>[{id:C,owner_user_id:owner}],
- ywi_589_pilot_staff:()=>[{company_id:C,user_id:crew,role:'crew',enabled:true,expires_at:'2026-11-29T15:00:00Z',
+ ywi_589_pilot_staff:()=>[{company_id:C,user_id:crew,role:'crew',enabled:true,expires_at:expiresAt,
   independently_reviewed_by:reviewer},{company_id:C,user_id:dispatcher,role:'dispatcher',enabled:true,
-  expires_at:'2026-11-29T15:00:00Z',independently_reviewed_by:owner}],
+  expires_at:expiresAt,independently_reviewed_by:owner}],
  ywi_company_service_modules:()=>[{company_id:C,module_key:'landscape',enabled:serviceOn}],
  ywi_company_client_links_422:()=>[{company_id:C,client_id:CL}],
  ywi_company_site_links_422:()=>[{company_id:C,client_id:CL,client_site_id:S}],

@@ -68,7 +68,8 @@ async function guard(kind,actor,jobId){
  'company_id,client_id,client_site_id,owner_user_id,independent_reviewer_id,approved,approved_at,expires_at',{company_id:COMPANY},2);
  if(!grant?.approved||grant.client_id!==CLIENT||grant.client_site_id!==SITE||
     grant.owner_user_id===grant.independent_reviewer_id||
-    !grant.approved_at||Date.parse(grant.expires_at)<=Date.now())
+    !grant.approved_at||!Number.isFinite(Date.parse(grant.approved_at))||
+    Date.parse(grant.approved_at)>Date.now()||Date.parse(grant.expires_at)<=Date.now())
    throw deny('TWO_PARTY_PILOT_APPROVAL_HOLD');
  const [company]=await select('ywi_companies','id,owner_user_id',{id:COMPANY},2);
  if(!company||company.owner_user_id!==grant.owner_user_id)
