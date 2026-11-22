@@ -1,0 +1,71 @@
+YW589 — AUTHORIZED ORIGINAL-DEVICE CAPTURE, INDEPENDENT STORAGE & DISPATCHER
+Source candidate and independent runtime acceptance contract — 2026-11-22
+
+EXACT BASELINE: GitHub RosevearCreations/yw main and dev at 9ecf99f7e8bca694c112d68e6d6ae2e1a100324b,
+Vercel yw-alpha.vercel.app READY, original Rosevear client/property seed
+58700000-0000-4587-8587-000000000001 / 0002.
+Live project Supabase jmqvkgiqlimdhcofwkxr read-only probe:
+ZERO original demo work orders; ZERO enabled service modules; private
+YW581 photo bucket absent; YW581/YW582/YW587/YW588 ledgers absent.
+No photo bytes, original-device crew witness, dispatcher sign-off, or case
+closure were observed. Prior synthetic rehearsal is NOT field acceptance.
+
+IMPLEMENTATION
+- SQL private opt-in schema (pilot auth, crew/dispatcher role registry,
+  immutable consented server hash-verified photo receipt, distinct dispatcher
+  sign-off). All new tables RLS, no anon/auth writes, private Storage bucket,
+  strict 10MB/image MIME and no public photo URL. No user or opt-in automatically
+  enabled. Limited to Rosevear sample client/property IDs.
+- Source backend function yw589-original-device-photo: Auth verified per call,
+  current active profile, original owner and YW422 links, independently approved
+  opt-in and separate reviewer, explicit scoped staff enrollment, enabled
+  LANDSCAPE service, exactly one zero-charge original job, zero posted invoices;
+  source and device hash match, image magic, private upload and server
+  download/read-hash of actual stored bytes; immutable and idempotent receipt;
+  orphan-quarantine HOLD when persistence fails. No direct job or finance writes.
+- Original dispatcher must be DIFFERENT authorized real Auth user; receives
+  private photo via authenticated image response, must review and explicitly
+  confirm. Backend re-reads stored bytes and rechecks invoices/rights, records
+  one immutable sign-off, never self-certifies a third-party physical witness.
+- Rosevear product Sysop response is aggregate redacted counts only, with
+  current platform admin membership and active profile, no client/photo or
+  financial data or Master durable ACK.
+- Genuine camera-first Jobs panel on mobile (input capture=environment),
+  file/size/consent controls, hashing, private upload, original receipt,
+  authenticated dispatcher image preview, refusal on stale session.
+- Tests run the actual Edge handler with isolated Auth/PostgREST/binary
+  Storage fixtures, plus mobile/tablet/desktop Playwright and negative cases.
+
+CONTROLLED PRODUCTION ACTIVATION ORDER
+1. Independently approve & audit SQL, create private zero-object bucket and
+   opt-in tables, verify RLS denies anon/auth writes and no public Storage
+   policy. No paid staging environment needed.
+2. Deploy verify_jwt=true function with server-only service key; verify
+   live authenticated readiness of current original company, which remains
+   HOLD until formal role and original-job enrollment.
+3. Enroll Rosevear pilot only with owner AND different human reviewer;
+   separately enroll real crew and independent dispatcher as active users.
+   Never create an imaginary user, backdate approvals or self-review.
+4. Enable only approved Rosevear landscape entitlement through existing
+   company-owner 421 authority and create ONE original zero-charge work
+   order using existing owner-level Jobs authorization. Do not bypass trigger,
+   create an invoice or send a customer message.
+5. Real crew device: consented camera capture -> private uploaded object ->
+   server downloads and hashes bytes -> one immutable original receipt.
+6. Different real dispatcher: preview exact private image on own authorized
+   device, confirm same job and unchanged finances. Independent witness
+   then checks original physical device, retention/legal hold and incident
+   closure. Source tests cannot replace witness; Sysop sees no PII.
+7. Source promotions feature -> dev -> main, post-main source & browser
+   checks, Vercel READY exact SHA, non-force dev/main reconciliation.
+
+NEVER CLAIM
+"Source GREEN" is not "live original-device certification GREEN"; absence
+of approved pilot, user roles, work order or independent witness is HOLD.
+No new customer, invoice, payment, tax posting, staff login, photo or
+Master telemetry ACK is invented.
+
+NEXT PROPOSED YW590
+Witnessed original Rosevear pilot activation + actual device/dispatcher
+receipt, technical Shell incident resolution and paid-finance exclusion
+certificate, then generalize approved scoped pilot to other tenants.
