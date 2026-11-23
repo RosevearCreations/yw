@@ -1,0 +1,42 @@
+name: YW591 owner-approved private photo retry, offline continuity and multi-tenant isolation
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-source-isolation:
+    name: YW591 real multi-tenant Edge, owner/reviewer, private retry and orphan safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Original YW589/590 regressions and actual independent YW591 Edge tests
+        run: |
+          node scripts/yw589-original-device-security-check.mjs
+          node scripts/yw590-live-original-witness-check.mjs
+          node scripts/yw591-private-retry-tenant-isolation-check.mjs
+  offline-browser:
+    name: YW591 encrypted offline retry, manual reconnect and original account browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install chromium
+      - name: Run mobile/tablet/desktop privacy and actual AES-GCM WebCrypto
+        run: npx playwright test --config=playwright.config.mjs tests/browser/yw591-private-offline-recovery.spec.mjs
