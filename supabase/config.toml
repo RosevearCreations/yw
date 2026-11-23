@@ -78,3 +78,6 @@ verify_jwt = false
 
 [functions.landscape-master-receipt-563]
 verify_jwt = false
+
+[functions.yw592-photo-case-telemetry]
+verify_jwt = true
