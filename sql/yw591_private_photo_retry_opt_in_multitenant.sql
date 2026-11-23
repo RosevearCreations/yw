@@ -103,12 +103,12 @@ begin
   (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'role'))
   is distinct from 'service_role'
  then raise exception 'YW591 service-only original custody transition'; end if;
-end $fn$;
+end; $fn$;
 revoke all on function public.ywi_591_source_role_assert() from public,anon,authenticated;
 grant execute on function public.ywi_591_source_role_assert() to service_role;
 create or replace function public.ywi_591_forbid_change()
 returns trigger language plpgsql security invoker set search_path='' as $fn$
-begin raise exception 'YW591 immutable source event'; end $fn$;
+begin raise exception 'YW591 immutable source event'; end; $fn$;
 revoke all on function public.ywi_591_forbid_change() from public,anon,authenticated;
 create trigger yw591_events_immutable before update or delete
  on public.ywi_591_transfer_events for each row
@@ -123,7 +123,7 @@ begin
     <>(to_jsonb(old)-'state'-'verified_at'-'stored_sha256'-'recovered_after_retry'-'quarantine_code')
  then raise exception 'YW591 one-way original attempt state'; end if;
  return new;
-end $fn$;
+end; $fn$;
 revoke all on function public.ywi_591_attempt_state_gate() from public,anon,authenticated;
 create trigger yw591_attempt_one_way before update or delete
  on public.ywi_591_photo_attempts for each row
@@ -230,7 +230,7 @@ begin
   return jsonb_build_object('state','STAFF_REVOKED','capture_allowed',false);
  end if;
  raise exception 'YW591 unknown owner action';
-end $fn$;
+end; $fn$;
 revoke all on function public.ywi_591_pilot_action(
  uuid,uuid,text,uuid,uuid,uuid,uuid,uuid,text) from public,anon,authenticated;
 grant execute on function public.ywi_591_pilot_action(
@@ -298,7 +298,7 @@ begin
  end if;
  return jsonb_build_object('state',a.state,'attemptId',a.id,
   'leaseExpiresAt',a.lease_expires_at,'verified',a.state='VERIFIED');
-end $fn$;
+end; $fn$;
 revoke all on function public.ywi_591_reserve_attempt(
  uuid,uuid,uuid,uuid,text,integer,text,text) from public,anon,authenticated;
 grant execute on function public.ywi_591_reserve_attempt(
@@ -348,7 +348,7 @@ begin
   p_server_sha256);
  return jsonb_build_object('state','VERIFIED','attemptId',a.id,
   'recoveredAfterRetry',p_recovered,'serverHashVerified',true);
-end $fn$;
+end; $fn$;
 revoke all on function public.ywi_591_finalize_attempt(
  uuid,uuid,uuid,uuid,text,boolean) from public,anon,authenticated;
 grant execute on function public.ywi_591_finalize_attempt(
@@ -386,7 +386,7 @@ begin
  values(a.id,p_company_id,'QUARANTINED',p_observed_sha256);
  return jsonb_build_object('state','QUARANTINED',
   'humanReviewRecorded',true,'objectDeleted',false);
-end $fn$;
+end; $fn$;
 revoke all on function public.ywi_591_quarantine_attempt(
  uuid,uuid,uuid,uuid,text) from public,anon,authenticated;
 grant execute on function public.ywi_591_quarantine_attempt(
