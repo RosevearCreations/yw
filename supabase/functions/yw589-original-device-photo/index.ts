@@ -96,8 +96,12 @@ async function guard(kind,actor,jobId){
   Number(orders[0].total_amount)!==0||Number(orders[0].subtotal)!==0||
   Number(orders[0].tax_total)!==0||orders[0].completion_ready_for_accounting!==false)
   throw deny('ORIGINAL_ZERO_CHARGE_WORK_ORDER_HOLD');
- const invoiced=await select('job_invoice_postings','id',{work_order_id:jobId},2);
- if(invoiced.length)throw deny('ORIGINAL_JOB_HAS_FINANCIAL_POSTING');
+ // Real schema: postings point to invoice_candidate_id, NOT work_order_id.
+ // Block all original work-order candidates and A/R invoices (which include
+ // posted invoice linkage), rather than relying on a nonexistent column.
+ const candidates=await select('job_invoice_candidates','id',{work_order_id:jobId},2);
+ const invoices=await select('ar_invoices','id',{work_order_id:jobId},2);
+ if(candidates.length||invoices.length)throw deny('ORIGINAL_JOB_FINANCE_ISOLATION_HOLD');
  return orders[0];
 }
 async function storedFile(key){
@@ -230,6 +234,199 @@ async function perform(action,data,actor,file){
  return output('ORIGINAL_DISPATCHER_SIGNOFF_RECORDED_EXTERNAL_WITNESS_PENDING',{
   dispatcherSigned:true,externalWitnessStillRequired:true});
 }
+
+// YW590: actual two-device live ceremony. A trusted server-side challenge
+// binds an original authenticated uploader to a DIFFERENT real reviewer.
+// Private image is re-downloaded and SHA-256 checked before every witness or
+// source Shell closure. Human visual observation is a sworn human claim,
+// NOT hardware/OS device attestation or Master durable telemetry ACK.
+const now590=()=>Date.now();
+async function eligible590(actor,jobId,role){
+ if(!uuid(jobId))throw deny('ORIGINAL_JOB_UUID_HOLD');
+ const [g]=await select('ywi_589_pilot_authorizations',
+  'company_id,client_id,client_site_id,owner_user_id,independent_reviewer_id,approved,approved_at,expires_at',
+  {company_id:COMPANY},2);
+ if(!g?.approved||g.client_id!==CLIENT||g.client_site_id!==SITE||
+    g.owner_user_id===g.independent_reviewer_id||!Number.isFinite(Date.parse(g.approved_at))||
+    Date.parse(g.approved_at)>now590()||Date.parse(g.expires_at)<=now590())
+  throw deny('YW590_INDEPENDENT_PILOT_APPROVAL_HOLD');
+ const [c]=await select('ywi_companies','id,owner_user_id',{id:COMPANY},2);
+ if(!c||c.owner_user_id!==g.owner_user_id)throw deny('ORIGINAL_OWNER_MISMATCH');
+ const candidates=await select('job_invoice_candidates','id',{work_order_id:jobId},2);
+ const invoices=await select('ar_invoices','id',{work_order_id:jobId},2);
+ if(candidates.length||invoices.length)throw deny('YW590_FINANCE_ZERO_ISOLATION_HOLD');
+ const jobs=await select('work_orders',
+  'id,company_id,client_id,client_site_id,status,service_module_key,total_amount,subtotal,tax_total,completion_ready_for_accounting',
+  {company_id:COMPANY,client_id:CLIENT,client_site_id:SITE},3);
+ if(jobs.length!==1||jobs[0].id!==jobId||jobs[0].service_module_key!=='landscape'||
+    !['draft','scheduled','in_progress','open'].includes(jobs[0].status)||
+    Number(jobs[0].total_amount)!==0||Number(jobs[0].subtotal)!==0||
+    Number(jobs[0].tax_total)!==0||jobs[0].completion_ready_for_accounting!==false)
+  throw deny('YW590_SINGLE_ZERO_CHARGE_ORIGINAL_JOB_HOLD');
+ const [module]=await select('ywi_company_service_modules','enabled',
+  {company_id:COMPANY,module_key:'landscape'},2);
+ if(module?.enabled!==true)throw deny('YW590_ORIGINAL_ENTITLEMENT_DISABLED');
+ const [linkedClient]=await select('ywi_company_client_links_422','client_id',
+  {company_id:COMPANY,client_id:CLIENT},2);
+ const [linkedSite]=await select('ywi_company_site_links_422','client_site_id',
+  {company_id:COMPANY,client_id:CLIENT,client_site_id:SITE},2);
+ if(!linkedClient||!linkedSite)throw deny('YW590_ORIGINAL_CLIENT_SITE_LINK_HOLD');
+ const [p]=await select('ywi_589_photo_receipts',
+  'id,company_id,client_id,client_site_id,work_order_id,uploaded_by,stored_bucket,object_key,observed_sha256,byte_count,server_download_hash_match',
+  {company_id:COMPANY,work_order_id:jobId},2);
+ if(!p||p.work_order_id!==jobId||p.client_id!==CLIENT||p.client_site_id!==SITE||
+    p.stored_bucket!==BUCKET||p.server_download_hash_match!==true||
+    !sha(p.observed_sha256)||p.byte_count<16||p.byte_count>MAX)
+  throw deny('YW590_ORIGINAL_PRIVATE_PHOTO_HOLD');
+ const certs=await select('ywi_589_dispatcher_certifications',
+  'id,company_id,work_order_id,photo_id,dispatcher_user_id,source_photo_sha256,witness_state',
+  {company_id:COMPANY,work_order_id:jobId,photo_id:p.id},2);
+ if(certs.length!==1||certs[0].dispatcher_user_id===p.uploaded_by||
+    certs[0].source_photo_sha256!==p.observed_sha256||
+    certs[0].witness_state!=='ORIGINAL_DISPATCHER_CONFIRMATION_INDEPENDENT_WITNESS_PENDING')
+  throw deny('YW590_AUTHENTIC_DISPATCHER_CERT_HOLD');
+ const cert=certs[0];
+ if(role==='reviewer'&&
+   (actor.userId!==g.independent_reviewer_id||
+    actor.userId===p.uploaded_by||actor.userId===cert.dispatcher_user_id||
+    actor.userId===g.owner_user_id))
+  throw deny('YW590_DIFFERENT_ACTIVE_HUMAN_REVIEWER_REQUIRED');
+ if(role==='crew'&&actor.userId!==p.uploaded_by)throw deny('YW590_ORIGINAL_CREW_ONLY');
+ if(role==='participant'&&![
+   g.owner_user_id,g.independent_reviewer_id,p.uploaded_by,cert.dispatcher_user_id
+ ].includes(actor.userId))throw deny('YW590_PARTICIPANT_SCOPE_HOLD');
+ return {grant:g,photo:p,cert};
+}
+async function bytes590(photo){
+ const bytes=await storedFile(photo.object_key);
+ if(bytes.byteLength!==photo.byte_count||await digest(bytes)!==photo.observed_sha256)
+   throw deny('YW590_PRIVATE_STORAGE_BYTES_CHANGED');
+ return bytes;
+}
+async function sysop590(actor){
+ if(actor.role!=='admin')throw deny('YW590_SYSOP_ONLY');
+ const members=await select('ywi_platform_administrators_489','user_id',{user_id:actor.userId},2);
+ if(members.length!==1)throw deny('YW590_ORIGINAL_PLATFORM_ADMIN_MEMBERSHIP_HOLD');
+}
+async function rpc590(name,params){
+ return request('/rest/v1/rpc/'+name,{
+  method:'POST',extra:{'Content-Type':'application/json','Prefer':'return=representation'},
+  body:JSON.stringify(params)});
+}
+async function perform590(action,data,actor){
+ if(action==='590:shell-summary'){
+  await sysop590(actor);
+  const rows=await select('ywi_590_shell_case_closures','id,state',{company_id:COMPANY},1000);
+  return {state:'REDACTED_TECHNICAL_COUNTS_ONLY',source:'yw590',total:rows.length,
+   open:rows.filter(x=>x.state==='AWAITING_INDEPENDENT_SYSOP').length,
+   closed:rows.filter(x=>x.state==='ORIGINAL_CASE_CLOSED').length,
+   noCustomerPII:true,noPrivatePhoto:true,noTenantFinance:true,
+   masterDurableAckVerified:false,livePhysicalDeviceMachineVerified:false};
+ }
+ const jobId=String(data?.jobId||'');
+ const role=action==='590:crew-challenge'?'crew':
+   (action==='590:witness-preview'||action==='590:witness')?'reviewer':
+    action==='590:close'?'sysop':'participant';
+ if(!['590:readiness','590:crew-challenge','590:witness-preview',
+  '590:witness','590:close'].includes(action))throw deny('YW590_UNRECOGNIZED_ACTION');
+ if(role==='crew')await guard('crew',actor,jobId);
+ if(role==='sysop')await sysop590(actor);
+ const ctx=await eligible590(actor,jobId,role==='sysop'?'none':role);
+ if(uuid(data?.photoId)&&ctx.photo.id!==data.photoId)throw deny('YW590_ORIGINAL_PHOTO_SCOPE_MISMATCH');
+ if(action==='590:readiness'){
+  const caseRows=await select('ywi_590_shell_case_closures','state',
+   {company_id:COMPANY,work_order_id:jobId,photo_id:ctx.photo.id},2);
+  const witnesses=await select('ywi_590_original_field_witnesses','id',
+   {company_id:COMPANY,work_order_id:jobId,photo_id:ctx.photo.id},2);
+  return {state:caseRows[0]?.state||'AWAITING_INDEPENDENT_ORIGINAL_DEVICE_WITNESS',
+   originalPhotoCount:1,dispatcherSigned:true,originalPhotoId:ctx.photo.id,
+   humanWitnessRecorded:witnesses.length===1,
+   zeroInvoicesAtReadback:true,financialWrites:false,customerNotifications:false,
+   machineDeviceAttested:false,masterAckVerified:false};
+ }
+ if(action==='590:crew-challenge'){
+  const prior=await select('ywi_590_crew_challenges','id',
+   {company_id:COMPANY,work_order_id:jobId,photo_id:ctx.photo.id},6);
+  if(prior.length>=3)throw deny('YW590_CREW_CHALLENGE_LIMIT_THREE_PER_PHOTO');
+  const witness=await select('ywi_590_original_field_witnesses','id',
+   {company_id:COMPANY,photo_id:ctx.photo.id},2);
+  if(witness.length)throw deny('YW590_ALREADY_HUMAN_WITNESSED');
+  await bytes590(ctx.photo);
+  const token=hex(crypto.getRandomValues(new Uint8Array(16)));
+  const row=await insert('ywi_590_crew_challenges',{
+   id:crypto.randomUUID(),company_id:COMPANY,work_order_id:jobId,
+   photo_id:ctx.photo.id,crew_user_id:actor.userId,
+   challenge_sha256:await digest(new TextEncoder().encode(token)),
+   expires_at:new Date(now590()+10*60000).toISOString()
+  });
+  return {state:'CREW_ORIGINAL_DEVICE_CHALLENGE_ISSUED',
+   challengeId:row.id,challengeCode:token,expiresAt:row.expires_at,
+   showOnlyOnOriginalCrewDevice:true,doNotShareViaPublicLink:true,
+   machineDeviceAttested:false,masterAckVerified:false};
+ }
+ if(action==='590:witness-preview'){
+  const bytes=await bytes590(ctx.photo);
+  return new Response(bytes,{status:200,headers:{
+   'Content-Type':ctx.photo.object_key.endsWith('.png')?'image/png':
+    ctx.photo.object_key.endsWith('.webp')?'image/webp':'image/jpeg',
+   'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'
+  }});
+ }
+ if(action==='590:witness'){
+  if(data?.reviewedPrivatePhoto!==true||data?.sawOriginalCrewDevice!==true||
+     !uuid(data?.challengeId)||!uuid(data?.photoId)||
+     !/^[a-f0-9]{32}$/.test(String(data?.challengeCode||''))||
+     !sha(data?.observedSha256))throw deny('YW590_HUMAN_PHYSICAL_REVIEW_AND_CODE_HOLD');
+  if(ctx.photo.id!==data.photoId)throw deny('YW590_WITNESS_PHOTO_MISMATCH');
+  if(data.observedSha256!==ctx.photo.observed_sha256)
+    throw deny('YW590_WITNESS_IMAGE_HASH_MISMATCH');
+  const [challenge]=await select('ywi_590_crew_challenges',
+   'id,photo_id,work_order_id,company_id,crew_user_id,challenge_sha256,expires_at',
+   {id:data.challengeId,company_id:COMPANY,work_order_id:jobId,photo_id:ctx.photo.id},2);
+  if(!challenge||challenge.crew_user_id!==ctx.photo.uploaded_by||
+    Date.parse(challenge.expires_at)<=now590()||
+    await digest(new TextEncoder().encode(data.challengeCode))!==challenge.challenge_sha256)
+    throw deny('YW590_ORIGINAL_CREW_DEVICE_CHALLENGE_INVALID_OR_EXPIRED');
+  await bytes590(ctx.photo);
+  const d=await rpc590('ywi_590_record_original_witness',{
+   p_company_id:COMPANY,p_work_order_id:jobId,p_photo_id:ctx.photo.id,
+   p_challenge_id:challenge.id,p_witness_user_id:actor.userId,
+   p_observed_sha256:ctx.photo.observed_sha256
+  });
+  if(!d||d.state!=='AWAITING_INDEPENDENT_SYSOP')
+    throw deny('YW590_ATOMIC_WITNESS_RECEIPT_UNCONFIRMED');
+  return {state:'HUMAN_DEVICE_WITNESS_RECORDED_AWAITING_SYSOP',
+   humanAttestationRecorded:true,privateBytesIndependentlyRead:true,
+   financePointInTimeZero:true,caseOpened:true,
+   machineHardwareAttestation:false,masterDurableAckVerified:false};
+ }
+ // Platform Sysop closure remains technically separate from three actual
+ // company actors (uploader, dispatcher and human reviewer).
+ if(!uuid(data?.photoId)||data.photoId!==ctx.photo.id||
+    data?.confirmTechnicalRecovery!==true||data?.confirmNoCustomerNotice!==true)
+  throw deny('YW590_SYSOP_EXPLICIT_TECHNICAL_CLOSURE_REQUIRED');
+ if([ctx.photo.uploaded_by,ctx.cert.dispatcher_user_id,
+   ctx.grant.independent_reviewer_id].includes(actor.userId))
+  throw deny('YW590_DISTINCT_TECHNICAL_SYSOP_REQUIRED');
+ const witnesses=await select('ywi_590_original_field_witnesses',
+  'id,witness_user_id,observed_sha256',
+  {company_id:COMPANY,work_order_id:jobId,photo_id:ctx.photo.id},2);
+ if(witnesses.length!==1||witnesses[0].witness_user_id!==ctx.grant.independent_reviewer_id||
+    witnesses[0].observed_sha256!==ctx.photo.observed_sha256)
+  throw deny('YW590_INDEPENDENT_FIELD_WITNESS_MISSING');
+ await bytes590(ctx.photo);
+ const d=await rpc590('ywi_590_close_original_technical_case',{
+  p_company_id:COMPANY,p_work_order_id:jobId,p_photo_id:ctx.photo.id,
+  p_sysop_user_id:actor.userId,p_sha256:ctx.photo.observed_sha256
+ });
+ if(!d||d.state!=='ORIGINAL_CASE_CLOSED')
+  throw deny('YW590_ATOMIC_CASE_CLOSURE_UNCONFIRMED');
+ return {state:'ORIGINAL_CASE_CLOSED',pointInTimeFinanceIsolation:true,
+  noCandidateInvoices:true,noARInvoices:true,noCustomerNotifications:true,
+  redactedShellOnly:true,masterDurableAckVerified:false,
+  machineHardwareAttestation:false};
+}
+
 Deno.serve(async req=>{
  const origin=req.headers.get('origin');
  if(origin&&!ORIGINS.has(origin))return new Response('Forbidden',{status:403});
@@ -254,7 +451,8 @@ Deno.serve(async req=>{
     deviceSha256:form.get('deviceSha256'),
     consent:form.get('consent')==='true',consentScope:form.get('consentScope')};
   }else{data=await req.json();action=data?.action;}
-  const result=await perform(action,data,actor,file);
+  const result=typeof action==='string'&&action.startsWith('590:')?
+   await perform590(action,data,actor):await perform(action,data,actor,file);
   if(result instanceof Response)return new Response(result.body,{
    status:result.status,headers:{...common,'Content-Type':result.headers.get('Content-Type')||'application/octet-stream'}});
   return send(result);

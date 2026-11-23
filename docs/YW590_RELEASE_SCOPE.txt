@@ -1,0 +1,68 @@
+YW590 — WITNESSED ORIGINAL DEVICE, DISPATCHER RECOVERY, TECHNICAL SHELL
+CLOSURE AND ZERO-INVOICE FINANCIAL ISOLATION
+Target branch: source review -> protected dev -> protected main -> Vercel READY exact main SHA.
+Baseline verified 2026-11-22: YW589 source and live alias 7409a11897fe835c533be7e1f35480f1ccb7ce7e,
+main=dev; YW589 original Supabase private bucket and 4 RLS tables deployed.
+Original Rosevear Landscaping test work orders: 0; original pilot authorizations: 0;
+enrolled real staff: 0; photo objects and verified receipts: 0;
+dispatcher confirmations: 0; enabled service modules: 0.
+These are live HOLDs, not simulations or production certification.
+
+IMPLEMENTED
+- Corrected YW589 original-job financial guard: job_invoice_postings has NO
+  work_order_id; actual linkage is candidate->posting. Require ZERO
+  job_invoice_candidates and ZERO ar_invoices for source work order.
+  Existing YW589 server, source tests and original photo collection preserved.
+- A short-lived original crew challenge, server SHA-256 hashed, max 3/photo,
+  single-use by independently recorded witness, bound to exact original photo,
+  work order and original Auth crew identity. Server re-reads immutable private
+  Storage bytes before issuing, witnessing, and closing the case.
+- Independent human reviewer must be original approved reviewer, separate from
+  original owner, uploader and certified dispatcher. Separate authenticated
+  reviewer privately previews exact source bytes, computes SHA, personally
+  observes original crew device and enters the crew's 10-min challenge.
+  This records a HUMAN ATTESTATION, not hardware/OS remote device attestation.
+- Atomic privileged PostgreSQL RPC writes one immutable witnessed observation
+  and one redacted open technical case after source foreign keys, original crew
+  and dispatcher identity, challenge, time, zero-charge job and original
+  independent reviewer are verified. Default empty RLS tables.
+- Separate original platform Sysop, different from crew, dispatcher and
+  reviewer, can close original technical case ONCE after private source byte
+  re-read and exact owner/client/site links, one original job, ZERO original
+  invoice candidates or A/R invoices at closure. Source SQL also re-verifies
+  cross-company scope and actor membership independently of browser claims.
+- Sysop is restricted to aggregate counts, never tenant finance, customer PII,
+  original photo object path, private photo bytes or public URLs. No Master
+  ACK, consumer payment, notification, customer or job write.
+- Responsive tenant and platform panels, original authenticated roles only,
+  session reset/revocation, no local Storage of private photo/challenge.
+- Actual YW589/YW590 Edge request-handler adversarial tests with disposable
+  Auth/PostgREST/private binary Storage and Playwright on mobile/tablet/desktop.
+
+GATES TO GENUINE FIELD ACCEPTANCE — UNFULFILLED UNTIL ORIGINAL ACTORS
+1. Real owner authorizes original approved Rosevear company pilot with a
+   DIFFERENT authenticated reviewer; verify existing company service entitlement
+   and create one original zero-charge test job via original 421 authority.
+2. Real crew and dispatcher separately enroll within existing YW589 opt-in;
+   original crew uses physical original device to capture one consented photo.
+3. YW589 server independently downloads bytes and checks SHA, distinct real
+   dispatcher opens original private photo on own device and signs.
+4. Crew issues YW590 10-minute challenge while independent reviewer physically
+   checks crew device, enters code and verifies source photo on own authenticated
+   device, with explicit human original-device observation and no screenshot.
+5. Independent platform Sysop checks redacted source case; original server
+   re-hashes bytes, checks zero candidate/A/R invoices, and writes one-way close.
+   This proves point-in-time financial isolation, not perpetual future billing
+   blocking or external source attestations.
+6. Original third-party physical witness cannot be fabricated by source code;
+   browser checkbox itself is a human claim. No original witnesses/receipts
+   can be invented. No automatic source-to-Master durable ACK.
+7. After source CI, independently deploy only default-empty YW590 schema
+   and updated verify_jwt=true Edge handler; confirm database zero users and
+   zero enabled services; deploy Vercel production exact main SHA and verify alias.
+GREEN SOURCE != FIELD PILOT COMPLETE.
+
+NEXT PROPOSED YW591
+Source-trusted mobile photo retry/orphan reconciliation, owner-approved
+test tenant enrollment console, offline field-device continuity, expiry-based
+consent revocation and live multi-tenant isolation acceptance.
