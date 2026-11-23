@@ -146,7 +146,7 @@ async function forward(company,ctx,user,attemptId){
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||
   endpoint.search||endpoint.hash||endpoint.hostname==='localhost'||
   /^\d+\.\d+\.\d+\.\d+$/.test(endpoint.hostname)||
-  endpoint.hostname.endsWith('.local'))
+  endpoint.hostname.startsWith('[')||endpoint.hostname.endsWith('.local'))
   reject('YW592_MASTER_RECEIVER_URL_NOT_TRUSTED');
  const nonce=crypto.randomUUID(),observedAt=new Date().toISOString();
  const payload={schema:'rosevear.yw.source-photo-telemetry.v1',
