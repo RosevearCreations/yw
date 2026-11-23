@@ -7,7 +7,13 @@ const job='59000000-0000-4590-8590-000000000006';
 const photo='59000000-0000-4590-8590-000000000007';
 const challenge='59000000-0000-4590-8590-000000000020';
 async function mount(page,{signed=true,sysop=false}={}){
- await page.setContent('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><section id="jobs"></section><section id="yw584Sysop"></section></body></html>');
+ // localhost is a browser trustworthy context, so the REAL WebCrypto API
+ // is present when the reviewer hashes the private photo. No fake digest.
+ await page.route('http://localhost:48765/**',route=>route.fulfill({
+  status:200,contentType:'text/html',
+  body:'<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><section id="jobs"></section><section id="yw584Sysop"></section></body></html>'
+ }));
+ await page.goto('http://localhost:48765/yw590-test');
  await page.addStyleTag({content:css});
  await page.evaluate(({actor,job,photo,challenge,signed,sysop})=>{
   document.documentElement.dataset.ywSurface=sysop?'platform':'tenant';
