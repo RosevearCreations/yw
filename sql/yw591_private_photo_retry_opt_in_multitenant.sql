@@ -377,7 +377,7 @@ begin
   where id=p_attempt_id and company_id=p_company_id
   and work_order_id=p_work_order_id for update;
  if not found or a.state<>'RESERVED'
-  or p_observed_sha256 !~ '^[0-9a-f]{64}
+  or p_observed_sha256 !~ '^[0-9a-f]{64}$'
   or p_observed_sha256=a.content_sha256
  then raise exception 'YW591 signed mismatch quarantine requires different observed digest'; end if;
  update public.ywi_591_photo_attempts set state='QUARANTINED',
