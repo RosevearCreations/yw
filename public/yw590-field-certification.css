@@ -1,0 +1,13 @@
+/* YW590: separate authenticated tenant field evidence and vendor Sysop case */
+.yw590-evidence{padding:1rem;margin:1rem 0;border:1px solid #7f93a8;border-radius:14px;background:rgba(23,55,90,.06);overflow-wrap:anywhere}
+.yw590-evidence>summary{font-weight:700;cursor:pointer}
+.yw590-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));align-items:end;gap:.8rem;margin-top:1rem}
+.yw590-grid label{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.yw590-grid label:has(input[type=checkbox]){flex-direction:row;align-items:flex-start;grid-column:1/-1}
+.yw590-grid input[type=text]{width:100%;min-width:0}
+.yw590-grid button{min-height:2.75rem;overflow-wrap:anywhere;white-space:normal}
+.yw590-grid code{overflow-wrap:anywhere;user-select:all}
+#yw590PrivatePreview{max-height:18rem;max-width:100%;border:1px solid #7f93a8;border-radius:10px;object-fit:contain}
+#yw590PrivatePreview[hidden]{display:none}
+#yw590TenantStatus,#yw590ShellStatus{font-weight:600;line-height:1.5}
+@media(max-width:640px){.yw590-evidence{padding:.65rem}.yw590-grid{grid-template-columns:1fr}.yw590-grid button{width:100%}}

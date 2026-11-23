@@ -29,7 +29,8 @@ const fakeRows={
  ywi_company_site_links_422:()=>[{company_id:C,client_id:CL,client_site_id:S}],
  work_orders:()=>[{id:job,company_id:C,client_id:CL,client_site_id:S,service_module_key:'landscape',
   status:'draft',total_amount:amount,subtotal:amount,tax_total:0,completion_ready_for_accounting:false}],
- job_invoice_postings:()=>posted?[{id:uuid(50),work_order_id:job}]:[],
+ job_invoice_candidates:()=>posted?[{id:uuid(50),work_order_id:job}]:[],
+ ar_invoices:()=>[], 
  ywi_589_photo_receipts:()=>photos,
  ywi_589_dispatcher_certifications:()=>signoffs,
  ywi_platform_administrators_489:()=>[{user_id:sysop}]
@@ -149,12 +150,12 @@ assert.equal(summary.data.privatePhotoIncluded,false);
 assert.equal(summary.data.tenantFinanceIncluded,false);
 assert.equal(summary.data.masterDurableAckVerified,false);
 user=crew;assertHold(await invoke({action:'summary'}),'crew cannot read Sysop telemetry');
-assert.equal(events.filter(x=>x.includes('invoices')).length,0);
+assert.equal(events.filter(x=>x.startsWith('POST /rest/v1/job_invoice_candidates')||x.startsWith('POST /rest/v1/ar_invoices')).length,0);
 for(const forbidden of ['.from(\'invoices\').insert','work_orders\').insert','job_invoice_postings\').insert','auth.admin.createUser',
  'sendEmail','customer_notification','publicUrl','upsert:true'])
  assert.ok(!code.includes(forbidden),'forbidden direct finance/public/customer mutation '+forbidden);
 for(const expected of ['file instanceof File','matchMagic','downloadedHash!==sourceHash',
- 'if(receipts.length!==1','pilot_staff','job_invoice_postings','Deno.serve',
+ 'if(receipts.length!==1','pilot_staff','job_invoice_candidates','ar_invoices','Deno.serve',
  'EXTERNAL_WITNESS_PENDING','x-upsert'])
  assert.ok(code.includes(expected),'critical backend enforcement '+expected);
 for(const expected of ['enable row level security','false,10485760',
