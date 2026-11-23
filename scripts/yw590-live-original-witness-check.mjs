@@ -119,7 +119,8 @@ function hold(result,label){assert.equal(result.data?.state,'HOLD',label);
  assert.equal(result.data?.liveFieldCertified,false,label);}
 hold(await call('590:readiness'),'unapproved pilot never readied');
 approval=true;
-assert.equal((await call('590:readiness')).data.state,'AWAITING_INDEPENDENT_ORIGINAL_DEVICE_WITNESS');
+const firstReady=await call('590:readiness');
+assert.equal(firstReady.data.state,'AWAITING_INDEPENDENT_ORIGINAL_DEVICE_WITNESS',JSON.stringify(firstReady.data));
 serviceEnabled=false;hold(await call('590:readiness'),'service OFF');serviceEnabled=true;
 jobCount=0;hold(await call('590:readiness'),'no original job');jobCount=1;
 clientLink=false;hold(await call('590:readiness'),'unlinked original client');clientLink=true;
