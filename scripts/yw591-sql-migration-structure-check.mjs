@@ -9,6 +9,8 @@ assert.equal(declarations.length,7,'Expected seven reviewed YW591 PL/pgSQL funct
 assert.equal(endings.length,declarations.length,
  'Every PL/pgSQL END must be terminated with a semicolon before $fn$');
 assert.ok(!sql.includes('end $fn$;'),'Unterminated PL/pgSQL END is unsafe');
+assert.ok(sql.includes("p_observed_sha256 !~ '^[0-9a-f]{64}$'"),'Quarantine SHA-256 literal must be fully quoted');
+assert.ok(sql.includes('expected_key:='),'Private object path must be unambiguous');
 assert.ok(sql.trim().startsWith('-- YW591'));
 assert.ok(sql.trim().endsWith('commit;'));
 assert.ok(sql.includes('revoke all on function public.ywi_591_reserve_attempt'));
