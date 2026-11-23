@@ -23,7 +23,7 @@ const approvedAt=new Date(Date.now()-30000).toISOString(),expiresAt=new Date(Dat
 const records={
  profiles:()=>[owner,reviewer,crew,dispatcher,sysop].map(x=>({id:x,role:x===sysop?'admin':'employee',is_active:true})),
  ywi_589_pilot_authorizations:()=>approval?[{
-  company_id:C,client_id:CL,client_site_id:S,owner_user_id:owner,
+  company_id:C,client_id:CL,client_site_id:SITE,owner_user_id:owner,
   independent_reviewer_id:reviewer,approved:true,approved_at:approvedAt,expires_at:expiresAt}]:[],
  ywi_companies:()=>[{id:C,owner_user_id:owner}],
  ywi_589_pilot_staff:()=>[
@@ -99,10 +99,7 @@ async function fakeFetch(url,args={}){
  throw Error('Unexpected outgoing access '+url);
 }
 let handler;
-const isolatedInstrumentedServer=server.replace(
- "const code=typeof err?.code==='string'?err.code:'DEPENDENCY_OR_AUTHORITY_HOLD';",
- "console.error('YW590_DISPOSABLE_FIXTURE_EXCEPTION',String(err?.message||err),String(err?.stack||'').slice(0,700));const code=typeof err?.code==='string'?err.code:'DEPENDENCY_OR_AUTHORITY_HOLD';");
-vm.runInNewContext(isolatedInstrumentedServer,{Deno:{serve:fn=>handler=fn,
+vm.runInNewContext(server,{Deno:{serve:fn=>handler=fn,
  env:{get:name=>name==='SUPABASE_URL'?'https://test.supabase.invalid':
  name==='SUPABASE_SERVICE_ROLE_KEY'?'test-secret-key':null}},
  fetch:fakeFetch,crypto:webcrypto,TextEncoder,Response,Request,File,Blob,FormData,
