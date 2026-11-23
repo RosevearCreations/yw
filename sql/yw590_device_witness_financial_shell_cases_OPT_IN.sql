@@ -118,7 +118,9 @@ returns jsonb language plpgsql security definer set search_path='' as $fn$
 declare
  g record; p record; d record; ch record; w_id uuid; c_id uuid;
 begin
- if current_setting('request.jwt.claim.role',true) is distinct from 'service_role'
+ if coalesce(nullif(current_setting('request.jwt.claim.role',true),''),
+  (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'role'))
+  is distinct from 'service_role'
  then raise exception 'YW590 service-role-only custody procedure'; end if;
  if p_company_id<>'03bcf48e-a4f5-4427-9aba-b0f91f39b16b'::uuid
  then raise exception 'YW590 original tenant scope'; end if;
@@ -192,7 +194,9 @@ returns jsonb language plpgsql security definer set search_path='' as $fn$
 declare
  g record; p record; d record; w record; c record;
 begin
- if current_setting('request.jwt.claim.role',true) is distinct from 'service_role'
+ if coalesce(nullif(current_setting('request.jwt.claim.role',true),''),
+  (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'role'))
+  is distinct from 'service_role'
  then raise exception 'YW590 service role required'; end if;
  if p_company_id<>'03bcf48e-a4f5-4427-9aba-b0f91f39b16b'::uuid
  then raise exception 'YW590 wrong tenant'; end if;
