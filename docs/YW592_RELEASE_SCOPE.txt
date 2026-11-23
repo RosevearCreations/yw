@@ -1,0 +1,65 @@
+YW592 — OWNER-VISIBLE PRIVATE PHOTO RECOVERY, SIGNED RETENTION/EXPIRY,
+INDEPENDENT MULTI-TENANT FIELD-PILOT READINESS AND SOURCE-VERIFIED MASTER ACK
+
+Baseline: YW591 main/dev both 0984b644aa9c5072cd2b0c1bb24cb165740ea0fe on
+2026-11-23. New feature is additive; prior YW589–YW591 routes unchanged.
+
+LIVE FUNCTIONAL CONTRACT (only after migration, Edge and secrets are deployed):
+1. Original authenticated company owner/reviewer may triage private YW591
+   photo attempts, expired leases, verified receipts and quarantined cases.
+   No public image, customer identifier or device-local content in results.
+2. Only owner proposes a bounded 30/90-day retention, expiry review or
+   legal-hold review against an existing original attempt. Only the already
+   approved different reviewer can sign within 24 hours. An HMAC-SHA256
+   server signature covers exact proposal, original author, reviewer,
+   original byte digest, action, reason, bounded date and timestamp.
+   Readback verifies the stored immutable signature. It is a server
+   integrity signature PLUS independently authenticated human approval;
+   not a qualified legal electronic signature.
+3. Expiry means ELIGIBLE FOR REVIEW, NOT DELETE. No SQL or Edge function
+   deletes evidence, uploads photos publicly or changes finance records.
+   Original YW591 attempt and approved tenant scope cannot be bypassed.
+4. Original enrolled crew, SAME original uploader, verified source ledger
+   and independent private Storage SHA-256 byte re-download are mandatory
+   before source metadata may be sent to a configured Master receiver.
+   Outbound payload is HMAC signed; no raw bytes/customer PII. Receiver
+   must return matching nonce, source payload digest, unique receipt ID
+   and HMAC. ACK is verified independently BEFORE immutable receipt insert.
+   Transport success/HTTP 200 alone is NEVER a durable ACK.
+5. Field readiness returns only the number of independently consented
+   real original companies with separate owner/reviewer and valid source
+   Master receipt. At least TWO different real companies are needed.
+   Even two source receipts do NOT constitute observed physical device
+   field certification. Fixtures are not real pilot witnesses.
+
+RUNTIME CONFIGURATION (set secrets directly in Supabase, not repository):
+ - [functions.yw592-photo-case-telemetry] verify_jwt = true
+ - SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY standard Edge environment
+ - YW592_DECISION_HMAC_KEY: random private server signing key
+ - YW592_TELEMETRY_SEND_KEY: separate outbound signing key
+ - YW592_MASTER_ACK_KEY: independent private receiver ACK verification key
+ - YW592_MASTER_RECEIPT_URL: approved dedicated HTTPS Master receiver URL
+   (must enforce the schema and return {nonce,sourceDigest,receiptId,ackSignature}).
+   Receiver signature message: YW592-ACK|receiptId|nonce|sourceDigest (UTF-8)
+   HMAC-SHA256 lowercase hex using YW592_MASTER_ACK_KEY.
+   Outbound x-rosevear-yw-source-signature is HMAC-SHA256 over the exact
+   canonicalized JSON payload body, keyed by YW592_TELEMETRY_SEND_KEY.
+   There is NO implicit acceptance from current AIDP telemetry transport.
+ - Validate the receiver server identity out of band before enrollment;
+   hostname must be externally allowed HTTPS. No local/private IP receiver.
+ - Reviewer decisions HOLD if signing secret missing; Master HOLD if either
+   signing key, receiver URL or valid source proof is missing.
+ - SQL file sql/yw592_photo_case_signed_decisions_master_receipts.sql must
+   be applied only after YW591 schema is live; start with zero rows.
+
+GATES TO SAY "PRODUCTION GREEN": protected source CI on dev/main; original
+migration + verify_jwt Edge active; real secret enrollment and live SQL
+assertions; Vercel production exact MAIN SHA READY and alias matching;
+independently verified Master ACK for each genuine tenant plus two genuine
+independently consented tenant/device field observations.
+Never use a fake ACK, seed real tenant consent, or call READY source equal
+to live field-certified. If Supabase is disconnected, explicitly report
+source deployment vs operational HOLD.
+
+NEXT PROPOSED: YW593 — Original Device Recovery Field Witness Scheduling,
+Tenant-Scoped Expiry Escalation and Master Receiver Contract Integration.
