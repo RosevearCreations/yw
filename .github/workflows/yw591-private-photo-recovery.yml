@@ -24,6 +24,7 @@ jobs:
           node scripts/yw589-original-device-security-check.mjs
           node scripts/yw590-live-original-witness-check.mjs
           node scripts/yw591-private-retry-tenant-isolation-check.mjs
+          node scripts/yw591-sql-migration-structure-check.mjs
   offline-browser:
     name: YW591 encrypted offline retry, manual reconnect and original account browser
     runs-on: ubuntu-latest
