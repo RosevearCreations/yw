@@ -1,0 +1,84 @@
+YW593 — ORIGINAL DEVICE RECOVERY WITNESS SCHEDULING, TENANT EXPIRY ESCALATION
+AND VERIFIED MASTER RECEIVER CONTRACT (DEFAULT-HOLD RELEASE)
+
+SOURCE BASELINE
+- Parent main/dev: YW592 merged 1cdb5d6e35e4792e5dcc5d95e97cbafb8dadb875.
+- YW592 original database migration and JWT-protected Edge function activated
+  on the YardWeasels Supabase project on 2026-11-23.
+- Original YW591 private object, YW592 decision/ACK and user roles are reused.
+- No new account, synthetic tenant, customer email, SMS, payment or invoice.
+
+CAPABILITY AND AUTHORITY
+1. Original company owner may propose one immutable 30-minute-to-3-hour field
+   witness window per actual YW591 photo attempt, 30 minutes to 14 days ahead.
+   Source original uploader must be currently approved company pilot crew.
+2. A DIFFERENT, still-approved original reviewer signs the exact window,
+   original company/attempt/owner/uploader tuple and UTC dates with a server HMAC.
+   Readback checks the HMAC. A proposed OR approved appointment is not proof
+   that the actual device or human participant attended: physical witness
+   certification stays FALSE.
+3. Original distinct reviewer may escalate only a tenant-owned YW592 decision
+   with an independently cryptographically verified signature and matching
+   original photo digest. Eligible cases are signed expiry-review with an
+   expired lease, retention deadline already reached or signed legal-hold
+   review. Append-only records. Nothing auto-deletes, closes a case or notifies
+   a customer. The owner can read their own escalations.
+4. Original active owner may probe a PINNED HTTPS Master receiver using a fresh
+   nonce and source-signature. The receiver must independently return the
+   compatible source schema 'rosevear.yw.source-photo-telemetry.v1', ACK schema
+   'YW592-ACK', exact company+nonce and an HMAC valid under the existing private
+   YW592_MASTER_ACK_KEY. Signature is verified BEFORE immutable contract
+   readback recording. An HTTP 200 or a self-reported schema isn't enough.
+5. Receiver contract proof is NOT a telemetry payload delivery ACK, an original
+   photo byte readback, device hardware attestation or final field certificate.
+   Actual Master source receipt still flows only through YW592 with independent
+   source bytes, nonce, digest and a genuine signed response.
+
+RUNTIME SECRET REQUIREMENTS (SUPABASE SERVER-SIDE ONLY)
+ - SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (already existing).
+ - YW593_WITNESS_HMAC_KEY: new independently generated server-only key.
+ - YW592_DECISION_HMAC_KEY: existing decision key, unchanged.
+ - YW592_TELEMETRY_SEND_KEY and YW592_MASTER_ACK_KEY: existing, unchanged.
+ - YW592_MASTER_RECEIPT_URL: the previously authorized, verified HTTPS
+   original Master endpoint.
+ - YW593_MASTER_ALLOWED_HOST: the EXACT verified hostname of that endpoint,
+   WITHOUT a scheme or port. Endpoint DNS/certificate and source/receiver trust
+   must be independently enrolled. No redirection, IP, localhost or private
+   origin accepted.
+ - Receiver contract request schema:
+   {schema:'rosevear.yw.receiver-contract-probe.v1', companyId,
+    requestNonce, sourceApp:'yw',
+    acceptedSourceSchemaRequired:'rosevear.yw.source-photo-telemetry.v1',
+    acceptedAckSchemaRequired:'YW592-ACK',noSourceBytes:true,
+    noPersonalDetails:true}
+   Body is key-sorted canonical JSON, signed by YW592_TELEMETRY_SEND_KEY
+   as x-rosevear-yw-source-signature.
+ - Receiver response:
+   {contractId,companyId,requestNonce,
+    acceptedSourceSchema:'rosevear.yw.source-photo-telemetry.v1',
+    acceptedAckSchema:'YW592-ACK',signature}
+   signature is lowercase hex HMAC-SHA256 using YW592_MASTER_ACK_KEY over
+   the UTF-8 text:
+   YW593-CONTRACT|contractId|companyId|requestNonce|acceptedSourceSchema|acceptedAckSchema
+   This is NOT the separate YW592-ACK|receiptId|nonce|sourceDigest message.
+   A receiver without this new protocol must reject/hold, never fabricate success.
+
+DEPLOYMENT AND OPERATIONAL GATES
+ A. GitHub protected source code on dev/main and green Actions checks.
+ B. SQL additive migration sql/yw593_field_witness_expiry_master_contract.sql
+    after YW592; zero prefilled records; RLS + service-role-only RPCs.
+ C. JWT=true deploy yw593-field-recovery-contract with correct original user
+    and company policies; verify unauthenticated, other-tenant and absent-source
+    refusals on live Edge.
+ D. New browser panel next to YW592 Jobs triage, safe on mobile/tablet/desktop;
+    no secret or photo content rendered; auth/workspace change clears state.
+ E. Exact main SHA READY on Vercel production and verified alias; do NOT confuse
+    GitHub merge or a different READY deployment for this release.
+ F. Real consenting original owner+reviewer+crew appointments, independent
+    receiver handshake, original source ACK and observed original-device
+    acceptance must each be collected separately.
+ Source code tests use synthetic IDs ONLY and cannot be counted as field
+ evidence. A rate-limited Vercel deployment or absent receiver keys is HOLD.
+
+NEXT PROPOSED: YW594 — Original Device Witness Attendance Evidence,
+Independent Field Certification & Signed Receiver-Contract Drift Alerts.
