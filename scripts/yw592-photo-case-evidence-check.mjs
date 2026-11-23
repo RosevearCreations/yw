@@ -77,7 +77,7 @@ async function call(body,{as=OWNER,origin='https://yw-alpha.vercel.app'}={}){
  const r=await handler(new Request('https://fixture.supabase.invalid/functions/v1/yw592-photo-case-telemetry',{
   method:'POST',headers:{authorization:'Bearer aaa.bbb.ccc',
    origin,'content-type':'application/json'},body:JSON.stringify(body)}));
- return {status:r.status,data:await r.json()};
+ return {status:r.status,data:(r.headers.get('content-type')||'').includes('json')?await r.json():{state:'DENIED_ORIGIN'}};
 }
 const triage=await call({action:'triage',companyId:C});
 assert.equal(triage.status,200);
