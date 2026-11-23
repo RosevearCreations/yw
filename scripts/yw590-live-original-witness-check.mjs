@@ -99,7 +99,10 @@ async function fakeFetch(url,args={}){
  throw Error('Unexpected outgoing access '+url);
 }
 let handler;
-vm.runInNewContext(server,{Deno:{serve:fn=>handler=fn,
+const isolatedInstrumentedServer=server.replace(
+ "const code=typeof err?.code==='string'?err.code:'DEPENDENCY_OR_AUTHORITY_HOLD';",
+ "console.error('YW590_DISPOSABLE_FIXTURE_EXCEPTION',String(err?.message||err),String(err?.stack||'').slice(0,700));const code=typeof err?.code==='string'?err.code:'DEPENDENCY_OR_AUTHORITY_HOLD';");
+vm.runInNewContext(isolatedInstrumentedServer,{Deno:{serve:fn=>handler=fn,
  env:{get:name=>name==='SUPABASE_URL'?'https://test.supabase.invalid':
  name==='SUPABASE_SERVICE_ROLE_KEY'?'test-secret-key':null}},
  fetch:fakeFetch,crypto:webcrypto,TextEncoder,Response,Request,File,Blob,FormData,
