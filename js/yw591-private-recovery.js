@@ -5,7 +5,7 @@
 (()=>{'use strict';
  const $=id=>document.getElementById(id);
  const make=(tag,s)=>{const x=document.createElement(tag);if(s!==undefined)x.textContent=s;return x;};
- const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[89ab0-9]{12}$/i.test(x);
+ const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
  const hex=x=>Array.from(new Uint8Array(x),v=>v.toString(16).padStart(2,'0')).join('');
  const hash=async bytes=>hex(await crypto.subtle.digest('SHA-256',bytes));
  const state=()=>window.YWI_AUTH?.getState?.()||{};
@@ -189,6 +189,7 @@
  }
  async function act(action,ids=[]){
   await run(async a=>{const data=get(['companyId',...ids]);
+   if(action.startsWith('staff-'))data.staffRole=$('yw591StaffRole')?.value;
    const r=await invoke(a,{action,...data});
    out(r);message('Live source response: '+r.state+
     '. Independent approval and owner/tenant boundaries remain enforced.');});
@@ -226,23 +227,10 @@
   button(actions,'yw591Capture','Capture/upload consented private image',beginCapture);
   button(actions,'yw591Send','Send encrypted pending after reconnect',sendPending);
   button(actions,'yw591Reconcile','Recheck original server object / recover orphan',requestRecovery);
-  button(actions,'yw591Clear','Discard encrypted offline file',()=>run(async()=>{await clearPending();message('Device-local pending photo purged; no server photo deleted.');}));
-  for(const id of ['yw591Nominate','yw591StaffApprove','yw591StaffRevoke']){
-   $(id)?.addEventListener('click',()=>{}); // role appended by action handler below
-  }
+  button(actions,'yw591Clear','Discard encrypted offline file',async()=>{await clearPending();message('Device-local pending photo purged; no server photo deleted.');});
   const s=make('p','HOLD · original owner/reviewer and zero-charge job required.');s.id='yw591Status';s.setAttribute('role','status');d.append(s);
   const result=make('div');result.id='yw591Result';d.append(result);
  }
- // Actual role value is included only for staff operations, never client authority.
- const previousAct=act;
- act=async function(action,ids=[]){
-  if(action.startsWith('staff-')){
-   await run(async a=>{const data=get(['companyId',...ids]);
-    data.staffRole=$('yw591StaffRole')?.value;
-    const r=await invoke(a,{action,...data});out(r);
-    message('Live original staff authority: '+r.state);});
-  }else await previousAct(action,ids);
- };
  function clear(){
   generation++;
   const img=$('yw591File');if(img)img.value='';
