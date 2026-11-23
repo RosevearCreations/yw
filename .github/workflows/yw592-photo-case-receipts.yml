@@ -1,0 +1,29 @@
+name: YW592 signed recovery decisions, tenant triage and real Master receipt refusal
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  signed-source-custody:
+    name: YW592 original multi-tenant private cases, independent HMAC review and Master HOLD
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Previous protected original field/photo regressions
+        run: |
+          node scripts/yw589-original-device-security-check.mjs
+          node scripts/yw590-live-original-witness-check.mjs
+          node scripts/yw591-private-retry-tenant-isolation-check.mjs
+          node scripts/yw591-sql-migration-structure-check.mjs
+      - name: YW592 adversarial source-vs-live custody regression
+        run: node scripts/yw592-photo-case-evidence-check.mjs
