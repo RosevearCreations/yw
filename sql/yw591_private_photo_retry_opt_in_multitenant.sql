@@ -221,8 +221,8 @@ begin
   select * into s from public.ywi_591_pilot_staff where
     company_id=p_company_id and user_id=p_staff_user_id
     and role=p_staff_role for update;
-  if p_actor_user_id not in(p.owner_user_id,p.reviewer_user_id)
-   or s.state not in('NOMINATED','APPROVED')
+  if not found or p_actor_user_id not in(p.owner_user_id,p.reviewer_user_id)
+   or s.state is null or s.state not in('NOMINATED','APPROVED')
   then raise exception 'YW591 staff revocation HOLD'; end if;
   update public.ywi_591_pilot_staff set state='REVOKED'
    where company_id=p_company_id and user_id=p_staff_user_id

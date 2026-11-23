@@ -47,11 +47,19 @@
   const data={};for(const k of ids){data[k]=$(names[k])?.value.trim()||'';if(!uuid(data[k]))
     throw Error('An existing, authorized '+k+' UUID is required');}return data;
  }
- async function run(f){
+ function offlineBoundActor(){
+  // Offline queueing cannot contact Auth. Last-known signed-in identity is
+  // ONLY a LOCAL encryption binding, never a server authorization token.
+  const s=state();
+  if(s.isAuthenticated!==true||!uuid(s.user?.id))
+   throw Error('Sign in on this device before saving an encrypted offline photo');
+  return {epoch:generation,id:s.user.id,offlineLocalOnly:true};
+ }
+ async function run(f,{offlineLocal=false}={}){
   if(busy)return;busy=true;
   for(const b of document.querySelectorAll('#yw591Panel button'))b.disabled=true;
   const v=generation;
-  try{const a=await verified();await f(a);}
+  try{const a=offlineLocal&&navigator.onLine===false?offlineBoundActor():await verified();await f(a);}
   catch(err){if(v===generation)message('HOLD · '+(err?.message||'Original proof unavailable'));}
   finally{if(v===generation){busy=false;for(const b of document.querySelectorAll('#yw591Panel button'))b.disabled=false;}}
  }
@@ -61,7 +69,8 @@
    ['Original company UUID','yw591Company',''],['Original zero-charge work order UUID','yw591Job',''],
    ['Existing client UUID','yw591Client',''],['Existing client-site UUID','yw591Site',''],
    ['Independent reviewer existing Auth UUID','yw591Reviewer',''],
-   ['Existing staff Auth UUID','yw591Staff',''],['Original transfer request UUID','yw591Request','']]){
+   ['Existing staff Auth UUID','yw591Staff',''],['Original transfer request UUID','yw591Request',''],
+   ['Existing photo transfer attempt UUID (dispatcher/reviewer)','yw591Attempt','']]){
    const l=make('label',title),v=make('input');v.id=id;v.type='text';v.autocomplete='off';v.value=value;
    l.append(v);e.querySelector('.yw591-grid').append(l);
   }
@@ -153,6 +162,7 @@
   const received=await invoke(a,originalForm(meta,file,digest));
   if(received.serverVerified!==true)
    throw Error('Server did not confirm downloaded private source bytes');
+  if(uuid(received.attemptId)&&$('yw591Attempt'))$('yw591Attempt').value=received.attemptId;
   await clearPending();out(received);
   message('Verified private server hash and immutable original receipt. No public URL or customer notification.');
  }
@@ -170,7 +180,7 @@
     if(navigator.onLine===false){message('Offline: consented private photo encrypted on this device. Reconnect and press Send encrypted pending.');return;}
     await upload(file,meta,a,d);return;}
    const d=await hash(await file.arrayBuffer());await upload(file,meta,a,d);
-  });
+  },{offlineLocal:true});
  }
  async function sendPending(){
   await run(async a=>{
@@ -178,6 +188,30 @@
    const item=await readEncrypted(meta,a);
    if($('yw591Consent')?.checked!==true)throw Error('Reconfirm photo consent before network transfer');
    await upload(item.file,meta,a,item.sha);
+  });
+ }
+ let privatePreviewUrl='';
+ async function dispatcherPreview(){
+  await run(async a=>{
+   const meta=get(['companyId','jobId']),attemptId=$('yw591Attempt')?.value.trim();
+   if(!uuid(attemptId))throw Error('Original private attempt UUID required');
+   const response=await invoke(a,{action:'dispatcher-preview',...meta,attemptId});
+   if(!(response instanceof Blob)||!['image/jpeg','image/png','image/webp'].includes(response.type))
+    throw Error('Private image unavailable to current independently enrolled dispatcher');
+   if(privatePreviewUrl)URL.revokeObjectURL(privatePreviewUrl);
+   privatePreviewUrl=URL.createObjectURL(response);
+   const img=$('yw591PrivatePreview');if(img){img.src=privatePreviewUrl;img.hidden=false;}
+   message('Authorized private source photo opened on separate dispatcher device; no public URL.');
+  });
+ }
+ async function quarantine(){
+  await run(async a=>{
+   const meta=get(['companyId','jobId']),attemptId=$('yw591Attempt')?.value.trim();
+   if(!uuid(attemptId)||$('yw591QuarantineConfirm')?.checked!==true)
+    throw Error('Independent reviewer must acknowledge private hash-mismatch quarantine');
+   const result=await invoke(a,{action:'quarantine',...meta,attemptId});
+   out(result);message('Independent reviewer: '+result.state+
+    '. Original private object retained, never overwritten or deleted.');
   });
  }
  async function requestRecovery(){
@@ -227,12 +261,19 @@
   button(actions,'yw591Capture','Capture/upload consented private image',beginCapture);
   button(actions,'yw591Send','Send encrypted pending after reconnect',sendPending);
   button(actions,'yw591Reconcile','Recheck original server object / recover orphan',requestRecovery);
+  button(actions,'yw591Preview','Dispatcher: open authenticated private image',dispatcherPreview);
+  button(actions,'yw591Quarantine','Reviewer: quarantine confirmed hash-mismatch',quarantine);
   button(actions,'yw591Clear','Discard encrypted offline file',async()=>{await clearPending();message('Device-local pending photo purged; no server photo deleted.');});
+  labelCheck(d,'yw591QuarantineConfirm','I am the independent reviewer and confirm hash-mismatch quarantine without deleting the private source');
+  const img=make('img');img.id='yw591PrivatePreview';img.hidden=true;
+  img.alt='Authorized private original-work-order image for dispatcher only';d.append(img);
   const s=make('p','HOLD · original owner/reviewer and zero-charge job required.');s.id='yw591Status';s.setAttribute('role','status');d.append(s);
   const result=make('div');result.id='yw591Result';d.append(result);
  }
  function clear(){
   generation++;
+  if(privatePreviewUrl){URL.revokeObjectURL(privatePreviewUrl);privatePreviewUrl='';}
+  const preview=$('yw591PrivatePreview');if(preview){preview.hidden=true;preview.removeAttribute('src');}
   const img=$('yw591File');if(img)img.value='';
   for(const id of ['yw591Consent','yw591Offline']){const x=$(id);if(x)x.checked=false;}
   $('yw591Result')?.replaceChildren();

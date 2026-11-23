@@ -8,3 +8,6 @@
 .yw591-actions button{min-height:2.75rem;white-space:normal;overflow-wrap:anywhere}
 #yw591Status{font-weight:600;line-height:1.45}
 @media(max-width:640px){.yw591-recovery{padding:.7rem}.yw591-grid,.yw591-actions{grid-template-columns:1fr}.yw591-actions button{width:100%}}
+
+#yw591PrivatePreview{max-width:100%;max-height:20rem;object-fit:contain;border:1px solid #8296a9;border-radius:10px}
+#yw591PrivatePreview[hidden]{display:none}
