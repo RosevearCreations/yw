@@ -1,0 +1,14 @@
+.yw593-panel{margin:18px 0;padding:16px;border:1px solid var(--line,#50647b);border-radius:12px;background:var(--panel,#111d2e);color:inherit}
+.yw593-panel summary{font-weight:700;cursor:pointer;padding:5px 0}
+.yw593-panel .yw593-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:12px 0}
+.yw593-grid label,.yw593-panel>label{display:flex;flex-direction:column;gap:5px;font-size:.91rem}
+.yw593-panel>label{flex-direction:row;align-items:start;margin:12px 0}
+.yw593-panel input:not([type=checkbox]),.yw593-panel select{box-sizing:border-box;width:100%;min-height:40px;padding:7px;border:1px solid #8495a9;border-radius:6px;background:#fff;color:#152334}
+.yw593-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.yw593-actions button{padding:9px 12px;border-radius:8px;border:1px solid #9aaec5;cursor:pointer}
+.yw593-actions button:disabled{opacity:.55;cursor:wait}
+#yw593Result{overflow:auto;max-width:100%}
+.yw593-table{width:100%;border-collapse:collapse;min-width:500px;margin:10px 0 18px;font-size:.88rem}
+.yw593-table th,.yw593-table td{padding:8px;border-bottom:1px solid #718196;text-align:left;overflow-wrap:anywhere}
+.yw593-table tr:focus-within,.yw593-table tr:hover{background:rgba(127,127,127,.12)}
+@media(max-width:600px){.yw593-panel{padding:10px}.yw593-actions{flex-direction:column}.yw593-actions button{width:100%}}
