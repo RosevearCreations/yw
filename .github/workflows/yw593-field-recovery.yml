@@ -1,0 +1,27 @@
+name: YW593 original device witness, scoped expiry and Master receiver contract
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  witness-receiver-safety:
+    name: Original source witnesses, independent escalation, receiver HOLD
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Existing protected photo field regressions
+        run: |
+          node scripts/yw591-private-retry-tenant-isolation-check.mjs
+          node scripts/yw592-photo-case-evidence-check.mjs
+      - name: YW593 independent original-field and receiver-contract checks
+        run: node scripts/yw593-field-recovery-check.mjs
