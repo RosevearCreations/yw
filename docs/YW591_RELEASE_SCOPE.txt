@@ -1,0 +1,62 @@
+YW591 — PRIVATE PHOTO RETRY & ORPHAN RECOVERY, OWNER-APPROVED PILOT
+ENROLLMENT, OFFLINE FIELD CONTINUITY AND VERIFIED MULTI-TENANT ISOLATION
+
+Review baseline 2026-11-23: source main/dev both YW590 2009aabc62e88b7254105d8ea524d15d068369ca.
+Vercel public alias still YW589 SHA 7409a11897fe835c533be7e1f35480f1ccb7ce7e.
+YW590 Supabase Edge version 2 and RLS migration ACTIVE. No original
+tenant opt-ins, staff, approved jobs, private photo objects or human witnesses.
+Live connected database has ONE company, so original two-tenant functional
+separation cannot be physically certified. We test distinct simulated
+independent principals across two tenant IDs against the actual Edge handler,
+plus verify production RLS and default-zero rows.
+
+NEW FEATURES (ADDITIVE, NOT A BYPASS OF YW589/590)
+- Owner may propose ONE original company/client/site/work-order pilot only
+  for real existing linked customer/site, approved existing landscape
+  entitlement and zero original charge/invoice. Exactly one different,
+  authenticated active reviewer must approve within seven days. Neither
+  action creates a staff login, turns on the service, or creates a job.
+- Owner nominates EXISTING real crew/dispatcher accounts (never owner or
+  reviewer). Different reviewer explicitly approves each named role. Pilot,
+  staff can be revoked. No email, SMS, payments or customer notice.
+- New scoped Edge function yw591-photo-recovery, verify_jwt=true,
+  Auth getUser plus current active profile and original owner/reviewer staff
+  controls. Pilot and isolated photo tables are RLS and no direct
+  anon/authenticated writes. Private source objects remain within the
+  existing non-public 10MB JPEG/PNG/WebP bucket, with company/job/request
+  prefix, source SHA-256 and size checks. No signed/public photo URL.
+- Atomic reservation RPC creates immutable original request and one-work-order
+  unique lock BEFORE Storage upload. Uploaded object missing final receipt
+  can be independently downloaded and reconciled by the SAME originally
+  signed-in crew, same request ID and unexpired 24-hour lease. Never upsert,
+  duplicate, silently create a second photo or remove an orphan.
+- File upload/dispatch review re-read private binary bytes and recompute
+  SHA-256 server-side. Tampered object remains HOLD; independent real reviewer
+  may record quarantined SHA evidence. Object remains private/retained,
+  not deleted or restored without a separately authorized supervised process.
+- Optional explicit AES-GCM 256 device-local encrypted photo queue:
+  non-extractable crypto key kept in same-origin IndexedDB, one 10MB item,
+  no plaintext persistence or Auth token saved. 24-hour expiration, no
+  background transmission or credential bypass, manual authenticated resend
+  after reconnect. Logout/auth change purges key and encrypted pending bytes.
+- Mobile, tablet, desktop owner/reviewer/crew controls and Auth refusal.
+  No automated field acceptance, external host signing, Master ACK,
+  machine attestation or financial ledger changes.
+
+GATES
+1. Protected source PR -> dev -> main, all required CI.
+2. Production Supabase default-empty migration, verified RLS, service-role
+   RPC exclusivity; Edge verify_jwt=true deployment and no pre-populated pilots.
+3. Vercel main SHA READY and live alias exact SHA, dev/main identical.
+4. Actual owner + reviewer must opt in before any pilot functions work.
+5. True two-tenant field certification requires a SECOND real consenting
+   company with separate Auth users and valid original records. Simulated
+   cross-tenant fixture test is not genuine second-company field acceptance.
+6. A device-local AES-GCM key protects local offline bytes but does not
+   protect a device that is compromised, browser XSS, or untrusted hardware.
+7. Failure to update server receipt after object storage leaves a bounded
+   reserved recovery case; missing object or digest mismatch cannot auto-heal.
+
+NEXT PROPOSED BUILD: YW592 — Owner-Visible Photo Recovery Case Triage,
+Signed Retention/Expiry Decisions, Independent Multi-Tenant Field Pilot
+and Source-Verified Device-to-Master Telemetry Receipts.
