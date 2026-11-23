@@ -204,9 +204,13 @@ begin
   select * into s from public.ywi_591_pilot_staff
    where company_id=p_company_id and user_id=p_staff_user_id
     and role=p_staff_role for update;
-  if p.state<>'APPROVED' or p_actor_user_id<>p.reviewer_user_id
-   or s.state<>'NOMINATED' or s.user_id=p_actor_user_id
-   or s.nominated_by=p_actor_user_id
+  if not found or p.state<>'APPROVED'
+   or p_actor_user_id<>p.reviewer_user_id
+   or s.state is distinct from 'NOMINATED'
+   or s.user_id=p_actor_user_id or s.nominated_by=p_actor_user_id
+   or exists(select 1 from public.ywi_591_pilot_staff other
+     where other.company_id=p_company_id and other.user_id=p_staff_user_id
+      and other.role<>p_staff_role and other.state in('NOMINATED','APPROVED'))
   then raise exception 'YW591 separate staff approval HOLD'; end if;
   update public.ywi_591_pilot_staff set state='APPROVED',
     reviewed_by=p_actor_user_id,approved_at=now()
@@ -349,4 +353,43 @@ revoke all on function public.ywi_591_finalize_attempt(
  uuid,uuid,uuid,uuid,text,boolean) from public,anon,authenticated;
 grant execute on function public.ywi_591_finalize_attempt(
  uuid,uuid,uuid,uuid,text,boolean) to service_role;
+
+-- Quarantine is an explicitly separate signed REVIEWER action. It preserves
+-- the private object and immutable mismatch audit for supervised disposition;
+-- no delete, overwrite or automatic reassignment to another company.
+create or replace function public.ywi_591_quarantine_attempt(
+ p_company_id uuid,p_work_order_id uuid,p_attempt_id uuid,
+ p_reviewer_user_id uuid,p_observed_sha256 text)
+returns jsonb language plpgsql security definer set search_path='' as $fn$
+declare p record; a record;
+begin
+ perform public.ywi_591_source_role_assert();
+ select * into p from public.ywi_591_tenant_pilots
+  where company_id=p_company_id and work_order_id=p_work_order_id
+  and reviewer_user_id=p_reviewer_user_id and state='APPROVED'
+  and expires_at>now() for share;
+ if not found or p.reviewer_user_id=p.owner_user_id
+  or not exists(select 1 from public.profiles where id=p_reviewer_user_id and is_active=true)
+ then raise exception 'YW591 independent quarantine reviewer HOLD'; end if;
+ select * into a from public.ywi_591_photo_attempts
+  where id=p_attempt_id and company_id=p_company_id
+  and work_order_id=p_work_order_id for update;
+ if not found or a.state<>'RESERVED'
+  or p_observed_sha256 !~ '^[0-9a-f]{64}
+  or p_observed_sha256=a.content_sha256
+ then raise exception 'YW591 signed mismatch quarantine requires different observed digest'; end if;
+ update public.ywi_591_photo_attempts set state='QUARANTINED',
+  quarantine_code='INDEPENDENT_REVIEWER_SIGNED_BYTE_HASH_MISMATCH'
+  where id=a.id and state='RESERVED';
+ insert into public.ywi_591_transfer_events(
+  attempt_id,company_id,event_code,server_observed_sha256)
+ values(a.id,p_company_id,'QUARANTINED',p_observed_sha256);
+ return jsonb_build_object('state','QUARANTINED',
+  'humanReviewRecorded',true,'objectDeleted',false);
+end $fn$;
+revoke all on function public.ywi_591_quarantine_attempt(
+ uuid,uuid,uuid,uuid,text) from public,anon,authenticated;
+grant execute on function public.ywi_591_quarantine_attempt(
+ uuid,uuid,uuid,uuid,text) to service_role;
+
 commit;
