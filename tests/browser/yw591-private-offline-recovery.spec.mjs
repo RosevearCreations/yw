@@ -17,7 +17,7 @@ async function mount(page,{signed=true,offline=false,reviewer=false}={}){
   Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>window.__networkOnline});
   window.YWI_AUTH={getState:()=>({isAuthenticated:signed,user:{id:actor},role:'employee'})};
   window.YWI_SB={
-   auth:{getUser:async()=>({data:{user:{id:actor}},error:null})},
+   auth:{getUser:async()=>{if(!window.__networkOnline)throw Error('Network Auth unavailable offline');return {data:{user:{id:actor}},error:null};}},
    functions:{invoke:async(_slug,{body})=>{
     const action=body instanceof FormData?body.get('action'):body.action;
     const item={action,companyId:body instanceof FormData?body.get('companyId'):body.companyId,
@@ -33,6 +33,10 @@ async function mount(page,{signed=true,offline=false,reviewer=false}={}){
       companyBound:item.companyId,requestId:item.requestId,verifiedByteCount:64},error:null};
     if(action==='resume')return {data:{state:'PRIVATE_OBJECT_MISSING_RETRY_ORIGINAL_ENCRYPTED_PHOTO',
       serverVerified:false,requestId:item.requestId},error:null};
+    if(action==='dispatcher-preview')return {data:new Blob([new Uint8Array([
+     137,80,78,71,13,10,26,10,...Array(56).fill(3)])],{type:'image/png'}),error:null};
+    if(action==='quarantine')return {data:{state:'QUARANTINED',
+      sourceObjectRetained:true},error:null};
     return {data:{state:'HOLD',code:'SOURCE_OWNER_APPROVAL_REQUIRED'},error:null};
    }}
   };
@@ -114,4 +118,22 @@ test('YW591 logout purges encrypted photo and encryption key, no automatic netwo
    const p=s.get('pending'),k=s.get('key');tx.oncomplete=()=>resolve(!p.result&&!k.result);});
  })).toBe(true);
  expect(await page.evaluate(()=>window.__yw591Calls.length)).toBe(0);
+});
+
+test('YW591 different-device private dispatcher preview and reviewer-owned source quarantine UI',async({page})=>{
+ await mount(page);
+ await page.locator('#yw591Attempt').fill(uuid(27));
+ await page.locator('#yw591Preview').click();
+ await expect(page.locator('#yw591PrivatePreview')).toBeVisible();
+ await expect(page.locator('#yw591Status')).toContainText('Authorized private source photo');
+ await page.locator('#yw591Quarantine').click();
+ await expect(page.locator('#yw591Status')).toContainText('HOLD');
+ await page.locator('#yw591QuarantineConfirm').check();
+ await page.locator('#yw591Quarantine').click();
+ await expect(page.locator('#yw591Status')).toContainText('QUARANTINED');
+ await page.evaluate(()=>document.dispatchEvent(new Event('ywi:auth-changed')));
+ await expect(page.locator('#yw591PrivatePreview')).toBeHidden();
+ expect(await page.evaluate(()=>window.__yw591Calls.map(x=>x.action))).toEqual([
+  'dispatcher-preview','quarantine'
+ ]);
 });
