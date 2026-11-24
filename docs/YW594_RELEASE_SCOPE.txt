@@ -1,0 +1,91 @@
+YW594 — ORIGINAL DEVICE WITNESS ATTENDANCE, INDEPENDENT HUMAN FIELD
+CERTIFICATION & SIGNED RECEIVER-CONTRACT DRIFT ALERTS
+
+Baseline: YW593 protected dev/main dd2eac1c9fa92d0f58a85399bb113e204033e111.
+Original YW591/592/593 source tables and JWT-protected Edge endpoints remain
+unchanged. YW594 is additive, default-empty, and separately authorized.
+
+SCOPE — NO IMAGINARY WITNESS OR HARDWARE CLAIM
+1. The original currently approved crew account requests one eight-minute
+   attendance challenge DURING its immutable original YW593 slot, AFTER the
+   independent reviewer window signature is cryptographically verified.
+   The slot must bind the exact original company, work order, attempt, original
+   uploader and approved unexpired tenant pilot. One challenge per slot.
+2. The same originally authenticated crew signs the canonical nonce-bound
+   message with a fresh browser-generated WebCrypto ECDSA P-256 key. The
+   server verifies the 64-byte signature, key fingerprint, nonce, source
+   SHA-256, slot and source crew; then stores an immutable receipt.
+   This demonstrates control of an authenticated browser session capable of
+   generating a P-256 proof. It is NOT proof of original device hardware
+   identity, a hardware-backed attestation, location, or physical attendance.
+   The ephemeral private key stays in memory; it is not posted, stored or
+   exposed. No photos/customer data are in the signed message.
+3. The distinct actual company owner must explicitly attest that the human
+   crew and actual original device were physically observed. A separately
+   authenticated, different independent reviewer must personally attest and
+   only then request final human-attested field certification.
+   The server re-verifies the browser signature, original YW593 signed window,
+   the HMAC-bound owner observation, the original still-approved pilot, the
+   original private Storage object by byte_count + SHA-256, the original
+   YW592 receiver ACK HMAC, a still-valid YW593 signed Master contract and
+   the latest VERIFIED MATCH drift check no older than one hour. All
+   company/crew/owner/reviewer/attempt/receipt/contract IDs must match.
+   The immutable final certificate states INDEPENDENT_HUMAN_FIELD_CERTIFIED
+   and hardwareAttested=false, never unrestricted hardware-certified.
+   Even human-approved records are not a genuine two-tenant fleet witness.
+4. The company owner may invoke a fresh live signed Master receiver-contract
+   challenge with pinned HTTPS hostname, disabled redirects, a five-second
+   timeout and an independent returned receiver HMAC. The original last
+   verified YW593 receiver contract is read and cryptographically verified
+   before checking a new probe. A matching receiver contract ID+schema
+   yields MATCH. A changed ID with valid receiver HMAC yields
+   VERIFIED_CONTRACT_CHANGED. Bad/unverifiable receiver returns are
+   UNVERIFIED_RESPONSE_HOLD; network/HTTP errors are UNAVAILABLE_HOLD.
+   Each finding is server-HMAC-signed as a LOCAL observation and appended
+   to a company-isolated immutable history. A timeout is NOT proof that
+   the receiver actually changed. No automatic contract swap, payments,
+   deletion, customer notification or source ACK is inferred.
+   Checks are owner-initiated, not a background scheduler, so alerts are
+   generated upon a requested probe. The final field certificate requires
+   the latest local finding to be MATCH and no older than one hour.
+5. Original Supabase staff/profile/Auth permissions are rechecked for each
+   operation. Auth/browser-workspace change clears any in-memory challenge
+   and private UI. Only the owner can read its new tenant-scoped tables via
+   explicit RLS; authenticated/anon users cannot directly insert/update or
+   execute service-role-only RPCs.
+6. A client/offline browser or synthetic CI fixture never creates a live
+   certificate: the server refuses absent pilots, missing ACK, expired
+   evidence, missing keys, foreign tenant, forged P-256 signatures and
+   unconfirmed owner/reviewer physical presence. No bypass for test data.
+
+LIVE RUNTIME CONFIG — ADD IN SUPABASE SECRETS, NOT IN GIT
+ - SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (existing standard secrets)
+ - YW593_WITNESS_HMAC_KEY (existing, unchanged, for signed window)
+ - YW592_MASTER_ACK_KEY (existing, unchanged, for genuine receiver)
+ - YW592_TELEMETRY_SEND_KEY (existing, unchanged, for outbound probe)
+ - YW592_MASTER_RECEIPT_URL (existing, independently approved endpoint)
+ - YW593_MASTER_ALLOWED_HOST (existing exact pinned hostname, no port)
+ - YW594_HUMAN_EVIDENCE_HMAC_KEY: independently generated 32+ random bytes
+   in a private signing secret for owner/certification record integrity
+ - YW594_DRIFT_HMAC_KEY: separate private 32+ byte HMAC key for local alert
+   integrity; neither key may be shipped to browser or committed to repo.
+ - [functions.yw594-field-evidence-drift] verify_jwt = true.
+ - Original YW593 Master contract responder must support the exact HMAC
+   response schema defined in docs/YW593_RELEASE_SCOPE.txt.
+
+GATES BEFORE DECLARING PRODUCTION CODE GREEN
+A. Dev and main source PR protected CI success and SHA ancestry; no force push.
+B. Controlled additive SQL sql/yw594_independent_field_evidence_receiver_drift.sql
+   after YW593. Confirm all five new tables RLS-enabled, immutable, zero
+   rows, with service-role-only privileged RPCs and advisor findings reviewed.
+C. Deploy Edge yw594-field-evidence-drift verify_jwt=true. Live unauthorized
+   and invalid/foreign source must HOLD; never seed fake evidence.
+D. Main exact SHA Vercel target production READY and
+   https://yw-alpha.vercel.app assigned to that exact deployment.
+E. Human-field operational acceptance stays HOLD until distinct actual crew,
+   owner, reviewer, original storage bytes, genuine signed receiver Master
+   receipt and pinned remote contract/drift MATCH are really witnessed.
+   Deployment GREEN is not equivalent to real field-certified GREEN.
+
+NEXT PROPOSED: YW595 — Real Original-Device Supervised Pilot Ceremony,
+Receiver Contract Rotation Custody & Independent Two-Tenant Evidence Review.
