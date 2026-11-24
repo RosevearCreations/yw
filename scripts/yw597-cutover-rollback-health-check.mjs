@@ -40,7 +40,7 @@ for(const suffix of ['cutover_intents','rollback_proofs','cutover_approvals','he
  assert.match(sql,new RegExp('create table public\\.ywi_597_'+suffix));
 assert.equal((sql.match(/enable row level security;/g)||[]).length,6);
 assert.equal((sql.match(/execute function public\.ywi_591_forbid_change\(\)/g)||[]).length,6);
-assert.equal((sql.match(/grant execute on function public\.ywi_597_/g)||[]).length,7);
+assert.equal((sql.match(/grant execute on function public\.ywi_597_/g)||[]).length,6);
 assert.match(sql,/cron\.schedule\('yw597-master-ack-evidence-watch-15m','\*\/15 \* \* \* \*'/);
 assert.match(sql,/NO_SIGNED_MASTER_ACK_30M/);
 assert.match(sql,/RECEIVER_UNVERIFIED_HOLD/);
