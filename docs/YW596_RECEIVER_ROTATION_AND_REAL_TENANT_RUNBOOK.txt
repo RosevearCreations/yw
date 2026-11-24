@@ -162,8 +162,10 @@ B. CREATE AND INSTALL SECRETS (DO NOT PASTE INTO CHAT)
      PowerShell, select Windows PowerShell.
   2. Paste and run this three-times unique randomness generator:
        1..3 | ForEach-Object {
+         $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
          $b = New-Object byte[] 48
-         [System.Security.Cryptography.RandomNumberGenerator]::Fill($b)
+         $rng.GetBytes($b)
+         $rng.Dispose()
          [Convert]::ToBase64String($b)
        }
      Assign each separate generated value to the three exact NEW
