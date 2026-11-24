@@ -218,7 +218,11 @@ async function proof(company,id){
  const common=r.r.id+'|'+company+'|'+p.request_nonce+'|'+r.oldc.contract_id+
   '|'+r.newc.contract_id+'|YW592-ACK';
  if(!await verify('YW592_MASTER_ACK_KEY','YW596-ROTATE-OLD|'+common,p.old_receiver_hmac)||
-  !await verify('YW596_RECEIVER_NEXT_ACK_KEY','YW596-ROTATE-NEXT|'+common,p.next_receiver_hmac))
+  !await verify('YW596_RECEIVER_NEXT_ACK_KEY','YW596-ROTATE-NEXT|'+common,p.next_receiver_hmac)||
+  p.response_sha256!==await sha(canon({schema:'rosevear.yw.receiver-dual-key-probe-ack.v1',
+   companyId:company,rotationId:r.r.id,requestNonce:p.request_nonce,
+   priorContractId:r.oldc.contract_id,candidateContractId:r.newc.contract_id,
+   acceptedAckSchema:'YW592-ACK'})))
   err('YW596_STORED_TWO_KEY_REMOTE_PROOF_INVALID');
  return {p,r};
 }
@@ -435,11 +439,10 @@ function auditMsg(pr,a,b,auditor,date){
   coordinatorId:pr.p.coordinator_user_id,auditorId:auditor,
   canaryAId:a.c.id,canaryBId:b.c.id,
   priorMasterAckAId:a.old.id,priorMasterAckBId:b.old.id,
-  nextAckDigestA:shaText(a.c.next_ack_hmac),nextAckDigestB:shaText(b.c.next_ack_hmac),
+  nextAckHmacA:a.c.next_ack_hmac,nextAckHmacB:b.c.next_ack_hmac,
   auditedAt:new Date(date).toISOString(),originalSourceDigestOnly:true,
   hardwareAttested:false});
 }
-function shaText(x){return x;}
 async function audit(actor,data){
  await admin(actor);
  if(data.confirmIndependentAudit!==true)
