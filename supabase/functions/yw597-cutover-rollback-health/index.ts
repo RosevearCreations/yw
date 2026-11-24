@@ -165,11 +165,11 @@ async function canary(company,id){
  return {c,pp,prior};
 }
 const intentFields='id,company_id,proof_id,canary_id,owner_user_id,reviewer_user_id,consent_at,expires_at,actual_key_changed';
-async function intent(company,id){
+async function intent(company,id,allowExpired=false){
  if(!valid(id))err('YW597_ORIGINAL_CUTOVER_INTENT_ID_REQUIRED');
  const i=await one('ywi_597_cutover_intents',intentFields,{id,company_id:company},
   'YW597_REAL_OWNER_CUTOVER_INTENT_REQUIRED');
- if(Date.parse(i.expires_at)<=Date.now()||i.actual_key_changed!==false)
+ if((!allowExpired&&Date.parse(i.expires_at)<=Date.now())||i.actual_key_changed!==false)
   err('YW597_CUTOVER_INTENT_EXPIRED_OR_EXECUTED_HOLD');
  return i;
 }
@@ -224,7 +224,7 @@ async function begin(company,actor,ctx,data){
   err('YW597_ORIGINAL_OWNER_EXPLICIT_CUTOVER_REQUEST_REQUIRED');
  const pr=await proof(company,data.dualKeyProofId);
  const c=await canary(company,data.canaryId);
- if(pr.p.id!==c.pp.p.id||c.c.acknowledged_at<Date.now()-72*3600000||
+ if(pr.p.id!==c.pp.p.id||Date.parse(c.c.acknowledged_at)<Date.now()-72*3600000||
   pr.rot.r.owner_user_id!==actor.user||
   pr.rot.r.reviewer_user_id!==ctx.p.reviewer_user_id)
   err('YW597_SAME_REAL_FRESH_ORIGINAL_MASTER_ACK_CHAIN_REQUIRED');
@@ -253,12 +253,12 @@ async function rollback(company,actor,data){
   p_observed_at:new Date().toISOString()});
 }
 const rollbackFields='id,company_id,intent_id,auditor_user_id,challenge_nonce,prior_hmac,next_hmac,remote_response_sha256,observed_at,readiness_only,actual_rollback_performed';
-async function verifyStoredRollback(company,i,id){
+async function verifyStoredRollback(company,i,id,allowStale=false){
  const rb=await one('ywi_597_rollback_proofs',rollbackFields,
   {company_id:company,id},'YW597_ORIGINAL_INDEPENDENT_ROLLBACK_PROOF_REQUIRED');
  const pr=await proof(company,i.proof_id);
  if(rb.intent_id!==i.id||rb.readiness_only!==true||rb.actual_rollback_performed!==false||
-  Date.parse(rb.observed_at)<Date.now()-15*60000)
+  (!allowStale&&Date.parse(rb.observed_at)<Date.now()-15*60000))
   err('YW597_RECENT_READONLY_ROLLBACK_READINESS_ONLY_REQUIRED');
  const msg=rollbackMsg(i,pr.rot,rb.challenge_nonce);
  if(!await verify('YW592_MASTER_ACK_KEY','YW597-ROLLBACK-OLD|'+msg,rb.prior_hmac)||
@@ -298,8 +298,8 @@ async function approval(company,id){
  if(!valid(id))err('YW597_ORIGINAL_APPROVAL_UUID_REQUIRED');
  const a=await one('ywi_597_cutover_approvals',approvalFields,
   {company_id:company,id},'YW597_INDEPENDENT_MANUAL_AUTHORIZATION_NOT_FOUND');
- const i=await intent(company,a.intent_id);
- const rb=await verifyStoredRollback(company,i,a.rollback_proof_id);
+ const i=await intent(company,a.intent_id,true);
+ const rb=await verifyStoredRollback(company,i,a.rollback_proof_id,true);
  const msg=approvalMessage(i,rb,a.reviewer_user_id,new Date(a.signed_at).toISOString());
  if(i.reviewer_user_id!==a.reviewer_user_id||
   a.approval_scope!=='MANUAL_CUTOVER_ALLOWED_NOT_EXECUTED'||a.actually_cut_over!==false||
