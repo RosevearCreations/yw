@@ -84,3 +84,6 @@ verify_jwt = true
 
 [functions.yw593-field-recovery-contract]
 verify_jwt = true
+
+[functions.yw594-field-evidence-drift]
+verify_jwt = true
