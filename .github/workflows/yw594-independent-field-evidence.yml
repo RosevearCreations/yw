@@ -1,0 +1,28 @@
+name: YW594 independent human field certification and receiver drift HOLD
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-original-source-gates:
+    name: Original crew P256, distinct human actors, Master ACK and signed drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Prior source security and original witness contracts
+        run: |
+          node scripts/yw591-private-retry-tenant-isolation-check.mjs
+          node scripts/yw592-photo-case-evidence-check.mjs
+          node scripts/yw593-field-recovery-check.mjs
+      - name: YW594 original three-principal and signed receiver HOLD check
+        run: node scripts/yw594-field-evidence-drift-check.mjs
