@@ -333,8 +333,56 @@ async function fleetOptin(company,id){
   'id,company_id,slot_id,owner_user_id,reviewer_user_id,crew_user_id,source_sha256,briefing_consent',
   {id:closed.intent_id,company_id:company},'YW596_ORIGINAL_THREE_HUMAN_FIELD_INTENT_REQUIRED');
  const cert=await one('ywi_594_field_certificates',
-  'id,company_id,slot_id,source_sha256,master_receipt_id,reviewer_user_id,human_field_attested,hardware_attested',
+  'id,company_id,slot_id,proof_id,owner_observation_id,reviewer_user_id,master_receipt_id,receiver_contract_id,receiver_drift_id,source_sha256,certified_at,human_field_attested,hardware_attested,payload_sha256,server_hmac_sha256',
   {id:closed.field_certificate_id,company_id:company},'YW596_INDEPENDENT_HUMAN_CERTIFICATE_REQUIRED');
+ // Recheck the actual earlier independently signed field certificate and
+ // ceremony closure; an opt-in table row alone is not independent evidence.
+ const approvedPilot=await one('ywi_591_tenant_pilots',
+  'company_id,owner_user_id,reviewer_user_id,work_order_id,state,expires_at',
+  {company_id:company},'YW596_OPTIN_APPROVED_ORIGINAL_PILOT_REQUIRED');
+ const original=await originalSlot(company,intent.slot_id,approvedPilot);
+ const crewProof=await one('ywi_594_attendance_proofs',
+  'id,company_id,slot_id,crew_user_id,key_fingerprint_sha256,hardware_attested',
+  {id:cert.proof_id,company_id:company},'YW596_ORIGINAL_CREW_P256_PROOF_REQUIRED');
+ const observed=await one('ywi_594_owner_observations',
+  'id,company_id,slot_id,owner_user_id,co_presence_attested',
+  {id:cert.owner_observation_id,company_id:company},'YW596_OWNER_PRESENCE_SOURCE_REQUIRED');
+ const source=await originalAttempt(company,original.attempt_id,approvedPilot);
+ const sourceReceipt=await one('ywi_592_master_receipts',oldAckFields,
+  {id:closed.master_receipt_id,company_id:company},'YW596_595_GENUINE_ORIGINAL_MASTER_ACK_REQUIRED');
+ const certMessage=canon({schema:'rosevear.yw.independent-human-field-certificate.v1',
+  companyId:company,slotId:original.id,proofId:crewProof.id,
+  observationId:observed.id,ownerId:original.owner_user_id,
+  crewId:original.crew_user_id,reviewerId:original.reviewer_user_id,
+  masterReceiptId:sourceReceipt.id,receiverContractId:cert.receiver_contract_id,
+  driftObservationId:cert.receiver_drift_id,sourceSha256:source.content_sha256,
+  crewDeviceKeySha256:crewProof.key_fingerprint_sha256,
+  certifiedAt:new Date(cert.certified_at).toISOString(),
+  humanFieldAttested:true,hardwareAttested:false});
+ const closureMessage=canon({schema:'rosevear.yw.supervised-original-device-ceremony.v1',
+  companyId:company,ceremonyId:intent.id,slotId:intent.slot_id,
+  ownerId:intent.owner_user_id,reviewerId:intent.reviewer_user_id,crewId:intent.crew_user_id,
+  sourceSha256:intent.source_sha256,fieldCertificateId:cert.id,
+  genuineMasterReceiptId:sourceReceipt.id,
+  closedAt:new Date(closed.closed_at).toISOString(),
+  humanFieldAttested:true,hardwareAttested:false});
+ if(approvedPilot.state!=='APPROVED'||Date.parse(approvedPilot.expires_at)<=Date.now()||
+  intent.briefing_consent!==true||sourceReceipt.attempt_id!==source.id||
+  sourceReceipt.source_sha256!==source.content_sha256||
+  sourceReceipt.device_actor_id!==original.crew_user_id||
+  !await verify('YW592_MASTER_ACK_KEY',
+    'YW592-ACK|'+sourceReceipt.master_receipt_id+'|'+sourceReceipt.request_nonce+
+    '|'+sourceReceipt.payload_sha256,sourceReceipt.master_ack_hmac_sha256)||
+  intent.crew_user_id!==original.crew_user_id||observed.owner_user_id!==original.owner_user_id||
+  observed.co_presence_attested!==true||crewProof.slot_id!==original.id||
+  crewProof.crew_user_id!==original.crew_user_id||crewProof.hardware_attested!==false||
+  await sha(certMessage)!==cert.payload_sha256||
+  !await verify('YW594_HUMAN_EVIDENCE_HMAC_KEY',
+   certMessage,cert.server_hmac_sha256)||
+  await sha(closureMessage)!==closed.evidence_sha256||
+  !await verify('YW595_CEREMONY_HMAC_KEY',
+   closureMessage,closed.server_hmac_sha256))
+  err('YW596_ORIGINAL_SIGNED_594_595_FIELD_CHAIN_HOLD');
  const ownerMsg=canon({schema:'rosevear.yw.independent-two-tenant-optin.v1',
   companyId:company,closureId:o.ceremony_closure_id,
   originalOwnerId:o.owner_user_id,originalReviewerId:o.reviewer_user_id,
@@ -454,7 +502,11 @@ async function audit(actor,data){
   a.c.source_actor_id,b.c.source_actor_id]);
  if(forbidden.has(actor.user)||a.c.company_id===b.c.company_id||
   Date.parse(a.c.acknowledged_at)<=Date.parse(pr.p.scheduled_at)||
-  Date.parse(b.c.acknowledged_at)<=Date.parse(pr.p.scheduled_at))
+  Date.parse(b.c.acknowledged_at)<=Date.parse(pr.p.scheduled_at)||
+  Date.parse(a.c.acknowledged_at)<Date.parse(pr.a.s.starts_at)||
+  Date.parse(a.c.acknowledged_at)>Date.parse(pr.a.s.ends_at)+24*3600000||
+  Date.parse(b.c.acknowledged_at)<Date.parse(pr.b.s.starts_at)||
+  Date.parse(b.c.acknowledged_at)>Date.parse(pr.b.s.ends_at)+24*3600000)
   err('YW596_SECOND_INDEPENDENT_SYSOP_AND_TWO_ORIGINAL_ACK_CHAINS_REQUIRED');
  const signedAt=new Date().toISOString(),msg=auditMsg(pr,a,b,actor.user,signedAt);
  return rpc('ywi_596_independent_audit',{p_pair_id:pr.p.id,p_canary_a_id:a.c.id,
