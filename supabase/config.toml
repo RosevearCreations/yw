@@ -87,3 +87,6 @@ verify_jwt = true
 
 [functions.yw594-field-evidence-drift]
 verify_jwt = true
+
+[functions.yw595-original-pilot-rotation-fleet]
+verify_jwt = true
