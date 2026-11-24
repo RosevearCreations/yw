@@ -379,7 +379,12 @@ async function overview(company,ctx){
   'id,proposal_id,signed_at,actual_secret_rotated',{company_id:company});
  const optins=await select('ywi_595_fleet_optins',
   'id,ceremony_closure_id,signed_at',{company_id:company});
- return {state:'ORIGINAL_TENANT_SUPERVISED_SOURCE_QUEUE',ceremonies:intents.map(x=>({
+ const contracts=await select('ywi_593_receiver_contracts',
+  'id,contract_id,observed_at,expires_at',{company_id:company});
+ return {state:'ORIGINAL_TENANT_SUPERVISED_SOURCE_QUEUE',
+  receiverContracts:contracts.map(x=>({contractRecordId:x.id,contractId:x.contract_id,
+   observedAt:x.observed_at,expiresAt:x.expires_at})),
+  ceremonies:intents.map(x=>({
   ceremonyId:x.id,slotId:x.slot_id,
   closureId:closes.find(c=>c.intent_id===x.id)?.id||null,proposedAt:x.proposed_at})),
   rotations:rotations.map(x=>({rotationId:x.id,
