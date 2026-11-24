@@ -76,12 +76,20 @@
      closureId:'yw595Closure',rotationId:'yw595Rotation',
      optinId:'yw595FirstOptin'};
     for(const [k,f]of Object.entries(mapping))if(uuid(item[k])&&$(f))$(f).value=item[k];
+    if(uuid(item.contractRecordId)){
+     const prior=$('yw595Prior'),candidate=$('yw595Candidate');
+     if(!prior.value||prior.value===candidate.value)prior.value=item.contractRecordId;
+     else if(prior.value!==item.contractRecordId)candidate.value=item.contractRecordId;
+    }
    });body.append(tr);
   }
   table.append(body);out.append(table);
  }
  function queue(data){
   $('yw595Result').replaceChildren();
+  renderRows('Verified original receiver contract record IDs (select old and new)',data.receiverContracts,
+   [['contractRecordId','Database contract record UUID'],['contractId','Signed remote contract ID'],
+    ['observedAt','Observed UTC'],['expiresAt','Signed contract expires']]);
   renderRows('Original scheduled human ceremony',data.ceremonies,
    [['ceremonyId','Ceremony'],['slotId','Original slot'],['closureId','Signed closure']]);
   renderRows('Signed Master receiver contract rotation custody (no secret change)',data.rotations,
