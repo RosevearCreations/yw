@@ -279,7 +279,8 @@ create function public.ywi_596_independent_audit(
  p_pair_id uuid,p_canary_a_id uuid,p_canary_b_id uuid,p_auditor_user_id uuid,
  p_signed_at timestamptz,p_payload_sha256 text,p_server_hmac text
 ) returns jsonb language plpgsql security definer set search_path='' as $fn$
-declare pair record; a record; b record; ca record; cb record; ia record; ib record; ident uuid;
+declare pair record; a record; b record; ca record; cb record; ia record; ib record;
+ sa record; sb record; ident uuid;
 begin
  perform public.ywi_591_source_role_assert();
  select * into pair from public.ywi_596_cross_tenant_pilots where id=p_pair_id for share;
@@ -291,11 +292,16 @@ begin
  select * into cb from public.ywi_596_slot_consents where id=pair.consent_b_id for share;
  select * into ia from public.ywi_595_fleet_optins where id=ca.optin_id and company_id=ca.company_id for share;
  select * into ib from public.ywi_595_fleet_optins where id=cb.optin_id and company_id=cb.company_id for share;
+ select * into sa from public.ywi_593_witness_slots where id=ca.slot_id and company_id=ca.company_id for share;
+ select * into sb from public.ywi_593_witness_slots where id=cb.slot_id and company_id=cb.company_id for share;
  if pair.id is null or a.id is null or b.id is null or
   ca.id is null or cb.id is null or ia.id is null or ib.id is null or
   pair.company_a_id<>a.company_id or pair.company_b_id<>b.company_id or
   pair.company_a_id<>ca.company_id or pair.company_b_id<>cb.company_id or
   ca.owner_user_id<>ia.owner_user_id or cb.owner_user_id<>ib.owner_user_id or
+  sa.id is null or sb.id is null or
+  a.acknowledged_at<sa.starts_at or a.acknowledged_at>sa.ends_at+interval '24 hours' or
+  b.acknowledged_at<sb.starts_at or b.acknowledged_at>sb.ends_at+interval '24 hours' or
   a.acknowledged_at<=pair.scheduled_at or b.acknowledged_at<=pair.scheduled_at or
   a.acknowledged_at<=now()-interval '72 hours' or b.acknowledged_at<=now()-interval '72 hours' or
   p_auditor_user_id in(pair.coordinator_user_id,ia.owner_user_id,ib.owner_user_id,
