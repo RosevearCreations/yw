@@ -144,7 +144,10 @@ begin
   s.crew_user_id=s.reviewer_user_id or now()>s.ends_at or
   not exists(select 1 from public.ywi_593_witness_approvals
    where slot_id=s.id and company_id=p_company_id and reviewer_user_id=s.reviewer_user_id) or
-  not exists(select 1 from public.profiles where id=p_owner_user_id and is_active=true)
+  not exists(select 1 from public.profiles where id=p_owner_user_id and is_active=true) or
+  not exists(select 1 from public.ywi_591_pilot_staff
+   where company_id=p_company_id and user_id=s.crew_user_id
+   and role='crew' and state='APPROVED')
  then raise exception 'YW595 approved original ceremony/owner/crew source HOLD'; end if;
  insert into public.ywi_595_ceremony_intents
   (company_id,slot_id,owner_user_id,reviewer_user_id,crew_user_id,source_sha256,briefing_consent)
@@ -333,6 +336,14 @@ begin
    where id=p_sysop_user_id and is_active=true and role='admin') or
   not exists(select 1 from public.ywi_platform_administrators_489
    where user_id=p_sysop_user_id) or
+  not exists(select 1 from public.profiles
+   where id=a.owner_user_id and is_active=true) or
+  not exists(select 1 from public.profiles
+   where id=b.owner_user_id and is_active=true) or
+  not exists(select 1 from public.profiles
+   where id=a.reviewer_user_id and is_active=true) or
+  not exists(select 1 from public.profiles
+   where id=b.reviewer_user_id and is_active=true) or
   not exists(select 1 from public.ywi_591_tenant_pilots
    where company_id=a.company_id and owner_user_id=a.owner_user_id
    and state='APPROVED' and expires_at>now()) or
