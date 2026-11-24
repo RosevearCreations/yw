@@ -1,0 +1,27 @@
+name: YW596 original receiver key custody and independent cross-tenant ACK continuity
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protected-original-receiver-and-independent-audit:
+    name: Real old-next-key nonce, original source digest and two-owner audit HOLD
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Existing YW594 independent original browser witness gate
+        run: node scripts/yw594-field-evidence-drift-check.mjs
+      - name: Existing YW595 original supervised field and two-tenant gate
+        run: node scripts/yw595-original-pilot-rotation-fleet-check.mjs
+      - name: New YW596 independent old/next key and genuine cross-tenant HOLD
+        run: node scripts/yw596-receiver-rotation-continuity-check.mjs

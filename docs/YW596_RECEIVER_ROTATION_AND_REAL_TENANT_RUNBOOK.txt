@@ -1,0 +1,283 @@
+YW596 — ORIGINAL MASTER RECEIVER SECRET-ROTATION RUNBOOK, TWO REAL-TENANT
+PILOT SCHEDULING AND INDEPENDENTLY AUDITED ACK CONTINUITY
+=====================================================================
+
+RELEASE BASELINE AND UNALTERABLE PROMOTION ORDER
+- YW594 was protected-main GREEN at exact commit
+  2d8ef4e5c22c2f793b2295bb981dfeb7e43400b2. Production READY
+  Vercel deployment dpl_7G2qJWZ7hAMDSD7HhNxmmc5BhShV.
+- Source baseline for YW596: YW595 implementation PR #881 branch head
+  d77ae791c7f70582513e5a8a2392f3532d4a7185, NOT production.
+- At build preparation YW595 protected PR #881 remained OPEN because Vercel
+  reported 100 API deployments/day rate limit. YW595 live migration absent.
+- Do NOT merge YW596 into dev until YW595 PR #881 has reached dev/main,
+  exact main SHA READY on production Vercel, and yw-alpha.vercel.app alias
+  verified against that exact SHA. No shortcut branch merge, skipped checks,
+  status patch, or false code/field GREEN.
+- YW596 additive SQL/Edge deployment only after YW595 schema and Edges
+  are deployed and independently verified. Never invent production cases.
+- Continue YW595's already enabled hourly production promotion monitor;
+  stage YW596 PR separately against exact YW595 source.
+
+CAPABILITIES AND AUTHORITY
+1. A current original company owner requests a PASSIVE, non-mutating
+   receiver dual-key challenge only after a signed YW595 rotation-custody
+   proposal AND genuine independent reviewer signoff. The source verifies
+   BOTH original YW593 receiver contract signatures and the YW595 HMAC
+   signoff. It sends a fresh one-use nonce, company, rotation ID and old/
+   candidate contract IDs to ONLY the existing independently approved
+   pinned HTTPS Master endpoint YW592_MASTER_RECEIPT_URL. Redirects,
+   alternate origin, IP, port, credentials, querystring and insecure HTTP
+   are rejected. Timeout 5 seconds. No private photos are transmitted.
+2. The remote receiver must explicitly SUPPORT THIS NEW PROTOCOL. For
+   schema 'rosevear.yw.receiver-dual-key-probe.v1', request body:
+   {
+     schema:'rosevear.yw.receiver-dual-key-probe.v1',
+     companyId, rotationId, requestNonce, priorContractId,
+     candidateContractId, acceptedAckSchemaRequired:'YW592-ACK',
+     noSourceBytes:true, noRemoteMutation:true
+   }
+   The sorted-key canonical JSON body is signed in header
+   x-rosevear-yw-source-signature using existing source-only
+   YW592_TELEMETRY_SEND_KEY.
+   Receiver JSON response MUST be:
+   {
+     schema:'rosevear.yw.receiver-dual-key-probe-ack.v1',
+     companyId, rotationId, requestNonce,
+     priorContractId, candidateContractId,
+     acceptedAckSchema:'YW592-ACK',
+     oldHmac, nextHmac
+   }
+   where common = rotationId + '|' + companyId + '|' + requestNonce
+     + '|' + priorContractId + '|' + candidateContractId + '|YW592-ACK'
+   oldHmac = lowercase hex HMAC-SHA256(old YW592_MASTER_ACK_KEY,
+     'YW596-ROTATE-OLD|' + common)
+   nextHmac = lowercase hex HMAC-SHA256(
+     NEW YW596_RECEIVER_NEXT_ACK_KEY,
+     'YW596-ROTATE-NEXT|' + common)
+   Exact nonce/company/contracts/schema and BOTH HMACs must verify
+   before append-only original rotation proof. One valid HMAC is not
+   sufficient; old-only or self-reported receiver HTTP 200 = HOLD.
+   Dual-key acceptance means new key STAGED and independently witnessed,
+   NOT that the old key was retired or the receiver secret was activated.
+3. The approved ORIGINAL crew, using its real currently enrolled account,
+   picks a DIFFERENT original private YW591 photo attempt from that
+   already used by an existing genuine YW592 old-key Master receipt.
+   The service retrieves the exact original bytes from private Supabase
+   Storage, checks size and SHA-256 and sends only a signed digest record
+   to the same pinned Master. No private object or personal details
+   leave the source. This is a signed DIGEST DELIVERY canary, not a
+   remote physical photo-byte receipt or hardware attestation.
+   Request schema 'rosevear.yw.receiver-next-source-canary.v1':
+   {
+     schema,companyId,rotationId,requestNonce,sourceApp:'yw',
+     sourceActorId,attemptId,sourceSha256,
+     acceptedAckSchemaRequired:'YW596-NEXT-ACK',
+     noSourceBytes:true,noCustomerDetails:true
+   }
+   PayloadSha256 = SHA256 of sorted-key canonical request JSON.
+   Response schema 'rosevear.yw.receiver-next-source-canary-ack.v1':
+   {
+     schema,companyId,attemptId,requestNonce,sourceSha256,
+     payloadSha256,receiptId,nextAckHmac
+   }
+   where nextAckHmac = lowercase HMAC-SHA256(
+     YW596_RECEIVER_NEXT_ACK_KEY,
+     'YW596-NEXT-ACK|'+receiptId+'|'+companyId+'|'+attemptId+
+     '|'+requestNonce+'|'+sourceSha256+'|'+payloadSha256)
+   Receipt ID length 8..128. Service revalidates the original genuine
+   old-key ACK HMAC and actor/source digests, and the next-key signature,
+   then records a separate, immutable next-key canary ACK. A forged ACK
+   or absent original source is HOLD. Does not claim private photo bytes
+   arrived at the receiver; digest is the only sent media reference.
+4. Each original company owner who previously opted into YW595
+   independently signs ONE specific future YW593 already reviewer-signed
+   witness slot (30 minutes–14 days ahead). The source HMAC-binds
+   company + optin + slot + UTC windows + owner + consent time.
+   Tenant A and Tenant B require distinct original companies, owners,
+   reviewers and non-overlapping witness windows. A platform coordinator,
+   separate from both owners/reviewers, with actual profile role 'admin'
+   AND explicit membership in ywi_platform_administrators_489 schedules
+   only those two already consented windows. No other tenant's contacts,
+   private photo, addresses, roster or customer information is exposed.
+   This coordination is not automatic calendaring, actual attendance,
+   source ACK, or certified field observation.
+5. AFTER the two coordinated windows are independently witnessed and
+   separate genuine previous/next-key original source canary ACKs are
+   collected, a SECOND explicitly authorized platform administrator,
+   different from the coordinator AND both original owners/reviewers/crew,
+   must independently verify and sign the cross-tenant continuity audit.
+   Both canary ACKs must be after scheduling, no older than 72 hours.
+   No separate original tenant? No second administrator? HOLD. The result
+   is 'INDEPENDENT_TWO_TENANT_ACK_CONTINUITY_REVIEWED' with no hardware
+   or fleet-wide certification claim. This is independent human audit of
+   two original source digest ACK chains, not evidence the secret was
+   actually rotated or old-key traffic was cut over.
+
+SAFETY/SECURITY
+- All 5 SQL tables append-only, immutable triggers, RLS enabled.
+- Per-company receipts/consents readable ONLY by the own tenant
+  authenticated owner. Cross-tenant scheduler/audit tables have NO
+  authenticated table SELECT grant or policy. All 5 RPCs require
+  service_role and current original actor authorization.
+- The JWT gateway must enforce verify_jwt=true; Edge itself validates
+  actual session against Supabase Auth /auth/v1/user and active profile.
+- Server HMAC secrets never exposed in JS, UI, source commits or logs.
+- No automatic key change, deletion, customer email, SMS, finance,
+  fake tenant registration, private object publication, or fabricated ACK.
+- Synthetic CI test keys are local ephemeral fixtures, never production.
+
+SECRETS — EXACT PRIVATE NAMES AND SECURE GENERATION
+Existing (DO NOT change without a separate signed receiver cutover):
+ - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ - YW592_MASTER_RECEIPT_URL, YW593_MASTER_ALLOWED_HOST
+ - YW592_MASTER_ACK_KEY (ORIGINAL current receiver old key)
+ - YW592_TELEMETRY_SEND_KEY (current outbound source signer)
+ - YW593_WITNESS_HMAC_KEY
+ - YW595_ROTATION_HMAC_KEY, YW595_FLEET_HMAC_KEY
+New on YardWeasels Supabase Edge Secrets ONLY:
+ - YW596_RECEIVER_NEXT_ACK_KEY: new unique random private receiver key,
+   configure EXACT SAME value on the independently controlled Master
+   RECEIVER'S SECURE secret store, NOT on a public browser/Vercel var.
+ - YW596_SCHEDULE_HMAC_KEY: separate private 32+ byte key, Supabase only.
+ - YW596_AUDIT_HMAC_KEY: separate private 32+ byte key, Supabase only.
+If original YW595 private ceremony/rotation/fleet secrets are missing,
+see docs/YW595_RELEASE_SCOPE_AND_OPERATOR_STEPS.txt before attempting
+new YW596 functions. NEVER reuse YW592_MASTER_ACK_KEY as the next key.
+
+OPERATOR STEP BY STEP — WHEN PREVIOUS RELEASES ARE GREEN
+A. CHECK PROD SOURCE AND QUOTA
+  1. Open https://github.com/RosevearCreations/yw/pulls and confirm
+     YW595's main promotion is merged and the exact new main SHA passed
+     every protected Action/check. Do not force/merge YW596 beforehand.
+  2. In https://vercel.com/dashboard select the correct team owning "yw",
+     then Project "yw" > Deployments. Confirm production READY at EXACT
+     YW595 or later intended main SHA. At the Deployment details, verify
+     domain yw-alpha.vercel.app points at the same deployment.
+  3. If Vercel says "api-deployments-free-per-day" / HTTP 402, leave
+     status HOLD. Allow its stated quota reset; optionally review Billing
+     for a paid plan if desired. Do not change protected GitHub statuses.
+B. CREATE AND INSTALL SECRETS (DO NOT PASTE INTO CHAT)
+  1. On original Windows administration workstation open Start, type
+     PowerShell, select Windows PowerShell.
+  2. Paste and run this three-times unique randomness generator:
+       1..3 | ForEach-Object {
+         $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+         $b = New-Object byte[] 48
+         $rng.GetBytes($b)
+         $rng.Dispose()
+         [Convert]::ToBase64String($b)
+       }
+     Assign each separate generated value to the three exact NEW
+     YW596_* secret names. Save them to a trusted encrypted password
+     manager. Never email, screenshot or add them to a repo.
+  3. Open Supabase Dashboard > project YardWeasels (ID
+     jmqvkgiqlimdhcofwkxr) > Edge Functions > Secrets. Add each exact
+     YW596_* name+value and save. Keep existing old YW592 secrets intact.
+  4. Locate original REAL Master receiver deployment controlling the
+     previously authorized HTTPS YW592_MASTER_RECEIPT_URL. Its hostname
+     must equal YW593_MASTER_ALLOWED_HOST. The Master receiver operator
+     must independently install the YW596_RECEIVER_NEXT_ACK_KEY value
+     ONLY in the remote server's restricted secret store and deploy
+     explicit v1 dual-key and canary response protocol ABOVE. The
+     endpoint cannot be implemented merely by setting a browser value.
+     If receiver does not support this protocol, leave the feature HOLD.
+  5. Keep receiver in DUAL-KEY OBSERVATION mode: old YW592 ACK handling
+     stays available, new v1 signed digest-canary handling is separate.
+     Do NOT delete, overwrite or retire the original key, reconnect
+     every app or change the receiver's route in order to run this test.
+C. VERIFY OLD/NEW-KEY GATE AND ACTUAL SOURCE CANARY
+  1. On https://yw-alpha.vercel.app log in with approved REAL tenant
+     OWNER; Jobs > YW595 panel, select a real original signed old and
+     candidate receiver contract with different contract IDs; have a
+     DIFFERENT existing reviewer sign rotation custody, without changing
+     the actual remote key. Keep the returned YW595 rotation UUID.
+  2. In Jobs > YW596 panel, enter that original company UUID and
+     YW595 rotation UUID, tick original owner passive key-drill consent,
+     select the receiver challenge button. The real Master must return
+     both independently verified HMACs for SAME nonce/contract pair.
+     Record returned YW596 proof UUID. Missing keys or mismatch -> HOLD.
+  3. Enroll a second DIFFERENT genuine private YW591 attempt uploaded
+     by the SAME currently approved crew as the old original YW592
+     Master receipt. The two original digests must be different.
+  4. Log in as that original CREW on the real device, open YW596,
+     enter exact company UUID, new proof UUID, existing original YW592
+     old Master receipt RECORD UUID and new original photo attempt UUID.
+     Check crew original-device consent; click source-digest canary.
+     Private photo remains at source; only signed digest goes to Master.
+     Record new signed YW596 canary record UUID.
+  5. If genuine Master reply is not supported, a private source object
+     is missing, an actor is changed/revoked or source SHA mismatches,
+     STOP with HOLD. Do not create test receipts in production.
+D. TWO SEPARATE REAL-COMPANY SCHEDULING
+  1. Ensure TWO genuine companies (not two demo tenants) completed the
+     YW595 original approved pilot, separate owner+reviewer+crew,
+     original private source, signed Master ACK, original YW594 field
+     human certificate, YW595 closure and each YW595 owner fleet opt-in.
+  2. Each distinct owner on their OWN logged-in company account
+     schedules a SEPARATE future original YW593 slot and different
+     reviewer approves it. In Jobs > YW596 enter own company UUID,
+     own YW595 opt-in UUID and own YW593 witness slot UUID.
+     Tick explicit specific-window consent; select "Original owner:
+     sign consent for this specific witness window". Record returned
+     slot consent ID. Each owner can only see their own company.
+  3. Separate enrolled platform ADMIN/Coordinator logs in, opens
+     Jobs > YW596 > "Platform coordinator: load original consent
+     directory", finds the two REAL owner consent IDs, enters lower
+     original company UUID consent in FIRST slot, higher in SECOND.
+     Check Sysop scheduling approval, select "schedule two real
+     nonoverlapping windows". Both original slots must be still in
+     future and non-overlapping. Record returned pair UUID. This is
+     only signed coordination, NOT physical attendance.
+  4. At the actual independent windows, both real companies perform
+     original device/crew proofs and original next-key signed canary
+     protocol described in C. Each company obtains its own YW596
+     canary ID AFTER scheduling, with a separate prior old-key ACK.
+E. INDEPENDENT AUDIT (SECOND DIFFERENT PLATFORM ADMIN)
+  1. Enroll an actual SECOND active platform administrator in the
+     existing platform role-authority registry and Supabase Auth, only
+     through the established authorized onboarding and approval
+     process. They must NOT be either company's owner, reviewer,
+     crew or the first platform coordinator. Do not create a fake
+     administrator to pass the test.
+  2. That independent auditor logs into the same production Jobs >
+     YW596 panel, enters the pair UUID and both genuine YW596 canary
+     IDs, tick independent audit human acknowledgment, click
+     "SECOND independent Sysop: sign two-tenant Master ACK continuity".
+     A true original two-key ACK chain per tenant is checked, and
+     the signed audit record returned only if every dependency is
+     real. Hardware certification remains FALSE.
+  3. Never claim activation of a new live key until separate upstream
+     and downstream owner-authorized key rollout tests, source ACK
+     compatibility, emergency rollback and independent signoff are
+     completed. This build only proves staged keys and canary ACK.
+
+ACTUAL PRODUCTION SECRET ROTATION AFTER PASSING GATES
+This build deliberately DOES NOT change remote config. To actually
+retire the old receiver key later, the owner of the Master and source
+services must separately authorize and stage a safe key-change release:
+ - confirm original old ACK and next-key canary receipts across two real
+   tenants, continuity audit and rollback credentials;
+ - issue a controlled change order with cutover window, recorded
+   source/receiver deployment hashes and independent second reviewer;
+ - switch receiver current-ACK key version using its real secret manager,
+   update matching source verifier atomically while maintaining a
+   bounded old-key grace period; test genuine ACK and failure alarms;
+ - keep original old key recoverable until genuine source convergence;
+ - only then revoke old key after explicit independent approval.
+Never perform or claim this production key rotation simply because
+YW596's DUO_KEY_VERIFIED_CUSTODY_ONLY record exists.
+
+RELEASE VERIFICATION GATES
+1. YW595 exact main production READY first.
+2. Protected YW596 source PR->dev tests, then protected dev->main checks.
+3. Additive SQL applied ONCE after YW595 migration; 5 tables RLS,
+   5 immutable triggers, owner-only policies, 5 service-role-only RPCs,
+   zero seeded witnesses.
+4. JWT Edge ACTIVE; no genuine original source/secret -> HOLD.
+5. Exact new main SHA Vercel production READY and its URL alias pinned to
+   same deployment, plus main protected GitHub checks passed.
+6. Operational human dual-tenant acceptance remains HOLD until TWO
+   actual enrolled businesses and second independent platform admin.
+NEXT PROPOSED: YW597 — Governed Receiver Key Cutover, Original Canary
+Rollback Readiness & Multi-Tenant Independent Continuity Certificate.
