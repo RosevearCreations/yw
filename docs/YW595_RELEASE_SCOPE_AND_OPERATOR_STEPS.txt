@@ -1,0 +1,157 @@
+YW595 — GENUINE SUPERVISED ORIGINAL DEVICE PILOT, SIGNED MASTER RECEIVER
+ROTATION CUSTODY AND TWO DISTINCT REAL-TENANT EVIDENCE REVIEW
+=================================================================
+
+BASELINE AND RELEASE ORDER
+- Based on protected YW594 dev merge 4698982dde3a289ddb86818906c5fd0d9d4857de.
+- YW594 source PR #879 is merged to dev, but protected YW594 production
+  PR #880 was OPEN and blocked on Vercel Free API deployment quota
+  (100/day, 402 api-deployments-free-per-day) at YW595 preparation.
+- DO NOT merge YW595 to dev until YW594 source + Vercel production READY
+  are independently verified on main. Otherwise PR #880 would silently
+  contain YW595 changes and defeat the protected release order.
+- No bypass of checks, false READY, synthetic tenant/receiver/device witness.
+- YW595 migration and Edge deployment are gated on actual protected
+  promotion order; no live second tenant, field certificate or rotation
+  will be fabricated to satisfy a test.
+
+SOURCE-BACKED FEATURES
+1. Original owner explicitly briefs an original crew/device field ceremony
+   during a YW593 signed, unexpired, tenant-owned pilot window with a
+   verified private YW591 photo. The original crew, owner and independent
+   reviewer must be different active real accounts. An INTENT is not proof.
+2. Independent reviewer can close the ceremony only after YW594 HUMAN
+   field certificate was created for that exact window and original
+   source digest, with independent owner observation, signed YW593 window,
+   genuine YW592 receiver ACK and latest signed receiver baseline, real
+   private storage byte SHA-256 readback and certified HMAC. Closure stays
+   hardwareAttested=false and has a new immutable signature.
+3. Owner may record proposed change between TWO genuine, HMAC-verified
+   receiver-contract RECORDS for one company and different contract IDs.
+   Separate original reviewer signs the change-custody record within 24h.
+   This DOES NOT rotate live HMAC keys, reconfigure Master endpoints,
+   activate a candidate, change Vercel env or acknowledge new source data.
+   The new signed contract must still be unexpired. Actual key rotation
+   requires its own separate trusted deployment/configuration ceremony.
+4. After a genuine supervised closure, each original owner must separately
+   opt into an independent multi-tenant evidence comparison. Owner signs
+   per-tenant consent; no photo, user email, phone, secret or device keys
+   are shared across tenants. A current authorized platform admin, different
+   from BOTH companies' original owners and BOTH reviewers, can compare
+   two current, DISTINCT, independently owned AND reviewed original tenant
+   records. Both signed opt-ins, both supervised closures, both YW594
+   signed certificates, original photo + Master source custody and existing
+   pilot enrollment are checked. Only a REDACTED aggregate result is
+   returned. A one-company review is always HOLD.
+5. All six tables are append-only with immutability triggers. RLS restricts
+   each local record to its company owner. The cross-tenant aggregate has
+   NO client SELECT policy, even for an authenticated tenant. All six RPCs
+   are service-role-only; Edge validates real fresh Supabase Auth user and
+   admin membership directly in ywi_platform_administrators_489.
+   No remote secret or key is exposed to the browser.
+6. No payment, payroll, invoice, photo publication, automatic customer
+   communication, deletion, simulated guest or fake certification.
+   The original private photo object is read via service_role only to
+   verify original bytes. CI fixtures are never production field records.
+
+SERVER-ONLY SECRETS (UNIQUE AND PRIVATE)
+- Already-existing YW593_WITNESS_HMAC_KEY, YW592_MASTER_ACK_KEY,
+  YW594_HUMAN_EVIDENCE_HMAC_KEY and YW594_DRIFT_HMAC_KEY.
+- NEW: YW595_CEREMONY_HMAC_KEY, YW595_ROTATION_HMAC_KEY,
+  YW595_FLEET_HMAC_KEY, each separately generated securely; at least
+  32 random bytes each, set as Supabase Edge Function secrets in
+  YardWeasels project jmqvkgiqlimdhcofwkxr, NEVER stored in GitHub,
+  Vercel client JS, support tickets or chat. Existing Supabase URL/service
+  role environment variables stay server-only and unchanged.
+- Edge gateway must enforce verify_jwt=true.
+
+SOURCE-CODE RELEASE CHECKLIST
+A. PR source from YW594 commit → dev, tests and all protected PR checks PASS.
+B. YW594 main EXACT SHA already READY in Vercel production before promoting
+   source PR to dev; never contaminate pending YW594 production PR.
+C. SQL sql/yw595_supervised_pilot_rotation_two_tenant.sql applied
+   ONCE, additively, after YW594 migration; six table RLS/append-only
+   checks, owner policies, 6 service-role-only RPC checks; zero seed rows.
+D. Edge supabase/functions/yw595-original-pilot-rotation-fleet/index.ts
+   deployed, ACTIVE and verify_jwt=true. Negative live unauth/foreign
+   tenant/no real source tests must HOLD.
+E. Vercel production READY for exact new main SHA and live alias
+   https://yw-alpha.vercel.app verified to same deployment. All protected
+   main Actions checks GREEN; dev fast-forward main when authorized.
+F. No operational-human ACCEPT without genuine physical original device,
+   independent participants, two real companies and source HMAC evidence.
+   Code GREEN != certified original field GREEN.
+
+DETAILED OWNER PROCEDURE — ONLY WHEN LIVE RELEASE IS READY
+STEP 1, OPTIONAL VERCEL QUOTA: At https://vercel.com/dashboard select the
+   actual team owning project "yw" then project "yw". Check Usage/Activity
+   and Billing settings to see the deployment quota. If the 100/day limit
+   remains, do NOTHING and allow the scheduled retry after the platform's
+   24-hour reset; alternatively review a paid plan and its price if
+   immediate deployment is needed. DO NOT select a different Vercel team,
+   manually deploy another branch to production, or remove branch checks.
+STEP 2, SERVER SIGNING SECRETS: Go to
+   https://supabase.com/dashboard/project/jmqvkgiqlimdhcofwkxr/functions
+   and open Edge Functions → Secrets (wording may change).
+   Generate three separate RANDOM values using a trusted local secret
+   manager (32+ bytes each; never reuse the older Master ACK key).
+   Enter the EXACT three YW595_* variable names listed above, save,
+   verify they are set on this exact Supabase project. Do NOT send
+   any secret value or screenshot containing it into ChatGPT.
+   Staff can continue using existing YW592/YW593/YW594 signing keys.
+STEP 3, FIRST REAL FIELD CASE: Sign in to the Yard Workers Jobs workspace
+   at https://yw-alpha.vercel.app with the actual original company OWNER.
+   Use the YW591 original-device/private-photo pilot controls with a
+   genuinely owned company and real enrolled crew, reviewer and work
+   order. Use the signed YW593 window to schedule 30 min–14 days ahead.
+   Owner consents; a SEPARATE real original reviewer signs that window.
+   The photo remains private, the original crew authenticates on its
+   actual device and uploads the real source. Keep original attempt and
+   witness slot UUIDs displayed by those panels.
+STEP 4, WHILE PHYSICALLY TOGETHER AT THE SCHEDULED WINDOW: Open Jobs >
+   YW595 section using the original owner session, enter that COMPANY
+   and YW593 slot UUID and confirm actual supervised briefing. Click
+   "Owner: start supervised original-device pilot ceremony". Record the
+   ceremony UUID returned by the system (no credentials).
+   The original CREW on its own session/device opens YW594, issues the
+   short 8-minute challenge and signs it. The actual OWNER observes
+   and confirms co-presence. Enroll and verify genuine Master original
+   photo/source ACK via YW592 and an independently signed compatible
+   Master receiver contract + MATCH drift check in YW593/YW594.
+STEP 5, INDEPENDENT SIGN-OFF: The actual DIFFERENT reviewer opens YW594
+   and explicitly signs its independent HUMAN field certificate. Within
+   72 hours of that certificate, use the reviewer session and YW595
+   panel, enter original ceremony + certificate UUID, explicitly attest
+   witnessed original equipment and click "Independent reviewer: close
+   real human-certified field ceremony". That closure remains NOT
+   hardware identity attestation.
+STEP 6, OPTIONAL RECEIVER ROTATION CUSTODY: Only when there are TWO real
+   Master receiver signed contracts (prior and candidate, different remote
+   contract IDs), the OWNER loads the YW595 private queue and copies
+   BOTH database CONTRACT RECORD UUIDs from its original company table.
+   Owner selects the reason, ticks CUSTODY ONLY, and proposes rotation.
+   The original DIFFERENT reviewer signs the proposal in their account
+   within 24 hours. This is RECORDING A REVIEW ONLY; do not assume any
+   signing key changed. Coordinate actual Master key rotation separately
+   with whoever owns the true receiver and its secret manager.
+STEP 7, SECOND REAL COMPANY: An independently owned original SECOND
+   real business must enroll its own approved pilot, original crew,
+   independent reviewer, genuine private photo, Master ACK, scheduled
+   witness, YW594 certification and YW595 supervised closure. One
+   real company is insufficient. DO NOT create synthetic companies or
+   reuse the first company's credentials to pretend there are two.
+STEP 8, OPT-INS AND SYSOP: Each distinct OWNER in the two original
+   company sessions separately opens YW595, selects its own real signed
+   closure UUID and checks "Owner explicitly opt in one real company".
+   A separate CURRENT authorized platform administrator, not either
+   owner or reviewer, signs into Yard Workers with the platform account.
+   In Jobs YW595 panel choose "Platform Sysop: view owner-consented
+   original opt-ins" then copy the two distinct opt-in UUIDs in ascending
+   ORIGINAL COMPANY UUID order (the server enforces this). Check the
+   explicit independent-review box and click "certify two real tenants".
+   Only when both genuine original chains verify is the aggregate
+   TWO_DISTINCT_TENANT_HUMAN_EVIDENCE_REVIEW_SIGNED returned. No company
+   receives another company's raw photos or private customer details.
+
+NEXT PROPOSED YW596 — Original Receiver Secret-Rotation Runbook,
+Cross-Tenant Pilot Scheduling & Independently Audited Master ACK Continuity.
