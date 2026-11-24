@@ -89,7 +89,7 @@ async function approval(s){
  const msg=canonical({schema:'rosevear.yw.witness-window-approval.v1',
   companyId:s.company_id,slotId:s.id,attemptId:s.attempt_id,
   ownerId:s.owner_user_id,reviewerId:s.reviewer_user_id,crewId:s.crew_user_id,
-  startsAt:s.starts_at,endsAt:s.ends_at,signedAt:a.signed_at});
+  startsAt:s.starts_at,endsAt:s.ends_at,signedAt:new Date(a.signed_at).toISOString()});
  if(a.reviewer_user_id!==s.reviewer_user_id||await sha(msg)!==a.payload_sha256||
   !await verify('YW593_WITNESS_HMAC_KEY',msg,a.server_hmac_sha256))
   err('YW595_SIGNED_ORIGINAL_WINDOW_SIGNATURE_HOLD');
@@ -173,7 +173,7 @@ async function certificate(company,id,ctx){
  const drMsg=canonical({schema:'rosevear.yw.receiver-drift-observation.v1',
   companyId:company,baselineContractId:rc.id,ownerId:rc.owner_user_id,
   nonce:dr.request_nonce,finding:dr.finding,responseSha256:dr.response_sha256,
-  observedAt:dr.observed_at,locallySignedOnly:true,notRemoteMasterReceipt:true});
+  observedAt:new Date(dr.observed_at).toISOString(),locallySignedOnly:true,notRemoteMasterReceipt:true});
  if(await sha(drMsg)!==dr.payload_sha256||
   !await verify('YW594_DRIFT_HMAC_KEY',drMsg,dr.local_hmac_sha256))
   err('YW595_ORIGINAL_LIVE_DRIFT_SIGNATURE_HOLD');
@@ -182,7 +182,7 @@ async function certificate(company,id,ctx){
   ownerId:s.owner_user_id,crewId:s.crew_user_id,reviewerId:s.reviewer_user_id,
   masterReceiptId:ack.id,receiverContractId:rc.id,driftObservationId:dr.id,
   sourceSha256:a.content_sha256,crewDeviceKeySha256:pf.key_fingerprint_sha256,
-  certifiedAt:c.certified_at,humanFieldAttested:true,hardwareAttested:false});
+  certifiedAt:new Date(c.certified_at).toISOString(),humanFieldAttested:true,hardwareAttested:false});
  if(await sha(msg)!==c.payload_sha256||
   !await verify('YW594_HUMAN_EVIDENCE_HMAC_KEY',msg,c.server_hmac_sha256))
   err('YW595_INDEPENDENT_HUMAN_CERTIFICATE_SIGNATURE_HOLD');
@@ -199,7 +199,7 @@ function closureMsg(c,cert){
   companyId:c.company_id,ceremonyId:c.id,slotId:c.slot_id,
   ownerId:c.owner_user_id,reviewerId:c.reviewer_user_id,crewId:c.crew_user_id,
   sourceSha256:c.source_sha256,fieldCertificateId:cert.c.id,
-  genuineMasterReceiptId:cert.ack.id,closedAt:cert.closedAt,
+  genuineMasterReceiptId:cert.ack.id,closedAt:new Date(cert.closedAt).toISOString(),
   humanFieldAttested:true,hardwareAttested:false});
 }
 const closureFields='id,company_id,intent_id,field_certificate_id,master_receipt_id,reviewer_user_id,source_sha256,closed_at,evidence_sha256,server_hmac_sha256';
@@ -301,7 +301,7 @@ function optinMsg(o,close){
  return canonical({schema:'rosevear.yw.independent-two-tenant-optin.v1',
   companyId:o.company_id,closureId:o.ceremony_closure_id,
   originalOwnerId:o.owner_user_id,originalReviewerId:o.reviewer_user_id,
-  sourceSha256:close.c.source_sha256,signedAt:o.signed_at,
+  sourceSha256:close.c.source_sha256,signedAt:new Date(o.signed_at).toISOString(),
   tenantOwnerConsents:true,sharePrivatePhoto:false});
 }
 async function opted(company,id){
