@@ -93,3 +93,6 @@ verify_jwt = true
 
 [functions.yw596-receiver-rotation-continuity]
 verify_jwt = true
+
+[functions.yw597-cutover-rollback-health]
+verify_jwt = true
