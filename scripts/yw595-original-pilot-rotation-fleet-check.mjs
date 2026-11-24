@@ -31,6 +31,12 @@ assert.equal((sql.match(/enable row level security;/g)||[]).length,6);
 assert.equal((sql.match(/execute function public\.ywi_591_forbid_change\(\)/g)||[]).length,6);
 assert.equal((sql.match(/grant execute on function public\.ywi_595_/g)||[]).length,6);
 assert.match(sql,/Cross-tenant aggregate is NOT directly readable/);
+assert.match(sql,/user_id=s\.crew_user_id[\s\S]*role='crew' and state='APPROVED'/);
+assert.match(sql,/id=b\.reviewer_user_id and is_active=true/);
+// PostgREST formats persisted timestamptz as +00:00 rather than browser Z.
+assert.match(edge,/signedAt:new Date\(a\.signed_at\)\.toISOString\(\)/);
+assert.match(edge,/closedAt:new Date\(cert\.closedAt\)\.toISOString\(\)/);
+assert.match(edge,/certifiedAt:new Date\(c\.certified_at\)\.toISOString\(\)/);
 assert.match(sql,/actual_secret_rotated boolean not null default false check\(actual_secret_rotated=false\)/);
 assert.doesNotMatch(sql,/\bdelete from\b|\btruncate\b|\bdrop table\b/i);
 assert.match(edge,/YW592_MASTER_ACK_KEY/);
@@ -74,7 +80,7 @@ const rows={
   expires_at:iso(now+86400000)}],
  ywi_593_witness_slots:[slot],
  ywi_593_witness_approvals:[{slot_id:SLOT,company_id:COMPANY,
-  reviewer_user_id:REVIEWER,signed_at:signedAt,payload_sha256:await digest(windowMessage),
+  reviewer_user_id:REVIEWER,signed_at:signedAt.replace('Z','+00:00'),payload_sha256:await digest(windowMessage),
   server_hmac_sha256:await sign(windowMessage,secret.YW593_WITNESS_HMAC_KEY)}],
  ywi_591_photo_attempts:[{id:ATTEMPT,company_id:COMPANY,work_order_id:JOB,
   uploaded_by:CREW,state:'VERIFIED',content_sha256:'a'.repeat(64),
