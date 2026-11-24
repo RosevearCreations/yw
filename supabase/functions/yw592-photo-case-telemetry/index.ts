@@ -109,7 +109,7 @@ async function cases(company){
    const source=await attempt(company,a.id);
    // Fetch original actors to verify original human roles, never trust a UI badge.
    const full=await detail(company,p.id);
-   const body=decisionMessage(full,source,d.signed_at);
+   const body=decisionMessage(full,source,new Date(d.signed_at).toISOString());
    verifiedSignature=d.source_sha256===source.content_sha256&&
     await digest(body)===d.decision_payload_sha256&&
     await verify('YW592_DECISION_HMAC_KEY',body,d.server_hmac_sha256);

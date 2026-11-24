@@ -71,7 +71,7 @@ const reviewerMessage=(s,signedAt)=>canonical({schema:'rosevear.yw.witness-windo
 async function approvalValid(s,a){
  if(!a||s.id!==a.slot_id||s.reviewer_user_id!==a.reviewer_user_id||s.company_id!==a.company_id)
   return false;
- const m=reviewerMessage(s,a.signed_at);
+ const m=reviewerMessage(s,new Date(a.signed_at).toISOString());
  return await sha(m)===a.payload_sha256&&await verify('YW593_WITNESS_HMAC_KEY',m,a.server_hmac_sha256);
 }
 async function decisionValid(company,p,a,d){
@@ -83,7 +83,7 @@ async function decisionValid(company,p,a,d){
   companyId:p.company_id,proposalId:p.id,attemptId:p.attempt_id,
   ownerId:p.owner_user_id,reviewerId:p.reviewer_user_id,action:p.action,
   reason:p.reason_code,retentionUntil:p.retention_until,
-  sourceSha256:a.content_sha256,signedAt:d.signed_at});
+  sourceSha256:a.content_sha256,signedAt:new Date(d.signed_at).toISOString()});
  return await sha(msg)===d.decision_payload_sha256&&
   await verify('YW592_DECISION_HMAC_KEY',msg,d.server_hmac_sha256);
 }

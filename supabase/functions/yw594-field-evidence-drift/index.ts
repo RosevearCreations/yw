@@ -94,7 +94,7 @@ async function approved(s){
  const msg=canonical({schema:'rosevear.yw.witness-window-approval.v1',
   companyId:s.company_id,slotId:s.id,attemptId:s.attempt_id,ownerId:s.owner_user_id,
   reviewerId:s.reviewer_user_id,crewId:s.crew_user_id,startsAt:s.starts_at,
-  endsAt:s.ends_at,signedAt:a.signed_at});
+  endsAt:s.ends_at,signedAt:new Date(a.signed_at).toISOString()});
  if(a.reviewer_user_id!==s.reviewer_user_id||await sha(msg)!==a.payload_sha256||
   !await verify('YW593_WITNESS_HMAC_KEY',msg,a.server_hmac_sha256))
   err('YW594_WINDOW_REVIEW_SIGNATURE_HOLD');
@@ -133,7 +133,7 @@ function ownerText(o,pf,c){
  return canonical({schema:'rosevear.yw.human-owner-observation.v1',
   companyId:o.company_id,slotId:o.slot_id,proofId:pf.id,
   challengeId:c.id,crewId:pf.crew_user_id,ownerId:o.owner_user_id,
-  sourceSha256:c.source_sha256,observedAt:o.observed_at,
+  sourceSha256:c.source_sha256,observedAt:new Date(o.observed_at).toISOString(),
   coPresenceAttested:true,hardwareAttested:false});
 }
 async function ownerValid(company,pf,c,s){
@@ -164,7 +164,7 @@ function driftText(x){
  return canonical({schema:'rosevear.yw.receiver-drift-observation.v1',
   companyId:x.company_id,baselineContractId:x.baseline_contract_id,
   ownerId:x.owner_user_id,nonce:x.request_nonce,finding:x.finding,
-  responseSha256:x.response_sha256,observedAt:x.observed_at,
+  responseSha256:x.response_sha256,observedAt:new Date(x.observed_at).toISOString(),
   locallySignedOnly:true,notRemoteMasterReceipt:true});
 }
 async function driftValid(d,contract,company){
