@@ -1,0 +1,25 @@
+name: YW598 independently verified external execution, physical rollback and source alert delivery
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-signed-master-source-and-human-witness:
+    name: Original external signed Master receipt, distinct real human witness and redacted private health alert
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288ca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Existing YW597 independent signed cutover and monitored Master ACK
+        run: node scripts/yw597-cutover-rollback-health-check.mjs
+      - name: YW598 original signed execution, physical rollback and real source-alert delivery negatives
+        run: node scripts/yw598-execution-rollback-alert-check.mjs
