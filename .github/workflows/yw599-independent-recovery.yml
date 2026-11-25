@@ -1,0 +1,23 @@
+name: YW599 independent recovery contract checks
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main, build/yw599-independent-recovery]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-recovery-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Require runner Node 22 or newer
+        run: node -e "if(Number(process.versions.node.split('.')[0]) < 22) process.exit(1)"
+      - name: Verify predecessor contract
+        run: node scripts/yw598-execution-rollback-alert-check.mjs
+      - name: Verify YW599 independent provider and signed evidence
+        run: node scripts/yw599-independent-recovery-check.mjs
