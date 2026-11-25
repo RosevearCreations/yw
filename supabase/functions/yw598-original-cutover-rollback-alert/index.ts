@@ -559,10 +559,10 @@ async function remoteRollback(company,actor,data){
   p_receipt_id:rec,p_old_hmac:res.oldHmac,p_next_hmac:res.nextHmac,
   p_response_sha256:await sha(digestRollback(res)),p_observed_at:when});
 }
-const rollbackFields='id,company_id,witness_id,auditor_user_id,request_nonce,remote_receipt_id,old_master_hmac,next_master_hmac,response_sha256,observed_at,remote_rollback_reported,reviewer_not_yet_attested';
+const rollback598Fields='id,company_id,witness_id,auditor_user_id,request_nonce,remote_receipt_id,old_master_hmac,next_master_hmac,response_sha256,observed_at,remote_rollback_reported,reviewer_not_yet_attested';
 async function verifiedRollback(company,id){
  if(!valid(id))err('YW598_REMOTE_ROLLBACK_RECEIPT_UUID_REQUIRED');
- const rb=await one('ywi_598_rollback_receipts',rollbackFields,
+ const rb=await one('ywi_598_rollback_receipts',rollback598Fields,
   {company_id:company,id},'YW598_REMOTE_SIGNED_ROLLBACK_RECEIPT_REQUIRED');
  const ww=await verifiedWitness(company,rb.witness_id);
  const msg=rollbackCommon(rb.witness_id,company,rb.request_nonce,
