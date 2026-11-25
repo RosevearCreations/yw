@@ -96,3 +96,6 @@ verify_jwt = true
 
 [functions.yw597-cutover-rollback-health]
 verify_jwt = true
+
+[functions.yw598-original-cutover-rollback-alert]
+verify_jwt = true

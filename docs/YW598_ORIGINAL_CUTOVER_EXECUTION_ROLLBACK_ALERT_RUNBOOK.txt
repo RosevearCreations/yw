@@ -1,0 +1,228 @@
+YW598 — ORIGINAL MASTER CUTOVER EXECUTION WITNESS, PHYSICAL
+ROLLBACK DRILL & SOURCE-VERIFIED MASTER HEALTH ALERT DELIVERY
+=================================================================
+
+CODE RELEASE / GENUINE FIELD ACCEPTANCE ARE SEPARATE
+YW597 was protected dev/main GREEN at e054da9c1fe5b477322cb1339bfa9961df0b4312,
+Vercel production READY, yw-alpha.vercel.app alias verified, pg_cron
+YW597 15-minute DB-only stale signed-ACK scanner ran successfully.
+At this release build's start, YardWeasels live project had one company,
+zero approved original YW591 pilot enrolments and zero source YW596
+signed dual-key proofs / original canary ACKs. No real cutover or physical
+rollback can be certified by a code release, and no synthetic company,
+source photo, signed receipt, operator or alert may be created.
+
+MASTER ACTOR BOUNDARY
+- Original actual Master operator alone performs any live key cutover,
+  physical rollback or secret rotation using an independently approved
+  human-operated external process. Yard Workers Edge is READ-ONLY to
+  original Master endpoint and cannot mutate receiver keys or routes.
+- The original company's separate owner, distinct reviewer, genuine
+  original crew member and enrolled independent platform sysop are all
+  real accounts. A user clicking "witnessed" self-attests observation;
+  this alone is NOT device-attested physical presence.
+- Original external Master endpoint must independently implement new
+  signed response contracts defined below and preserve old/new keys
+  while the protocol is being proved. An HTTP 200 alone is NOT proof.
+- All remote requests go to existing pinned HTTPS URL
+  YW592_MASTER_RECEIPT_URL with hostname YW593_MASTER_ALLOWED_HOST,
+  redirects forbidden, 5-second timeout, no private media/contact data.
+  Header x-rosevear-yw-source-signature = lowercase hex HMAC-SHA256 of
+  sorted-key canonical JSON using YW592_TELEMETRY_SEND_KEY.
+- The response must use exact company UUID, original approved
+  authorization UUID or witness UUID, single fresh nonce, original
+  contract IDs, and matching old and next HMACs.
+- These messages DO NOT execute cutover, rollback, secret rotation,
+  customer communications or other hidden activities.
+
+NEW REMOTE MASTER CONTRACT #1: EXECUTION READBACK
+Request schema rosevear.yw.receiver-execution-readback.v1:
+  {schema,companyId,approvalId,requestNonce,priorContractId,
+   candidateContractId,expectedReceiverState:'NEXT_ACTIVE_OLD_ACCEPTED',
+   readOnly:true,noRemoteMutation:true,noSourceBytes:true}
+Response schema rosevear.yw.receiver-execution-readback-ack.v1:
+  {schema,companyId,approvalId,requestNonce,priorContractId,
+   candidateContractId,receiptId,executedAt,
+   receiverState:'NEXT_ACTIVE_OLD_ACCEPTED',executedExternally:true,
+   oldKeyStillAccepted:true,noSourceBytes:true,oldHmac,nextHmac}
+Receipt ID 8–128 limited ASCII characters; executedAt ISO8601 UTC,
+within 10 min of readback. Message:
+  approvalId+'|'+companyId+'|'+requestNonce+'|'+priorContractId+
+  '|'+candidateContractId+'|'+receiptId+'|'+executedAt+
+  '|NEXT_ACTIVE_OLD_ACCEPTED'
+oldHmac  = hex HMAC-SHA256(YW592_MASTER_ACK_KEY,'YW598-EXEC-OLD|'+message)
+nextHmac = hex HMAC-SHA256(YW596_RECEIVER_NEXT_ACK_KEY,'YW598-EXEC-NEXT|'+message)
+The existing original YW597 independent manual authorization must
+still be live and backed by genuine YW596 old/new signed source ACK.
+
+NEW REMOTE MASTER CONTRACT #2: ROLLBACK EXECUTION READBACK
+After the original owner physically observes that external cutover and
+signs its YW598 immutable human witness, the independent enrolled
+platform sysop reads original Master rollback execution evidence.
+Request schema rosevear.yw.receiver-rollback-execution-readback.v1:
+  {schema,companyId,witnessId,requestNonce,priorContractId,
+   candidateContractId,expectedReceiverState:'OLD_ACTIVE_NEXT_AVAILABLE',
+   readOnly:true,noRemoteMutation:true,noSourceBytes:true}
+Response schema rosevear.yw.receiver-rollback-execution-readback-ack.v1:
+  {schema,companyId,witnessId,requestNonce,priorContractId,
+   candidateContractId,receiptId,rollbackAt,
+   receiverState:'OLD_ACTIVE_NEXT_AVAILABLE',
+   rollbackExecutedExternally:true,nextKeyStillAvailable:true,
+   noSourceBytes:true,oldHmac,nextHmac}
+Message:
+  witnessId+'|'+companyId+'|'+requestNonce+'|'+priorContractId+
+  '|'+candidateContractId+'|'+receiptId+'|'+rollbackAt+
+  '|OLD_ACTIVE_NEXT_AVAILABLE'
+oldHmac  = hex HMAC-SHA256(YW592_MASTER_ACK_KEY,'YW598-ROLLBACK-OLD|'+message)
+nextHmac = hex HMAC-SHA256(YW596_RECEIVER_NEXT_ACK_KEY,'YW598-ROLLBACK-NEXT|'+message)
+Remote response alone produces only REMOTE_SIGNED_ROLLBACK_REPORTED.
+A DIFFERENT original company reviewer must explicitly certify in their
+own original account that they actually observed the rollback. The
+owner and platform sysop cannot impersonate that separate reviewer.
+
+NEW MASTER HEALTH ALERT HANDOFF
+Original owner separately signs explicit permission for only the
+already authorized pinned Master endpoint. YW597 pg_cron generates real
+database alerts after missing/stale signed Master ACK evidence.
+Original owner chooses ONE actual YW597 alert in Jobs > YW598 and
+requests redacted, signed handoff to the same Master.
+Request schema rosevear.yw.private-health-alert-handoff.v1:
+  {schema,companyId,alertId,requestNonce,issueCode,
+   originalEnrollmentId,sourceEventSha256,redactedOnly:true,
+   noPrivatePhotos:true,noCustomerMessage:true}
+The event digest binds original company/owner, alert UUID, original
+watch, issue, UTC detection/period, pg_cron source and optional
+cryptographically reverified original YW597 signed health sample.
+Response schema rosevear.yw.private-health-alert-handoff-ack.v1:
+  {schema,companyId,alertId,requestNonce,sourceEventSha256,receiptId,
+   deliveredToPinnedReceiver:true,noCustomerMessage:true,ackHmac}
+ackHmac = hex HMAC-SHA256(YW592_MASTER_ACK_KEY,
+  'YW598-ALERT-ACK|'+receiptId+'|'+companyId+'|'+alertId+
+  '|'+requestNonce+'|'+sourceEventSha256)
+Receipt must be verified before inserting immutable delivery entry.
+No customer email/SMS/phone action is taken or implied.
+IMPORTANT: If the pinned Master is OFFLINE—the very issue reported—
+it may not be able to accept the alert. This is an optional
+OWNER-INITIATED HANDOFF, NOT an always-on external notification service.
+The YW597 15-minute pg_cron watcher remains active in the database,
+but does not automatically transmit alerts to the remote endpoint.
+A separate independent out-of-band alerting provider would be
+necessary for guaranteed outage notifications.
+
+ORIGINAL WINDOWS / EDGE / MASTER STEP-BY-STEP
+1. GITHUB + VERCEL RELEASE:
+   - Visit https://github.com/RosevearCreations/yw/pulls
+     and verify the YW598 source PR merged into dev; protected
+     dev-to-main release PR merged only after green checks.
+   - At https://vercel.com/dashboard select actual team/project yw,
+     open Deployments and confirm exact main SHA READY in PRODUCTION.
+     At https://yw-alpha.vercel.app verify the same deployment alias.
+     Do not force merge, bypass protected statuses or invent a GREEN.
+   - Supabase migration and Edge must be independently verified.
+2. SECRET CONFIGURATION — ALREADY ACKNOWLEDGED BY OWNER:
+   - Owner says YW597_CUTOVER_HMAC_KEY and YW597_HEALTH_HMAC_KEY have
+     been saved under Supabase Edge Function Secrets.
+   - Reuse both and existing YW592_MASTER_ACK_KEY,
+     YW596_RECEIVER_NEXT_ACK_KEY, YW592_TELEMETRY_SEND_KEY,
+     YW595_ROTATION_HMAC_KEY, and pinned Master host and URL.
+   - This build introduces NO NEW Edge secret names. Do not rotate or
+     remove the installed keys while original ACK proofs are pending.
+   - No secret values, passwords, photos or signing materials in chat.
+3. EXTERNAL MASTER OPERATOR (only when field work actually starts):
+   - On the privately administered ORIGINAL Master receiver server,
+     enable ONLY the 3 exact authenticated READBACK/HANDOFF message
+     types above. Maintain actual old-key support while testing.
+   - The receiver authenticates the source request signature on
+     original canonical JSON. Do not accept unauthenticated messages.
+   - Implement its own receipt ledger for true external operator
+     cutover/rollback actions. Reply only after those actions really
+     occurred; no HTTP 200 or response generated from a mock state.
+     If the original receiver does not support these protocols,
+     the original field feature must stay HOLD.
+4. ORIGINAL FIELD ENROLMENT BEFORE ANY CUTOVER:
+   - Using https://yw-alpha.vercel.app sign into existing original
+     COMPANY OWNER. Enrol an actual YW591 approved original tenant
+     pilot and distinct CREW and REVIEWER, original photo upload,
+     genuine old Master signed ACK, YW593 original witness window,
+     YW594 actual human certificate, YW595 original signed rotation,
+     YW596 independent two-key proof and original source canary ACK.
+   - In YW597 original owner requests manual cutover INTENT;
+     independent enrolled platform admin verifies rollback readiness,
+     and separate original reviewer signs independent cutover approval.
+   - If the panel has no true evidence IDs, do not proceed or invent any.
+5. ORIGINAL MASTER CUTOVER EXECUTION WITNESS:
+   - After a separately authorized real Master operator physically
+     executes the true cutover on the actual receiver and captures
+     their original private receipt, sign into Yard Workers as the
+     independent enrolled PLATFORM ADMIN / SYSOP (different from
+     company owner/reviewer/crew).
+   - Jobs > YW598: enter real original COMPANY UUID and current
+     original YW597 cutover APPROVAL UUID. Check box stating
+     the Master operator already performed the external operation.
+     Click "Independent platform sysop: read ORIGINAL external Master
+     cutover proof". The pinned Master must return BOTH HMACs over
+     fresh nonce and true executedAt; record execution UUID.
+   - Physical original COMPANY OWNER, present and actually witnessing
+     original Master/receiver cutover, logs in under their OWN account,
+     enters company + returned EXECUTION UUID, checks personal
+     observation box and selects "Original owner: attest PERSONALLY
+     witnessed Master execution" within 30 minutes. Record witness UUID.
+6. ACTUAL PHYSICAL ROLLBACK DRILL:
+   - Separately on real Master, authorized operator performs a genuine
+     physical/key-state rollback rehearsal and retains independent
+     original external receipt. Do NOT ask Yard Workers to change keys.
+   - Independent enrolled PLATFORM SYSOP logs into Jobs > YW598,
+     enters company + existing physical OWNER WITNESS UUID and checks
+     external rollback already completed. Click
+     "Independent platform sysop: read ORIGINAL external rollback
+     execution". Both original HMACs, fresh nonce and state
+     OLD_ACTIVE_NEXT_AVAILABLE must match. Record rollback RECEIPT UUID.
+   - The original company's DIFFERENT REVIEWER actually witnessing
+     the physical rollback logs in with their separate account.
+     Enter company + rollback RECEIPT UUID, check that they
+     PERSONALLY observed it, then click "Original DIFFERENT reviewer:
+     attest personally witnessed rollback" within 30 minutes.
+     Only then is a human-witnessed drill record created. This is
+     human testimony + remote signed readback, NOT hardware presence
+     attestation.
+7. OPTIONAL ORIGINAL MASTER HEALTH ALERT DELIVERY:
+   - YW597 was already installed with pg_cron job
+     yw597-master-ack-evidence-watch-15m, running */15 * * * *.
+     It records real missing/unverified ACK problems from actual
+     enrolled original source watches. With no real original watch
+     and no alerts, there is NOTHING to send.
+   - Company OWNER logs into Jobs > YW598 and checks the private
+     pinned original Master-only alert permission; click
+     "Original owner: explicitly authorize private pinned-Master
+     alerts". Record returned CONSENT UUID.
+   - If the YW597 monitoring job has detected an actual source
+     outage, load the YW598 owner private queue, find its real
+     original ALERT UUID, enter company + consent + alert UUID,
+     check specific alert send consent and click "Original owner:
+     send ONE verified Master ACK alert and confirm signed receipt".
+   - On verified remote HMAC receipt, a delivery record is stored.
+     If the remote is unreachable, HASH/nonce does not match,
+     or original alert is missing, the action returns HOLD.
+     There is no external email/SMS, fake sent status, or endless
+     background retry; the original alert remains visible.
+8. OPERATOR VERIFICATION IN SUPABASE:
+   - Open https://supabase.com/dashboard/project/jmqvkgiqlimdhcofwkxr/functions.
+     Edge Function yw598-original-cutover-rollback-alert must be
+     ACTIVE, verify_jwt=true. The migrated 6 YW598 tables must have
+     RLS=true, immutable triggers and only owner SELECT.
+   - All six YW598 privileged RPCs must deny anonymous and
+     authenticated EXECUTE; only service_role can invoke them.
+   - Never paste any private env secrets or request screenshots
+     containing original receiver credentials into chat.
+9. ACCEPTANCE:
+   - CODE GREEN requires protected GitHub checks, exact dev/main
+     SHA, READY production Vercel alias, Supabase schema and Edge.
+   - SOURCE/HUMAN FIELD GREEN requires actual independent original
+     receivers/actors and authentic signed execution + rollback
+     receipt records. Reusing a mock / CI fixture is prohibited.
+   - ONE-company field acceptance is separate from the two-real-
+     company YW595/596 audit; no cross-tenant evidence inference.
+
+NEXT PROPOSED:
+YW599 — Independent Out-of-Band Master Outage Notifications, Actual
+Key-Cutover Confirmation & Multi-Tenant Operational Recovery Audit.
