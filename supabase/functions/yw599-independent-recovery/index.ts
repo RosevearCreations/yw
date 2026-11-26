@@ -1,3 +1,4 @@
+import {digest,sign,verify} from '../_shared/yw599-independent-recovery.mjs';
 import {deliverOriginalAlert} from '../_shared/yw599-notification-runtime.mjs';
 const origins=new Set(['https://yw-alpha.vercel.app','https://yardweasels.ca','https://www.yardweasels.ca']);
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -38,12 +39,56 @@ Deno.serve(async req=>{
  if(profile.is_active!==true)return reply(403,{state:'ACCOUNT_HOLD'});
  const raw=await req.text();if(raw.length>2048)return reply(413,{state:'BODY_HOLD'});
  const b=JSON.parse(raw);
- if(!b||Object.keys(b).sort().join('|')!=='alertId|companyId|confirmed|enrollmentId'||![b.alertId,b.companyId,b.enrollmentId].every(x=>typeof x==='string'&&uuid.test(x))||b.confirmed!==true)return reply(400,{state:'REQUEST_HOLD'});
- // Explicit operator activation is separate from deployment; no automatic sends.
- if(Deno.env.get('YW599_DELIVERY_ENABLED')!=='true')return reply(409,{state:'DELIVERY_DISABLED_HOLD'});
+ if(!b||typeof b!=='object'||Array.isArray(b)||typeof b.companyId!=='string'||!uuid.test(b.companyId))return reply(400,{state:'REQUEST_HOLD'});
+ const action=b.action??'deliver';
+ const exact=(fields:string[])=>Object.keys(b).sort().join('|')===fields.sort().join('|');
+ const company=await db.one('ywi_companies',{id:b.companyId});
+ const pilot=await db.one('ywi_591_tenant_pilots',{company_id:b.companyId,owner_user_id:company.owner_user_id,state:'APPROVED'});
+ const owner=company.owner_user_id===user.id,reviewer=pilot.reviewer_user_id===user.id&&!owner;
+ if(!owner&&!reviewer||pilot.owner_user_id===pilot.reviewer_user_id||!(Date.parse(pilot.expires_at)>Date.now()))return reply(403,{state:'TENANT_AUTHORITY_HOLD'});
  const config=JSON.parse(env('YW599_APPROVED_PROVIDER_CONFIG'));
  const keys={owner:env('YW599_OWNER_CONSENT_KEY'),reviewer:env('YW599_REVIEWER_APPROVAL_KEY'),request:env('YW599_PROVIDER_REQUEST_KEY'),receipt:env('YW599_PROVIDER_RECEIPT_KEY')};
- if(new Set(Object.values(keys)).size!==4)return reply(409,{state:'KEY_SEPARATION_HOLD'});
+ if(new Set(Object.values(keys)).size!==4||Object.values(keys).some(k=>new TextEncoder().encode(k).length<32))return reply(409,{state:'KEY_SEPARATION_HOLD'});
+ const providerRef=/^[A-Za-z0-9_-]{8,128}$/;
+ const u=new URL(config.url),h=config.host,m=env('YW593_MASTER_ALLOWED_HOST').toLowerCase();
+ if(config.masterHost!==m||typeof h!=='string'||h!==h.toLowerCase()||!h.includes('.')||!m.includes('.')||u.protocol!=='https:'||u.hostname!==h||h===m||h.endsWith('.'+m)||m.endsWith('.'+h)||u.port||u.username||u.password||u.search||u.hash||h.endsWith('.local')||h.endsWith('.internal')||/^[\d.]+$/.test(h)||!providerRef.test(config.providerId)||!providerRef.test(config.recipientRef)||config.noPaidProvider!==true||config.providerEnrolled!==true||config.approvedRecipient!==true)return reply(409,{state:'PROVIDER_CONFIG_HOLD'});
+ const configSha=await digest(config);
+ if(action==='overview'){
+  if(!exact(['action','companyId']))return reply(400,{state:'REQUEST_HOLD'});
+  const q=new URLSearchParams({select:'id,provider_id,recipient_ref,config_sha256,created_at,expires_at',company_id:'eq.'+b.companyId,owner_id:'eq.'+company.owner_user_id,reviewer_id:'eq.'+pilot.reviewer_user_id,order:'created_at.desc',limit:'20'});
+  const rows=await rest('ywi_599_provider_enrollments?'+q);
+  const enrollments=await Promise.all(rows.map(async(e:any)=>({id:e.id,providerId:e.provider_id,recipientRef:e.recipient_ref,expiresAt:e.expires_at,configCurrent:e.config_sha256===configSha,approved:!!await db.optional('ywi_599_provider_approvals',{enrollment_id:e.id}),revoked:!!await db.optional('ywi_599_provider_revocations',{enrollment_id:e.id})})));
+  const aq=new URLSearchParams({select:'id,issue_code,detected_at',company_id:'eq.'+b.companyId,order:'detected_at.desc',limit:'20'});
+  const alerts=owner?await rest('ywi_597_health_alerts?'+aq):[];
+  return reply(200,{state:'PRIVATE_OVERVIEW',role:owner?'OWNER':'REVIEWER',providerId:config.providerId,recipientRef:config.recipientRef,configSha,deliveryEnabled:Deno.env.get('YW599_DELIVERY_ENABLED')==='true',enrollments,alerts});
+ }
+ if(action==='enroll'){
+  if(!owner||!exact(['action','companyId','configSha','confirmed'])||b.confirmed!==true||b.configSha!==configSha)return reply(403,{state:'OWNER_CONSENT_HOLD'});
+  const id=crypto.randomUUID(),createdAt=new Date().toISOString(),expiresAt=new Date(Math.min(Date.now()+7*86400000,Date.parse(pilot.expires_at))).toISOString();
+  if(Date.parse(expiresAt)<=Date.parse(createdAt))return reply(409,{state:'EXPIRED_PILOT_HOLD'});
+  const payload={schema:'rosevear.yw.provider-consent.v1',enrollmentId:id,companyId:b.companyId,ownerId:user.id,reviewerId:pilot.reviewer_user_id,providerId:config.providerId,recipientRef:config.recipientRef,configSha256:configSha,createdAt,expiresAt};
+  const sig=await sign(keys.owner,'YW599-OWNER-CONSENT',payload);
+  await rest('ywi_599_provider_enrollments','POST',{id,company_id:b.companyId,owner_id:user.id,reviewer_id:pilot.reviewer_user_id,provider_id:config.providerId,recipient_ref:config.recipientRef,config_sha256:configSha,owner_signature:sig,created_at:createdAt,expires_at:expiresAt});
+  return reply(200,{state:'OWNER_CONSENT_RECORDED_REVIEW_REQUIRED',enrollmentId:id});
+ }
+ if(action==='approve'||action==='revoke'){
+  if(!exact(['action','companyId','enrollmentId','configSha','confirmed'])||!uuid.test(b.enrollmentId)||b.confirmed!==true||b.configSha!==configSha)return reply(400,{state:'REQUEST_HOLD'});
+  const e=await db.one('ywi_599_provider_enrollments',{id:b.enrollmentId,company_id:b.companyId});
+  if(e.owner_id!==company.owner_user_id||e.reviewer_id!==pilot.reviewer_user_id)return reply(403,{state:'TENANT_AUTHORITY_HOLD'});
+  if(action==='revoke'){
+   await rest('ywi_599_provider_revocations','POST',{enrollment_id:e.id,actor_id:user.id});
+   return reply(200,{state:'CONSENT_REVOKED',enrollmentId:e.id});
+  }
+  if(!reviewer||e.config_sha256!==configSha||e.provider_id!==config.providerId||e.recipient_ref!==config.recipientRef||!(Date.parse(e.expires_at)>Date.now())||await db.optional('ywi_599_provider_revocations',{enrollment_id:e.id}))return reply(403,{state:'REVIEW_AUTHORITY_HOLD'});
+  const payload={schema:'rosevear.yw.provider-consent.v1',enrollmentId:e.id,companyId:e.company_id,ownerId:e.owner_id,reviewerId:e.reviewer_id,providerId:e.provider_id,recipientRef:e.recipient_ref,configSha256:e.config_sha256,createdAt:new Date(e.created_at).toISOString(),expiresAt:new Date(e.expires_at).toISOString()};
+  if(!await verify(keys.owner,'YW599-OWNER-CONSENT',payload,e.owner_signature))return reply(409,{state:'ORIGINAL_OWNER_SIGNATURE_HOLD'});
+  const approvedAt=new Date().toISOString();
+  const reviewerSignature=await sign(keys.reviewer,'YW599-REVIEWER-APPROVAL',{...payload,ownerSignature:e.owner_signature,approvedAt});
+  await rest('ywi_599_provider_approvals','POST',{enrollment_id:e.id,reviewer_id:user.id,reviewer_signature:reviewerSignature,approved_at:approvedAt});
+  return reply(200,{state:'INDEPENDENT_REVIEW_RECORDED',enrollmentId:e.id});
+ }
+ if(action!=='deliver'||!owner||!exact(b.action===undefined?['alertId','companyId','confirmed','enrollmentId']:['action','alertId','companyId','confirmed','enrollmentId'])||![b.alertId,b.enrollmentId].every(x=>typeof x==='string'&&uuid.test(x))||b.confirmed!==true)return reply(400,{state:'REQUEST_HOLD'});
+ if(Deno.env.get('YW599_DELIVERY_ENABLED')!=='true')return reply(409,{state:'DELIVERY_DISABLED_HOLD'});
  const result=await deliverOriginalAlert({actor:{id:user.id,active:true},companyId:b.companyId,enrollmentId:b.enrollmentId,alertId:b.alertId,confirmed:true,db,config,keys});
  return reply(200,result);
  }catch{return reply(409,{state:'AUTHORITY_OR_RUNTIME_HOLD'})}
