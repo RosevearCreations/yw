@@ -35,7 +35,7 @@ create table public.ywi_599_notification_claims(
  claimed_at timestamptz not null default now(),
  foreign key(company_id,enrollment_id) references public.ywi_599_provider_enrollments(company_id,id),
  unique(enrollment_id,alert_id,attempt),
- unique(company_id,alert_id,attempt)
+ unique(company_id,alert_id,attempt), unique(company_id,id)
 );
 create table public.ywi_599_notification_results(
  claim_id uuid primary key references public.ywi_599_notification_claims(id),
@@ -58,6 +58,27 @@ begin
  execute format('create trigger yw599_immutable before update or delete on public.%I for each row execute function public.ywi_591_forbid_change()','ywi_599_'||t);
  end loop;
 end;$block$;
+-- Serialize revocation and approval with the same company lock as claim creation.
+-- A claim committed before revocation is already authorized/in flight; revocation
+-- prevents subsequent claims, not cancellation of an external network operation.
+create function public.ywi_599_lock_consent_change() returns trigger
+language plpgsql security invoker set search_path='' as $lock$
+declare e record;
+begin
+ select * into e from public.ywi_599_provider_enrollments where id=new.enrollment_id;
+ if e.id is null then raise exception 'YW599 enrollment HOLD'; end if;
+ perform 1 from public.ywi_companies where id=e.company_id for update;
+ if tg_table_name='ywi_599_provider_approvals' then
+  if new.reviewer_id<>e.reviewer_id or e.expires_at<=now() or exists(select 1 from public.ywi_599_provider_revocations where enrollment_id=e.id) then raise exception 'YW599 approval HOLD'; end if;
+ elsif new.actor_id not in(e.owner_id,e.reviewer_id) then raise exception 'YW599 revocation HOLD';
+ end if;
+ return new;
+end;$lock$;
+revoke all on function public.ywi_599_lock_consent_change() from public,anon,authenticated;
+grant execute on function public.ywi_599_lock_consent_change() to service_role;
+create trigger yw599_serialize_approval before insert on public.ywi_599_provider_approvals for each row execute function public.ywi_599_lock_consent_change();
+create trigger yw599_serialize_revocation before insert on public.ywi_599_provider_revocations for each row execute function public.ywi_599_lock_consent_change();
+
 -- Caller must first cryptographically reverify both approvals, pinned provider
 -- configuration, and original alert digest. This transaction rechecks authority
 -- and serializes attempts. No network operation occurs in SQL.
@@ -129,6 +150,8 @@ create table public.ywi_599_tenant_recovery_audits(
  audit_payload jsonb not null,
  audit_signature text not null check(audit_signature ~ '^[0-9a-f]{64}$'),
  verified_at timestamptz not null,
+ foreign key(company_id,cutover_id) references public.ywi_599_final_cutover_receipts(company_id,id),
+ foreign key(company_id,notification_claim_id) references public.ywi_599_notification_claims(company_id,id),
  unique(cutover_id,notification_claim_id), check(owner_id<>reviewer_id)
 );
 alter table public.ywi_599_tenant_recovery_audits enable row level security;
