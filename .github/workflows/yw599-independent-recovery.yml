@@ -21,3 +21,9 @@ jobs:
         run: node scripts/yw598-execution-rollback-alert-check.mjs
       - name: Verify YW599 independent provider and signed evidence
         run: node scripts/yw599-independent-recovery-check.mjs
+      - name: Validate Jobs and shared runtime syntax
+        run: |
+          node --check js/yw599-independent-recovery.js
+          node --check supabase/functions/_shared/yw599-original-cutover-chain.mjs
+          node --check supabase/functions/_shared/yw599-tenant-audit.mjs
+          node --experimental-strip-types --check supabase/functions/yw599-independent-recovery/index.ts
