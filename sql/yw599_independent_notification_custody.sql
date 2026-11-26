@@ -34,7 +34,8 @@ create table public.ywi_599_notification_claims(
  source_sha256 text not null check(source_sha256 ~ '^[0-9a-f]{64}$'),
  claimed_at timestamptz not null default now(),
  foreign key(company_id,enrollment_id) references public.ywi_599_provider_enrollments(company_id,id),
- unique(enrollment_id,alert_id,attempt)
+ unique(enrollment_id,alert_id,attempt),
+ unique(company_id,alert_id,attempt)
 );
 create table public.ywi_599_notification_results(
  claim_id uuid primary key references public.ywi_599_notification_claims(id),
@@ -65,16 +66,20 @@ returns jsonb language plpgsql security definer set search_path='' as $fn$
 declare e record; a record; prev record; n integer; c record;
 begin
  perform public.ywi_591_source_role_assert();
+ -- Serialize all enrollment attempts for the same tenant, even if consent is renewed.
+ perform 1 from public.ywi_companies where id=p_company for update;
  select * into e from public.ywi_599_provider_enrollments where id=p_enrollment and company_id=p_company for update;
  select * into a from public.ywi_597_health_alerts where id=p_alert and company_id=p_company;
  if e.id is null or a.id is null or e.expires_at<=now() or a.detected_at<now()-interval '24 hours' or a.detected_at>now()
+ or not exists(select 1 from public.ywi_597_health_enrollments x where x.id=a.enrollment_id and x.company_id=p_company and x.owner_user_id=e.owner_id)
  or not exists(select 1 from public.ywi_599_provider_approvals x where x.enrollment_id=e.id and x.reviewer_id=e.reviewer_id)
  or exists(select 1 from public.ywi_599_provider_revocations x where x.enrollment_id=e.id)
  or not exists(select 1 from public.ywi_companies x where x.id=p_company and x.owner_user_id=e.owner_id)
  or not exists(select 1 from public.ywi_591_tenant_pilots x where x.company_id=p_company and x.owner_user_id=e.owner_id and x.reviewer_user_id=e.reviewer_id and x.state='APPROVED' and x.expires_at>now())
  or (select count(*) from public.profiles x where x.id in(e.owner_id,e.reviewer_id) and x.is_active=true)<>2
  then raise exception 'YW599 authority HOLD'; end if;
- select count(*) into n from public.ywi_599_notification_claims where enrollment_id=e.id and alert_id=a.id;
+ if exists(select 1 from public.ywi_599_notification_claims where company_id=p_company and alert_id=a.id and enrollment_id<>e.id) then return jsonb_build_object('state','HOLD_PREVIOUS_ENROLLMENT_RECONCILIATION'); end if;
+ select count(*) into n from public.ywi_599_notification_claims where company_id=p_company and alert_id=a.id;
  if n>=3 then return jsonb_build_object('state','HOLD_RETRY_EXHAUSTED'); end if;
  if n>0 then
  select x.claimed_at,y.state,x.source_sha256 into prev from public.ywi_599_notification_claims x left join public.ywi_599_notification_results y on y.claim_id=x.id where x.enrollment_id=e.id and x.alert_id=a.id order by x.attempt desc limit 1;
