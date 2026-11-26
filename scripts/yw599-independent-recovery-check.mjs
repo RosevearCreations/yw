@@ -1,0 +1,137 @@
+import assert from 'node:assert/strict';
+import {notificationPlan,sendClaimedNotification,verifyCutoverReadback,classifyRecoveryAudit,sign,digest} from '../supabase/functions/_shared/yw599-independent-recovery.mjs';
+const now=Date.parse('2026-11-25T12:00:00.000Z'),at=new Date(now).toISOString();
+const uid=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
+const key='test-request-key-not-a-production-secret-000';
+const receiptKey='test-receipt-key-not-a-production-secret-001';
+const alert={id:uid(1),companyId:uid(2),issueCode:'NO_SIGNED_MASTER_ACK_30M',detectedAt:at,sourceSha256:'a'.repeat(64)};
+const enrollment={id:uid(3),companyId:uid(2),ownerId:uid(4),reviewerId:uid(5),active:true,approvedRecipient:true,providerEnrolled:true,noPaidProvider:true,recipientRef:'test-recipient',providerId:'test-provider',expiresAt:new Date(now+3600000).toISOString()};
+const plan=(attempts=[],e=enrollment)=>notificationPlan({alert,enrollment:e,attempts,now});
+assert.equal(plan().state,'ELIGIBLE_FOR_ATOMIC_CLAIM');
+assert.throws(()=>plan([],{...enrollment,companyId:uid(9)}),/AUTHORITY/);
+assert.throws(()=>plan([],{...enrollment,approvedRecipient:false}),/CONSENT/);
+const attempt={companyId:alert.companyId,alertId:alert.id,enrollmentId:enrollment.id,attempt:1,at,state:'UNKNOWN'};
+assert.equal(plan([attempt]).state,'HOLD_RECONCILE_PROVIDER');
+assert.equal(plan([{...attempt,state:'VERIFIED_DELIVERY'}]).state,'DELIVERED_NO_RETRY');
+assert.equal(plan([{...attempt,state:'DEFINITIVE_FAILURE'}]).state,'WAIT_BACKOFF');
+assert.equal(plan([1,2,3].map(n=>({...attempt,attempt:n,state:'DEFINITIVE_FAILURE'}))).state,'HOLD_RETRY_EXHAUSTED');
+const claim={state:'ATOMIC_CLAIMED',companyId:alert.companyId,alertId:alert.id,enrollmentId:enrollment.id,nonce:uid(6),providerId:enrollment.providerId,recipientRef:enrollment.recipientRef,issueCode:alert.issueCode,sourceSha256:alert.sourceSha256,attempt:1,claimedAt:at};
+const config={providerId:claim.providerId,url:'https://notify.example.org/receipt',host:'notify.example.org',masterHost:'master.example.net'};
+const args={claim,config,requestKey:key,receiptKey,now};
+const mock=async(_url,opt)=>{
+ assert.equal(opt.redirect,'error');
+ const b=JSON.parse(opt.body);
+ assert.equal(b.noCustomerData,true);
+ assert.equal(opt.headers['x-yw-signature'],await sign(key,'YW599-NOTIFY',b));
+ const p={schema:'rosevear.yw.outage-notification-receipt.v1',providerId:b.providerId,companyId:b.companyId,alertId:b.alertId,enrollmentId:b.enrollmentId,nonce:b.nonce,recipientRef:b.recipientRef,sourceSha256:b.sourceSha256,requestDigest:await digest(b),receiptId:'fixture-receipt-001',status:'DELIVERED',observedAt:at};
+ return new Response(JSON.stringify({...p,signature:await sign(receiptKey,'YW599-PROVIDER-RECEIPT',p)}));
+};
+assert.equal((await sendClaimedNotification({...args,fetcher:mock})).state,'VERIFIED_DELIVERY');
+assert.equal((await sendClaimedNotification({...args,fetcher:async()=>new Response('{}')})).state,'UNKNOWN');
+assert.equal((await sendClaimedNotification({...args,fetcher:async()=>{throw new Error('timeout')}})).state,'UNKNOWN');
+await assert.rejects(sendClaimedNotification({...args,config:{...config,masterHost:config.host},fetcher:()=>{throw Error('must not send')}}),/INDEPENDENT/);
+const challenge={companyId:uid(2),executionId:uid(10),rollbackDrillId:uid(11),nonce:uid(12),oldContractId:uid(13),nextContractId:uid(14),issuedAt:at};
+const {issuedAt,...binding}=challenge;
+const payload={schema:'rosevear.yw.final-cutover-readback.v1',...binding,state:'NEXT_ACTIVE_OLD_ACCEPTED',receiptId:'fixture-cutover-001',observedAt:at};
+const response={...payload,oldSignature:await sign(key,'YW599-CUTOVER-OLD',payload),nextSignature:await sign(receiptKey,'YW599-CUTOVER-NEXT',payload)};
+assert.equal((await verifyCutoverReadback({challenge,response,oldKey:key,nextKey:receiptKey,now})).state,'SIGNED_REMOTE_CUTOVER_REPORTED');
+await assert.rejects(verifyCutoverReadback({challenge,response:{...response,nonce:uid(99)},oldKey:key,nextKey:receiptKey,now}),/BINDING/);
+await assert.rejects(verifyCutoverReadback({challenge,response:{...response,nextSignature:'a'.repeat(64)},oldKey:key,nextKey:receiptKey,now}),/SIGNATURES/);
+const rec={companyId:uid(2),ownerId:uid(4),reviewerId:uid(5),sourceVerified:true,providerReceiptVerified:true,cutoverReadbackVerified:true,rollbackWitnessVerified:true,independentReviewerVerified:true,verifiedAt:at,sourceReceiptId:'source-0001',providerReceiptId:'provider-0001',cutoverReceiptId:'cutover-0001',rollbackReceiptId:'rollback-0001'};
+assert.equal(classifyRecoveryAudit([rec],now).state,'HOLD_INSUFFICIENT_TENANTS');
+assert.throws(()=>classifyRecoveryAudit([rec,{...rec,companyId:uid(15)}],now),/DISTINCT/);
+assert.throws(()=>classifyRecoveryAudit([{...rec,providerReceiptVerified:false}],now),/EVIDENCE/);
+console.log('YW599 fixture-only contract checks passed; no production I/O or certification');
+
+import {verifyEnrollment} from '../supabase/functions/_shared/yw599-approval-verification.mjs';
+import {deliverOriginalAlert} from '../supabase/functions/_shared/yw599-notification-runtime.mjs';
+import {readFileSync} from 'node:fs';
+const cfg={...config,companyId:uid(2),recipientRef:enrollment.recipientRef,noPaidProvider:true,approvedRecipient:true,providerEnrolled:true};
+const ownerKey='fixture-owner-consent-not-production-000';
+const reviewerKey='fixture-reviewer-consent-not-production-001';
+const consent={schema:'rosevear.yw.provider-consent.v1',enrollmentId:enrollment.id,companyId:alert.companyId,ownerId:enrollment.ownerId,reviewerId:enrollment.reviewerId,providerId:cfg.providerId,recipientRef:cfg.recipientRef,configSha256:await digest(cfg),createdAt:at,expiresAt:enrollment.expiresAt};
+const er={id:consent.enrollmentId,company_id:consent.companyId,owner_id:consent.ownerId,reviewer_id:consent.reviewerId,provider_id:consent.providerId,recipient_ref:consent.recipientRef,config_sha256:consent.configSha256,owner_signature:await sign(ownerKey,'YW599-OWNER-CONSENT',consent),created_at:at,expires_at:consent.expiresAt};
+const ap={enrollment_id:er.id,reviewer_id:er.reviewer_id,approved_at:at,reviewer_signature:await sign(reviewerKey,'YW599-REVIEWER-APPROVAL',{...consent,ownerSignature:er.owner_signature,approvedAt:at})};
+const company={id:er.company_id,owner_user_id:er.owner_id};
+const pilot={company_id:er.company_id,owner_user_id:er.owner_id,reviewer_user_id:er.reviewer_id,state:'APPROVED',expires_at:er.expires_at};
+const profiles=[{id:er.owner_id,is_active:true},{id:er.reviewer_id,is_active:true}];
+const authArgs={enrollment:er,approval:ap,company,pilot,profiles,revoked:null,config:cfg,ownerKey,reviewerKey,now};
+assert.equal((await verifyEnrollment(authArgs)).active,true);
+for(const change of [{revoked:{id:er.id}},{approval:{...ap,reviewer_signature:'a'.repeat(64)}},{company:{...company,owner_user_id:uid(90)}},{config:{...cfg,recipientRef:'other-recipient'}},{profiles:[profiles[0],{...profiles[1],is_active:false}]}])await assert.rejects(verifyEnrollment({...authArgs,...change}),/AUTHORITY_HOLD/);
+let readCount=0,networkCount=0;
+await assert.rejects(deliverOriginalAlert({actor:{id:uid(90),active:true},companyId:er.company_id,enrollmentId:er.id,alertId:alert.id,confirmed:true,db:{one:async()=>{readCount++;return er}},config:cfg,keys:{owner:ownerKey,reviewer:reviewerKey,request:key,receipt:receiptKey},fetcher:async()=>{networkCount++},now}),/RUNTIME_AUTHORITY_HOLD/);
+assert.equal(readCount,1);assert.equal(networkCount,0);
+const sql=readFileSync(new URL('../sql/yw599_independent_notification_custody.sql',import.meta.url),'utf8');
+assert.match(sql,/unique\(company_id,alert_id,attempt\)/);
+assert.match(sql,/HOLD_PREVIOUS_ENROLLMENT_RECONCILIATION/);
+assert.match(sql,/where id=p_company for update/);
+const edge=readFileSync(new URL('../supabase/functions/yw599-independent-recovery/index.ts',import.meta.url),'utf8');
+assert.match(edge,/config\.companyId!==b\.companyId/);
+assert.match(edge,/YW599_DELIVERY_ENABLED/);
+assert.match(edge,/!reviewer\|\|e\.config_sha256/);
+console.log('YW599 approval and foreign-owner negative fixtures passed; SQL and Edge wiring guards inspected');
+
+import {verifyOriginalDrill,readVerifiedFinalCutover} from '../supabase/functions/_shared/yw599-original-cutover-chain.mjs';
+import {verifyTenantRecovery} from '../supabase/functions/_shared/yw599-tenant-audit.mjs';
+await assert.rejects(verifyOriginalDrill({companyId:uid(2),ownerId:uid(4),reviewerId:uid(5),actorId:uid(4),drillId:uid(11),confirmed:true}),/INDEPENDENT_SYSOP_REQUIRED/);
+await assert.rejects(readVerifiedFinalCutover({companyId:uid(2),ownerId:uid(4),reviewerId:uid(5),actorId:uid(6),drillId:uid(11),confirmed:false}),/INDEPENDENT_SYSOP_REQUIRED/);
+await assert.rejects(verifyTenantRecovery({db:{one:async()=>{throw Error('unexpected DB access')}},company,pilot,reviewerId:company.owner_user_id,config:cfg,keys:{},now}),/AUDIT_EVIDENCE_HOLD/);
+const cutoverSource=readFileSync(new URL('../supabase/functions/_shared/yw599-original-cutover-chain.mjs',import.meta.url),'utf8');
+assert.match(cutoverSource,/YW599_ORIGINAL_REVIEWER_SIGNATURE_HOLD/);
+assert.match(cutoverSource,/noRemoteMutation:true/);
+assert.doesNotMatch(cutoverSource,/Deno\.serve\s*\(/);
+assert.match(sql,/create table public\.ywi_599_final_cutover_receipts/);
+assert.match(sql,/create table public\.ywi_599_tenant_recovery_audits/);
+assert.match(sql,/alter table public\.ywi_599_tenant_recovery_audits enable row level security/);
+assert.match(edge,/action==='audit-platform'/);
+assert.match(edge,/action==='read-final-cutover'/);
+assert.match(edge,/action==='audit-tenant'/);
+assert.match(edge,/continuousCertification:false/);
+console.log('YW599 cutover and audit negative authority fixtures and source wiring guards passed');
+
+/* Exercise the actual request handler with an isolated Auth/REST adapter. This
+   is not live user authentication or operational receipt certification. */
+{
+ const originalFetch=globalThis.fetch, originalDeno=globalThis.Deno;
+ const fixtureEnv={SUPABASE_URL:'https://db-fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture-only-service',YW599_APPROVED_PROVIDER_CONFIG:JSON.stringify(cfg),YW599_OWNER_CONSENT_KEY:ownerKey,YW599_REVIEWER_APPROVAL_KEY:reviewerKey,YW599_PROVIDER_REQUEST_KEY:key,YW599_PROVIDER_RECEIPT_KEY:receiptKey,YW593_MASTER_ALLOWED_HOST:cfg.masterHost,YW599_DELIVERY_ENABLED:'false'};
+ let handler, actor=company.owner_user_id, rejectAuth=false, writes=0, providerCalls=0;
+ globalThis.Deno={env:{get:n=>fixtureEnv[n]},serve:fn=>{handler=fn}};
+ globalThis.fetch=async(url,opt={})=>{
+  const u=new URL(url);
+  if(u.hostname!=='db-fixture.invalid'){providerCalls++;throw Error('network forbidden in fixture');}
+  if(u.pathname==='/auth/v1/user')return rejectAuth?new Response('{}',{status:401}):Response.json({id:actor});
+  if(opt.method==='POST'){writes++;throw Error('writes forbidden in fixture');}
+  const table=u.pathname.split('/').at(-1);
+  if(table==='profiles')return Response.json([{id:actor,is_active:true,role:'user'}]);
+  if(table==='ywi_companies')return Response.json([company]);
+  if(table==='ywi_591_tenant_pilots')return Response.json([{...pilot,expires_at:new Date(Date.now()+3600000).toISOString()}]);
+  if(table==='ywi_599_provider_enrollments'||table==='ywi_597_health_alerts')return Response.json([]);
+  throw Error('unexpected fixture query '+table);
+ };
+ try {
+  // Node 22.18+ supports native TS stripping. Older Node 22 is unsupported by this test.
+  await import('../supabase/functions/yw599-independent-recovery/index.ts');
+  assert.equal(typeof handler,'function');
+  const endpoint='https://fixture.invalid/functions/v1/yw599-independent-recovery';
+  const req=(body,token='Bearer fixture.test.token',origin='https://yw-alpha.vercel.app')=>handler(new Request(endpoint,{method:'POST',headers:{'content-type':'application/json',authorization:token,origin},body:JSON.stringify(body)}));
+  const overview={action:'overview',companyId:company.id};
+  assert.equal((await req(overview,'')).status,401);
+  rejectAuth=true;assert.equal((await req(overview)).status,401);rejectAuth=false;
+  assert.equal((await req(overview,'Bearer fixture.test.token','https://foreign.invalid')).status,403);
+  actor=uid(99);assert.equal((await req(overview)).status,403);
+  actor=company.owner_user_id;let result=await req(overview);assert.equal(result.status,200);
+  let out=await result.json();assert.equal(out.role,'OWNER');assert.equal(out.deliveryEnabled,false);
+  const send={action:'deliver',companyId:company.id,alertId:alert.id,enrollmentId:er.id,confirmed:true};
+  result=await req(send);assert.equal(result.status,409);assert.equal((await result.json()).state,'DELIVERY_DISABLED_HOLD');
+  actor=pilot.reviewer_user_id;result=await req(overview);assert.equal(result.status,200);out=await result.json();assert.equal(out.role,'REVIEWER');assert.deepEqual(out.alerts,[]);
+  assert.equal((await req(send)).status,400);
+  assert.equal(writes,0);assert.equal(providerCalls,0);
+ }finally{globalThis.fetch=originalFetch;if(originalDeno===undefined)delete globalThis.Deno;else globalThis.Deno=originalDeno;}
+ console.log('YW599 actual handler fixture: Auth rejection, tenant/role isolation, delivery disabled, no writes/network passed');
+}
+if(process.env.GITHUB_ACTIONS==='true'){
+ // Anonymous request only; no tokens, provider calls or real user data.
+ const r=await fetch('https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/yw599-independent-recovery',{method:'POST',headers:{'content-type':'application/json'},body:'{}',redirect:'error',signal:AbortSignal.timeout(10000)});
+ assert.equal(r.status,401,'live deployed gateway must reject anonymous POST');
+ console.log('YW599 deployed gateway anonymous POST rejected (401); authenticated original field acceptance remains separate');
+}

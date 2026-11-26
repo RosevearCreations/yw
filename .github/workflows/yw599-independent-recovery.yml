@@ -1,0 +1,59 @@
+name: YW599 independent recovery contract checks
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [main, build/yw599-independent-recovery]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-recovery-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Require runner Node 22 or newer
+        run: node -e "if(Number(process.versions.node.split('.')[0]) < 22) process.exit(1)"
+      - name: Verify predecessor contract
+        run: node scripts/yw598-execution-rollback-alert-check.mjs
+      - name: Verify YW599 independent provider and signed evidence
+        run: node scripts/yw599-independent-recovery-check.mjs
+      - name: Validate Jobs and shared runtime syntax
+        run: |
+          node --check js/yw599-independent-recovery.js
+          node --check supabase/functions/_shared/yw599-original-cutover-chain.mjs
+          node --check supabase/functions/_shared/yw599-tenant-audit.mjs
+          node --experimental-strip-types --check supabase/functions/yw599-independent-recovery/index.ts
+
+  isolated-postgres-migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-not-a-production-secret
+          POSTGRES_DB: yw599_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d yw599_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Apply exact migration and test real PostgreSQL constraints
+        env:
+          PGPASSWORD: ci-only-not-a-production-secret
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+          PGDATABASE: yw599_ci
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/yw599-isolated-postgres-check.sql
