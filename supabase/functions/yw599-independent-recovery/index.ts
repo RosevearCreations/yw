@@ -1,10 +1,11 @@
-import {digest,sign,verify} from '../_shared/yw599-independent-recovery.mjs';
+import {verifyTenantRecovery} from '../_shared/yw599-tenant-audit.mjs';
+import {digest,sign,verify,classifyRecoveryAudit} from '../_shared/yw599-independent-recovery.mjs';
 import {readVerifiedFinalCutover} from '../_shared/yw599-original-cutover-chain.mjs';
 import {deliverOriginalAlert} from '../_shared/yw599-notification-runtime.mjs';
 const origins=new Set(['https://yw-alpha.vercel.app','https://yardweasels.ca','https://www.yardweasels.ca']);
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const env=(n:string)=>{const v=Deno.env.get(n);if(!v)throw Error('CONFIG_HOLD');return v};
-const tables=new Set(['ywi_599_provider_enrollments','ywi_599_provider_approvals','ywi_599_provider_revocations','ywi_companies','ywi_591_tenant_pilots','profiles','ywi_597_health_alerts','ywi_597_health_enrollments']);
+const tables=new Set(['ywi_599_provider_enrollments','ywi_599_provider_approvals','ywi_599_provider_revocations','ywi_companies','ywi_591_tenant_pilots','profiles','ywi_597_health_alerts','ywi_597_health_enrollments','ywi_599_final_cutover_receipts','ywi_599_notification_claims','ywi_599_notification_results','ywi_platform_administrators_489']);
 Deno.serve(async req=>{
  const origin=req.headers.get('origin')||'';
  const headers={'content-type':'application/json','cache-control':'no-store','vary':'Origin',...(origins.has(origin)?{'access-control-allow-origin':origin,'access-control-allow-headers':'authorization, apikey, x-client-info, content-type','access-control-allow-methods':'POST, OPTIONS'}:{})};
@@ -43,6 +44,21 @@ Deno.serve(async req=>{
  if(!b||typeof b!=='object'||Array.isArray(b)||typeof b.companyId!=='string'||!uuid.test(b.companyId))return reply(400,{state:'REQUEST_HOLD'});
  const action=b.action??'deliver';
  const exact=(fields:string[])=>Object.keys(b).sort().join('|')===fields.sort().join('|');
+ if(action==='audit-platform'){
+  if(!exact(['action','companyId'])||profile.role!=='admin')return reply(403,{state:'SYSOP_AUTHORITY_HOLD'});
+  await db.one('ywi_platform_administrators_489',{user_id:user.id});
+  const q=new URLSearchParams({select:'company_id,owner_id,reviewer_id,audit_payload,audit_signature,verified_at',order:'verified_at.desc',limit:'100',verified_at:'gte.'+new Date(Date.now()-86400000).toISOString()});
+  const rows=await rest('ywi_599_tenant_recovery_audits?'+q),seen=new Set(),records=[];
+  for(const row of rows){
+   if(seen.has(row.company_id))continue;
+   const p=row.audit_payload;
+   if(p.companyId!==row.company_id||p.ownerId!==row.owner_id||p.reviewerId!==row.reviewer_id||Date.parse(p.verifiedAt)!==Date.parse(row.verified_at)||!await verify(env('YW599_REVIEWER_APPROVAL_KEY'),'YW599-RECOVERY-AUDIT',p,row.audit_signature))return reply(409,{state:'AUDIT_SIGNATURE_HOLD'});
+   // This is a bounded snapshot of previously verified audits, not continuous live certification.
+   seen.add(row.company_id);records.push(p);
+  }
+  return reply(200,{...classifyRecoveryAudit(records),scope:'RECENT_SIGNED_AUDIT_SNAPSHOT',continuousCertification:false});
+ }
+
  const company=await db.one('ywi_companies',{id:b.companyId});
  const pilot=await db.one('ywi_591_tenant_pilots',{company_id:b.companyId,owner_user_id:company.owner_user_id,state:'APPROVED'});
  const owner=company.owner_user_id===user.id,reviewer=pilot.reviewer_user_id===user.id&&!owner;
@@ -55,13 +71,25 @@ Deno.serve(async req=>{
  }
 
  if(!owner&&!reviewer||pilot.owner_user_id===pilot.reviewer_user_id||!(Date.parse(pilot.expires_at)>Date.now()))return reply(403,{state:'TENANT_AUTHORITY_HOLD'});
- const config=JSON.parse(env('YW599_APPROVED_PROVIDER_CONFIG'));
+ const configured=JSON.parse(env('YW599_APPROVED_PROVIDER_CONFIG'));
+ const candidates=(Array.isArray(configured)?configured:[configured]).filter(c=>c?.companyId===b.companyId);
+ if(candidates.length!==1)return reply(409,{state:'PROVIDER_CONFIG_HOLD'});
+ const config=candidates[0];
  const keys={owner:env('YW599_OWNER_CONSENT_KEY'),reviewer:env('YW599_REVIEWER_APPROVAL_KEY'),request:env('YW599_PROVIDER_REQUEST_KEY'),receipt:env('YW599_PROVIDER_RECEIPT_KEY')};
  if(new Set(Object.values(keys)).size!==4||Object.values(keys).some(k=>new TextEncoder().encode(k).length<32))return reply(409,{state:'KEY_SEPARATION_HOLD'});
  const providerRef=/^[A-Za-z0-9_-]{8,128}$/;
  const u=new URL(config.url),h=config.host,m=env('YW593_MASTER_ALLOWED_HOST').toLowerCase();
  if(config.companyId!==b.companyId||config.masterHost!==m||typeof h!=='string'||h!==h.toLowerCase()||!h.includes('.')||!m.includes('.')||u.protocol!=='https:'||u.hostname!==h||h===m||h.endsWith('.'+m)||m.endsWith('.'+h)||u.port||u.username||u.password||u.search||u.hash||h.endsWith('.local')||h.endsWith('.internal')||/^[\d.]+$/.test(h)||!providerRef.test(config.providerId)||!providerRef.test(config.recipientRef)||config.noPaidProvider!==true||config.providerEnrolled!==true||config.approvedRecipient!==true)return reply(409,{state:'PROVIDER_CONFIG_HOLD'});
  const configSha=await digest(config);
+ if(action==='audit-tenant'){
+  if(!reviewer||!exact(['action','companyId','cutoverId','claimId','confirmed'])||![b.cutoverId,b.claimId].every(x=>typeof x==='string'&&uuid.test(x))||b.confirmed!==true)return reply(403,{state:'REVIEW_AUTHORITY_HOLD'});
+  const record=await verifyTenantRecovery({db,company,pilot,cutoverId:b.cutoverId,claimId:b.claimId,reviewerId:user.id,config,keys:{...keys,masterOld:env('YW592_MASTER_ACK_KEY'),masterNext:env('YW596_RECEIVER_NEXT_ACK_KEY')}});
+  const signature=await sign(keys.reviewer,'YW599-RECOVERY-AUDIT',record);
+  const rows=await rest('ywi_599_tenant_recovery_audits','POST',{company_id:b.companyId,owner_id:record.ownerId,reviewer_id:user.id,cutover_id:b.cutoverId,notification_claim_id:b.claimId,audit_payload:record,audit_signature:signature,verified_at:record.verifiedAt});
+  if(!Array.isArray(rows)||rows.length!==1||!uuid.test(rows[0].id))return reply(409,{state:'AUDIT_PERSISTENCE_HOLD'});
+  return reply(200,{state:'TENANT_SIGNED_RECOVERY_AUDIT_RECORDED',auditId:rows[0].id});
+ }
+
  if(action==='overview'){
   if(!exact(['action','companyId']))return reply(400,{state:'REQUEST_HOLD'});
   const q=new URLSearchParams({select:'id,provider_id,recipient_ref,config_sha256,created_at,expires_at',company_id:'eq.'+b.companyId,owner_id:'eq.'+company.owner_user_id,reviewer_id:'eq.'+pilot.reviewer_user_id,order:'created_at.desc',limit:'20'});
