@@ -118,4 +118,21 @@ alter table public.ywi_599_final_cutover_receipts enable row level security;
 revoke all on public.ywi_599_final_cutover_receipts from public,anon,authenticated;
 grant select,insert on public.ywi_599_final_cutover_receipts to service_role;
 create trigger yw599_final_cutover_immutable before update or delete on public.ywi_599_final_cutover_receipts for each row execute function public.ywi_591_forbid_change();
+
+create table public.ywi_599_tenant_recovery_audits(
+ id uuid primary key default gen_random_uuid(),
+ company_id uuid not null references public.ywi_companies(id),
+ owner_id uuid not null references auth.users(id),
+ reviewer_id uuid not null references auth.users(id),
+ cutover_id uuid not null references public.ywi_599_final_cutover_receipts(id),
+ notification_claim_id uuid not null references public.ywi_599_notification_claims(id),
+ audit_payload jsonb not null,
+ audit_signature text not null check(audit_signature ~ '^[0-9a-f]{64}$'),
+ verified_at timestamptz not null,
+ unique(cutover_id,notification_claim_id), check(owner_id<>reviewer_id)
+);
+alter table public.ywi_599_tenant_recovery_audits enable row level security;
+revoke all on public.ywi_599_tenant_recovery_audits from public,anon,authenticated;
+grant select,insert on public.ywi_599_tenant_recovery_audits to service_role;
+create trigger yw599_recovery_audit_immutable before update or delete on public.ywi_599_tenant_recovery_audits for each row execute function public.ywi_591_forbid_change();
 commit;
