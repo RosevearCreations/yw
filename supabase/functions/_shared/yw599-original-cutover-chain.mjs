@@ -313,7 +313,7 @@ function rollbackWitnessMessage(rb,ww,reviewer,when){
   physicallyPresentSelfAttested:true,hardwareAttested:false});
 }
 
-export async function readVerifiedFinalCutover({companyId,ownerId,reviewerId,actorId,drillId,confirmed}){
+export async function verifyOriginalDrill({companyId,ownerId,reviewerId,actorId,drillId,confirmed}){
  if(confirmed!==true||![companyId,ownerId,reviewerId,actorId,drillId].every(valid)||new Set([ownerId,reviewerId,actorId]).size!==3)err('YW599_INDEPENDENT_SYSOP_REQUIRED');
  const p=await one('profiles','id,role,is_active',{id:actorId},'YW599_ACTIVE_SYSOP_REQUIRED');
  await one('ywi_platform_administrators_489','user_id',{user_id:actorId},'YW599_CURATED_SYSOP_REQUIRED');
@@ -324,9 +324,14 @@ export async function readVerifiedFinalCutover({companyId,ownerId,reviewerId,act
  if([ownerId,reviewerId,can.c.source_actor_id].includes(actorId)||ww.w.owner_user_id!==ownerId||ww.ap.i.reviewer_user_id!==reviewerId||d.reviewer_user_id!==reviewerId||d.witness_id!==ww.w.id||d.auditor_user_id!==rb.auditor_user_id||d.request_nonce!==rb.request_nonce||d.remote_receipt_id!==rb.remote_receipt_id||d.old_master_hmac!==rb.old_master_hmac||d.next_master_hmac!==rb.next_master_hmac||d.response_sha256!==rb.response_sha256||d.remote_rollback_executed!==true||d.reviewer_physically_witnessed!==true||d.hardware_attested!==false||d.receiver_reported_state!=='OLD_ACTIVE_NEXT_AVAILABLE'||Date.parse(d.observed_at)<Date.parse(rb.observed_at)||Date.parse(d.observed_at)>Date.parse(rb.observed_at)+1800000)err('YW599_ORIGINAL_DRILL_CHAIN_HOLD');
  const message=rollbackWitnessMessage(rb,ww,reviewerId,stamp(d.observed_at));
  if(await sha(message)!==d.reviewer_evidence_sha256||!await verify('YW597_CUTOVER_HMAC_KEY',message,d.reviewer_local_hmac))err('YW599_ORIGINAL_REVIEWER_SIGNATURE_HOLD');
- const challenge={companyId,executionId:ww.ex.id,rollbackDrillId:d.id,nonce:crypto.randomUUID(),oldContractId:ww.pr.rot.oldc.contract_id,nextContractId:ww.pr.rot.newc.contract_id,issuedAt:new Date().toISOString()};
+ return {companyId,executionId:ww.ex.id,rollbackDrillId:d.id,sourceReceiptId:can.prior.master_receipt_id,ownerId,reviewerId,auditorId:actorId,oldContractId:ww.pr.rot.oldc.contract_id,nextContractId:ww.pr.rot.newc.contract_id};
+}
+export async function readVerifiedFinalCutover(args){
+ const chain=await verifyOriginalDrill(args);
+ const {companyId,executionId,rollbackDrillId,oldContractId,nextContractId}=chain;
+ const challenge={companyId,executionId,rollbackDrillId,nonce:crypto.randomUUID(),oldContractId,nextContractId,issuedAt:new Date().toISOString()};
  const response=await remote({schema:'rosevear.yw.final-cutover-readback-request.v1',...challenge,readOnly:true,noRemoteMutation:true,noSourceBytes:true});
  const result=await verifyCutoverReadback({challenge,response,oldKey:env('YW592_MASTER_ACK_KEY'),nextKey:env('YW596_RECEIVER_NEXT_ACK_KEY')});
  // The external signed current state is a report, not physical presence or an operation performed here.
- return {state:result.state,companyId,executionId:ww.ex.id,rollbackDrillId:d.id,sourceReceiptId:can.prior.master_receipt_id,ownerId,reviewerId,auditorId:actorId,challenge,payload:result.payload,oldSignature:result.oldSignature,nextSignature:result.nextSignature,verifiedAt:new Date().toISOString(),remoteMutationPerformed:false};
+ return {state:result.state,...chain,challenge,payload:result.payload,oldSignature:result.oldSignature,nextSignature:result.nextSignature,verifiedAt:new Date().toISOString(),remoteMutationPerformed:false};
 }
