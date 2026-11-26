@@ -118,8 +118,8 @@ grant execute on function public.ywi_599_claim_notification(uuid,uuid,uuid,text)
 create table public.ywi_599_final_cutover_receipts(
  id uuid primary key default gen_random_uuid(),
  company_id uuid not null references public.ywi_companies(id),
- execution_id uuid not null references public.ywi_598_execution_receipts(id),
- rollback_drill_id uuid not null references public.ywi_598_rollback_drills(id),
+ execution_id uuid not null,
+ rollback_drill_id uuid not null,
  owner_id uuid not null references auth.users(id),
  reviewer_id uuid not null references auth.users(id),
  auditor_id uuid not null references auth.users(id),
@@ -131,8 +131,10 @@ create table public.ywi_599_final_cutover_receipts(
  old_signature text not null check(old_signature ~ '^[0-9a-f]{64}$'),
  next_signature text not null check(next_signature ~ '^[0-9a-f]{64}$'),
  verified_at timestamptz not null,
+ foreign key(company_id,execution_id) references public.ywi_598_execution_receipts(company_id,id),
+ foreign key(company_id,rollback_drill_id) references public.ywi_598_rollback_drills(company_id,id),
  check(owner_id<>reviewer_id and owner_id<>auditor_id and reviewer_id<>auditor_id),
- check(response_payload->>'state'='NEXT_ACTIVE_OLD_ACCEPTED'),
+ check((response_payload->>'state') is not distinct from 'NEXT_ACTIVE_OLD_ACCEPTED'),
  unique(company_id,id)
 );
 alter table public.ywi_599_final_cutover_receipts enable row level security;
