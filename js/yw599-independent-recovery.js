@@ -11,7 +11,7 @@
   p.append(el('summary','YW599 · Independent Master outage notification custody'),el('p','Recorded ACK freshness alerts are not direct uptime measurements. Delivery requires genuine independent provider enrollment, two authorized people and explicit owner confirmation. Unknown delivery never triggers automatic retry. No key change or customer messages.'));
   const form=el('div');form.className='yw598-grid';p.append(form);
   function input(label){const l=el('label',label),i=el('input');i.autocomplete='off';i.spellcheck=false;l.append(i);form.append(l);return i}
-  const company=input('Original company UUID'),enrollment=input('Provider enrollment UUID'),alert=input('Original health alert UUID');
+  const company=input('Original company UUID'),enrollment=input('Provider enrollment UUID'),alert=input('Original health alert UUID'),drill=input('Original YW598 rollback drill UUID'),cutover=input('YW599 final signed cutover receipt UUID'),claim=input('YW599 verified notification claim UUID');
   const check=el('input');check.type='checkbox';const label=el('label');label.append(check,document.createTextNode(' I explicitly authorize the selected action using the displayed provider and approved recipient reference.'));p.append(label);
   const controls=el('div');controls.className='yw598-actions';p.append(controls);
   const status=el('p','HOLD · Load authenticated private overview first.');status.setAttribute('role','status');status.setAttribute('aria-live','polite');p.append(status);
@@ -39,6 +39,9 @@
     for(const r of d.alerts||[])add('Alert '+r.id+' | '+r.issue_code+' | '+r.detected_at);
    }else if(d.enrollmentId)add('Enrollment UUID: '+d.enrollmentId);
    else if(d.claimId)add('Claim UUID: '+d.claimId);
+   else if(d.cutoverReceiptId)add('Final signed cutover receipt UUID: '+d.cutoverReceiptId);
+   else if(d.auditId)add('Signed tenant recovery audit UUID: '+d.auditId);
+   else if(Number.isInteger(d.verifiedTenantCount))add('Distinct tenants with recent signed audit records: '+d.verifiedTenantCount+'; snapshot only, not continuous certification.');
   }
   function button(text,action){
    const b=el('button',text);b.type='button';controls.append(b);buttons.push(b);
@@ -46,7 +49,12 @@
     if(busy)return;busy=true;const start=epoch;buttons.forEach(x=>x.disabled=true);
     try{
      const companyId=valid(company);let body={action,companyId};
-     if(action!=='overview'){
+     if(action==='read-final-cutover'||action==='audit-tenant'){
+      if(!check.checked)throw Error('Explicit independent read-only evidence confirmation required.');
+      check.checked=false;body.confirmed=true;
+      if(action==='read-final-cutover')body.rollbackDrillId=valid(drill);
+      else {body.cutoverId=valid(cutover);body.claimId=valid(claim)}
+     }else if(action!=='overview'&&action!=='audit-platform'){
       if(!view||view.companyId!==companyId||view.user!==session().user?.id||!check.checked)throw Error('Reload private overview and explicitly confirm this action.');
       body.confirmed=true;check.checked=false;
       if(action!=='enroll')body.enrollmentId=valid(enrollment);
@@ -66,8 +74,11 @@
   button('Separate reviewer: approve enrollment','approve');
   button('Owner/reviewer: revoke enrollment','revoke');
   button('Owner: send one selected original alert','deliver');
+  button('Independent enrolled Sysop: read signed final cutover after external operation','read-final-cutover');
+  button('Separate reviewer: reverify and record tenant recovery audit','audit-tenant');
+  button('Curated Sysop: view aggregate recent signed recovery audit','audit-platform');
   lastUser=session().user?.id;
-  sb()?.auth?.onAuthStateChange?.(()=>{queueMicrotask(()=>{const u=session().user?.id;if(u!==lastUser){lastUser=u;reset();company.value='';enrollment.value='';alert.value=''}})});
+  sb()?.auth?.onAuthStateChange?.(()=>{queueMicrotask(()=>{const u=session().user?.id;if(u!==lastUser){lastUser=u;reset();company.value='';enrollment.value='';alert.value='';drill.value='';cutover.value='';claim.value=''}})});
   jobs.append(p);
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
