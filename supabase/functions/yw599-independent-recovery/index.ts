@@ -51,7 +51,7 @@ Deno.serve(async req=>{
  if(new Set(Object.values(keys)).size!==4||Object.values(keys).some(k=>new TextEncoder().encode(k).length<32))return reply(409,{state:'KEY_SEPARATION_HOLD'});
  const providerRef=/^[A-Za-z0-9_-]{8,128}$/;
  const u=new URL(config.url),h=config.host,m=env('YW593_MASTER_ALLOWED_HOST').toLowerCase();
- if(config.masterHost!==m||typeof h!=='string'||h!==h.toLowerCase()||!h.includes('.')||!m.includes('.')||u.protocol!=='https:'||u.hostname!==h||h===m||h.endsWith('.'+m)||m.endsWith('.'+h)||u.port||u.username||u.password||u.search||u.hash||h.endsWith('.local')||h.endsWith('.internal')||/^[\d.]+$/.test(h)||!providerRef.test(config.providerId)||!providerRef.test(config.recipientRef)||config.noPaidProvider!==true||config.providerEnrolled!==true||config.approvedRecipient!==true)return reply(409,{state:'PROVIDER_CONFIG_HOLD'});
+ if(config.companyId!==b.companyId||config.masterHost!==m||typeof h!=='string'||h!==h.toLowerCase()||!h.includes('.')||!m.includes('.')||u.protocol!=='https:'||u.hostname!==h||h===m||h.endsWith('.'+m)||m.endsWith('.'+h)||u.port||u.username||u.password||u.search||u.hash||h.endsWith('.local')||h.endsWith('.internal')||/^[\d.]+$/.test(h)||!providerRef.test(config.providerId)||!providerRef.test(config.recipientRef)||config.noPaidProvider!==true||config.providerEnrolled!==true||config.approvedRecipient!==true)return reply(409,{state:'PROVIDER_CONFIG_HOLD'});
  const configSha=await digest(config);
  if(action==='overview'){
   if(!exact(['action','companyId']))return reply(400,{state:'REQUEST_HOLD'});
