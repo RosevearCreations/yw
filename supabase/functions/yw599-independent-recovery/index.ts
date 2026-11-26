@@ -1,4 +1,5 @@
 import {digest,sign,verify} from '../_shared/yw599-independent-recovery.mjs';
+import {readVerifiedFinalCutover} from '../_shared/yw599-original-cutover-chain.mjs';
 import {deliverOriginalAlert} from '../_shared/yw599-notification-runtime.mjs';
 const origins=new Set(['https://yw-alpha.vercel.app','https://yardweasels.ca','https://www.yardweasels.ca']);
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -6,7 +7,7 @@ const env=(n:string)=>{const v=Deno.env.get(n);if(!v)throw Error('CONFIG_HOLD');
 const tables=new Set(['ywi_599_provider_enrollments','ywi_599_provider_approvals','ywi_599_provider_revocations','ywi_companies','ywi_591_tenant_pilots','profiles','ywi_597_health_alerts','ywi_597_health_enrollments']);
 Deno.serve(async req=>{
  const origin=req.headers.get('origin')||'';
- const headers={'content-type':'application/json','cache-control':'no-store','vary':'Origin',...(origins.has(origin)?{'access-control-allow-origin':origin,'access-control-allow-headers':'authorization, apikey, content-type','access-control-allow-methods':'POST, OPTIONS'}:{})};
+ const headers={'content-type':'application/json','cache-control':'no-store','vary':'Origin',...(origins.has(origin)?{'access-control-allow-origin':origin,'access-control-allow-headers':'authorization, apikey, x-client-info, content-type','access-control-allow-methods':'POST, OPTIONS'}:{})};
  const reply=(status:number,data:unknown)=>new Response(JSON.stringify(data),{status,headers});
  if(origin&&!origins.has(origin))return reply(403,{state:'ORIGIN_HOLD'});
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers});
@@ -45,6 +46,14 @@ Deno.serve(async req=>{
  const company=await db.one('ywi_companies',{id:b.companyId});
  const pilot=await db.one('ywi_591_tenant_pilots',{company_id:b.companyId,owner_user_id:company.owner_user_id,state:'APPROVED'});
  const owner=company.owner_user_id===user.id,reviewer=pilot.reviewer_user_id===user.id&&!owner;
+ if(action==='read-final-cutover'){
+  if(!exact(['action','companyId','rollbackDrillId','confirmed'])||typeof b.rollbackDrillId!=='string'||!uuid.test(b.rollbackDrillId)||b.confirmed!==true||!(Date.parse(pilot.expires_at)>Date.now()))return reply(400,{state:'CUTOVER_REQUEST_HOLD'});
+  const result=await readVerifiedFinalCutover({companyId:b.companyId,ownerId:company.owner_user_id,reviewerId:pilot.reviewer_user_id,actorId:user.id,drillId:b.rollbackDrillId,confirmed:true});
+  const row=await rest('ywi_599_final_cutover_receipts','POST',{company_id:result.companyId,execution_id:result.executionId,rollback_drill_id:result.rollbackDrillId,owner_id:result.ownerId,reviewer_id:result.reviewerId,auditor_id:result.auditorId,challenge_nonce:result.challenge.nonce,remote_receipt_id:result.payload.receiptId,source_receipt_ref:result.sourceReceiptId,challenge:result.challenge,response_payload:result.payload,old_signature:result.oldSignature,next_signature:result.nextSignature,verified_at:result.verifiedAt});
+  if(!Array.isArray(row)||row.length!==1||!uuid.test(row[0].id))return reply(409,{state:'CUTOVER_PERSISTENCE_HOLD'});
+  return reply(200,{state:'SIGNED_REMOTE_CUTOVER_REPORTED',cutoverReceiptId:row[0].id,remoteMutationPerformed:false});
+ }
+
  if(!owner&&!reviewer||pilot.owner_user_id===pilot.reviewer_user_id||!(Date.parse(pilot.expires_at)>Date.now()))return reply(403,{state:'TENANT_AUTHORITY_HOLD'});
  const config=JSON.parse(env('YW599_APPROVED_PROVIDER_CONFIG'));
  const keys={owner:env('YW599_OWNER_CONSENT_KEY'),reviewer:env('YW599_REVIEWER_APPROVAL_KEY'),request:env('YW599_PROVIDER_REQUEST_KEY'),receipt:env('YW599_PROVIDER_RECEIPT_KEY')};
