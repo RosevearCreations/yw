@@ -47,7 +47,7 @@ Deno.serve(async req=>{
  const pilot=await db.one('ywi_591_tenant_pilots',{company_id:b.companyId,owner_user_id:company.owner_user_id,state:'APPROVED'});
  const owner=company.owner_user_id===user.id,reviewer=pilot.reviewer_user_id===user.id&&!owner;
  if(!owner&&!reviewer||pilot.owner_user_id===pilot.reviewer_user_id||!(Date.parse(pilot.expires_at)>Date.now()))return reply(403,{state:'TENANT_AUTHORITY_HOLD'});
- if(action==='deliver'&&Deno.env.get('YW600_DELIVERY_ENABLED')!=='true')return reply(409,{state:'FAILOVER_DISABLED_HOLD'});
+ if(action==='deliver')return reply(409,{state:'FAILOVER_DISABLED_HOLD'});
  const configured=JSON.parse(env('YW600_SECONDARY_PROVIDER_CONFIG'));
  const candidates=(Array.isArray(configured)?configured:[configured]).filter(c=>c?.companyId===b.companyId);
  if(candidates.length!==1)return reply(409,{state:'PROVIDER_CONFIG_HOLD'});
@@ -65,7 +65,7 @@ Deno.serve(async req=>{
   const enrollments=await Promise.all(rows.map(async(e:any)=>({id:e.id,providerId:e.provider_id,recipientRef:e.recipient_ref,expiresAt:e.expires_at,configCurrent:e.config_sha256===configSha,approved:!!await db.optional('ywi_599_provider_approvals',{enrollment_id:e.id}),revoked:!!await db.optional('ywi_599_provider_revocations',{enrollment_id:e.id})})));
   const aq=new URLSearchParams({select:'id,issue_code,detected_at',company_id:'eq.'+b.companyId,order:'detected_at.desc',limit:'20'});
   const alerts=owner?await rest('ywi_597_health_alerts?'+aq):[];
-  return reply(200,{state:'PRIVATE_OVERVIEW',role:owner?'OWNER':'REVIEWER',providerId:config.providerId,recipientRef:config.recipientRef,configSha,deliveryEnabled:Deno.env.get('YW600_DELIVERY_ENABLED')==='true',enrollments,alerts});
+  return reply(200,{state:'PRIVATE_OVERVIEW',role:owner?'OWNER':'REVIEWER',providerId:config.providerId,recipientRef:config.recipientRef,configSha,deliveryEnabled:false,enrollments,alerts});
  }
  if(action==='enroll'){
   if(!owner||!exact(['action','companyId','configSha','confirmed'])||b.confirmed!==true||b.configSha!==configSha)return reply(403,{state:'OWNER_CONSENT_HOLD'});
