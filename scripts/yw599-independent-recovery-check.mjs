@@ -88,3 +88,50 @@ assert.match(edge,/action==='read-final-cutover'/);
 assert.match(edge,/action==='audit-tenant'/);
 assert.match(edge,/continuousCertification:false/);
 console.log('YW599 cutover and audit negative authority fixtures and source wiring guards passed');
+
+/* Exercise the actual request handler with an isolated Auth/REST adapter. This
+   is not live user authentication or operational receipt certification. */
+{
+ const originalFetch=globalThis.fetch, originalDeno=globalThis.Deno;
+ const fixtureEnv={SUPABASE_URL:'https://db-fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture-only-service',YW599_APPROVED_PROVIDER_CONFIG:JSON.stringify(cfg),YW599_OWNER_CONSENT_KEY:ownerKey,YW599_REVIEWER_APPROVAL_KEY:reviewerKey,YW599_PROVIDER_REQUEST_KEY:key,YW599_PROVIDER_RECEIPT_KEY:receiptKey,YW593_MASTER_ALLOWED_HOST:cfg.masterHost,YW599_DELIVERY_ENABLED:'false'};
+ let handler, actor=company.owner_user_id, rejectAuth=false, writes=0, providerCalls=0;
+ globalThis.Deno={env:{get:n=>fixtureEnv[n]},serve:fn=>{handler=fn}};
+ globalThis.fetch=async(url,opt={})=>{
+  const u=new URL(url);
+  if(u.hostname!=='db-fixture.invalid'){providerCalls++;throw Error('network forbidden in fixture');}
+  if(u.pathname==='/auth/v1/user')return rejectAuth?new Response('{}',{status:401}):Response.json({id:actor});
+  if(opt.method==='POST'){writes++;throw Error('writes forbidden in fixture');}
+  const table=u.pathname.split('/').at(-1);
+  if(table==='profiles')return Response.json([{id:actor,is_active:true,role:'user'}]);
+  if(table==='ywi_companies')return Response.json([company]);
+  if(table==='ywi_591_tenant_pilots')return Response.json([{...pilot,expires_at:new Date(Date.now()+3600000).toISOString()}]);
+  if(table==='ywi_599_provider_enrollments'||table==='ywi_597_health_alerts')return Response.json([]);
+  throw Error('unexpected fixture query '+table);
+ };
+ try {
+  // Node 22.18+ supports native TS stripping. Older Node 22 is unsupported by this test.
+  await import('../supabase/functions/yw599-independent-recovery/index.ts');
+  assert.equal(typeof handler,'function');
+  const endpoint='https://fixture.invalid/functions/v1/yw599-independent-recovery';
+  const req=(body,token='Bearer fixture.test.token',origin='https://yw-alpha.vercel.app')=>handler(new Request(endpoint,{method:'POST',headers:{'content-type':'application/json',authorization:token,origin},body:JSON.stringify(body)}));
+  const overview={action:'overview',companyId:company.id};
+  assert.equal((await req(overview,'')).status,401);
+  rejectAuth=true;assert.equal((await req(overview)).status,401);rejectAuth=false;
+  assert.equal((await req(overview,'Bearer fixture.test.token','https://foreign.invalid')).status,403);
+  actor=uid(99);assert.equal((await req(overview)).status,403);
+  actor=company.owner_user_id;let result=await req(overview);assert.equal(result.status,200);
+  let out=await result.json();assert.equal(out.role,'OWNER');assert.equal(out.deliveryEnabled,false);
+  const send={action:'deliver',companyId:company.id,alertId:alert.id,enrollmentId:er.id,confirmed:true};
+  result=await req(send);assert.equal(result.status,409);assert.equal((await result.json()).state,'DELIVERY_DISABLED_HOLD');
+  actor=pilot.reviewer_user_id;result=await req(overview);assert.equal(result.status,200);out=await result.json();assert.equal(out.role,'REVIEWER');assert.deepEqual(out.alerts,[]);
+  assert.equal((await req(send)).status,400);
+  assert.equal(writes,0);assert.equal(providerCalls,0);
+ }finally{globalThis.fetch=originalFetch;if(originalDeno===undefined)delete globalThis.Deno;else globalThis.Deno=originalDeno;}
+ console.log('YW599 actual handler fixture: Auth rejection, tenant/role isolation, delivery disabled, no writes/network passed');
+}
+if(process.env.GITHUB_ACTIONS==='true'){
+ // Anonymous request only; no tokens, provider calls or real user data.
+ const r=await fetch('https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/yw599-independent-recovery',{method:'POST',headers:{'content-type':'application/json'},body:'{}',redirect:'error',signal:AbortSignal.timeout(10000)});
+ assert.equal(r.status,401,'live deployed gateway must reject anonymous POST');
+ console.log('YW599 deployed gateway anonymous POST rejected (401); authenticated original field acceptance remains separate');
+}
