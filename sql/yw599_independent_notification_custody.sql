@@ -92,4 +92,30 @@ begin
 end;$fn$;
 revoke all on function public.ywi_599_claim_notification(uuid,uuid,uuid,text) from public,anon,authenticated;
 grant execute on function public.ywi_599_claim_notification(uuid,uuid,uuid,text) to service_role;
+
+-- Fresh final readback after the original separately witnessed rollback.
+create table public.ywi_599_final_cutover_receipts(
+ id uuid primary key default gen_random_uuid(),
+ company_id uuid not null references public.ywi_companies(id),
+ execution_id uuid not null references public.ywi_598_execution_receipts(id),
+ rollback_drill_id uuid not null references public.ywi_598_rollback_drills(id),
+ owner_id uuid not null references auth.users(id),
+ reviewer_id uuid not null references auth.users(id),
+ auditor_id uuid not null references auth.users(id),
+ challenge_nonce uuid not null unique,
+ remote_receipt_id text not null unique check(remote_receipt_id ~ '^[A-Za-z0-9_-]{8,128}$'),
+ source_receipt_ref text not null,
+ challenge jsonb not null,
+ response_payload jsonb not null,
+ old_signature text not null check(old_signature ~ '^[0-9a-f]{64}$'),
+ next_signature text not null check(next_signature ~ '^[0-9a-f]{64}$'),
+ verified_at timestamptz not null,
+ check(owner_id<>reviewer_id and owner_id<>auditor_id and reviewer_id<>auditor_id),
+ check(response_payload->>'state'='NEXT_ACTIVE_OLD_ACCEPTED'),
+ unique(company_id,id)
+);
+alter table public.ywi_599_final_cutover_receipts enable row level security;
+revoke all on public.ywi_599_final_cutover_receipts from public,anon,authenticated;
+grant select,insert on public.ywi_599_final_cutover_receipts to service_role;
+create trigger yw599_final_cutover_immutable before update or delete on public.ywi_599_final_cutover_receipts for each row execute function public.ywi_591_forbid_change();
 commit;
