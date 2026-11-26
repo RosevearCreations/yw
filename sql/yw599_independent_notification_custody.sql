@@ -106,7 +106,7 @@ begin
  select x.claimed_at,y.state,x.source_sha256 into prev from public.ywi_599_notification_claims x left join public.ywi_599_notification_results y on y.claim_id=x.id where x.enrollment_id=e.id and x.alert_id=a.id order by x.attempt desc limit 1;
  if prev.source_sha256<>p_source_sha then raise exception 'YW599 source digest HOLD'; end if;
  if prev.state is distinct from 'DEFINITIVE_FAILURE' then return jsonb_build_object('state','HOLD_NO_RETRY'); end if;
- if prev.claimed_at+case when n=1 then interval '1 minute' else interval '5 minutes' end>now() then return jsonb_build_object('state','WAIT_BACKOFF'); end if;
+ if prev.claimed_at + (case when n=1 then interval '1 minute' else interval '5 minutes' end) > now() then return jsonb_build_object('state','WAIT_BACKOFF'); end if;
  end if;
  insert into public.ywi_599_notification_claims(company_id,enrollment_id,alert_id,attempt,source_sha256) values(p_company,e.id,a.id,n+1,p_source_sha) returning * into c;
  return jsonb_build_object('state','ATOMIC_CLAIMED','companyId',p_company,'enrollmentId',e.id,'alertId',a.id,'nonce',c.id,'attempt',c.attempt,'claimedAt',c.claimed_at,'sourceSha256',c.source_sha256,'providerId',e.provider_id,'recipientRef',e.recipient_ref,'issueCode',a.issue_code);
