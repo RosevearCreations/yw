@@ -99,3 +99,6 @@ verify_jwt = true
 
 [functions.yw598-original-cutover-rollback-alert]
 verify_jwt = true
+
+[functions.yw599-independent-recovery]
+verify_jwt = true
