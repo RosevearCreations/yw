@@ -1,5 +1,85 @@
 # Next Steps and Sanity Check
 
+
+## Primary future build queue — YW602–YW631
+
+Owner-adopted roadmap, 27 November 2026, from the approved Yard Workers 30-build programme and Rosevear All Applications Source of Truth (26 November 2026). This is the primary planning sequence for new work, not evidence of implementation or blanket authorization to release every build. It supersedes older proposed next-build numbering below; preserve historical evidence and unresolved operational gates. GitHub protected release records remain the authority for actual production status. Announce and verify each next build against the live queue before implementation.
+
+### First gate: unmistakable Shell and subscribing-company separation
+
+Before requesting any real Rosevear Landscaping data entry, verify at the start of YW602 that the Yard Workers Shell (software provider, Sysop support, SaaS subscriptions and privacy-safe diagnostics) and each tenant company workspace (customers, properties, employees, jobs and independent books) are visibly and technically distinct. Show signed-in identity, role and active company or Shell context, explicit authorized workspace entry/switching, and no accidental company-business operations or customer/financial records in the Shell. Verify normal owner access and denied cross-company reads/writes through server-side authorization, isolated multi-tenant fixtures, phone/tablet/desktop journeys, and any available authorized live accounts. Fix the first demonstrated separation defect before inviting real data entry. Keep the actual company data entry on HOLD until this gate is demonstrated; continue unrelated YW tasks autonomously. Rosevear Landscaping is a subscribing/sample company, not the SaaS provider. Do not create a fake live customer or tenant or claim real second-tenant acceptance. YW626 subsequently deepens the provider Shell; basic separation is an immediate prerequisite, not deferred until YW626.
+
+### Phase 1 — Customer portal and interactive property maps
+
+| Build | Scope and acceptance objective |
+|---|---|
+| YW602 | Customer Property Workflow Acceptance & Interactive Maps — baseline existing portal, verify Shell/company separation, private authorized aerial imagery, zone selection and customer-initiated extras. |
+| YW603 | Multi-Property Ownership & Customer Permissions — owners, residents, payers, managers and site contacts; multiple properties, delegated approval and spending limits. |
+| YW604 | Smart Service Wizard & Custom Requests — guided and manual scope, dimensions, photographs, seasonal recommendations, saved drafts, estimator assistance. |
+| YW605 | Intelligent Estimating & Digital Quote Acceptance — labour, materials, equipment, disposal, subcontracting, options, deposits, revisions and authenticated approval. |
+| YW606 | Live Property Monitoring & Service Requests — zone markers, tickets, damage reports, extras, status and customer-to-dispatch synchronization. |
+| YW607 | Customer Sign-Off & Complete Service Journey — before/after evidence, approved changes, satisfaction, invoice references, rebooking and duplicate-proof offline reconciliation. |
+
+Acceptance example: manager requests mulch for the north bed during mowing; estimator issues a versioned quote; authorized payer accepts, resident sees progress but cannot approve; crew completes the approved change; invoice identifies property, zone, job and quantity. Replay twice offline yields one charge. Weather-postponed visits are not billed as completed. Maps use accessible labelled states for scheduled, working, delayed, approval required, reported issue and complete; retain independent zone badges and list alternatives.
+
+### Phase 2 — Dispatch, field operations and service industries
+
+| Build | Scope and acceptance objective |
+|---|---|
+| YW608 | Intelligent Dispatch, Route Optimization & Territory Management — route/travel time, crew, equipment, windows, service areas. |
+| YW609 | Weather Intelligence & Seasonal Operations — workability, snow/rain triggers, seasonal workloads, postponements, alternative schedules, consented cancellation-slot recovery. |
+| YW610 | Mobile Crew Workspace & Offline Continuity — assignments, navigation, times, photos, material use, completion and reconnection without duplicates. |
+| YW611 | Property Protection & Temporary No-Work Zones — new turf, plants, access, utilities and versioned temporary exclusion boundaries; exclude one zone for two visits and reconcile an offline crew after boundary changes. |
+| YW612 | Materials, Inventory, Purchasing & Equipment Intelligence — estimating, supplier quotes, receipt, allocation, QR identification, inspection, service and breakdown recovery. |
+| YW613 | Workforce, Safety, Training & Quality Management — HR, qualifications, timesheets, hazard assessment, applicable Ontario OHSA workflows, incidents, sign-off and rework. |
+| YW614 | Seven-Service Industry Operational Acceptance — landscaping, snow removal, snow plowing, construction, arboriculture, septic and aquatic/recreational facilities including ponds and skateparks; service-specific journeys and shared business rules. |
+
+### Phase 3 — Financials, accounting and profitability
+
+| Build | Scope and acceptance objective |
+|---|---|
+| YW615 | Estimate-to-Invoice Financial Continuity — accepted scope, visits, extras, quantities and itemized property/zone/job invoices. |
+| YW616 | Recurring Contracts & Progress Billing — seasonal, per-visit, recurring, milestones, renewals, deposits and deferred work. |
+| YW617 | Customer Payments, Credits, Refunds & Settlement — authorized provider integration, manual tender, deposits, partial payments, refunds, fees and duplicate prevention. |
+| YW618 | Disputed Invoice Lines & Intelligent Receivables — line-level disputes, undisputed payment, credits, reminder suppression, aging and payer statements. |
+| YW619 | Purchasing, Payables, Payroll & Job Costing — purchase orders, supplier bills, receiving, labour/payroll imports, subcontractors, equipment and actual-versus-estimated margins. |
+| YW620 | General Ledger, Taxation & Bank Reconciliation — independent ledgers, applicable GST/HST and US tax configuration, journals, imports, reconciliation and fixed assets. |
+| YW621 | Complete Financial Close & Accountant Export — trial balance, P&L, balance sheet, cash flow, period locks, correction/reversal, Canadian GIFI mapping and configurable US exports. |
+
+Finance acceptance: each seller owns independent books; Masters are not posting dependencies. Test CAD 300 invoice with CAD 60 disputed extra and CAD 240 undisputed payment, no duplicate allocation or contested-line reminders, then approved resolution. Trace quote through settlement, bank and ledger. Existing finance posting/provider safety gates remain fail-closed until specifically authorized and tested; simulated payments are not live evidence.
+
+### Phase 4 — Commercial SaaS and tenant onboarding
+
+| Build | Scope and acceptance objective |
+|---|---|
+| YW622 | Self-Service Company Registration & Guided Onboarding — company, regions, settings, enabled service industries, roles and setup. |
+| YW623 | Intelligent Customer & Property Data Migration — one payer/three properties, duplicate detection, CSV mapping, recurring visits, dry-run correction, owner-approved versioned import, reconciliation and rollback. |
+| YW624 | Subscription Plans, Entitlements & Commercial Billing — tiers, trials, subscriptions, optional modules, upgrades/cancellations and separation from tenant books. |
+| YW625 | Branded Customer Websites & Managed Business Launch — branding, domains, enquiries, approved mailboxes, invitations, service catalogue and managed setup. |
+| YW626 | Yard Workers Shell V2 & Tenant Support Centre — platform Sysops, redacted tenant health, subscription administration, scoped assistance and audit/support cases. |
+
+### Phase 5 — Intelligence, reliability and commercial acceptance
+
+| Build | Scope and acceptance objective |
+|---|---|
+| YW627 | AI Business Advisor & Management Command Centre — unprofitable services/routes, equipment gaps, overdue invoices, staff conflicts, seasons and risks; human approval for consequential actions. |
+| YW628 | Intelligent Property History & Repeat Photography — condition timeline, repeat viewpoints, drainage after rainfall, recommendations, private QR reporting and service history. |
+| YW629 | Master Integration & Independent Operational Continuity — YW-side durable queues, authorized redacted summaries, signed receipts, predictive freshness, bounded escalation and recovery verification without blocking local business. |
+| YW630 | Complete Interface, Accessibility & Performance Modernization — preserve blue/futuristic themes, Tier 1–3 role/service/component navigation, searchable authorized selectors instead of UUID entry, help, desktop/tablet/phone. |
+| YW631 | Full Commercial SaaS Acceptance & Launch Readiness — all seven industries, independent tenants/roles/books, subscriptions, finance close, privacy, backup/restore, complete customer journeys, readiness and exception register. |
+
+### Permanent delivery rules
+
+- Reuse demonstrated working functionality; select the first verified gap and retain accurate release, journey and physical-field evidence separately. The proposed queue is not a claim of missing functionality, delivery or commercial readiness.
+- Aim for a meaningful 5–10 percentage-point improvement when a named capability baseline and actual measurements justify it. Report observed coverage, not invented percentages.
+- Run authorized account journeys, isolated test data, browser and Python/existing regression suites autonomously. Distinguish synthetic fixtures, emulated device sizes and actual live/physical evidence. Never invent a consenting live tenant, provider receipt, human attestation or outage recovery.
+- Keep YW in its own repository and chat; mark only the blocked dependency HOLD and continue independent authorized work. Do not wait for other applications or perform their work. No unapproved paid upgrades, quota bypass, notifications, payments, finance posting or key rotation.
+- Only request essential owner participation; specify WHEN, WHERE, HOW, expected result and what to return in one consolidated instruction. Real Rosevear Landscaping entry is not requested until the workspace separation gate passes.
+- Protected feature → dev → main promotion, required tests, exact production READY and live alias verification, reconcile dev/main without force/bypass. Keep the existing three active Markdown documents; no extra roadmap or release-handoff Markdown. Record actual release evidence in GitHub, not in static queue status.
+- Next planned build: YW602. This documentation adoption does not itself start the feature or authorize all subsequent releases.
+
+
+
 ## YW 556 — Canonical Job & Dispatch Exception Recovery, Crew Reassignment and Customer Confirmation Gates (2026-11-10)
 
 **Original authority remains unchanged.** A verified company owner uses Settings → Landscaping → Original Job/Dispatch Exception Recovery to open a versioned, reason-coded exception against an independently verified YW555 original Job/Dispatch. This creates an owner-only case and append-only audit, never a new original Job, schedule or crew assignment. Ree/Jack Sysop view is not an operational override.
