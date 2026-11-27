@@ -20,3 +20,13 @@ jobs:
       - run: node scripts/yw601-edge-handler-check.mjs
       - run: node --check js/yw601-predictive-assurance.js
       - run: node --check supabase/functions/_shared/yw601-original-contracts.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config=playwright.config.mjs tests/browser/yw601-predictive-assurance.spec.mjs
