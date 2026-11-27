@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {canonical} from '../supabase/functions/_shared/yw599-independent-recovery.mjs';
-import {assessEvidence} from '../supabase/functions/_shared/yw601-predictive-assurance.mjs';
+import {assessEvidence,reviewResumedEvidence} from '../supabase/functions/_shared/yw601-predictive-assurance.mjs';
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),now=Date.parse('2026-11-27T15:00:00Z'),iso=t=>new Date(t).toISOString();
 const enc=new TextEncoder(),hex=b=>Array.from(new Uint8Array(b),v=>v.toString(16).padStart(2,'0')).join('');
 const sha=async s=>hex(await crypto.subtle.digest('SHA-256',enc.encode(s)));
@@ -32,3 +32,14 @@ assert.equal((await assess([recent[0],recent[0]])).state,'UNKNOWN_EVIDENCE_VERIF
 assert.equal((await assess(Array(97).fill(recent[0]))).state,'UNKNOWN_UNBOUNDED_INPUT');
 for(const r of [await assess(recent),await assess(trend),await assess([])]){assert.equal(r.outageConfirmed,false);assert.equal(r.recoveryConfirmed,false);assert.equal(r.automaticRecoveryPerformed,false);assert.equal(r.automaticNotificationSent,false);}
 console.log('YW601 synthetic signature, time, tenant, replay, sample limit and risk classification tests passed; no live evidence or recovery claim.');
+
+const alert={id:id(600),company_id:enrollment.company_id,enrollment_id:enrollment.id,source:'DB_CRON_15_MINUTE_EVIDENCE_WATCH',issue_code:'NO_SIGNED_MASTER_ACK_30M',detected_at:iso(now-45*60000)};
+const reviewerId=id(601),reviewArgs={enrollment,rows:recent,alert,contractIds,keys,actorId:reviewerId,reviewerId,now};
+const recovered=await reviewResumedEvidence(reviewArgs);
+assert.equal(recovered.state,'RESUMED_SIGNED_OBSERVATIONS_INDEPENDENTLY_REVERIFIED');
+assert.equal(recovered.physicalRecoveryConfirmed,false);
+assert.equal(recovered.alertClosed,false);
+for(const patch of [{actorId:enrollment.owner_user_id},{actorId:id(777)},{alert:{...alert,company_id:id(888)}},{alert:{...alert,detected_at:iso(now-2*60000)}},{rows:[recent.at(-1)]},{rows:[recent[0],recent[0]]},{rows:[{...recent[0],next_hmac:'f'.repeat(64)},...recent.slice(1)]}]){
+ assert.equal((await reviewResumedEvidence({...reviewArgs,...patch})).state,'RECOVERY_EVIDENCE_HOLD');
+}
+console.log('YW601 independent reviewer resumed-observation checks passed, no physical recovery asserted.');
