@@ -10,16 +10,12 @@ const canon=x=>Array.isArray(x)?'['+x.map(canon).join(',')+']':
 const sha=async x=>hex(await crypto.subtle.digest('SHA-256',typeof x==='string'?utf(x):x));
 const env=k=>{const v=Deno.env.get(k);if(!v)err('YW597_PRIVATE_SERVER_CONFIG_'+k+'_HOLD');return v;};
 async function key(n){return crypto.subtle.importKey('raw',utf(env(n)),{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);}
-async function sign(n,msg){return hex(await crypto.subtle.sign('HMAC',await key(n),utf(msg)));}
 async function verify(n,msg,sig){return typeof sig==='string'&&SHA.test(sig)&&
  crypto.subtle.verify('HMAC',await key(n),new Uint8Array(sig.match(/../g).map(x=>parseInt(x,16))),utf(msg));}
-async function service(path,method='GET',data){
+async function service(path){
  const k=env('SUPABASE_SERVICE_ROLE_KEY');
- const r=await fetch(env('SUPABASE_URL')+path,{method,headers:{apikey:k,authorization:'Bearer '+k,
-  ...(data?{'content-type':'application/json','prefer':'return=representation'}:{})},
-  ...(data?{body:JSON.stringify(data)}:{})});
- if(!r.ok)err('YW597_ORIGINAL_PRIVATE_DB_OR_AUTHORITY_HOLD');
- return r.json();
+ const r=await fetch(env('SUPABASE_URL')+path,{headers:{apikey:k,authorization:'Bearer '+k},signal:AbortSignal.timeout(4000)});
+ if(!r.ok)err('YW601_PRIVATE_DB_HOLD');return r.json();
 }
 async function select(table,cols,filters={},limit=25){
  const q=new URLSearchParams({select:cols,limit:String(limit)});
@@ -30,7 +26,6 @@ async function one(table,cols,filters,code){
  const a=await select(table,cols,filters,2);
  if(a.length!==1)err(code);return a[0];
 }
-const rpc=(fn,data)=>service('/rest/v1/rpc/'+fn,'POST',data);
 const rotationFields='id,company_id,prior_contract_id,candidate_contract_id,owner_user_id,reviewer_user_id,reason,custody_only,proposed_at';
 const contractFields='id,company_id,owner_user_id,request_nonce,contract_id,source_schema,ack_schema,receiver_response_sha256,receiver_signature,observed_at,expires_at';
 async function contract(company,id,allowExpired){
@@ -96,11 +91,99 @@ async function proof(company,id){
  return {p,rot};
 }
 
+const canaryFields='id,company_id,rotation_proof_id,prior_ack_id,next_attempt_id,source_actor_id,master_receipt_id,request_nonce,source_sha256,payload_sha256,next_ack_hmac,acknowledged_at,no_private_object_transferred';
+async function canary(company,id){
+ if(!valid(id))err('YW597_REAL_SOURCE_CANARY_ID_REQUIRED');
+ const c=await one('ywi_596_canary_acks',canaryFields,{id,company_id:company},
+  'YW597_ORIGINAL_NEXT_ACK_REQUIRED');
+ const pp=await proof(company,c.rotation_proof_id);
+ const prior=await one('ywi_592_master_receipts',
+  'id,company_id,attempt_id,device_actor_id,master_receipt_id,request_nonce,source_sha256,payload_sha256,master_ack_hmac_sha256,received_at',
+  {company_id:company,id:c.prior_ack_id},'YW597_REAL_PREVIOUS_MASTER_RECEIPT_REQUIRED');
+ const next=await one('ywi_591_photo_attempts',
+  'id,company_id,uploaded_by,state,content_sha256,stored_sha256',
+  {company_id:company,id:c.next_attempt_id},'YW597_ORIGINAL_NEXT_SOURCE_ATTEMPT_REQUIRED');
+ if(prior.device_actor_id!==c.source_actor_id||c.source_actor_id!==next.uploaded_by||
+  prior.attempt_id===next.id||prior.source_sha256===c.source_sha256||
+  next.content_sha256!==c.source_sha256||next.stored_sha256!==next.content_sha256||
+  next.state!=='VERIFIED'||c.no_private_object_transferred!==true||
+  Date.parse(c.acknowledged_at)<=Date.parse(prior.received_at)||
+  Date.parse(c.acknowledged_at)<Date.parse(pp.p.received_at)||
+  !await verify('YW592_MASTER_ACK_KEY',
+   'YW592-ACK|'+prior.master_receipt_id+'|'+prior.request_nonce+'|'+prior.payload_sha256,
+   prior.master_ack_hmac_sha256))
+  err('YW597_VERIFIED_ORIGINAL_OLD_AND_NEXT_SOURCE_CONTINUITY_HOLD');
+ const req={schema:'rosevear.yw.receiver-next-source-canary.v1',companyId:company,
+  rotationId:pp.rot.r.id,requestNonce:c.request_nonce,sourceApp:'yw',
+  sourceActorId:c.source_actor_id,attemptId:next.id,sourceSha256:c.source_sha256,
+  acceptedAckSchemaRequired:'YW596-NEXT-ACK',noSourceBytes:true,noCustomerDetails:true};
+ const message='YW596-NEXT-ACK|'+c.master_receipt_id+'|'+company+'|'+next.id+
+  '|'+c.request_nonce+'|'+c.source_sha256+'|'+c.payload_sha256;
+ if(await sha(canon(req))!==c.payload_sha256||
+  !await verify('YW596_RECEIVER_NEXT_ACK_KEY',message,c.next_ack_hmac))
+  err('YW597_INDEPENDENT_NEW_KEY_SOURCE_RECEIPT_SIGNATURE_HOLD');
+ return {c,pp,prior};
+}
+const intentFields='id,company_id,proof_id,canary_id,owner_user_id,reviewer_user_id,consent_at,expires_at,actual_key_changed';
+async function intent(company,id,allowExpired=false){
+ if(!valid(id))err('YW597_ORIGINAL_CUTOVER_INTENT_ID_REQUIRED');
+ const i=await one('ywi_597_cutover_intents',intentFields,{id,company_id:company},
+  'YW597_REAL_OWNER_CUTOVER_INTENT_REQUIRED');
+ if((!allowExpired&&Date.parse(i.expires_at)<=Date.now())||i.actual_key_changed!==false)
+  err('YW597_CUTOVER_INTENT_EXPIRED_OR_EXECUTED_HOLD');
+ return i;
+}
+function rollbackMsg(i,rot,nonce){
+ return i.id+'|'+i.company_id+'|'+nonce+'|'+rot.oldc.contract_id+
+  '|'+rot.newc.contract_id+'|YW592-ACK';
+}
+const rollbackFields='id,company_id,intent_id,auditor_user_id,challenge_nonce,prior_hmac,next_hmac,remote_response_sha256,observed_at,readiness_only,actual_rollback_performed';
+async function verifyStoredRollback(company,i,id,allowStale=false){
+ const rb=await one('ywi_597_rollback_proofs',rollbackFields,
+  {company_id:company,id},'YW597_ORIGINAL_INDEPENDENT_ROLLBACK_PROOF_REQUIRED');
+ const pr=await proof(company,i.proof_id);
+ if(rb.intent_id!==i.id||rb.readiness_only!==true||rb.actual_rollback_performed!==false||
+  (!allowStale&&Date.parse(rb.observed_at)<Date.now()-15*60000))
+  err('YW597_RECENT_READONLY_ROLLBACK_READINESS_ONLY_REQUIRED');
+ const msg=rollbackMsg(i,pr.rot,rb.challenge_nonce);
+ if(!await verify('YW592_MASTER_ACK_KEY','YW597-ROLLBACK-OLD|'+msg,rb.prior_hmac)||
+  !await verify('YW596_RECEIVER_NEXT_ACK_KEY','YW597-ROLLBACK-NEXT|'+msg,rb.next_hmac)||
+  rb.remote_response_sha256!==await sha(canon({schema:'rosevear.yw.receiver-rollback-readiness-ack.v1',
+   companyId:company,intentId:i.id,requestNonce:rb.challenge_nonce,
+   priorContractId:pr.rot.oldc.contract_id,candidateContractId:pr.rot.newc.contract_id,
+   acceptedAckSchema:'YW592-ACK',previousKeyAccepted:true,candidateKeyAccepted:true,
+   rollbackExecutionPerformed:false})))
+  err('YW597_CRYPTOGRAPHICALLY_INVALID_REMOTE_ROLLBACK_READINESS_HOLD');
+ return rb;
+}
+function approvalMessage(i,rb,reviewer,signedAt){
+ return canon({schema:'rosevear.yw.independently-authorized-manual-cutover.v1',
+  companyId:i.company_id,intentId:i.id,rollbackProofId:rb.id,
+  ownerId:i.owner_user_id,reviewerId:reviewer,platformAuditorId:rb.auditor_user_id,
+  originalProofId:i.proof_id,originalCanaryId:i.canary_id,
+  signedAt,scope:'MANUAL_CUTOVER_ALLOWED_NOT_EXECUTED',
+  receiverSecretChanged:false,originalMasterRevoked:false,rollbackExecuted:false});
+}
+const approvalFields='id,company_id,intent_id,rollback_proof_id,reviewer_user_id,signed_at,payload_sha256,server_hmac_sha256,approval_scope,actually_cut_over';
+async function approval(company,id){
+ if(!valid(id))err('YW597_ORIGINAL_APPROVAL_UUID_REQUIRED');
+ const a=await one('ywi_597_cutover_approvals',approvalFields,
+  {company_id:company,id},'YW597_INDEPENDENT_MANUAL_AUTHORIZATION_NOT_FOUND');
+ const i=await intent(company,a.intent_id,true);
+ const rb=await verifyStoredRollback(company,i,a.rollback_proof_id,true);
+ const msg=approvalMessage(i,rb,a.reviewer_user_id,new Date(a.signed_at).toISOString());
+ if(i.reviewer_user_id!==a.reviewer_user_id||
+  a.approval_scope!=='MANUAL_CUTOVER_ALLOWED_NOT_EXECUTED'||a.actually_cut_over!==false||
+  await sha(msg)!==a.payload_sha256||
+  !await verify('YW597_CUTOVER_HMAC_KEY',msg,a.server_hmac_sha256))
+  err('YW597_ORIGINAL_INDEPENDENT_CUTOVER_APPROVAL_SIGNATURE_HOLD');
+ return {a,i,rb};
+}
+
 export async function resolveOriginalContracts({enrollment,company,reviewerId}){
- const a=await one('ywi_597_cutover_approvals','id,company_id,intent_id,reviewer_user_id,approval_scope,actually_cut_over',{id:enrollment.approval_id,company_id:company},'YW601_APPROVAL_HOLD');
- const i=await one('ywi_597_cutover_intents','id,company_id,proof_id,owner_user_id,reviewer_user_id,actual_key_changed',{id:a.intent_id,company_id:company},'YW601_INTENT_HOLD');
- if(a.reviewer_user_id!==reviewerId||i.reviewer_user_id!==reviewerId||i.owner_user_id!==enrollment.owner_user_id||a.approval_scope!=='MANUAL_CUTOVER_ALLOWED_NOT_EXECUTED'||a.actually_cut_over!==false||i.actual_key_changed!==false)err('YW601_AUTHORITY_HOLD');
- const p=await proof(company,i.proof_id);
- if(p.rot.r.owner_user_id!==enrollment.owner_user_id||p.rot.r.reviewer_user_id!==reviewerId)err('YW601_CHAIN_AUTHORITY_HOLD');
+ const {a,i,rb}=await approval(company,enrollment.approval_id);
+ if(a.reviewer_user_id!==reviewerId||i.reviewer_user_id!==reviewerId||i.owner_user_id!==enrollment.owner_user_id||[i.owner_user_id,reviewerId].includes(rb.auditor_user_id))err('YW601_AUTHORITY_HOLD');
+ const p=await proof(company,i.proof_id),c=await canary(company,i.canary_id);
+ if(c.pp.p.id!==p.p.id||p.rot.r.owner_user_id!==enrollment.owner_user_id||p.rot.r.reviewer_user_id!==reviewerId||Date.parse(a.signed_at)>Date.parse(enrollment.started_at)||Date.parse(a.signed_at)<Date.parse(rb.observed_at))err('YW601_CHAIN_AUTHORITY_HOLD');
  return {old:p.rot.oldc.contract_id,next:p.rot.newc.contract_id};
 }
