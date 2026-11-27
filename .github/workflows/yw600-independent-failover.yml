@@ -1,0 +1,57 @@
+name: YW600 independent failover and Source of Truth baseline
+on:
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  failover-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Verify cryptographic non-delivery, isolation and disabled gate
+        run: node scripts/yw600-independent-failover-check.mjs
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-not-a-production-secret
+          POSTGRES_DB: yw599_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d yw599_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Apply predecessor and exact failover migrations, verify claims
+        env:
+          PGPASSWORD: ci-only-not-a-production-secret
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+          PGDATABASE: yw599_ci
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/yw600-isolated-postgres-check.sql
+  property-journey-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Existing synthetic property owner, property intelligence, and estimate workflow
+        run: npx playwright test --config=playwright.config.mjs tests/browser/pms-client-property-360-444.spec.mjs tests/browser/property-site-intelligence.spec.mjs tests/browser/estimate-job-invoice-workflow.spec.mjs
