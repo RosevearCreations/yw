@@ -46,3 +46,22 @@ export async function assessEvidence({enrollment,rows,contractIds,keys,now=Date.
   return {...base,state,sampleCount:verified.length,recentWindowCount:bins.size,lastVerifiedAt:latest,ageMinutes:Math.floor(age),confidence:coverage,observationWindowHours:24,reason:'Owner-initiated signed probes; gaps may reflect sampling inactivity, not an outage.'};
  }catch{return {...base,state:'UNKNOWN_EVIDENCE_VERIFICATION_FAILED'}}
 }
+
+// A distinct current tenant reviewer can independently reverify resumed signed
+// observations after a real stored freshness alert. This is not physical outage
+// or recovery certification, and does not write a decision or close the alert.
+export async function reviewResumedEvidence({enrollment:e,rows,alert,contractIds,keys,actorId,reviewerId,now=Date.now()}){
+ const base={state:'RECOVERY_EVIDENCE_HOLD',independentReadback:false,physicalRecoveryConfirmed:false,automaticRecoveryPerformed:false,alertClosed:false,resumedSampleCount:0};
+ if(!uuid(actorId)||actorId!==reviewerId||actorId===e?.owner_user_id||!uuid(alert?.id)||alert.company_id!==e?.company_id||alert.enrollment_id!==e?.id||alert.source!=='DB_CRON_15_MINUTE_EVIDENCE_WATCH'||!['NO_SIGNED_MASTER_ACK_30M','RECEIVER_UNVERIFIED_HOLD'].includes(alert.issue_code))return base;
+ const when=Date.parse(alert.detected_at);
+ if(!Number.isFinite(when)||when<Date.parse(e.started_at)||when>now||now-when>86400000||Date.parse(e.expires_at)<=now||!Array.isArray(rows)||rows.length>96)return base;
+ const assessment=await assessEvidence({enrollment:e,rows,contractIds,keys,now});
+ if(assessment.lastVerifiedAt===null||assessment.ageMinutes>=15)return base;
+ try{
+  const verified=await Promise.all(rows.map(sample=>verifyHealthSample({sample,enrollment:e,oldContractId:contractIds.old,nextContractId:contractIds.next,keys,now})));
+  const after=verified.filter(v=>Date.parse(v.observedAt)>when).sort((a,b)=>Date.parse(a.observedAt)-Date.parse(b.observedAt));
+  const distinct=new Set(after.map(v=>v.nonce));
+  if(after.length<2||distinct.size!==after.length||Date.parse(after.at(-1).observedAt)-Date.parse(after[0].observedAt)<900000)return base;
+  return {...base,state:'RESUMED_SIGNED_OBSERVATIONS_INDEPENDENTLY_REVERIFIED',independentReadback:true,resumedSampleCount:after.length,firstResumedAt:after[0].observedAt,lastResumedAt:after.at(-1).observedAt,reviewedAt:iso(now)};
+ }catch{return base;}
+}
