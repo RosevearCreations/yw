@@ -1,4 +1,4 @@
-import {assessEvidence} from '../_shared/yw601-predictive-assurance.mjs';
+import {assessEvidence,reviewResumedEvidence} from '../_shared/yw601-predictive-assurance.mjs';
 import {resolveOriginalContracts} from '../_shared/yw601-original-contracts.mjs';
 const origins=new Set(['https://yw-alpha.vercel.app','https://yardweasels.ca','https://www.yardweasels.ca']);
 const uuid=(x:unknown)=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
@@ -25,18 +25,30 @@ Deno.serve(async req=>{
   };
   const one=async(t:string,c:string,f:Record<string,string>)=>{const a=await read(t,c,f);if(a.length!==1)throw Error('ROW_HOLD');return a[0]};
   const raw=await req.text();if(raw.length>1024)return reply(413,unknown('BODY_HOLD'));
-  const b=JSON.parse(raw);if(!b||b.action!=='overview'||!uuid(b.companyId)||Object.keys(b).sort().join('|')!=='action|companyId')return reply(400,unknown('REQUEST_HOLD'));
+  const b=JSON.parse(raw);
+  const overview=b?.action==='overview'&&Object.keys(b).sort().join('|')==='action|companyId';
+  const review=b?.action==='review-resumed'&&Object.keys(b).sort().join('|')==='action|alertId|companyId|enrollmentId'&&uuid(b.alertId)&&uuid(b.enrollmentId);
+  if(!uuid(b?.companyId)||!overview&&!review)return reply(400,unknown('REQUEST_HOLD'));
   const profile=await one('profiles','id,is_active',{id:'eq.'+user.id});if(profile.is_active!==true)return reply(403,unknown('ACCOUNT_HOLD'));
   const company=await one('ywi_companies','id,owner_user_id',{id:'eq.'+b.companyId});
   const pilotRows=await read('ywi_591_tenant_pilots','company_id,owner_user_id,reviewer_user_id,state,expires_at',{company_id:'eq.'+company.id,owner_user_id:'eq.'+company.owner_user_id,state:'eq.APPROVED',expires_at:'gt.'+new Date().toISOString()});
-  if(!pilotRows.length&&user.id===company.owner_user_id)return reply(200,{...unknown('UNKNOWN_NO_ACTIVE_PILOT'),assessments:[]});
+  if(overview&&!pilotRows.length&&user.id===company.owner_user_id)return reply(200,{...unknown('UNKNOWN_NO_ACTIVE_PILOT'),assessments:[]});
   if(pilotRows.length!==1)return reply(403,unknown('TENANT_AUTHORITY_HOLD'));
   const pilot=pilotRows[0];
   if(pilot.owner_user_id===pilot.reviewer_user_id||![pilot.owner_user_id,pilot.reviewer_user_id].includes(user.id))return reply(403,unknown('TENANT_AUTHORITY_HOLD'));
   const profiles=await Promise.all([pilot.owner_user_id,pilot.reviewer_user_id].map(id=>one('profiles','id,is_active',{id:'eq.'+id})));
   if(profiles.some(p=>p.is_active!==true))return reply(403,unknown('PILOT_ACCOUNT_HOLD'));
+  if(review&&user.id!==pilot.reviewer_user_id)return reply(403,unknown('REVIEWER_AUTHORITY_HOLD'));
   const now=Date.now(),at=new Date(now).toISOString();
   const watches=await read('ywi_597_health_enrollments','id,company_id,approval_id,owner_user_id,started_at,expires_at,sample_period_minutes,passive_monitor_only',{company_id:'eq.'+company.id,owner_user_id:'eq.'+company.owner_user_id,expires_at:'gt.'+at},9,'started_at.desc');
+  if(review){
+   if(watches.length>8)return reply(409,unknown('UNKNOWN_WATCH_LIMIT'));
+   const e=watches.find(w=>w.id===b.enrollmentId);if(!e)return reply(409,unknown('UNKNOWN_NO_ACTIVE_WATCH'));
+   const alert=await one('ywi_597_health_alerts','id,company_id,enrollment_id,source,issue_code,detected_at',{id:'eq.'+b.alertId,company_id:'eq.'+company.id,enrollment_id:'eq.'+e.id});
+   const rows=await read('ywi_597_health_samples','id,company_id,enrollment_id,challenge_nonce,source_actor_id,prior_hmac,next_hmac,receiver_response_sha256,verified_at,receiver_state,local_event_sha256,local_event_hmac,actual_key_changed',{company_id:'eq.'+company.id,enrollment_id:'eq.'+e.id,verified_at:'gte.'+new Date(now-86400000).toISOString()},97,'verified_at.desc');
+   const contracts=await resolveOriginalContracts({enrollment:e,company:company.id,reviewerId:pilot.reviewer_user_id});
+   return reply(200,await reviewResumedEvidence({enrollment:e,rows,alert,contractIds:contracts,keys:{old:env('YW592_MASTER_ACK_KEY'),next:env('YW596_RECEIVER_NEXT_ACK_KEY'),local:env('YW597_HEALTH_HMAC_KEY')},actorId:user.id,reviewerId:pilot.reviewer_user_id,now}));
+  }
   if(watches.length>8)return reply(200,{...unknown('UNKNOWN_WATCH_LIMIT'),assessments:[]});
   const assessments=[];
   for(const e of watches){
@@ -49,6 +61,6 @@ Deno.serve(async req=>{
    }catch{assessments.push({...unknown('UNKNOWN_ORIGINAL_CHAIN_HOLD'),enrollmentId:e.id});}
   }
   // Read-only, tenant scoped. No receipt claims, provider sends or remote recovery.
-  return reply(200,{state:watches.length?'TENANT_EVIDENCE_ASSESSMENT':'UNKNOWN_NO_ACTIVE_WATCH',assessedAt:at,assessments,automatedSampleProbesActive:false,outageConfirmed:false,recoveryConfirmed:false,automaticRecoveryPerformed:false,automaticNotificationSent:false});
+  return reply(200,{state:watches.length?'TENANT_EVIDENCE_ASSESSMENT':'UNKNOWN_NO_ACTIVE_WATCH',assessedAt:at,assessments,reviewerReadbackAvailable:user.id===pilot.reviewer_user_id,automatedSampleProbesActive:false,outageConfirmed:false,recoveryConfirmed:false,automaticRecoveryPerformed:false,automaticNotificationSent:false});
  }catch{return reply(409,unknown('AUTHORITY_OR_RUNTIME_HOLD'))}
 });
