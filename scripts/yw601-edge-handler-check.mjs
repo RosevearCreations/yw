@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
+const owner=id(1),reviewer=id(2),company=id(3),foreign=id(4);
+let actor=owner,active=true,approved=false,watch=false,handler,reads=0;
+globalThis.Deno={env:{get:n=>({SUPABASE_URL:'https://fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture-only'})[n]},serve:h=>{handler=h}};
+globalThis.fetch=async(url,opt={})=>{
+ const u=new URL(url);assert.equal(u.hostname,'fixture.invalid');assert.equal(opt.method??'GET','GET');reads++;
+ if(u.pathname==='/auth/v1/user')return Response.json({id:actor});
+ const t=u.pathname.split('/').at(-1);
+ if(t==='profiles')return Response.json([{id:u.searchParams.get('id').slice(3),is_active:active}]);
+ if(t==='ywi_companies')return Response.json([{id:company,owner_user_id:owner}]);
+ if(t==='ywi_591_tenant_pilots')return Response.json(approved?[{company_id:company,owner_user_id:owner,reviewer_user_id:reviewer,state:'APPROVED'}]:[]);
+ if(t==='ywi_597_health_enrollments')return Response.json(watch?[{id:id(5),company_id:company,owner_user_id:owner}]:[]);
+ if(t==='ywi_597_health_samples')return Response.json([]);
+ throw Error('unexpected fixture read '+t);
+};
+await import('../supabase/functions/yw601-predictive-assurance/index.ts');
+assert.equal(typeof handler,'function');
+const call=async({token='Bearer fixture.test.token',origin='https://yw-alpha.vercel.app',body={action:'overview',companyId:company}}={})=>{
+ const r=await handler(new Request('https://fixture.invalid',{method:'POST',headers:{authorization:token,origin,'content-type':'application/json'},body:JSON.stringify(body)}));return [r.status,await r.json()];
+};
+assert.equal((await call({token:''}))[0],401);assert.equal(reads,0);
+assert.equal((await call({origin:'https://foreign.invalid'}))[0],403);assert.equal(reads,0);
+let [status,res]=await call();assert.equal(status,200);assert.equal(res.state,'UNKNOWN_NO_ACTIVE_PILOT');
+actor=foreign;assert.equal((await call())[0],403);
+approved=true;assert.equal((await call())[0],403);
+actor=reviewer;[status,res]=await call();assert.equal(status,200);assert.equal(res.state,'UNKNOWN_NO_ACTIVE_WATCH');
+watch=true;[status,res]=await call();assert.equal(status,200);assert.equal(res.assessments[0].state,'UNKNOWN_NO_SIGNED_SAMPLES');assert.equal(res.recoveryConfirmed,false);
+active=false;assert.equal((await call())[0],403);
+active=true;assert.equal((await call({body:{action:'recover',companyId:company}}))[0],400);
+console.log('YW601 actual isolated Edge handler auth, tenant, no-watch, no-evidence and mutation refusal tests passed; no production I/O.');
