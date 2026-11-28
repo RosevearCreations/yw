@@ -131,6 +131,16 @@ function mount(host,{getClient,allowed=()=>true,companyOnly=false,companyId=()=>
      });card.append(act);
     }
    }
+   if(role==='owner'&&c.state==='customer_accepted'){
+    if(uuid(c.canonical_change_order_id))card.append(el('p','Original change-order draft created · office pricing and tax reconciliation required.'));
+    else{
+     const handoff=button('Send accepted version to original change-order review',async()=>{
+      if(!window.confirm('Create an original change-order draft for office review? No invoice, crew release or charge will be created.'))return;
+      if(await mutate('handoff',{request_id:c.id,version:c.version,confirmed:true},handoff,'handoff_saved'))await overview();
+     });
+     card.append(handoff);
+    }
+   }
    if(role==='owner'&&c.state!=='customer_accepted'){
     const q=el('form');q.className='yw602-form';const scope=input('scope'),quantity=input('quantity','number'),unit=input('unit'),total=input('total','number');scope.minLength=8;scope.maxLength=1500;quantity.min='0.001';quantity.step='0.001';unit.maxLength=32;total.min='0';total.step='0.01';total.max='1000000';
     const submit=el('button','Issue new quote version');submit.type='submit';
