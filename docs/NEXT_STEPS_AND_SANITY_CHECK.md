@@ -5,6 +5,14 @@
 
 Owner-adopted roadmap, 27 November 2026, from the approved Yard Workers 30-build programme and Rosevear All Applications Source of Truth (26 November 2026). This is the primary planning sequence for new work, not evidence of implementation or blanket authorization to release every build. It supersedes older proposed next-build numbering below; preserve historical evidence and unresolved operational gates. GitHub protected release records remain the authority for actual production status. Announce and verify each next build against the live queue before implementation.
 
+### Official platform positioning — adopted 28 November 2026
+
+**Yard Workers — Field service management software for outdoor service contractors.**
+
+Yard Workers is the multi-company SaaS provider for the seven supported outdoor service industries, not a landscaping contractor. Rosevear Landscaping is the example contractor demonstrating how a subscribing company uses Yard Workers. Keep the platform identity, private subscribing-company operations, and customer property workspace distinct. Preserve existing domains, SEO canonical authority, legal seller names and tenant-specific branding; this positioning is not a domain or legal-entity rename.
+
+YW603 is explicitly authorized as the next release after YW602 protected production acceptance. YW603 must extend the original property and customer identities across multiple properties with independently revocable property roles, delegated approval and spending limits. Keep proposed YW604–YW631 queued, not automatically authorized.
+
 ### First gate: unmistakable Shell and subscribing-company separation
 
 Before requesting any real Rosevear Landscaping data entry, verify at the start of YW602 that the Yard Workers Shell (software provider, Sysop support, SaaS subscriptions and privacy-safe diagnostics) and each tenant company workspace (customers, properties, employees, jobs and independent books) are visibly and technically distinct. Show signed-in identity, role and active company or Shell context, explicit authorized workspace entry/switching, and no accidental company-business operations or customer/financial records in the Shell. Verify normal owner access and denied cross-company reads/writes through server-side authorization, isolated multi-tenant fixtures, phone/tablet/desktop journeys, and any available authorized live accounts. Fix the first demonstrated separation defect before inviting real data entry. Keep the actual company data entry on HOLD until this gate is demonstrated; continue unrelated YW tasks autonomously. Rosevear Landscaping is a subscribing/sample company, not the SaaS provider. Do not create a fake live customer or tenant or claim real second-tenant acceptance. YW626 subsequently deepens the provider Shell; basic separation is an immediate prerequisite, not deferred until YW626.
