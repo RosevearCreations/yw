@@ -10,6 +10,8 @@ const marker = '.ywi-vercel-static-build';
 const files = [
   'index.html',
   'help.html',
+  'property-portal.html',
+  'theme-yw602.css',
   'app.js',
   'style.css',
   'build494-command.css',
