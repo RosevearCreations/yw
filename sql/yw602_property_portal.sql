@@ -81,8 +81,19 @@ create table public.ywi_602_change_decisions (
  primary key(request_id,version),
  foreign key(request_id,version) references public.ywi_602_change_quotes(request_id,version)
 );
-do $$declare t text;begin
- foreach t in array array['ywi_602_customer_identities','ywi_602_property_access','ywi_602_zone_layouts','ywi_602_property_changes','ywi_602_change_quotes','ywi_602_change_decisions'] loop
+-- Link the accepted exact version to a single original change-order draft.
+-- Office review, tax treatment, scope application and invoice posting remain
+-- separate original authorities; never silently treat a gross quote as net.
+create table public.ywi_602_change_handoffs (
+ request_id uuid primary key references public.ywi_602_property_changes(id),
+ version integer not null,
+ change_order_id uuid not null unique references public.change_orders(id) on delete restrict,
+ handed_by uuid not null references public.profiles(id),
+ handed_at timestamptz not null default now(),
+ foreign key(request_id,version) references public.ywi_602_change_decisions(request_id,version)
+);
+do $declare t text;begin
+ foreach t in array array['ywi_602_customer_identities','ywi_602_property_access','ywi_602_zone_layouts','ywi_602_property_changes','ywi_602_change_quotes','ywi_602_change_decisions','ywi_602_change_handoffs'] loop
  execute format('alter table public.%I enable row level security',t);
  execute format('revoke all on public.%I from public,anon,authenticated,service_role',t);
  execute format('grant select on public.%I to service_role',t);
@@ -117,6 +128,7 @@ declare
  owner_id uuid; actor_role text; client uuid; req public.ywi_602_property_changes%rowtype;
  q public.ywi_602_change_quotes%rowtype; d public.ywi_602_change_decisions%rowtype;
  v integer; result jsonb; nonce uuid; body text; role_value text; exp timestamptz;
+ canonical public.change_orders%rowtype; handoff public.ywi_602_change_handoffs%rowtype;
 begin
  if actor is null then raise exception 'YW602 verified identity required' using errcode='42501';end if;
  if customer_company is not null and p_action not in ('list','overview','request','decide') then raise exception 'YW602 customer action denied' using errcode='42501';end if;
@@ -206,7 +218,7 @@ begin
    select r.id,r.zone_id,r.work_order_id,r.description,r.requested_at,
    q1.version,q1.scope,q1.quantity,q1.unit,
    case when actor_role in ('owner','payer') then q1.total_cents else null end as total_cents,
-   q1.expires_at,case when d1.decision='accept' then 'customer_accepted' when d1.decision='decline' then 'customer_declined'
+   q1.expires_at,(select h.change_order_id from public.ywi_602_change_handoffs h where h.request_id=r.id and actor_role='owner') as canonical_change_order_id,case when d1.decision='accept' then 'customer_accepted' when d1.decision='decline' then 'customer_declined'
    when q1.version is null then 'requested' when q1.expires_at<=now() then 'quote_expired' else 'awaiting_payer_approval' end as state
    from public.ywi_602_property_changes r
    left join lateral(select q2.* from public.ywi_602_change_quotes q2 where q2.request_id=r.id order by q2.version desc limit 1) q1 on true
@@ -259,6 +271,25 @@ begin
   values(req.id,v+1,btrim(p_payload->>'scope'),(p_payload->>'quantity')::numeric,btrim(p_payload->>'unit'),(p_payload->>'total_cents')::bigint,actor,exp);
   return jsonb_build_object('state','quote_issued','version',v+1);
  end if;
+ if p_action='handoff' then
+  if actor_role<>'owner' or not exists(select 1 from public.profiles p where p.id=actor and p.is_active=true and lower(p.role) in ('site_leader','supervisor','hse','job_admin','admin')) or p_payload->>'confirmed' is distinct from 'true' then
+   raise exception 'YW602 original field discovery authority and explicit owner confirmation required' using errcode='42501';end if;
+  if v=0 or (p_payload->>'version')::integer is distinct from v then raise exception 'YW602 stale handoff version';end if;
+  select * into d from public.ywi_602_change_decisions x where x.request_id=req.id and x.version=v and x.decision='accept';
+  if d.request_id is null then raise exception 'YW602 accepted payer decision required';end if;
+  select * into handoff from public.ywi_602_change_handoffs h where h.request_id=req.id;
+  if handoff.request_id is not null then
+   if handoff.version<>v or not exists(select 1 from public.change_orders ch where ch.id=handoff.change_order_id and ch.work_order_id=req.work_order_id) then raise exception 'YW602 canonical handoff mismatch';end if;
+   return jsonb_build_object('state','handoff_saved','change_order_id',handoff.change_order_id,'replayed',true,'billing_performed',false);
+  end if;
+  -- Call the original discovery and evidence RPCs under the original actor rank.
+  -- Canonical request remains pending review with zero cost/charge deltas.
+  canonical:=public.ywi_rpc_change_order_discovery_save(jsonb_build_object('work_order_id',req.work_order_id,'field_discovery_summary',req.description,'scope_summary',q.scope,'reason','Customer portal accepted quote; office review and tax reconciliation required','notes','YW602 request '||req.id||' version '||v||'; zone '||req.zone_id||'; quantity '||q.quantity||' '||q.unit||'; accepted gross CAD cents '||q.total_cents),actor);
+  if canonical.id is null or canonical.work_order_id is distinct from req.work_order_id or canonical.status<>'requested' or canonical.review_status<>'pending' or canonical.customer_authorization_status<>'not_requested' or canonical.scope_application_status<>'not_applied' then raise exception 'YW602 canonical draft mismatch';end if;
+  perform public.ywi_rpc_change_order_evidence_save(jsonb_build_object('change_order_id',canonical.id,'evidence_type','customer_message','evidence_reference','YW602:'||req.id||':v'||v,'caption','Recorded independent private customer payer decision; exact accepted gross cents '||q.total_cents,'customer_safe',true,'captured_at',d.decided_at),actor);
+  insert into public.ywi_602_change_handoffs(request_id,version,change_order_id,handed_by) values(req.id,v,canonical.id,actor);
+  return jsonb_build_object('state','handoff_saved','change_order_id',canonical.id,'replayed',false,'billing_performed',false);
+ end if;
  if p_action='decide' then
   if actor_role<>'payer' or customer_company is null or p_payload->>'confirmed' is distinct from 'true'
   then raise exception 'YW602 separate authorized payer required' using errcode='42501';end if;
@@ -299,11 +330,11 @@ commit;
  or p_action is null or p_action not in ('list','overview','request','decide')
  then raise exception 'YW602 customer access denied' using errcode='42501';end if;
  select i.id,i.company_id into customer,tenant from public.ywi_602_customer_identities i join public.ywi_companies c on c.id=i.company_id and c.owner_user_id=i.issued_by
- where i.token_hash=extensions.digest(p_access_code,'sha256') and i.revoked_at is null and i.expires_at>now();
+ where exists(select 1 from public.profiles p where p.id=i.issued_by and p.is_active=true) and i.token_hash=extensions.digest(p_access_code,'sha256') and i.revoked_at is null and i.expires_at>now();
  if customer is null then raise exception 'YW602 customer access denied' using errcode='42501';end if;
  -- Serialize rotation/revocation and writes, then recheck the exact credential.
  perform 1 from public.ywi_companies c where c.id=tenant for update;
- if not exists(select 1 from public.ywi_602_customer_identities i join public.ywi_companies c on c.id=i.company_id and c.owner_user_id=i.issued_by where i.id=customer and i.company_id=tenant and i.token_hash=extensions.digest(p_access_code,'sha256') and i.revoked_at is null and i.expires_at>now())
+ if not exists(select 1 from public.ywi_602_customer_identities i join public.ywi_companies c on c.id=i.company_id and c.owner_user_id=i.issued_by where i.id=customer and i.company_id=tenant and exists(select 1 from public.profiles p where p.id=i.issued_by and p.is_active=true) and i.token_hash=extensions.digest(p_access_code,'sha256') and i.revoked_at is null and i.expires_at>now())
  then raise exception 'YW602 customer access denied' using errcode='42501';end if;
  answer:=yw602_private.property_portal(customer,tenant,p_action,p_payload);
  return answer||jsonb_build_object('customer_id',customer);
