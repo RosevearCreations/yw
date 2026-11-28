@@ -12,7 +12,7 @@ const button=(name,handler)=>{const n=el('button',name);n.type='button';n.addEve
 const money=c=>Number.isSafeInteger(c)&&c>=0?new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD'}).format(c/100):'Not available';
 const states={requested:'Requested',awaiting_payer_approval:'Awaiting payer approval',customer_accepted:'Payer accepted · scope handoff pending',customer_declined:'Declined',quote_expired:'Quote expired'};
 const validRect=z=>[z.x,z.y,z.w,z.h].every(Number.isInteger)&&z.x>=0&&z.y>=0&&z.w>0&&z.h>0&&z.x+z.w<=10000&&z.y+z.h<=10000;
-function mount(host,{getClient,allowed=()=>true,companyOnly=false}={}){
+function mount(host,{getClient,allowed=()=>true,companyOnly=false,companyId=()=>null}={}){
  let generation=0,actor='',roster=[],selected=null,data=null,busy=false,nonce=null;
  const message=el('p','Select Refresh authorized properties to begin.');message.setAttribute('role','status');
  const picker=select('property',[]),refresh=button('Refresh authorized properties',()=>load()),body=el('div');body.className='yw602-property-body';
@@ -37,14 +37,14 @@ function mount(host,{getClient,allowed=()=>true,companyOnly=false}={}){
    actor=a.data.user.id;
    const res=await call('list',{},g,actor);
    if(res.state!=='authorized_properties'||!Array.isArray(res.properties)||res.properties.length>100||res.properties.some(p=>!uuid(p.company_id)||!uuid(p.site_id)||typeof p.site_name!=='string'||!['owner','manager','payer','resident'].includes(p.access_role)))throw Error('Invalid property roster');
-   roster=res.properties.filter(p=>companyOnly?p.access_role==='owner':p.access_role!=='owner');
+   roster=res.properties.filter(p=>companyOnly?p.access_role==='owner'&&p.company_id===companyId():p.access_role!=='owner');
    for(const p of roster)picker.append(new Option(p.company_name+' · '+p.site_name+' · '+p.access_role,p.company_id+':'+p.site_id));
    message.textContent=roster.length?'Choose a verified property.':'No authorized properties are available. No sample data has been substituted.';
   }catch(e){if(g===generation)message.textContent='HOLD · '+e.message;}
   finally{if(g===generation){busy=false;refresh.disabled=false;}}
  }
  async function overview(){
-  const g=++generation,id=actor;data=null;nonce=null;body.replaceChildren();selected=roster.find(p=>p.company_id+':'+p.site_id===picker.value)||null;
+  const g=++generation,id=actor;busy=false;refresh.disabled=false;data=null;nonce=null;body.replaceChildren();selected=roster.find(p=>p.company_id+':'+p.site_id===picker.value)||null;
   if(!selected||!allowed()){message.textContent='Choose an authorized property.';return;}
   const p=selected;message.textContent='Checking current property and work records…';
   try{
