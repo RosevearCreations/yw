@@ -13,9 +13,9 @@ const field=[['Landscaping','landscaping','Mowing, gardens and seasonal grounds 
 const control=[['Tenant management','tenants','Company enrollment and subscription administration'],['System health','health','Verified technical observations and support'],['Release control','release','Protected deployments and exception tracking'],['Privacy & support','support','Scoped diagnostics, not private company records']];
 function gallery(host,items,mode){
  const grid=make('div');grid.className='yw602-gallery';
- for(const [title,key,desc] of items){
+ for(const [index,[title,key,desc]] of items.entries()){
   const article=make('article');article.className='yw602-gallery-card';
-  const pic=make('img');pic.src='/images/yw602/'+key+'.svg';pic.alt='';pic.width=320;pic.height=180;pic.loading='lazy';
+  const pic=make('span');pic.className='yw602-art '+(mode==='shell'?'yw602-art-control':'yw602-art-field');pic.dataset.art=key;pic.setAttribute('aria-hidden','true');const cols=mode==='shell'?2:3;pic.style.backgroundPosition=((index%cols)*100/(cols-1))+'% '+(Math.floor(index/cols)*100)+'%';
   article.append(pic,make('h4',title),make('p',desc));grid.append(article);
  }
  host.append(grid,make('small',mode==='shell'?'Illustrative control imagery · not live monitoring results.':'Illustrative service imagery · not completed jobs or a claim that every service is enabled.'));
@@ -29,7 +29,7 @@ function init(){
   const area=make('section');area.id='yw602CompanyHome';area.className='yw602-company-home';area.hidden=true;
   area.append(make('h3','Rosevear Landscaping · illustrative service overview'));gallery(area,field,'company');ch.after(area);
   const panel=make('section');panel.id='yw602OwnerPortal';panel.className='yw602-property-panel';panel.hidden=true;area.after(panel);
-  portal=window.YW602PropertyPortal?.mount(panel,{getClient:()=>window.YWI_SB||window._sb,allowed:()=>auth().isAuthenticated===true&&!shell()&&location.hash==='#company'&&roster().length>0,companyOnly:true,companyId:()=>company()?.id||selected});
+  portal=window.YW602PropertyPortal?.mount(panel,{getClient:()=>window.YWI_SB||window._sb,allowed:()=>auth().isAuthenticated===true&&!shell()&&location.hash==='#company'&&roster().length>0,companyOnly:true,companyId:()=>company()?.id||selected||(roster().length===1?roster()[0].id:null)});
  }
  const sh=$('sysop');
  if(sh&&!$('yw602ShellGallery')){
