@@ -92,7 +92,7 @@ create table public.ywi_602_change_handoffs (
  handed_at timestamptz not null default now(),
  foreign key(request_id,version) references public.ywi_602_change_decisions(request_id,version)
 );
-do $declare t text;begin
+do $$declare t text;begin
  foreach t in array array['ywi_602_customer_identities','ywi_602_property_access','ywi_602_zone_layouts','ywi_602_property_changes','ywi_602_change_quotes','ywi_602_change_decisions','ywi_602_change_handoffs'] loop
  execute format('alter table public.%I enable row level security',t);
  execute format('revoke all on public.%I from public,anon,authenticated,service_role',t);
@@ -310,19 +310,19 @@ end;$fn$;
 revoke all on function yw602_private.property_portal(uuid,uuid,text,jsonb) from public,anon,authenticated,service_role;
 -- Owner path requires an original staff identity; it can never impersonate a customer.
 create function public.ywi_602_property_portal(p_action text,p_payload jsonb default '{}'::jsonb)
-returns jsonb language plpgsql security definer set search_path='' as $
+returns jsonb language plpgsql security definer set search_path='' as $fn$
 declare actor uuid:=(select auth.uid());
 begin
  if actor is null or coalesce((select auth.jwt())->>'is_anonymous','false')='true' or not exists(select 1 from public.profiles p where p.id=actor and p.is_active=true)
  then raise exception 'YW602 verified active company owner required' using errcode='42501';end if;
  return yw602_private.property_portal(actor,null,p_action,p_payload);
-end$;
+end;$fn$;
 revoke all on function public.ywi_602_property_portal(text,jsonb) from public,anon,authenticated,service_role;
 grant execute on function public.ywi_602_property_portal(text,jsonb) to authenticated;
 -- No Supabase Auth user or JWT is issued to a customer. Only this narrow endpoint
 -- accepts a private code; it can never run an owner action or query legacy staff APIs.
 create function public.ywi_602_customer_portal(p_access_code text,p_action text,p_payload jsonb default '{}'::jsonb)
-returns jsonb language plpgsql security definer set search_path='' as $
+returns jsonb language plpgsql security definer set search_path='' as $fn$
 declare customer uuid; tenant uuid; answer jsonb;
 begin
  if (select auth.uid()) is not null or p_access_code is null or p_access_code !~ '^[a-f0-9]{64}
@@ -338,7 +338,7 @@ commit;
  then raise exception 'YW602 customer access denied' using errcode='42501';end if;
  answer:=yw602_private.property_portal(customer,tenant,p_action,p_payload);
  return answer||jsonb_build_object('customer_id',customer);
-end$;
+end;$fn$;
 revoke all on function public.ywi_602_customer_portal(text,text,jsonb) from public,anon,authenticated,service_role;
 grant execute on function public.ywi_602_customer_portal(text,text,jsonb) to anon;
 commit;
