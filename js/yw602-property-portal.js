@@ -97,9 +97,9 @@ function mount(host,{getClient,allowed=()=>true,companyOnly=false,companyId=()=>
    const grant=el('form');grant.className='yw602-form';
    const who=select('customer',customers.map(c=>[c.id,c.label+' · '+(c.access_role&&!c.property_revoked_at?c.access_role:'no active property role')]));
    const permission=select('access_role',[['manager','Property manager'],['payer','Authorized payer'],['resident','Resident']]);
-   const consent=input('confirmed','checkbox');const save=el('button','Grant selected property role');save.type='submit';
-   grant.append(label('Customer identity',who),label('Property permission',permission),label('I approve this customer’s selected property access for 30 days.',consent),save);
-   grant.addEventListener('submit',async e=>{e.preventDefault();if(!consent.checked||!uuid(who.value))return;if(await mutate('grant',{user_id:who.value,access_role:permission.value,confirmed:true,expires_at:new Date(Date.now()+30*86400000).toISOString()},save,'granted'))await overview();});
+   const consent=input('confirmed','checkbox');const grantSave=el('button','Grant selected property role');grantSave.type='submit';
+   grant.append(label('Customer identity',who),label('Property permission',permission),label('I approve this customer’s selected property access for 30 days.',consent),grantSave);
+   grant.addEventListener('submit',async e=>{e.preventDefault();if(!consent.checked||!uuid(who.value))return;if(await mutate('grant',{user_id:who.value,access_role:permission.value,confirmed:true,expires_at:new Date(Date.now()+30*86400000).toISOString()},grantSave,'granted'))await overview();});
    for(const [action,title,expected] of [['revoke','Revoke this property role','revoked'],['customer_rotate','Rotate private access code','customer_rotated'],['customer_disable','Disable customer credential','customer_disabled']]){
     const b=button(title,async()=>{if(!uuid(who.value)||!consent.checked){message.textContent='Select the customer and confirm the access change.';return;}
      if(await mutate(action,{user_id:who.value,confirmed:true},b,expected,action==='customer_rotate'?showCode:undefined))await overview(action==='customer_rotate');});
