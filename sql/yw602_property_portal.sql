@@ -340,19 +340,3 @@ end;$fn$;
 revoke all on function public.ywi_602_customer_portal(text,text,jsonb) from public,anon,authenticated,service_role;
 grant execute on function public.ywi_602_customer_portal(text,text,jsonb) to anon;
 commit;
-
- or p_action is null or p_action not in ('list','overview','request','decide')
- then raise exception 'YW602 customer access denied' using errcode='42501';end if;
- select i.id,i.company_id into customer,tenant from public.ywi_602_customer_identities i join public.ywi_companies c on c.id=i.company_id and c.owner_user_id=i.issued_by
- where exists(select 1 from public.profiles p where p.id=i.issued_by and p.is_active=true) and i.token_hash=extensions.digest(p_access_code,'sha256') and i.revoked_at is null and i.expires_at>now();
- if customer is null then raise exception 'YW602 customer access denied' using errcode='42501';end if;
- -- Serialize rotation/revocation and writes, then recheck the exact credential.
- perform 1 from public.ywi_companies c where c.id=tenant for update;
- if not exists(select 1 from public.ywi_602_customer_identities i join public.ywi_companies c on c.id=i.company_id and c.owner_user_id=i.issued_by where i.id=customer and i.company_id=tenant and exists(select 1 from public.profiles p where p.id=i.issued_by and p.is_active=true) and i.token_hash=extensions.digest(p_access_code,'sha256') and i.revoked_at is null and i.expires_at>now())
- then raise exception 'YW602 customer access denied' using errcode='42501';end if;
- answer:=yw602_private.property_portal(customer,tenant,p_action,p_payload);
- return answer||jsonb_build_object('customer_id',customer);
-end;$fn$;
-revoke all on function public.ywi_602_customer_portal(text,text,jsonb) from public,anon,authenticated,service_role;
-grant execute on function public.ywi_602_customer_portal(text,text,jsonb) to anon;
-commit;
