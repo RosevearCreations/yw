@@ -51,3 +51,31 @@ test('YW602 explicit Shell exit guards direct company-module routes',async({page
  await page.evaluate(()=>window.YWIRouter.showSection('today'));
  await expect(page.locator('#today')).toHaveClass(/active/);
 });
+
+test('YW602 private access never calls Supabase employee Auth or persists the access code',async({page})=>{
+ await page.setContent('<meta name="robots" content="noindex"><section id="yw602SignIn"><form id="yw602Login"><input name="access_code" type="password" required><button type="submit">Sign in</button></form></section><p id="yw602LoginStatus"></p><button id="yw602Logout" hidden>Sign out</button><section id="yw602CustomerPortal" hidden></section>');
+ await page.evaluate(({customer})=>{
+  window.YWI_RUNTIME_CONFIG={SUPABASE_URL:'https://fixture.invalid',SUPABASE_ANON_KEY:'fixture-public-key'};
+  window.calls=[];
+  window.supabase={createClient:()=>{throw Error('Employee Auth must never initialize');}};
+  window.fetch=async(url,opts)=>{
+   const body=JSON.parse(opts.body);window.calls.push({url,body,credentials:opts.credentials,auth:opts.headers.Authorization});
+   if(body.p_access_code!=='a'.repeat(64))return {ok:false};
+   return {ok:true,json:async()=>({state:'authorized_properties',customer_id:customer,properties:[]})};
+  };
+ },{customer:id(90)});
+ await page.addScriptTag({content:read('js/yw602-property-portal.js')});
+ await page.addScriptTag({content:read('js/yw602-customer-entry.js')});
+ await page.locator('input[name=access_code]').fill('a'.repeat(64));
+ await page.getByRole('button',{name:'Sign in'}).click();
+ await expect(page.locator('#yw602LoginStatus')).toContainText('Private access verified');
+ await expect(page.locator('#yw602CustomerPortal')).toContainText('No authorized properties');
+ expect(await page.evaluate(()=>window.calls.every(x=>x.url.endsWith('/rest/v1/rpc/ywi_602_customer_portal')&&x.credentials==='omit'&&x.auth==='Bearer fixture-public-key'))).toBe(true);
+ await page.getByRole('button',{name:'Sign out'}).click();
+ await expect(page.locator('#yw602CustomerPortal')).toBeHidden();
+ await expect(page.locator('input[name=access_code]')).toHaveValue('');
+ await page.locator('input[name=access_code]').fill('b'.repeat(64));
+ await page.getByRole('button',{name:'Sign in'}).click();
+ await expect(page.locator('#yw602LoginStatus')).toContainText('Access refused');
+ await expect(page.locator('#yw602CustomerPortal')).toBeHidden();
+});
