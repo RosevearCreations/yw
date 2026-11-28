@@ -325,7 +325,7 @@ create function public.ywi_602_customer_portal(p_access_code text,p_action text,
 returns jsonb language plpgsql security definer set search_path='' as $fn$
 declare customer uuid; tenant uuid; answer jsonb;
 begin
- if (select auth.uid()) is not null or p_access_code is null or p_access_code !~ '^[a-f0-9]{64} or p_action is null or p_action not in ('list','overview','request','decide')
+ if (select auth.uid()) is not null or p_access_code is null or p_access_code !~ '^[a-f0-9]{64}$' or p_action is null or p_action not in ('list','overview','request','decide')
  then raise exception 'YW602 customer access denied' using errcode='42501';end if;
  select i.id,i.company_id into customer,tenant from public.ywi_602_customer_identities i join public.ywi_companies c on c.id=i.company_id and c.owner_user_id=i.issued_by
  where exists(select 1 from public.profiles p where p.id=i.issued_by and p.is_active=true) and i.token_hash=extensions.digest(p_access_code,'sha256') and i.revoked_at is null and i.expires_at>now();
