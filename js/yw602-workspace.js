@@ -27,14 +27,14 @@ function init(){
  const ch=$('workspace550Company');
  if(ch&&!$('yw602CompanyHome')){
   const area=make('section');area.id='yw602CompanyHome';area.className='yw602-company-home';area.hidden=true;
-  area.append(make('h3','Rosevear Landscaping · illustrative service overview'));gallery(area,field,'company');ch.after(area);
+  area.append(make('h3','Rosevear Landscaping · example contractor'),make('p','Demonstrating how an outdoor service contractor uses Yard Workers.'));gallery(area,field,'company');ch.after(area);
   const panel=make('section');panel.id='yw602OwnerPortal';panel.className='yw602-property-panel';panel.hidden=true;area.after(panel);
   portal=window.YW602PropertyPortal?.mount(panel,{getClient:()=>window.YWI_SB||window._sb,allowed:()=>auth().isAuthenticated===true&&!shell()&&location.hash==='#company'&&roster().length>0,companyOnly:true,companyId:()=>company()?.id||selected||(roster().length===1?roster()[0].id:null)});
  }
  const sh=$('sysop');
  if(sh&&!$('yw602ShellGallery')){
   const area=make('section');area.id='yw602ShellGallery';area.hidden=true;area.className='yw602-control-home';
-  area.append(make('h3','Yard Workers · platform control centre'));gallery(area,control,'shell');sh.prepend(area);
+  area.append(make('h3','Yard Workers · platform control centre'),make('p','Field service management software for outdoor service contractors.'));gallery(area,control,'shell');sh.prepend(area);
  }
  sync();
 }
