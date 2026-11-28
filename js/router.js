@@ -8,7 +8,7 @@
 
 (function () {
   const DEFAULT_SECTION = 'today';
-  const state = { initialized: false };
+  const state = { initialized: false, shell: false, actor: '' };
 
   function security() {
     return window.YWISecurity || null;
@@ -114,9 +114,21 @@
 
   function showSection(sectionId, options = {}) {
     if (!sectionId) return;
-    const allowedSection = getAllowedSection(sectionId);
+    // A verified platform session cannot silently enter a business module.
+    // The explicit Company workspace is the exit, and existing server/RLS
+    // authorities still govern all underlying data and writes.
+    const actor = auth()?.getState?.()?.user?.id || '';
+    if (state.actor !== actor) { state.actor = actor; state.shell = false; }
+    let requested = sectionId;
+    if (state.shell && !['sysop', 'company', 'me'].includes(requested)) {
+      requested = window.YWIDualWorkspace?.isSysopVerified?.() === true ? 'sysop' : 'company';
+    }
+    const allowedSection = getAllowedSection(requested);
+    if (allowedSection === 'sysop') state.shell = true;
+    else if (allowedSection === 'company' || allowedSection === 'me') state.shell = false;
     updateSections(allowedSection);
     updateNav(allowedSection);
+    document.documentElement.dataset.yw602Workspace = state.shell ? 'shell' : 'company';
     updateHash(allowedSection);
     if (!options.skipFocus) {
       try { focusSection(allowedSection); } catch {}
