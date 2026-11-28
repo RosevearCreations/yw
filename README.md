@@ -1,6 +1,6 @@
-# Yard Workers Inc. Operations Platform
+# Yard Workers — Field service management software for outdoor service contractors.
 
-This repository contains the Yard Workers Inc. staff operations application, customer portal, and approved public service-page publishing layer.
+Yard Workers is the SaaS platform for independent outdoor service contractors. Rosevear Landscaping is the example subscribing contractor demonstrating the platform, not the software provider. This repository contains the separate provider Shell, subscribing-company operations application, customer portal, and approved public service-page publishing layer. Existing legal entity names, public route authority and tenant branding remain unchanged.
 
 ## Current product boundary
 

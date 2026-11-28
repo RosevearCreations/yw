@@ -39,7 +39,14 @@
       const card=element('article');card.className='yw550-workspace-card';card.dataset.companyId=c.id;
       card.append(element('h3',c.name),element('p',c.name==='Rosevear Landscaping'?'Sample tenant company · the same full Jobs, Crew, CRM, Finance and field modules as a paying landscaping company. Sample status never grants Sysop rights.':'Verified tenant company · Jobs, Crew, Finance, CRM and contracts stay inside its own permission-controlled workspace.'));
       const actions=element('div');actions.className='yw550-workspace-actions';
-      actions.append(button('Open jobs','today'),button('Company service settings','settings'));
+      const enter=element('button','Enter '+c.name);enter.type='button';enter.className='primary';enter.addEventListener('click',()=>{
+        if(auth().isAuthenticated!==true||auth().user?.id!==state.userId||!state.companyRows.some(row=>row.id===c.id))return;
+        const select=byId('yw579CompanySelect');
+        if(select&&Array.from(select.options).some(o=>o.value===c.id)){select.value=c.id;select.dispatchEvent(new Event('change',{bubbles:true}));}
+        document.dispatchEvent(new CustomEvent('ywi:602-enter-company',{detail:{companyId:c.id}}));
+        window.YWIRouter?.showSection?.('today');
+      });
+      actions.append(enter,button('Company service settings','settings'));
       card.appendChild(actions);grid.appendChild(card);
     }
     host.appendChild(grid);
@@ -134,5 +141,5 @@
     setNav();if(e?.detail?.allowed==='sysop'&&state.sysopVerified)renderSysop();
   });
   window.YWIDualWorkspace={refresh,isSysopVerified:()=>state.sysopVerified&&auth().isAuthenticated===true&&auth().user?.id===state.userId,
-    snapshot:()=>({checking:state.checking,sysopVerified:state.sysopVerified,ownedCompanies:state.companyRows.length})};
+    snapshot:()=>({checking:state.checking,sysopVerified:state.sysopVerified,ownedCompanies:state.companyRows.length}),ownedRoster:()=>auth().isAuthenticated===true&&auth().user?.id===state.userId?state.companyRows.map(({id,name})=>({id,name})):[]};
 })();
