@@ -33,3 +33,12 @@ html[data-yw602-mode="shell"] #yw579ModuleTier,html[data-yw602-mode="shell"] #yw
 .yw602-customer-page [hidden],.yw602-context[hidden],.yw602-company-home[hidden],.yw602-control-home[hidden],.yw602-property-panel[hidden]{display:none!important}
 .yw602-customer-page :focus-visible,.yw602-property-panel :focus-visible{outline:3px solid #c87817;outline-offset:3px}
 @media(max-width:500px){.yw602-customer-page main{padding:.75rem}.yw602-customer-page section{padding:.8rem}}
+
+/* Actual generated reference-inspired thumbnail artwork, intentionally small.
+ * Field and control sprites are physically separate files. No real data. */
+.yw602-gallery-card{display:grid;grid-template-columns:100px minmax(0,1fr);gap:.6rem;align-items:start;padding:.7rem}
+.yw602-gallery-card .yw602-art{width:100px;height:75px;display:block;border-radius:7px;grid-row:span 2;background-repeat:no-repeat;background-color:#1d425d}
+.yw602-art-field{background-image:url('/images/yw602/field.webp');background-size:300% 200%}
+.yw602-art-control{background-image:url('/images/yw602/control.webp');background-size:200% 200%}
+.yw602-gallery-card h4,.yw602-gallery-card p{padding:0;margin:0}
+.yw602-gallery-card p{font-size:.85rem}
