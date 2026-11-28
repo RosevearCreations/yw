@@ -17,9 +17,10 @@ function mount(host,{getClient,allowed=()=>true,companyOnly=false,companyId=()=>
  const message=el('p','Select Refresh authorized properties to begin.');message.setAttribute('role','status');
  const picker=select('property',[]),refresh=button('Refresh authorized properties',()=>load()),body=el('div');body.className='yw602-property-body';
  const h=el('h3','Private property maps & service extras');
- host.replaceChildren(h,el('p','View only authorized properties. Select an existing zone and work order to request a change. Pricing and approval never automatically release crew work or post an invoice.'),refresh,label('Property',picker),message,body);
+ const secret=el('section');secret.hidden=true;secret.className='yw602-change';
+ host.replaceChildren(h,el('p','View only authorized properties. Select an existing zone and work order to request a change. Pricing and approval never automatically release crew work or post an invoice.'),refresh,label('Property',picker),message,secret,body);
  const current=(g,id)=>generation===g&&allowed()&&actor===id;
- function reset(){generation++;actor='';roster=[];selected=null;data=null;busy=false;nonce=null;body.replaceChildren();picker.replaceChildren(new Option('Choose…',''));message.textContent='Workspace changed. Refresh to verify access.';refresh.disabled=false;}
+ function reset(){generation++;actor='';roster=[];selected=null;data=null;busy=false;nonce=null;secret.replaceChildren();secret.hidden=true;body.replaceChildren();picker.replaceChildren(new Option('Choose…',''));message.textContent='Workspace changed. Refresh to verify access.';refresh.disabled=false;}
  async function call(action,payload,g,id){
   const sb=getClient();if(!allowed()||!sb?.auth?.getUser||!sb?.rpc)throw Error('Sign in to the authorized workspace');
   const auth=await sb.auth.getUser();
@@ -43,7 +44,8 @@ function mount(host,{getClient,allowed=()=>true,companyOnly=false,companyId=()=>
   }catch(e){if(g===generation)message.textContent='HOLD · '+e.message;}
   finally{if(g===generation){busy=false;refresh.disabled=false;}}
  }
- async function overview(){
+ async function overview(keepSecret=false){
+  if(keepSecret!==true){secret.replaceChildren();secret.hidden=true;}
   const g=++generation,id=actor;busy=false;refresh.disabled=false;data=null;nonce=null;body.replaceChildren();selected=roster.find(p=>p.company_id+':'+p.site_id===picker.value)||null;
   if(!selected||!allowed()){message.textContent='Choose an authorized property.';return;}
   const p=selected;message.textContent='Checking current property and work records…';
@@ -53,12 +55,13 @@ function mount(host,{getClient,allowed=()=>true,companyOnly=false,companyId=()=>
    data=res;render();message.textContent='Verified property · '+p.site_name+' · '+p.access_role;
   }catch(e){if(g===generation)message.textContent='HOLD · '+e.message;}
  }
- function mutate(action,payload,control,expected){
+ function mutate(action,payload,control,expected,onResult){
   if(!selected||!data||busy||!allowed())return Promise.resolve(false);
   const g=generation,id=actor,p=selected;busy=true;control.disabled=true;message.textContent='Checking and saving…';
   return call(action,{company_id:p.company_id,site_id:p.site_id,...payload},g,id).then(r=>{
    if(r.state!==expected)throw Error('Server did not acknowledge the requested action');
    if(!current(g,id))return false;
+   onResult?.(r);
    return true;
   }).catch(e=>{if(current(g,id))message.textContent='HOLD · '+e.message;return false;}).finally(()=>{if(current(g,id)){busy=false;control.disabled=false;}});
  }
@@ -79,6 +82,30 @@ function mount(host,{getClient,allowed=()=>true,companyOnly=false,companyId=()=>
   if(map.childElementCount)body.append(map);else body.append(el('p','No map geometry has been published for this property.'));
   body.append(label('Property zone',zoneSelect));
   if(role==='owner'){
+   const customers=Array.isArray(data.customers)?data.customers.filter(c=>uuid(c.id)&&typeof c.label==='string').slice(0,100):[];
+   const showCode=r=>{
+    if(!/^[a-f0-9]{64}$/.test(r.access_code||''))throw Error('Private access code missing');
+    const code=el('input');code.type='text';code.readOnly=true;code.value=r.access_code;code.autocomplete='off';
+    secret.replaceChildren(el('strong','Private access code · shown once'),el('p','Share privately with the intended customer only. Expires in seven days; no email or SMS is sent.'),code,button('Hide access code',()=>{secret.replaceChildren();secret.hidden=true;}));secret.hidden=false;
+   };
+   const manage=el('details');manage.append(el('summary','Manage private customer access'),el('p','A customer credential is not a staff login. Create an identity, then explicitly grant a property role. Revocation affects the selected property; disabling a credential affects every granted property.'));
+   const create=el('form');create.className='yw602-form';const name=input('customer_label');name.minLength=2;name.maxLength=120;
+   const confirm=input('confirmed','checkbox');const submit=el('button','Create private access code');submit.type='submit';
+   create.append(label('Customer label',name),label('I approve this private customer identity.',confirm),submit);
+   create.addEventListener('submit',async e=>{e.preventDefault();if(!confirm.checked)return;if(await mutate('customer_create',{label:name.value,confirmed:true},submit,'customer_created',showCode))await overview(true);});
+   manage.append(create);
+   const grant=el('form');grant.className='yw602-form';
+   const who=select('customer',customers.map(c=>[c.id,c.label+' · '+(c.access_role&&!c.property_revoked_at?c.access_role:'no active property role')]));
+   const permission=select('access_role',[['manager','Property manager'],['payer','Authorized payer'],['resident','Resident']]);
+   const consent=input('confirmed','checkbox');const save=el('button','Grant selected property role');save.type='submit';
+   grant.append(label('Customer identity',who),label('Property permission',permission),label('I approve this customer’s selected property access for 30 days.',consent),save);
+   grant.addEventListener('submit',async e=>{e.preventDefault();if(!consent.checked||!uuid(who.value))return;if(await mutate('grant',{user_id:who.value,access_role:permission.value,confirmed:true,expires_at:new Date(Date.now()+30*86400000).toISOString()},save,'granted'))await overview();});
+   for(const [action,title,expected] of [['revoke','Revoke this property role','revoked'],['customer_rotate','Rotate private access code','customer_rotated'],['customer_disable','Disable customer credential','customer_disabled']]){
+    const b=button(title,async()=>{if(!uuid(who.value)||!consent.checked){message.textContent='Select the customer and confirm the access change.';return;}
+     if(await mutate(action,{user_id:who.value,confirmed:true},b,expected,action==='customer_rotate'?showCode:undefined))await overview(action==='customer_rotate');});
+    grant.append(b);
+   }
+   manage.append(grant);body.append(manage);
    const layout=el('form');layout.className='yw602-form';
    const fields=['x','y','w','h'].map(name=>{const n=input(name,'number');n.min=name==='x'||name==='y'?'0':'1';n.max='10000';n.step='1';layout.append(label({x:'Left (0–10000)',y:'Top (0–10000)',w:'Width',h:'Height'}[name],n));return n;});
    const save=el('button','Save selected zone placement');save.type='submit';layout.append(save);
