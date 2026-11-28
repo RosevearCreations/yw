@@ -34,7 +34,18 @@ jobs:
           PGPORT: "5432"
           PGUSER: postgres
           PGDATABASE: yw602_ci
-        run: psql -X -v ON_ERROR_STOP=1 -f scripts/yw602-isolated-postgres-check.sql
+        run: |
+          python3 - <<'PY'
+          import pathlib,re
+          source=pathlib.Path('sql/232_change_orders_extras.sql').read_text()
+          functions=[]
+          for name in ['ywi_rpc_change_order_discovery_save','ywi_rpc_change_order_evidence_save']:
+              match=re.search(r'create or replace function public\.'+name+r'\(.*?\$\$;',source,re.S|re.I)
+              assert match, name
+              functions.append(match.group())
+          pathlib.Path('scripts/yw602-original-discovery-fixture.generated.sql').write_text('\n\n'.join(functions)+'\n')
+          PY
+          psql -X -v ON_ERROR_STOP=1 -f scripts/yw602-isolated-postgres-check.sql
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 15
