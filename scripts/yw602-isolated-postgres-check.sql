@@ -12,12 +12,22 @@ create extension pgcrypto with schema extensions;
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),'')::jsonb,'{}'::jsonb)$$;
 grant usage on schema auth to authenticated;
-create table public.profiles(id uuid primary key,is_active boolean not null);
+create table public.profiles(id uuid primary key,is_active boolean not null,role text default 'site_leader');
 create table public.ywi_companies(id uuid primary key,name text not null,owner_user_id uuid not null references public.profiles,created_at timestamptz default now());
 create table public.ywi_company_service_modules(company_id uuid,module_key text,enabled boolean);
 create table public.client_sites(id uuid primary key,client_id uuid not null,site_name text,is_active boolean);
 create table public.client_site_zones(id uuid primary key,client_site_id uuid,zone_name text,zone_type text,sort_order integer,is_active boolean);
 create table public.work_orders(id uuid primary key,company_id uuid,client_id uuid,client_site_id uuid,work_order_number text,status text,created_at timestamptz default now());
+alter table public.work_orders add column legacy_job_id bigint,add column estimate_id uuid;
+create table public.change_orders(
+ id uuid primary key default gen_random_uuid(),job_id bigint,work_order_id uuid references public.work_orders(id),estimate_id uuid,change_order_number text not null,status text not null,scope_summary text not null,reason text,
+ estimated_cost_delta numeric default 0,estimated_charge_delta numeric default 0,actual_cost_delta numeric default 0,actual_charge_delta numeric default 0,notes text,created_by_profile_id uuid,
+ service_context text,season_context text,field_discovery_summary text,field_discovered_by_profile_id uuid,field_discovered_at timestamptz,review_status text,customer_authorization_status text,
+ scope_application_status text,invoice_evidence_status text,updated_at timestamptz default now()
+);
+create table public.change_order_evidence(id uuid primary key default gen_random_uuid(),change_order_id uuid references public.change_orders(id),evidence_type text,evidence_reference text,caption text,customer_safe boolean,captured_by_profile_id uuid,captured_at timestamptz);
+-- Exact original function source is extracted by CI from the tracked predecessor SQL.
+\ir yw602-original-discovery-fixture.generated.sql
 create table public.ywi_company_site_links_422(company_id uuid,client_id uuid,client_site_id uuid,primary key(company_id,client_site_id));
 create table public.ywi_company_client_links_422(company_id uuid,client_id uuid,primary key(company_id,client_id));
 create function public.ywi_is_platform_administrator_489() returns boolean language sql stable as $$select auth.uid()='00000000-0000-4000-8000-000000000006'::uuid$$;
@@ -25,7 +35,7 @@ create function public.ywi_is_platform_administrator_489() returns boolean langu
 begin;
 create function public.fixture_id(n integer) returns uuid language sql immutable as $$select ('00000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid$$;
 grant execute on function public.fixture_id(integer) to authenticated;
-insert into public.profiles select public.fixture_id(i),true from generate_series(1,7) i;
+insert into public.profiles(id,is_active) select public.fixture_id(i),true from generate_series(1,7) i;
 insert into public.ywi_companies(id,name,owner_user_id) values(public.fixture_id(10),'Fixture A',public.fixture_id(1)),(public.fixture_id(11),'Fixture B',public.fixture_id(5));
 insert into public.ywi_company_service_modules values(public.fixture_id(10),'landscaping',true),(public.fixture_id(11),'snow',false);
 insert into public.client_sites values(public.fixture_id(20),public.fixture_id(30),'Fixture A property',true),(public.fixture_id(21),public.fixture_id(31),'Fixture B property',true);
@@ -34,7 +44,7 @@ insert into public.ywi_company_client_links_422 values(public.fixture_id(10),pub
 insert into public.ywi_company_site_links_422 values(public.fixture_id(10),public.fixture_id(30),public.fixture_id(20)),(public.fixture_id(11),public.fixture_id(31),public.fixture_id(21));
 insert into public.work_orders(id,company_id,client_id,client_site_id,work_order_number,status) values(public.fixture_id(50),public.fixture_id(10),public.fixture_id(30),public.fixture_id(20),'FIX-A','scheduled'),(public.fixture_id(51),public.fixture_id(11),public.fixture_id(31),public.fixture_id(21),'FIX-B','scheduled');
 do $$declare t record;begin
- if (select count(*) from pg_class where relname like 'ywi_602_%' and relkind='r' and relrowsecurity)<>6 then raise exception 'six RLS tables required';end if;
+ if (select count(*) from pg_class where relname like 'ywi_602_%' and relkind='r' and relrowsecurity)<>7 then raise exception 'seven RLS tables required';end if;
  for t in select oid,relname from pg_class where relname like 'ywi_602_%' and relkind='r' loop
   if has_table_privilege('anon',t.oid,'SELECT,INSERT,UPDATE,DELETE') or has_table_privilege('authenticated',t.oid,'SELECT,INSERT,UPDATE,DELETE') or has_table_privilege('service_role',t.oid,'INSERT,UPDATE,DELETE') then raise exception 'incorrect private grants: %',t.relname;end if;
  end loop;
@@ -88,6 +98,10 @@ begin
  denied:=false;begin perform public.ywi_602_customer_portal(repeat('a',64),'list','{}');exception when insufficient_privilege then denied:=true;end;if not denied then raise exception 'unissued code accepted';end if;
  set local role authenticated;
  perform set_config('request.jwt.claim.sub',public.fixture_id(1)::text,true);
+ r:=public.ywi_602_property_portal('handoff',p||jsonb_build_object('request_id',req,'version',2,'confirmed',true));
+ if r->>'state'<>'handoff_saved' or r->>'billing_performed'<>'false' or r->>'replayed'<>'false' then raise exception 'canonical handoff failed';end if;
+ r:=public.ywi_602_property_portal('handoff',p||jsonb_build_object('request_id',req,'version',2,'confirmed',true));
+ if r->>'replayed'<>'true' then raise exception 'canonical handoff replay failed';end if;
  perform public.ywi_602_property_portal('revoke',p||jsonb_build_object('user_id',customers[2]));
  perform set_config('request.jwt.claim.sub','',true);
  set local role anon;
@@ -100,6 +114,7 @@ end$$;
 reset role;
 do $$begin
  if (select count(*) from public.ywi_602_property_changes)<>1 or (select count(*) from public.ywi_602_change_quotes)<>2 or (select count(*) from public.ywi_602_change_decisions)<>1 then raise exception 'durable duplicate prevention failed';end if;
+ if (select count(*) from public.change_orders where status='requested' and review_status='pending' and customer_authorization_status='not_requested' and estimated_charge_delta=0 and scope_application_status='not_applied')<>1 or (select count(*) from public.change_order_evidence)<>1 or (select count(*) from public.ywi_602_change_handoffs)<>1 then raise exception 'original handoff acceptance failed';end if;
 end$$;
 rollback;
 select 'YW602 isolated property, Shell redaction, role, tenant, map, quote-version and replay checks passed' as result;
